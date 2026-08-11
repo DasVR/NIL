@@ -25,6 +25,7 @@ from tools.executor import (
     execute_command, execute_approved,
     get_pending_runs, get_run_history, get_run,
     propose_plugin_commands,
+    enable_yolo, disable_yolo, toggle_yolo, is_yolo_enabled, yolo_execute,
 )
 from tools.logger import (
     log_event, log_tool_run, log_finding, log_credential, get_timeline,
@@ -79,6 +80,19 @@ class ToolReject(BaseModel):
 class ToolExecute(BaseModel):
     run_id: str
     timeout: int = 300
+
+
+class YoloToggle(BaseModel):
+    engagement: str
+    enabled: bool
+
+
+class YoloExecute(BaseModel):
+    engagement: str
+    tool: str
+    command: str
+    timeout: int = 300
+    safety_level: str = "safe"
 
 
 class PluginRun(BaseModel):
@@ -366,6 +380,67 @@ async def api_get_run(run_id: str):
         "started_at": run.started_at,
         "completed_at": run.completed_at,
     }
+
+
+# ──────────────────────────────────────────────────────────────
+# YOLO ROUTES
+# ──────────────────────────────────────────────────────────────
+@app.post("/v1/yolo/toggle", dependencies=[Depends(require_auth)])
+async def api_yolo_toggle(body: YoloToggle):
+    """Toggle YOLO mode for an engagement."""
+    if body.enabled:
+        enable_yolo(body.engagement)
+        log_event(body.engagement, "YOLO", "YOLO mode ENABLED — approval gate bypassed")
+    else:
+        disable_yolo(body.engagement)
+        log_event(body.engagement, "YOLO", "YOLO mode DISABLED — approval gate active")
+    return {
+        "engagement": body.engagement,
+        "yolo_enabled": body.enabled,
+    }
+
+
+@app.get("/v1/yolo/{engagement}", dependencies=[Depends(require_auth)])
+async def api_yolo_status(engagement: str):
+    """Get YOLO mode status for an engagement."""
+    return {
+        "engagement": engagement,
+        "yolo_enabled": is_yolo_enabled(engagement),
+    }
+
+
+@app.post("/v1/yolo/execute", dependencies=[Depends(require_auth)])
+async def api_yolo_execute(body: YoloExecute):
+    """
+    Execute command in YOLO mode — skips approval gate.
+    Still runs in sandbox. Still logs to timeline.
+    """
+    if not is_yolo_enabled(body.engagement):
+        raise HTTPException(
+            status_code=400,
+            detail=f"YOLO mode not enabled for '{body.engagement}'. Enable it first."
+        )
+    try:
+        run = yolo_execute(
+            body.engagement,
+            body.tool,
+            body.command,
+            safety_level=body.safety_level,
+            timeout=body.timeout,
+        )
+        log_tool_run(run)
+        return {
+            "run_id": run.id,
+            "status": run.status,
+            "yolo": True,
+            "exit_code": run.exit_code,
+            "duration": run.duration,
+            "stdout": run.stdout[:5000],
+            "stderr": run.stderr[:2000],
+            "warning": run.error,  # e.g. dangerous tool warning
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ──────────────────────────────────────────────────────────────

@@ -79,6 +79,7 @@ Each engagement gets:
 
 ### 2.2 Tool Runner
 - **Approval gate**: AI proposes command → you approve/reject/edit → runs in sandbox
+- **YOLO mode**: Toggle to bypass approval gate for trusted environments (still sandboxed)
 - **Sandbox**: Docker container per engagement, isolated network namespace
 - **Auto-install**: First use of a tool → `apt install` or `pip install` in sandbox
 - **Output capture**: stdout, stderr, exit code, duration → all logged

@@ -509,6 +509,8 @@ Success:                #00d992
 | `Cmd+E` | Edit proposed command |
 | `Cmd+R` | Reject proposed command |
 | `Cmd+Shift+A` | Approve all pending |
+| `Cmd+Shift+Y` | Toggle YOLO mode |
+| `Shift+Enter` | Send + YOLO (execute without approval) |
 
 #### Findings & Notes
 | Key | Action |
@@ -627,7 +629,7 @@ AI always has access to:
 
 ### 4.3 Tool Execution Engine
 
-#### Approval Gate
+#### Approval Gate (Default)
 ```
 AI proposes command
     ↓
@@ -635,6 +637,40 @@ AI proposes command
 [Edit]    → you modify, then runs
 [Reject]  → logged, not run
 [Timeout] → auto-rejected after 5 min
+```
+
+#### YOLO Mode (Opt-In)
+YOLO mode disables the approval gate. AI commands execute immediately without confirmation.
+
+**Activation:**
+- Per-engagement toggle (default: OFF)
+- Per-command override (`Shift+Enter` instead of `Enter`)
+- Global setting in config (not recommended)
+- Visual indicator: status bar shows `[YOLO]` in red
+
+**Safety:**
+- Still runs in sandbox (containerized, resource-limited)
+- Still logged to timeline (all commands recorded)
+- Dangerous tools still trigger warnings (double-execute)
+- Can be disabled instantly with `Esc` or `Cmd+Shift+Y`
+- Auto-disables after engagement end
+
+**When to use:**
+- Internal pentests where you own the infra
+- Reconnaissance phases (low risk)
+- Repeat commands you trust
+- CTFs and training environments
+
+**When NOT to use:**
+- Client production environments
+- First-time engagements
+- Tools marked `dangerous` safety level
+- Any engagement with potential legal exposure
+
+```
+[YOLO ON]  AI proposes: nmap -sV 10.0.1.5
+           Executing automatically... ████░░ 45%
+           [Cmd+Shift+Y] Disable YOLO
 ```
 
 #### Execution Features
@@ -1291,6 +1327,7 @@ theme = "abyss"
 font = "JetBrains Mono"
 font_size = 12
 confirm_dangerous = true
+yolo_mode = false
 show_timestamps = true
 
 [logging]
@@ -1600,8 +1637,9 @@ All endpoints require `Authorization: Bearer <PENTEST_API_KEY>` header.
 | Data Location | Their servers | Your machine | Your machine | Your machine |
 | Obsidian Sync | No | No | No | Yes |
 | Credential Encryption | ? | No | Yes | Yes (Fernet) |
-| Anti-Refusal AI | N/A | N/A | N/A | Yes |
-| Multi-Model | No | N/A | N/A | Yes (local + cloud) |
+| **YOLO Mode** | Yes | N/A | N/A | Yes (toggleable) |
+| **Anti-Refusal AI** | N/A | N/A | N/A | Yes |
+| **Multi-Model** | No | N/A | N/A | Yes (local + cloud) |
 | Report Generation | Yes | Yes | Yes | Yes (MD, PDF, HTML) |
 | Timeline | No | No | No | Yes (markdown) |
 | Open Source | No | No | No | Yes (MIT) |

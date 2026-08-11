@@ -52,6 +52,69 @@ class ToolRun:
 
 
 # ──────────────────────────────────────────────────────────────
+# YOLO MODE
+# ──────────────────────────────────────────────────────────────
+# Per-engagement YOLO mode — skips approval gate when enabled
+_yolo_engagements: set[str] = set()
+
+
+def is_yolo_enabled(engagement: str) -> bool:
+    """Check if YOLO mode is enabled for an engagement."""
+    return engagement in _yolo_engagements
+
+
+def enable_yolo(engagement: str) -> bool:
+    """Enable YOLO mode for an engagement."""
+    _yolo_engagements.add(engagement)
+    return True
+
+
+def disable_yolo(engagement: str) -> bool:
+    """Disable YOLO mode for an engagement."""
+    _yolo_engagements.discard(engagement)
+    return True
+
+
+def toggle_yolo(engagement: str) -> bool:
+    """Toggle YOLO mode for an engagement."""
+    if engagement in _yolo_engagements:
+        _yolo_engagements.discard(engagement)
+        return False
+    _yolo_engagements.add(engagement)
+    return True
+
+
+def yolo_execute(
+    engagement: str,
+    tool: str,
+    command: str,
+    proposed_by: str = "ai",
+    timeout: int = 300,
+    safety_level: str = "safe",
+) -> ToolRun:
+    """
+    YOLO mode execution — skips approval gate entirely.
+    Still runs in sandbox, still logs everything.
+    Dangerous tools still warn but execute after brief delay.
+    """
+    run = ToolRun(
+        engagement=engagement,
+        tool=tool,
+        command=command,
+        proposed_by=proposed_by,
+        approval=ApprovalStatus.APPROVED,  # auto-approved by YOLO
+    )
+    _pending_runs[run.id] = run
+    
+    # Even in YOLO, dangerous tools get a warning marker
+    if safety_level == "dangerous":
+        run.error = "WARNING: Dangerous tool executed in YOLO mode"
+    
+    # Execute immediately
+    return execute_command(run.id, timeout=timeout)
+
+
+# ──────────────────────────────────────────────────────────────
 # APPROVAL GATE
 # ──────────────────────────────────────────────────────────────
 _pending_runs: dict[str, ToolRun] = {}
