@@ -1,6 +1,7 @@
 # Finn Pentest Harness — Complete System Design
 
-> **Terminal-first, AI-driven, open-source pentest workstation**
+> **Dual-interface, AI-driven, open-source pentest workstation**
+> TUI for terminal warriors + Desktop app with hackerai/Claude vibes
 > Built on finn-godmode-api. Sandboxed. Plugin-driven. Obsidian-native.
 > 
 > **Status**: Phase 1 complete (backend scaffold) | **Next**: Phase 2 (AI integration)
@@ -27,12 +28,18 @@
 ## 1. Vision & Philosophy
 
 ### What This Is
-Finn Pentest Harness is a **terminal-native pentest workstation** that puts an AI copilot inside your terminal. It's not a web app. It's not a SaaS. It's a TUI that lives in your terminal, talks to local and cloud LLMs, runs tools in isolated Docker sandboxes, and syncs everything to your Obsidian vault.
+Finn Pentest Harness is a **dual-interface pentest workstation** that puts an AI copilot at your fingertips. It has two faces:
+
+1. **Terminal TUI** — For the terminal warriors. Textual-based, keyboard-driven, tmux-style splits. Lives in your terminal. Zero mouse required.
+
+2. **Desktop App** — For the visual hackers. Tauri-based, dark mode, hackerai/Claude vibes. Clean sidebar, chat bubbles, markdown rendering. Smooth animations. Feels premium.
+
+Both interfaces share the same backend. Same sandboxes. Same plugins. Same AI. Switch between them anytime — your engagements, findings, and history follow you.
 
 ### What This Is NOT
-- **Not a web app** — no browser, no Electron, no React. Pure terminal.
+- **Not a web app** — no browser, no Electron. Native desktop + native terminal.
 - **Not a SaaS** — your data never leaves your machine unless you choose cloud models.
-- **Not an automated hacker** — AI proposes, YOU approve. Every. Single. Command.
+- **Not an automated hacker** — AI proposes, YOU approve. Every. Single. Command. (Unless YOLO mode is on.)
 - **Not a script kiddie tool** — designed for professional pentesters who want AI assistance without losing control.
 
 ### Core Principles
@@ -61,16 +68,22 @@ Finn Pentest Harness is a **terminal-native pentest workstation** that puts an A
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                     USER'S TERMINAL                              │
-│  ┌───────────────────────────────────────────────────────────┐   │
-│  │              TUI (Textual — Python)                        │   │
-│  │  ┌─────────┐  ┌──────────────────┐  ┌──────────────────┐  │   │
-│  │  │ Targets │  │  Chat + Terminal  │  │  Notes+Findings  │  │   │
-│  │  │  Tree   │  │  (split pane)     │  │  (markdown)      │  │   │
-│  │  └─────────┘  └──────────────────┘  └──────────────────┘  │   │
-│  └───────────────────────────────────────────────────────────┘   │
-│                           │ HTTP (localhost:8766)                │
-├───────────────────────────┼─────────────────────────────────────┤
+│                     USER INTERFACES (TWO)                        │
+│                                                                  │
+│  ┌──────────────────────────┐  ┌──────────────────────────────┐ │
+│  │   TERMINAL TUI (Textual) │  │   DESKTOP APP (Tauri)        │ │
+│  │                          │  │                              │ │
+│  │  ┌─────────┐ ┌────────┐ │  │  ┌────────┐ ┌─────────────┐ │ │
+│  │  │ Targets │ │ Chat + │ │  │  │ Sidebar│ │ Chat +      │ │ │
+│  │  │  Tree   │ │Terminal│ │  │  │ (nav)  │ │ Terminal    │ │ │
+│  │  └─────────┘ └────────┘ │  │  └────────┘ └─────────────┘ │ │
+│  │  Keyboard-driven        │  │  Mouse + keyboard           │ │
+│  │  tmux-style splits      │  │  hackerai/Claude vibes      │ │
+│  └──────────┬───────────────┘  └──────────────┬───────────────┘ │
+│             │                                  │                 │
+│             └──────────────┬───────────────────┘                 │
+│                            │ HTTP (localhost:8766)               │
+├────────────────────────────┼────────────────────────────────────┤
 │              FINN PENTEST HARNESS API (FastAPI)                  │
 │                                                                  │
 │  ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐           │
@@ -568,6 +581,315 @@ Built-in themes:
 - **dracula** — purple/pink
 - **nord** — frosty blue
 - **solarized-dark** — warm dark
+
+---
+
+### 3.8 Desktop App — Full UI/UX
+
+The desktop app is built with **Tauri** (Rust backend, web frontend) for native performance with a modern UI. Think hackerai meets Claude Desktop — dark, sleek, premium.
+
+#### 3.8.1 Tech Stack
+| Layer | Technology | Why |
+|-------|-----------|-----|
+| Shell | Tauri 2.x | Native window, system tray, notifications, <20MB binary |
+| Frontend | Svelte 5 + Tailwind | Reactive, fast, small bundle |
+| Editor | Monaco Editor | Full IDE in chat (syntax highlighting, autocomplete) |
+| Terminal | xterm.js | Embedded terminal with full PTY support |
+| Markdown | marked + highlight.js | Finding rendering, code blocks |
+| Charts | Chart.js | Vulnerability stats, engagement dashboards |
+| State | Svelte stores + WebSocket | Real-time sync with backend |
+
+#### 3.8.2 Main Window Layout
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  ● ● ●  Finn Pentest Harness — acme-corp          [─] [□] [×]   │
+├───────────┬──────────────────────────────────────────────────────┤
+│           │                                                      │
+│  SIDEBAR  │  MAIN CONTENT                                       │
+│           │                                                      │
+│  ┌───────┐│  ┌────────────────────────────────────────────────┐ │
+│  │ 🏠    ││  │  HUNT ●  chat ○  code ○  report ○    qwen ▼   │ │
+│  │ Home  ││  ├────────────────────────────────────────────────┤ │
+│  ├───────┤│  │                                                │ │
+│  │ 🎯    ││  │  ┌── AI ──────────────────────────────────┐   │ │
+│  │ acme  ││  │  │                                         │   │ │
+│  │  ▸ sco││  │  │  Based on the nmap results, I recommend │   │ │
+│  │  ▸ fin││  │  │  running nuclei against the web server  │   │ │
+│  │  ▸ not││  │  │  on port 8080.                          │   │ │
+│  │  ▸ cre││  │  │                                         │   │
+│  │  ▸ loo││  │  │  Proposed: nuclei -u http://10.0.1.5:   │   │
+│  ├───────┤│  │  │  8080                                    │   │
+│  │ 🎯    ││  │  │                                         │   │
+│  │ clien││  │  │  [Approve] [Edit] [Reject]               │   │
+│  ├───────┤│  │  └─────────────────────────────────────────┘   │
+│  │ ⚙️    ││  │                                                │
+│  │ Settin││  │  ┌── Terminal ─────────────────────────────┐   │
+│  ├───────┤│  │  │  $ nmap -sV 10.0.1.5                    │   │
+│  │ 📦    ││  │  │  Starting Nmap 7.94...                   │   │
+│  │ Plugin││  │  │  PORT     STATE  SERVICE                 │   │
+│  ├───────┤│  │  │  22/tcp   open   ssh                     │   │
+│  │ 📊    ││  │  │  80/tcp   open   http                    │   │
+│  │ Report││  │  │  8080/tcp open   http-proxy              │   │
+│  └───────┘│  │  │  3306/tcp open   mysql                   │   │
+│           │  │  └─────────────────────────────────────────┘   │
+│           │  └────────────────────────────────────────────────┘ │
+│           │                                                      │
+├───────────┴──────────────────────────────────────────────────────┤
+│  STATUS BAR                                                      │
+│  acme-corp | hunt | qwen2.5-coder | 3 tools running | 12 findings│
+│  [YOLO OFF]  nmap: 45% ████░░░░  nuclei: queued  ffuf: done     │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.8.3 Sidebar Design
+
+```
+┌──────────────┐
+│  🔍 Search   │  Quick search: engagements, findings, commands
+│              │
+│  ─────────── │
+│              │
+│  🏠 Home     │  Dashboard with stats, recent activity
+│              │
+│  ── ENGAGE ──│
+│  🎯 acme-corp│  Active engagement (green dot)
+│    ▸ Scope   │  Collapsible sections
+│    ▸ Findings │  Badge: 12 (3 critical)
+│    ▸ Notes   │
+│    ▸ Creds   │  Badge: 2
+│    ▸ Loot    │
+│  🎯 client-2 │  Inactive (gray dot)
+│              │
+│  ─────────── │
+│  ⚙️ Settings │
+│  📦 Plugins  │
+│  📊 Reports  │
+│  ❓ Help     │
+│              │
+│  ─────────── │
+│  [+] New     │  Create engagement button
+└──────────────┘
+```
+
+#### 3.8.4 Dashboard (Home Screen)
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  DASHBOARD                                                       │
+│                                                                  │
+│  ┌─────────────────────┐ ┌─────────────────────┐ ┌────────────┐ │
+│  │  ACTIVE ENGAGEMENTS  │ │  FINDINGS THIS WEEK │ │  TOOLS RUN │ │
+│  │                     │ │                     │ │            │ │
+│  │        2            │ │       47           │ │    1,247   │ │
+│  │                     │ │                     │ │            │ │
+│  └─────────────────────┘ └─────────────────────┘ └────────────┘ │
+│                                                                  │
+│  ┌─────────────────────────────────────────────────────────────┐ │
+│  │  RECENT ACTIVITY                                            │ │
+│  │                                                             │ │
+│  │  [22:15] 🤖 AI proposed nmap scan on acme-corp              │ │
+│  │  [22:15] ✅ Approved — nmap -sV 10.0.1.5                   │ │
+│  │  [22:16] ✔️ nmap completed (96s) — 4 ports open            │ │
+│  │  [22:20] 🔍 New finding: SQLi on /api/login [CRITICAL]     │ │
+│  │  [22:30] 🤖 AI proposed nuclei scan                         │ │
+│  │  [22:30] ⏳ Pending approval...                              │ │
+│  │                                                             │ │
+│  └─────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ┌──────────────────────────────┐ ┌────────────────────────────┐ │
+│  │  FINDINGS BY SEVERITY        │ │  ENGAGEMENT PROGRESS       │ │
+│  │                              │ │                            │ │
+│  │  Critical  ████████░░  8    │ │  acme-corp  ████████░░ 67% │ │
+│  │  High      ██████░░░░  6    │ │  client-2   ████░░░░░░ 23% │ │
+│  │  Medium    ████░░░░░░  4    │ │                            │ │
+│  │  Low       ██░░░░░░░░  2    │ │                            │ │
+│  │  Info      █░░░░░░░░░  1    │ │                            │ │
+│  └──────────────────────────────┘ └────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.8.5 Chat Pane — Desktop Style
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  HUNT ●  chat ○  code ○  report ○                    qwen2.5 ▼  │
+├──────────────────────────────────────────────────────────────────┤
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  🤖 AI · 22:15:01                                         │ │
+│  │                                                            │ │
+│  │  Starting hunt phase. Current target: 10.0.1.0/24.        │ │
+│  │                                                            │ │
+│  │  **Phase 1: Reconnaissance**                               │ │
+│  │  - Host discovery via nmap ping sweep                      │ │
+│  │  - Port scanning on discovered hosts                       │ │
+│  │  - Service version detection                               │ │
+│  │                                                            │ │
+│  │  ```bash                                                   │ │
+│  │  nmap -sn 10.0.1.0/24                                     │ │
+│  │  ```                                                       │ │
+│  │                                                            │ │
+│  │  ┌────────┐ ┌──────┐ ┌────────┐                           │ │
+│  │  │Approve │ │ Edit │ │ Reject │                           │ │
+│  │  └────────┘ └──────┘ └────────┘                           │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  👤 You · 22:15:05                                        │ │
+│  │  approved                                                  │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  🔧 nmap · 22:15:06 — 22:16:42 (96s)                      │ │
+│  │  ```                                                       │ │
+│  │  Nmap scan report for 10.0.1.5                             │ │
+│  │  PORT     STATE  SERVICE                                   │ │
+│  │  22/tcp   open   ssh                                       │ │
+│  │  80/tcp   open   http                                      │ │
+│  │  8080/tcp open   http-proxy                                │ │
+│  │  3306/tcp open   mysql                                     │ │
+│  │  ```                                                       │ │
+│  │  [📋 Copy] [🔍 Create Finding] [📎 Pin]                    │ │
+│  └────────────────────────────────────────────────────────────┘ │
+│                                                                  │
+│  ┌────────────────────────────────────────────────────────────┐ │
+│  │  Type a message...                          [Shift+Enter]  │ │
+│  │  [@mention plugin] [/command] [#file]                      │ │
+│  └────────────────────────────────────────────────────────────┘ │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.8.6 Desktop-Specific Features
+
+**System Tray**
+```
+┌──────────────┐
+│  Finn 🟢     │  Status indicator (green = running)
+│  ─────────── │
+│  Show Window │
+│  ─────────── │
+│  Engagements │  ▸ acme-corp (active)
+│              │  ▸ client-2 (paused)
+│  ─────────── │
+│  Pause All   │
+│  ─────────── │
+│  Quit        │
+└──────────────┘
+```
+
+**Native Notifications**
+```
+┌─────────────────────────────────────────┐
+│  Finn Pentest Harness                   │
+│                                         │
+│  nmap scan complete — 4 ports open     │
+│  acme-corp · 96s · exit 0              │
+│                                         │
+│  [View Output]  [Dismiss]              │
+└─────────────────────────────────────────┘
+```
+
+**Drag & Drop**
+- Drop scope files (.txt, .csv) onto the window to import
+- Drop Burp/ZAP XML exports to auto-import findings
+- Drop wordlists into the wordlist library
+- Drop plugins (.py files) to install
+
+**Global Shortcuts** (even when app is in background)
+| Shortcut | Action |
+|----------|--------|
+| `Ctrl+Shift+F` | Bring Finn to front |
+| `Ctrl+Shift+Y` | Toggle YOLO globally |
+| `Ctrl+Shift+P` | Quick command palette |
+| `Ctrl+Shift+N` | New engagement |
+
+**Multi-Window Support**
+- Detach terminal into its own window
+- Detach findings into a separate window
+- Detach chat into a floating window
+- Arrange across multiple monitors
+
+**Animations & Polish**
+- Smooth sidebar collapse/expand (200ms ease)
+- Chat bubbles slide in from bottom
+- Tool output streams character by character (typewriter effect, toggleable)
+- Finding severity badges pulse on discovery
+- YOLO mode: subtle red border pulse around window
+- Loading states: skeleton screens, not spinners
+- Transitions between modes: crossfade (150ms)
+
+#### 3.8.7 Desktop Settings Panel
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│  SETTINGS                                          [×]           │
+│                                                                  │
+│  ┌─ General ──────────────────────────────────────────────────┐  │
+│  │  Theme          [abyss ▼]                                 │  │
+│  │  Font           [JetBrains Mono ▼]  Size: [14]            │  │
+│  │  Animations     [✓] Enabled                               │  │
+│  │  Typewriter     [✓] Stream tool output                    │  │
+│  │  Notifications  [✓] Show desktop notifications            │  │
+│  │  Start on boot  [ ] Launch at login                        │  │
+│  │  Minimize to    [System Tray ▼]                           │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ AI ───────────────────────────────────────────────────────┐  │
+│  │  Default Model  [qwen2.5-coder:32b ▼]                     │  │
+│  │  Hunt Model     [qwen2.5-coder:32b ▼]                     │  │
+│  │  Chat Model     [dolphin-mixtral:8x7b ▼]                  │  │
+│  │  Code Model     [deepseek-coder:33b ▼]                    │  │
+│  │  Report Model   [kimi-k3 ▼]                                │  │
+│  │  Temperature    [0.7]  ───●───                            │  │
+│  │  Max Tokens     [4096]                                     │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ YOLO ─────────────────────────────────────────────────────┐  │
+│  │  Default        [OFF ▼]  Per-engagement override           │  │
+│  │  ⚠️ Dangerous    [Always ask ▼]  Even in YOLO mode        │  │
+│  │  Auto-disable   [✓] After engagement ends                  │  │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Sandbox ───────────────────────────────────────────────────┐ │
+│  │  Image          [finn-pentest-sandbox:latest]               │ │
+│  │  Memory Limit   [2048] MB                                  │ │
+│  │  CPU Limit      [50] %                                     │ │
+│  │  Timeout        [300] seconds                              │ │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  ┌─ Obsidian ──────────────────────────────────────────────────┐ │
+│  │  Enabled        [✓]                                        │ │
+│  │  Vault Path     [~/vault/Master/          ] [Browse...]     │ │
+│  │  Findings In    [Pentest/Findings/        ]                 │ │
+│  │  Tag            [pentest]                                   │ │
+│  │  Sync on save   [✓]                                        │ │
+│  └────────────────────────────────────────────────────────────┘  │
+│                                                                  │
+│  [Save]  [Cancel]  [Reset to Defaults]                          │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### 3.8.8 Desktop vs TUI — Feature Parity
+
+| Feature | TUI | Desktop |
+|---------|-----|---------|
+| Chat (4 modes) | ✅ | ✅ |
+| Terminal embed | ✅ (tmux-style) | ✅ (xterm.js) |
+| Command palette | ✅ (Cmd+K) | ✅ (Cmd+K) |
+| Keyboard shortcuts | ✅ Full | ✅ Full |
+| Mouse support | Optional | Primary |
+| Drag & drop | ❌ | ✅ |
+| System tray | ❌ | ✅ |
+| Native notifications | ❌ | ✅ |
+| Multi-window | ❌ (tmux splits) | ✅ |
+| Animations | ❌ | ✅ |
+| Charts & graphs | ASCII only | ✅ (Chart.js) |
+| Syntax highlighting | Terminal colors | ✅ (Monaco) |
+| Image preview | sixel/kitty | ✅ Native |
+| Global shortcuts | ❌ | ✅ |
+| Offline | ✅ | ✅ |
+| Resource usage | <50MB RAM | <150MB RAM |
 
 ---
 
@@ -1510,7 +1832,7 @@ Import Flow:
 - [ ] Response parser (extract commands, findings, code)
 - [ ] Action router (propose tool, save finding, reply)
 
-### Phase 3: TUI
+### Phase 3: TUI (Terminal Interface)
 - [ ] Textual app shell
 - [ ] Three-pane layout
 - [ ] Keyboard shortcuts
@@ -1520,7 +1842,21 @@ Import Flow:
 - [ ] Welcome screen
 - [ ] Engagement dashboard
 
-### Phase 4: Integrations
+### Phase 4: Desktop App (Tauri)
+- [ ] Tauri 2.x shell + Svelte 5 frontend
+- [ ] Sidebar navigation (engagements, settings, plugins)
+- [ ] Chat pane with Monaco Editor
+- [ ] xterm.js terminal embed
+- [ ] Dashboard with Chart.js stats
+- [ ] System tray + native notifications
+- [ ] Drag & drop (scope files, plugins, wordlists)
+- [ ] Multi-window support (detach terminal, findings, chat)
+- [ ] Global shortcuts (Ctrl+Shift+F, Ctrl+Shift+Y)
+- [ ] Settings panel (AI, YOLO, sandbox, Obsidian)
+- [ ] Animations & polish (typewriter, pulse badges, crossfade)
+- [ ] Cross-platform builds (Linux, macOS, Windows)
+
+### Phase 5: Integrations
 - [ ] Obsidian vault sync (push/pull)
 - [ ] Report generation (MD, PDF, HTML, JSON)
 - [ ] Burp Suite XML import
@@ -1628,7 +1964,7 @@ All endpoints require `Authorization: Bearer <PENTEST_API_KEY>` header.
 
 | Feature | hackerai.co | Burp Suite Pro | Metasploit Pro | Finn Pentest Harness |
 |---------|-------------|---------------|----------------|---------------------|
-| Interface | Web | Desktop (Java) | Web/Desktop | Terminal TUI |
+| Interface | Web | Desktop (Java) | Web/Desktop | TUI + Desktop App |
 | AI Assistant | Yes (cloud) | No | No | Yes (local + cloud) |
 | Sandbox | Their cloud | N/A | N/A | Your Docker |
 | Offline | No | Yes | Yes | Yes |

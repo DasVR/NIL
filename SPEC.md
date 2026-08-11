@@ -1,21 +1,45 @@
 # Finn Pentest Harness — Full Specification
 
-> **Terminal-first, AI-driven, open-source pentest workstation**
+> **Dual-interface, AI-driven, open-source pentest workstation**
+> TUI for terminal warriors + Desktop app with hackerai/Claude vibes
 > Built on finn-godmode-api. Sandboxed. Plugin-driven. Obsidian-native.
 
 ---
 
 ## Philosophy
 
-- **Terminal-first TUI** — Textual (Python), not a web app. Keyboard-driven. tmux-style splits.
+- **Dual interface** — Terminal TUI (Textual) + Desktop app (Tauri/Svelte 5). Same backend, same data.
 - **Sandboxed execution** — Docker container per engagement. Isolated network. Auto-install tools.
-- **AI-driven, human-approved** — AI plans and suggests, but YOU approve every tool run.
+- **AI-driven, human-approved** — AI plans and suggests, but YOU approve every tool run. (YOLO mode optional.)
 - **Everything logged** — Every command, output, decision, credential → markdown + encrypted store.
 - **Uncensored models** — Local uncensored LLMs + Ollama Cloud fallback. No safety refusals.
 
 ---
 
-## 1. Core App Shell (TUI)
+## 1. Interfaces
+
+### 1.1 Terminal TUI (Textual)
+- Keyboard-driven, tmux-style splits
+- Three-pane: targets tree | chat + terminal | notes + findings
+- Command palette (Cmd+K)
+- Theme system (8 built-in themes)
+- <50MB RAM
+
+### 1.2 Desktop App (Tauri + Svelte 5)
+- Native window, system tray, notifications
+- Sidebar navigation + main content area
+- Monaco Editor for code, xterm.js for terminal
+- Chart.js dashboards, drag & drop
+- Multi-window, global shortcuts
+- <150MB RAM, <20MB binary
+- Cross-platform: Linux, macOS, Windows
+
+### 1.3 Shared Backend
+Both interfaces talk to the same FastAPI backend (localhost:8766). Same sandboxes, same plugins, same AI. Switch anytime — your engagements follow you.
+
+---
+
+## 2. Core App Shell (TUI)
 
 ### 1.1 Layout
 ```
