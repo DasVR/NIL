@@ -1,181 +1,264 @@
-# Finn Pentest Harness — UI/UX Research
+# Pentest Harness Frontend — Deep Research & Competitive Analysis
 
 > Compiled: August 13, 2026
-> Sources: Apple HIG, Kinetics, Jakub Antalik components, Twitter bookmarks, reference sites, Cursor MCP ecosystem
+> Focus: Desktop app (Tauri + Svelte 5) UI/UX, competitive features, bookmark research
+> Sources: Twitter bookmarks, Apple HIG, Kinetics, Jakub Antalik components, competitive tools
 
 ---
 
-## 1. Reference Sites & Design Patterns
+## 1. Your Bookmarks — Component Library
 
-### PRYZM.DESIGN
-- "Backgrounds nobody else has" — hero-first, tool-as-product positioning
-- Minimal top nav: logo + 3 links + CTA
-- Gradient/glass/grain backgrounds, restrained
-- Card-based presets with hover lift + subtle scale
-- **Takeaway**: Tool/studio framing for pentest features
+### Border Beam (beam.jakubantalik.com)
+- **What**: Animated light traveling along any container border using conic-gradient
+- **Tech**: CSS-only, no JS required for animation. `border-radius: inherit` auto-detects
+- **Use in pentest harness**: Active scan indicators, AI chat message borders, tool output cards, engagement status borders
+- **CSS implementation**: conic-gradient + `animation: border-beam-spin 6s linear infinite`
 
-### BEUI PRO (pro.beui.dev)
-- 144 spring-physics micro-interactions, every component animated live
-- Stiffness/damping readouts as design tokens
-- Copy-paste CSS/React + AI prompts
-- **Takeaway**: Spring tokens as CSS vars. Every button, card, input gets a spring.
+### Thinking Orbs (orbs.jakubantalik.com)
+- **What**: Pulsing animated orbs for "AI is thinking" / processing states
+- **Tech**: CSS animation with `scale(1.2)` + opacity transitions
+- **Use in pentest harness**: AI analysis loading, tool execution in progress, scan running states
+- **CSS**: `@keyframes thinking-pulse { 0%,100% { opacity: 0.3; scale: 0.8 } 50% { opacity: 1; scale: 1.2 } }`
 
-### UNICORN.STUDIO
-- WebGL/no-code shader motion — 75+ effects, 49kb SDK
-- Strong value prop hierarchy
-- **Takeaway**: Optional WebGL/dithered noise canvas for hero
+### Liquid Metal (metal.jakubantalik.com)
+- **What**: WebGL liquid-metal shader effect for buttons/cards
+- **Tech**: Three.js/Raw WebGL with proximity reflection between neighboring elements
+- **Use in pentest harness**: Primary CTA buttons ("Run Scan", "Approve", "YOLO Mode"), active engagement cards
+- **Note**: WebGL — needs graceful fallback for Safari/mobile (CSS border-beam fallback)
 
-### MONOLOG (bymonolog.com)
-- Full-bleed typography, modal-based navigation
-- Awwwards-winning motion, giant type
-- **Takeaway**: Giant-type + modal-overlay for about/settings sections
+### Originkit (originkit.dev)
+- **What**: 250+ free animated components, copy-paste ready
+- **Tech**: React + Framer Motion or pure CSS
+- **Use in pentest harness**: Scroll effects, hover states, page transitions, loading skeletons
+- **Pattern**: `motion.div` with `whileHover`, `whileTap`, `transition={{ type: "spring", stiffness: 400, damping: 17 }}`
 
-### CHRISTOPHER FIORE
-- Ultra-minimal OS interface: 4 buttons, no scroll
-- Each button opens a modal/section
-- **Takeaway**: OS app-feel — dock/launcher + section modals
+### Cuelume (npm)
+- **What**: 2KB library, 10 UI sound effects via Web Audio API
+- **Tech**: One HTML attribute per element — `data-sound="click"`, `data-sound="hover"`
+- **Use in pentest harness**: Button clicks, toggle switches, scan complete chime, approval bell
+- **Note**: Package may not exist on npm yet — verify before building
 
----
-
-## 2. Jakub Antalik Components (from your bookmarks)
-
-| Component | URL | What It Is | Use In Pentest Harness |
-|-----------|-----|-----------|----------------------|
-| **Border Beam** | beam.jakubantalik.com | Animated light traveling along container borders | AI chat boxes, tool output cards, active scan indicators |
-| **Thinking Orbs** | orbs.jakubantalik.com | Pulsing animated orbs for "AI thinking" | Loading states, scan-in-progress indicators |
-| **Liquid Metal** | github.com/Jakubantalik/metal-fx | WebGL liquid-metal shader for buttons/cards | Primary CTAs, YOLO mode toggle, execute buttons |
+### 404 Animations (404.colorion.co)
+- **What**: Pure CSS 404 page animations, no JS
+- **Use in pentest harness**: Error states, tool execution failures, "no findings" empty states
 
 ---
 
-## 3. Apple HIG Motion Principles
+## 2. Competitive Analysis — Features to Match/Exceed
 
-| SwiftUI Concept | Web/Svelte Translation |
-|-----------------|----------------------|
-| `spring(response, dampingRatio)` | CSS `cubic-bezier` or `linear()` easing tokens |
-| `matchedGeometryEffect` | View Transitions API + `view-transition-name` |
-| `NavigationSplitView` | Sidebar + main content layout |
-| `Material.ultraThin` | `backdrop-filter: blur()` + noise overlay |
-| `SF Symbols` | Lucide icons with 2px stroke |
+### HackerAI.co / PentestGPT
 
-**Spring presets**:
-- Snappy: `response:0.3, dampingRatio:0.6` → `cubic-bezier(0.16, 1, 0.3, 1)`
-- Bouncy: `response:0.15, dampingRatio:0.4` → `cubic-bezier(0.34, 1.56, 0.64, 1)`
-- Smooth: `response:0.5, dampingRatio:0.8` → `cubic-bezier(0.25, 0.1, 0.25, 1)`
-
----
-
-## 4. Dithering Strategy
-
-**Layered approach**:
-1. Base: dark abyss `#050507`
-2. Noise overlay: SVG filter `feTurbulence` at 0.04 opacity
-3. Dither mask: WebGL/canvas bayer dither on hero/scan output
-4. Text/elements: subtle dithered shadows/borders using CSS masks
-5. Reduced motion: static noise, no animated dither
-
-**Algorithms**:
-- **Ordered (Bayer)**: Clean grid pattern, predictable — terminal grid feel
-- **Atkinson**: Apple Lisa/Mac classic, less artifacts — Mac classic nod
-- **Floyd-Steinberg**: Organic error diffusion — photo dithering
-
----
-
-## 5. Kinetics Spring Physics (144 presets)
-
-| Effect | Spring Params | Use Case |
-|--------|---------------|----------|
-| Card Resize | `spring(320, 24)` | Critically damped height |
-| Magnetic Button | `magnet(0.35)` | Cursor pull toward target |
-| Number Counter | `spring(280, 18)` | Digit bump/overshoot |
-| Toast Overshoot | `overshoot(1.08)` | Slides past rest |
-| Tab Pill Glide | `glide(0.4s, custom)` | Indicator measures width |
-| Accordion | `spring(260, 28)` | Max-height + chevron |
-| Drag to Dismiss | `friction(0.92)` | Pointer-tracked, threshold |
-| Hold to Confirm | `hold(800ms)` | Ring fills, early cancel — YOLO mode activation |
-| Push Button | `press(60ms)` | Tactile depress, pure CSS |
-
----
-
-## 6. UI Sound Effects
-
-| Tool | What It Is | Use For |
-|------|-----------|---------|
-| **Cuelume** (npm) | 2KB library, 14 interaction sounds, Web Audio API | Button clicks, toggles, hovers, nav, scan complete alerts |
-
----
-
-## 7. Cursor MCP Tools for Development
-
-| Plugin/MCP | What It Does |
-|-----------|-------------|
-| **Shadcn MCP Server** | AI installs components first-shot |
-| **Figma MCP** | Design-to-code pipeline |
-| **GitHub MCP** | PRs, issues, repos from Cursor |
-| **Browser MCP** | Puppeteer/Playwright visual testing |
-| **Sequential Thinking MCP** | Multi-step reasoning for complex tasks |
-| **Context7 MCP** | Up-to-date library docs injected into Cursor |
-
----
-
-## 8. AI Agent Tools (for pentest harness features)
-
-| Tool | What It Is | Use For |
-|------|-----------|---------|
-| **Graft** | Context engine — agents stop relearning codebase | Pentest harness caching layer |
-| **Agent-Reach** | AI reads X/Reddit/YouTube/GitHub — zero API keys | Research automation, CVE monitoring |
-| **Code Review Graph** | Maps codebase so AI only reads what changed | 49% fewer tool calls |
-| **OpenWorker** | Andrew Ng's open-source AI coworker desktop app | Desktop app architecture reference |
-| **OpenNews MCP** | 85+ real-time news sources, AI impact scores | Live CVE/news feeds |
-
----
-
-## 9. Design Tokens for Pentest Harness
-
-```css
-:root {
-  /* Abyss palette */
-  --abyss: #050507;
-  --surface: #0a0a0c;
-  --elevated: #111113;
-  --border: #1a1a1e;
-  --text-primary: #e0e0e0;
-  --text-secondary: #8a8a8e;
-  --text-tertiary: #5a5a5e;
-  --accent: #00d992;
-  --accent-dim: rgba(0, 217, 146, 0.4);
-  --accent-glow: rgba(0, 217, 146, 0.13);
-  --danger: #ff4d4d;
-  --warning: #ffaa33;
-  --success: #33ff88;
-
-  /* Spring easing */
-  --ease-spring-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --ease-spring-snappy: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-spring-smooth: cubic-bezier(0.25, 0.1, 0.25, 1);
-  --ease-spring-heavy: cubic-bezier(0.22, 0.61, 0.36, 1);
-
-  /* Duration */
-  --duration-fast: 150ms;
-  --duration-normal: 250ms;
-  --duration-emphasis: 400ms;
-  --duration-hero: 800ms;
-}
+**Core Architecture**:
+```
+Next.js + Supabase + OpenRouter
+├─ Chat interface (streaming)
+├─ Plugin system (20+ tools)
+│  ├─ nuclei (vuln scanning) — PREMIUM
+│  ├─ subfinder (subdomain enum)
+│  ├─ katana (web crawler) — PREMIUM
+│  ├─ httpx (HTTP prober) — PREMIUM
+│  ├─ sqlmap (SQL injection) — PREMIUM
+│  ├─ gau (URL fetching)
+│  ├─ portscanner — PREMIUM
+│  ├─ sslscanner — PREMIUM
+│  ├─ whois
+│  ├─ alterx (subdomain permutation)
+│  ├─ linkfinder (JS endpoint extraction)
+│  ├─ cvemap (CVE mapping)
+│  └─ ... (20 total)
+├─ Prompt builder with token budgeting
+├─ Plugin-aware context truncation
+├─ Premium gating (paywall on powerful tools)
+└─ Cloud models only (OpenRouter/OpenAI/Anthropic)
 ```
 
+**What They Do Well**:
+- Clean chat interface with markdown rendering
+- Tool execution results fed back into LLM loop
+- Streaming responses
+- Session persistence
+- Plugin architecture (drop in new tools)
+
+**What They Suck At**:
+- No local model support
+- Premium gating on basic tools
+- No terminal integration
+- No desktop app
+- No YOLO mode (always approval-required)
+- Closed source
+- No Obsidian integration
+- No sandbox isolation
+
 ---
 
-## 10. Competitive Analysis — Features to Match/Exceed
+### Claude Code (Anthropic)
 
-| Feature | Claude | HackerAI | Codex | Our Target |
-|---------|--------|----------|-------|------------|
-| AI Chat | ✅ | ✅ | ✅ | ✅ Multi-mode (hunt/chat/code/report) |
-| Terminal Integration | ❌ | ✅ | ✅ | ✅ Full TUI + embedded xterm.js |
-| YOLO/Auto-Execute | ❌ | ❌ | ❌ | ✅ Per-engagement toggle |
-| Plugin System | ❌ | Limited | ❌ | ✅ Drop Python scripts, auto-discover |
-| Local Models | ❌ | ❌ | ❌ | ✅ Any OpenAI-compatible endpoint |
-| Anti-Refusal | Partial | ❌ | ❌ | ✅ Template racing + progressive upgrade |
-| Desktop App | ❌ | ❌ | ❌ | ✅ Tauri native |
-| TUI | ❌ | ✅ | ❌ | ✅ Textual-based |
-| Obsidian Integration | ❌ | ❌ | ❌ | ✅ Native vault sync |
-| Sandbox Execution | ❌ | ❌ | ❌ | ✅ Per-engagement isolation |
-| Multi-Model Router | ❌ | ❌ | ❌ | ✅ Auto-failover, rate limit rotation |
+**Features We Want**:
+- `/edit` — Edit files inline with AI
+- `/terminal` — Execute commands with approval
+- `/web` — Search web for real-time info
+- `/notebook` — Persistent context across sessions
+- Agent loop: plan → execute → analyze → iterate
+- Session-to-session messaging (agents talk to each other)
+
+**Claude-specific**: Anti-refusal prompts, "computer use" tool, artifacts rendering
+
+---
+
+### Codex (OpenAI)
+
+**Features We Want**:
+- `codex` CLI command — works in any repo
+- Sandboxed execution with `--full-auto` flag (YOLO equivalent)
+- `--approval-mode` — ask, auto-edit, full-auto
+- Git-aware: reads `.gitignore`, understands repo structure
+- Shell command execution with human approval
+- File editing with diff view
+
+---
+
+## 3. Pentest Harness — What The Desktop App Needs
+
+### Layout (from DESIGN.md wireframe)
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Finn Pentest Harness                              ─ □ ✕  │
+├──────────┬──────────────────────────────────────────────────┤
+│          │                                                  │
+│  🔍 Cmd+K│  🤖 AI Chat                                      │
+│          │                                                  │
+│  ────────│  ┌────────────────────────────────────────────┐  │
+│          │  │ Scan 10.0.1.0/24 for vulnerabilities        │  │
+│  📁 Eng  │  └────────────────────────────────────────────┘  │
+│    acme  │                                                  │
+│    client│  ┌────────────────────────────────────────────┐  │
+│          │  │ 🤖 Running nmap -sV --script vuln...         │  │
+│  ────────│  │     5 hosts up, 12 ports open               │  │
+│          │  │     Found: SSH (22), HTTP (80), HTTPS (443)  │  │
+│  ⚙️ Tools│  └────────────────────────────────────────────┘  │
+│  📊 Repor│                                                  │
+│  🔑 Creds│  ┌────────────────────────────────────────────┐  │
+│  📝 Notes│  │ 💻 $ nmap output...                          │  │
+│          │  │     [terminal output here]                   │  │
+│          │  └────────────────────────────────────────────┘  │
+│  ────────│                                                  │
+│          │  ┌────────────────────────────────────────────┐  │
+│  🤖 AI   │  │ 🎯 Proposed: nuclei -u http://10.0.1.5      │  │
+│  Models  │  │     [Approve] [Reject] [Edit]                │  │
+│  Settings│  └────────────────────────────────────────────┘  │
+│          │                                                  │
+├──────────┴──────────────────────────────────────────────────┤
+│  [YOLO: 🔴 OFF] | MODE: hunt | MODEL: deepseek-v4-pro     │
+└─────────────────────────────────────────────────────────────┘
+```
+
+### Key UI Patterns Needed
+
+| Pattern | Where Used | Component Source |
+|---------|-----------|----------------|
+| **Border Beam** | Active scan cards, AI message borders, tool output | Jakub Antalik |
+| **Thinking Orbs** | AI processing, tool running | Jakub Antalik |
+| **Liquid Metal** | Primary CTAs, YOLO toggle | Jakub Antalik |
+| **Noise Overlay** | Background texture, scanline effect | CSS feTurbulence |
+| **Spring Physics** | All transitions, hover states | Kinetics/Framer |
+| **Glass Material** | Sidebar, panels, modals | Apple HIG |
+| **Mac OS Dock** | Quick actions, tool launcher | Christopher Fiore |
+| **Chat Bubbles** | AI responses, tool output | HackerAI clone |
+| **Terminal Embed** | Tool output, shell access | xterm.js |
+| **Sound Effects** | Clicks, toggles, scan complete | Cuelume |
+
+---
+
+## 4. Feature Encyclopedia — What "Everything" Means
+
+### Reconnaissance
+- [ ] **Subdomain Enumeration**: subfinder, alterx, amass
+- [ ] **Port Scanning**: nmap, masscan, naabu
+- [ ] **Web Crawling**: katana, gau, hakrawler
+- [ ] **Technology Fingerprinting**: wappalyzer, nuclei -tech-detect
+- [ ] **DNS Enumeration**: dnsx, fierce
+- [ ] **Screenshot Capture**: aquatone, gowitness
+- [ ] **GitHub/GitLab Recon**: githound, trufflehog
+- [ ] **SSL/TLS Analysis**: sslscan, testssl.sh
+- [ ] **WHOIS Lookup**: whois, domaintools
+
+### Vulnerability Scanning
+- [ ] **Web Vulns**: nuclei (templates), sqlmap, dalfox, gf-patterns
+- [ ] **Network Vulns**: nuclei, nmap vuln scripts
+- [ ] **API Testing**: postman/newman, arjun, crudler
+- [ ] **Container Scanning**: trivy, docker-bench
+- [ ] **Cloud Security**: scout-suite, prowler, cloudmapper
+
+### Exploitation
+- [ ] **SQL Injection**: sqlmap (automated)
+- [ ] **XSS**: dalfox, XSStrike
+- [ ] **Command Injection**: commix
+- [ ] **Path Traversal**: dotdotpwn
+- [ ] **File Upload**: fuxploider
+- [ ] **SSRF**: SSRFire
+- [ ] **LFI/RFI**: lfisuite
+- [ ] **JWT Attacks**: jwt_tool
+
+### Post-Exploitation
+- [ ] **Shell Access**: Reverse shell generators
+- [ ] **Privilege Escalation**: linPEAS, winPEAS
+- [ ] **Credential Dumping**: mimikatz (for CTFs), secretsdump
+- [ ] **Lateral Movement**: crackmapexec, bloodhound
+- [ ] **Persistence**: Custom backdoors, scheduled tasks
+
+### Reporting
+- [ ] **Findings Aggregation**: Auto-collect from all tools
+- [ ] **CVSS Scoring**: Auto-calculate severity
+- [ ] **Markdown Reports**: Export to Obsidian
+- [ ] **PDF Reports**: Professional deliverables
+- [ ] **Remediation Guidance**: AI-generated fixes
+- [ ] **Evidence Screenshots**: Auto-capture proof
+
+### AI Integration
+- [ ] **Hunt Mode**: Autonomous recon → scan → analyze → report
+- [ ] **Chat Mode**: Q&A, methodology, explain findings
+- [ ] **Code Mode**: PoC generation, exploit development
+- [ ] **Report Mode**: Structured findings, CVSS, remediation
+- [ ] **Anti-Refusal**: Template racing, progressive upgrade, refusal recovery
+- [ ] **Multi-Model**: Auto-failover, rate limit rotation, BYOM
+- [ ] **Context Builder**: Engagement memory, tool output history, vault notes
+
+---
+
+## 5. Sound Design Strategy
+
+### When to Use Audio
+| Event | Sound | Library |
+|-------|-------|---------|
+| Button click | Subtle click (60ms) | Cuelume |
+| Toggle switch | Soft snap | Cuelume |
+| Scan start | Whoosh | Custom |
+| Scan complete | Success chime | Custom |
+| Finding discovered | Alert ping | Custom |
+| YOLO mode ON | Warning tone | Custom |
+| Tool approval needed | Bell | Custom |
+| Error/failure | Soft thud | Cuelume |
+| Hover over card | Micro-pop | Cuelume |
+| Nav transition | Slide swoosh | Custom |
+
+---
+
+## 6. Questions for You
+
+Before I build the full frontend, I need clarity on:
+
+1. **Scope**: Are we building the full desktop app (Tauri + Svelte 5) or a web-based version first?
+2. **Liquid Metal**: Do you want the WebGL liquid metal effect? It looks amazing but needs Three.js and may hurt mobile/Safari performance.
+3. **Cuelume**: The npm package doesn't seem to exist yet. Do you want me to find an alternative UI sound library or build our own?
+4. **Tool Execution**: Should the frontend execute tools directly (via Tauri backend → shell) or communicate with the existing Python backend via API?
+5. **Pages**: The DESIGN.md shows a sidebar + chat layout. Do you also want separate pages (like the portfolio's `/work`, `/lab`, etc.) or is everything in the single desktop window?
+6. **First Build**: What should I build first? Options:
+   - A) Sidebar layout with chat + basic navigation
+   - B) Tool execution panel with approve/reject flow
+   - C) Settings panel for model selection, YOLO toggle, themes
+   - D) Full page with all sections scaffolded
+
+---
+
+**Repo**: `https://github.com/DasVR/finn-pentest-harness` (branch `godmode-api`)
+**Status**: RESEARCH.md pushed, 4 Svelte components built (Dock, Window, BorderBeam, ThinkingOrbs)
