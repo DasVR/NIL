@@ -6,6 +6,7 @@ dist/
 build/
 .venv/
 venv/
+.pytest_cache/
 
 # Environment
 .env
@@ -27,3 +28,12 @@ Thumbs.db
 
 # Docker
 *.tar
+
+# Node / Svelte
+node_modules/
+web/.svelte-kit/
+web/build/
+web/.vite/
+
+# Tauri
+desktop/src-tauri/target/

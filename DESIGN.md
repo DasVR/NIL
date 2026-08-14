@@ -5,7 +5,7 @@
 > Built on finn-godmode-api. Sandboxed. Plugin-driven. Obsidian-native.
 > Aggressive. Uncensored. YOLO-capable.
 > 
-> **Status**: Phase 1 complete (backend scaffold) | **Next**: Phase 2 (AI integration)
+> **Status**: Phase 1–2 implemented | Website + desktop + TUI shipped | Jailbreak/anti-refusal layers out of scope
 
 ---
 
@@ -40,7 +40,6 @@ Finn Pentest Harness is a **dual-interface pentest workstation** that puts an AI
 Both interfaces share the same backend. Same sandboxes. Same plugins. Same AI. Switch between them anytime — your engagements, findings, and history follow you.
 
 ### What This Is NOT
-- **Not a web app** — no browser, no Electron. Native desktop + native terminal.
 - **Not a SaaS** — your data never leaves your machine unless you choose cloud models.
 - **Not an automated hacker** — AI proposes, YOU approve. Every. Single. Command. (Unless YOLO mode is on.)
 - **Not a scolding assistant** — Zero moralizing. Zero "I can't help with that." We're here to work, not lecture.
@@ -1428,6 +1427,6 @@ All tests must pass before release.
 
 ---
 
-*Last updated: 2026-08-11*
-*Status: Phase 1 complete → Phase 2 (AI Integration) starting*
-*Next: Multi-provider router implementation + anti-refusal prompt system*
+*Last updated: 2026-08-13*
+*Status: Phase 1–2 implemented; website + desktop + TUI shipped*
+*Jailbreak / anti-refusal recovery is out of scope*
