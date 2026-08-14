@@ -13,6 +13,17 @@ fn show_main(app: &AppHandle) {
     }
 }
 
+fn focus_shortcut() -> Shortcut {
+    #[cfg(target_os = "macos")]
+    {
+        Shortcut::new(Some(Modifiers::SUPER | Modifiers::SHIFT), Code::KeyF)
+    }
+    #[cfg(not(target_os = "macos"))]
+    {
+        Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyF)
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     // Register plugins in Rust only. Do not add a `plugins` object to
@@ -21,10 +32,13 @@ pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
+            #[cfg(target_os = "macos")]
+            app.set_activation_policy(tauri::ActivationPolicy::Regular);
+
             let show = MenuItem::with_id(app, "show", "Show Finn", true, None::<&str>)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
             let menu = Menu::with_items(app, &[&show, &quit])?;
-            let _tray = TrayIconBuilder::new()
+            if let Err(err) = TrayIconBuilder::new()
                 .menu(&menu)
                 .show_menu_on_left_click(true)
                 .on_menu_event(|app, event| match event.id.as_ref() {
@@ -32,14 +46,23 @@ pub fn run() {
                     "quit" => app.exit(0),
                     _ => {}
                 })
-                .build(app)?;
+                .build(app)
+            {
+                eprintln!("Finn: tray icon not created ({err})");
+            }
 
-            let shortcut = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::SHIFT), Code::KeyF);
-            app.global_shortcut().on_shortcut(shortcut, |app, _sc, event| {
-                if event.state == ShortcutState::Pressed {
-                    show_main(app);
-                }
-            })?;
+            // macOS rejects global shortcuts without Accessibility permission
+            // (GitHub-hosted runners do not grant it). Do not fail launch.
+            if let Err(err) = app.global_shortcut().on_shortcut(
+                focus_shortcut(),
+                |app, _sc, event| {
+                    if event.state == ShortcutState::Pressed {
+                        show_main(app);
+                    }
+                },
+            ) {
+                eprintln!("Finn: global shortcut not registered ({err})");
+            }
             Ok(())
         })
         .run(tauri::generate_context!())

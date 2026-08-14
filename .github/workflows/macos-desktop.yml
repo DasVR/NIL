@@ -1,0 +1,65 @@
+name: macOS desktop
+
+on:
+  push:
+    branches: [master, cursor/**]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: macos-desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package-and-launch:
+    name: Package .app and launch
+    runs-on: macos-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install JS dependencies
+        run: |
+          npm ci --prefix web
+          npm ci --prefix desktop
+
+      - name: Package macOS app and DMG
+        working-directory: desktop
+        env:
+          CI: true
+          APPLE_SIGNING_IDENTITY: "-"
+        run: npm run tauri -- build --bundles app,dmg
+
+      - name: Launch smoke test
+        run: bash desktop/scripts/macos-launch-smoke.sh
+
+      - name: Upload macOS packages
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finn-macos-${{ github.sha }}
+          path: |
+            desktop/src-tauri/target/release/bundle/macos/*.app
+            desktop/src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: warn
+          retention-days: 14

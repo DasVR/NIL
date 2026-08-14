@@ -19,10 +19,16 @@ npm run dev       # http://127.0.0.1:5173
     <h2>Desktop app</h2>
     <p>
       Tauri 2 wraps the same Svelte UI. From <code>desktop/</code> run
-      <code>npm run tauri dev</code> (requires Rust). Native binaries will land here after
+      <code>npm run tauri dev</code> (requires Rust). Native binaries land in
+      <code>desktop/src-tauri/target/release/bundle/</code> after
       <code>npm run tauri build</code>.
     </p>
-    <p>Until then, the browser app at <a href="/app">/app</a> is the full workstation.</p>
+    <p>
+      macOS 12+: <code>npm run tauri build -- --bundles app,dmg</code> produces
+      <code>Finn Pentest Harness.app</code> and a DMG. CI on GitHub builds those
+      artifacts and smoke-tests that the app process stays up after launch.
+    </p>
+    <p>Until a signed release is published, the browser app at <a href="/app">/app</a> is the full workstation.</p>
   </section>
 </main>
 
