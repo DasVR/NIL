@@ -30,7 +30,7 @@ cd ../desktop && npm install
 npm run tauri dev    # requires Rust + Tauri system deps
 ```
 
-The desktop app wraps the same Svelte UI, launches into `/app`, and adds a tray icon plus `Ctrl+Shift+F` to focus. Linux builds need GTK/WebKit (`libgtk-3-dev`, `libwebkit2gtk-4.1-dev`) and Rust 1.85+. Windows needs WebView2 (bundled with Edge).
+The desktop app wraps the same Svelte UI, launches into `/app`, and adds a tray icon plus `Ctrl+Shift+F` (macOS: `Cmd+Shift+F`) to focus. Linux builds need GTK/WebKit (`libgtk-3-dev`, `libwebkit2gtk-4.1-dev`) and Rust 1.85+. Windows needs WebView2 (bundled with Edge). macOS 12+ uses the system WebKit; GitHub Actions packages a `.app` and `.dmg` and smoke-tests that the binary stays up after launch.
 
 If `npm run tauri dev` panics with `PluginInitialization("notification", "... invalid type: map, expected unit")`, open `desktop/src-tauri/tauri.conf.json` and delete the entire `"plugins"` object. Do not leave `"notification": {}` or `"global-shortcut": {}` in that file — Tauri 2 treats those empty objects as invalid. Plugins are registered in `desktop/src-tauri/src/lib.rs`. Then rerun `npm run tauri dev`.
 

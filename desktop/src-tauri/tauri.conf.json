@@ -12,10 +12,14 @@
   "app": {
     "windows": [
       {
+        "label": "main",
         "title": "Finn Pentest Harness",
         "width": 1280,
         "height": 800,
-        "resizable": true
+        "resizable": true,
+        "visible": true,
+        "focus": true,
+        "url": "app.html"
       }
     ],
     "security": {
@@ -25,17 +29,39 @@
       "id": "main",
       "iconPath": "icons/icon.png",
       "iconAsTemplate": true
-    }
+    },
+    "macOSPrivateApi": false
   },
   "bundle": {
     "active": true,
     "targets": "all",
+    "category": "DeveloperTool",
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
-    ]
+    ],
+    "macOS": {
+      "minimumSystemVersion": "12.0",
+      "signingIdentity": "-",
+      "entitlements": "Entitlements.plist",
+      "exceptionDomain": "127.0.0.1",
+      "dmg": {
+        "appPosition": {
+          "x": 180,
+          "y": 170
+        },
+        "applicationFolderPosition": {
+          "x": 480,
+          "y": 170
+        },
+        "windowSize": {
+          "width": 660,
+          "height": 400
+        }
+      }
+    }
   }
 }
