@@ -15,8 +15,10 @@ fn show_main(app: &AppHandle) {
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Register plugins in Rust only. Do not add a `plugins` object to
+    // tauri.conf.json — `"notification": {}` / `"global-shortcut": {}` panic with
+    // `invalid type: map, expected unit`.
     tauri::Builder::default()
-        .plugin(tauri_plugin_notification::init())
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .setup(|app| {
             let show = MenuItem::with_id(app, "show", "Show Finn", true, None::<&str>)?;
