@@ -3,10 +3,12 @@
 Wraps `web/` and talks to the FastAPI backend on `http://127.0.0.1:8766`.
 
 ```bash
-cd web && npm install && npm run build
-cd ../desktop && npm install
+cd desktop
+npm run setup        # npm install for web/ and desktop/
 npm run tauri dev
 ```
+
+On Windows, if you see `'vite' is not recognized`, the web frontend deps are missing. Run `npm run setup` from `desktop/` (or `npm install` in `web/`) once, then `npm run tauri dev` again.
 
 ## macOS
 

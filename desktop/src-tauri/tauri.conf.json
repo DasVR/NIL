@@ -6,8 +6,14 @@
   "build": {
     "frontendDist": "../../web/build",
     "devUrl": "http://127.0.0.1:5173",
-    "beforeDevCommand": "npm --prefix ../web run dev",
-    "beforeBuildCommand": "npm --prefix ../web run build"
+    "beforeDevCommand": {
+      "script": "npm run dev",
+      "cwd": "../web"
+    },
+    "beforeBuildCommand": {
+      "script": "npm run build",
+      "cwd": "../web"
+    }
   },
   "app": {
     "windows": [

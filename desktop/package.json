@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "tauri": "tauri",
+    "setup": "npm --prefix ../web install && npm install",
     "dev": "tauri dev",
     "build": "tauri build"
   },
