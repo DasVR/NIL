@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "npx vite dev --host 127.0.0.1 --port 5173",
-    "build": "npx vite build",
+    "build": "npx vite build && node ./scripts/alias-app-index.mjs",
     "preview": "npx vite preview"
   },
   "devDependencies": {
