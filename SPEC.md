@@ -432,6 +432,6 @@ Like Pentest Copilot, we can use existing authenticated CLI tools as inference p
 
 ---
 
-*Last updated: 2026-08-11*
-*Status: Phase 1 complete → Phase 2 (AI Integration) starting*
-*Next: Multi-provider router + anti-refusal prompt system*
+*Last updated: 2026-08-13*
+*Status: Phase 1–2 implemented; website + desktop + TUI shipped. Anti-refusal jailbreak layers are out of scope.*
+*Next: PDF/DOCX reports, Kali image option, plugin marketplace*

@@ -1,0 +1,51 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "finn-pentest"
+version = "0.2.0"
+description = "Dual-interface AI-driven pentest workstation"
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.111.0",
+    "uvicorn[standard]>=0.30.0",
+    "httpx>=0.27.0",
+    "pydantic>=2.8.0",
+    "python-dotenv>=1.0.0",
+    "slowapi>=0.1.9",
+    "docker>=7.0.0",
+    "cryptography>=42.0.0",
+    "textual>=0.80.0",
+    "rich>=13.0.0",
+    "typer>=0.12.0",
+    "pyyaml>=6.0.0",
+    "python-multipart>=0.0.9",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8.0.0",
+    "pytest-asyncio>=0.23.0",
+]
+
+[project.scripts]
+finn = "finn_pentest.cli.main:app"
+finn-api = "finn_pentest.cli.main:run_api"
+finn-tui = "finn_pentest.cli.main:run_tui"
+
+[tool.setuptools.packages.find]
+include = ["finn_pentest*"]
+
+[tool.setuptools.package-data]
+finn_pentest = ["sandbox/Dockerfile.sandbox", "sandbox/Dockerfile.sandbox.kali"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
