@@ -8,11 +8,11 @@
     "devUrl": "http://127.0.0.1:5173",
     "beforeDevCommand": {
       "script": "npm run dev",
-      "cwd": "../web"
+      "cwd": "../../web"
     },
     "beforeBuildCommand": {
       "script": "npm run build",
-      "cwd": "../web"
+      "cwd": "../../web"
     }
   },
   "app": {
