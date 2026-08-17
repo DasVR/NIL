@@ -1,0 +1,259 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: "Release tag (e.g. v0.2.1)"
+        required: true
+        type: string
+
+concurrency:
+  group: release-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
+env:
+  RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
+jobs:
+  build-macos:
+    name: macOS (.app + .dmg)
+    runs-on: macos-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install JS dependencies
+        run: |
+          npm ci --prefix web
+          npm ci --prefix desktop
+
+      - name: Build macOS packages
+        working-directory: desktop
+        env:
+          CI: true
+          APPLE_SIGNING_IDENTITY: "-"
+        run: npm run tauri -- build --bundles app,dmg
+
+      - name: Launch smoke test
+        run: bash desktop/scripts/macos-launch-smoke.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finn-macos-release
+          path: |
+            desktop/src-tauri/target/release/bundle/macos/*.app
+            desktop/src-tauri/target/release/bundle/dmg/*.dmg
+          if-no-files-found: error
+          retention-days: 7
+
+  build-windows:
+    name: Windows (.exe + .msi)
+    runs-on: windows-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install JS dependencies
+        run: |
+          npm ci --prefix web
+          npm ci --prefix desktop
+        shell: bash
+
+      - name: Build Windows packages
+        working-directory: desktop
+        env:
+          CI: true
+        run: npm run tauri -- build --bundles nsis,msi
+        shell: bash
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finn-windows-release
+          path: |
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: error
+          retention-days: 7
+
+  build-linux:
+    name: Linux (AppImage + .deb)
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install JS dependencies
+        run: |
+          npm ci --prefix web
+          npm ci --prefix desktop
+
+      - name: Build Linux packages
+        working-directory: desktop
+        env:
+          CI: true
+        run: |
+          for i in 1 2 3; do
+            echo "Build attempt $i..."
+            if npm run tauri -- build --bundles appimage,deb; then
+              echo "Build succeeded on attempt $i"
+              break
+            fi
+            echo "Build attempt $i failed; waiting 60s before retry..."
+            sleep 60
+          done
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finn-linux-release
+          path: |
+            desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            desktop/src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: error
+          retention-days: 7
+
+  publish:
+    name: Publish GitHub Release
+    needs: [build-macos, build-windows, build-linux]
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: release-assets
+          merge-multiple: true
+
+      - name: Prepare release files
+        run: |
+          mkdir -p dist
+          find release-assets -type f -name '*.dmg' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-macOS.dmg" || true
+          find release-assets -type f -name '*.exe' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64-setup.exe" || true
+          find release-assets -type f -name '*.msi' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64.msi" || true
+          find release-assets -type f -name '*.AppImage' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Linux-x86_64.AppImage" || true
+          find release-assets -type f -name '*.deb' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Linux-x86_64.deb" || true
+          chmod +x dist/*.AppImage 2>/dev/null || true
+          ls -lah dist/
+          test "$(ls -1 dist | wc -l)" -gt 0
+
+      - name: Write release notes
+        run: |
+          TAG="${RELEASE_TAG}"
+          PREV=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | grep -v "^${TAG}$" | head -1 || true)
+          {
+            echo "# Finn Pentest Harness ${TAG}"
+            echo ""
+            echo "> Dual-interface, AI-driven pentest workstation — terminal TUI, native desktop, and browser UI on one FastAPI backend."
+            echo ""
+            echo "## Download"
+            echo ""
+            echo "| Platform | File | Notes |"
+            echo "| --- | --- | --- |"
+            echo "| **macOS 12+** | \`Finn-Pentest-Harness-${TAG}-macOS.dmg\` | Drag to Applications. Start \`finn api\` first. |"
+            echo "| **Windows 10+** | \`Finn-Pentest-Harness-${TAG}-Windows-x64-setup.exe\` | Requires WebView2 (Edge). |"
+            echo "| **Linux** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.AppImage\` | \`chmod +x\` then run. |"
+            echo "| **Linux (deb)** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.deb\` | Debian/Ubuntu package. |"
+            echo ""
+            echo "## Quick start"
+            echo ""
+            echo "1. Install Python 3.11+ and run the backend:"
+            echo '   ```bash'
+            echo "   pip install -e ."
+            echo "   finn api"
+            echo '   ```'
+            echo "2. Open the desktop app or browser UI at \`http://127.0.0.1:5173/app\`."
+            echo "3. Put model keys in \`.env\` (\`OLLAMA_API_KEY\`, \`DEEPSEEK_API_KEY\`, etc.)."
+            echo ""
+            echo "## Changes since ${PREV:-initial release}"
+            echo ""
+            if [ -n "$PREV" ]; then
+              git log "${PREV}..HEAD" --pretty=format:'- %s (`%h`)' --no-merges || true
+            else
+              git log -15 --pretty=format:'- %s (`%h`)' --no-merges || true
+            fi
+            echo ""
+            echo ""
+            echo "---"
+            echo "*Use only against systems you are authorized to test.*"
+          } > release-notes.md
+          cat release-notes.md
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ env.RELEASE_TAG }}
+          name: Finn Pentest Harness ${{ env.RELEASE_TAG }}
+          body_path: release-notes.md
+          draft: false
+          prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
+          generate_release_notes: true
+          files: dist/*
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

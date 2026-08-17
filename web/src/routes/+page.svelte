@@ -34,7 +34,8 @@ YOLO enabled — auto-run still sandboxed, still logged`;
     </a>
     <div class="nav-links">
       <a href="/docs">Read the Docs</a>
-      <a href="https://github.com" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+      <a href="/download">Releases</a>
+      <a href="https://github.com/DasVR/finn-pentest-harness" target="_blank" rel="noopener noreferrer">View on GitHub</a>
       <button class="primary nav-cta" type="button" onclick={() => goto('/app')}>Open Workstation</button>
     </div>
   </nav>
@@ -54,7 +55,8 @@ YOLO enabled — auto-run still sandboxed, still logged`;
       <div class="cta-row">
         <button class="primary" type="button" onclick={() => goto('/app')}>Open Workstation</button>
         <a class="btn secondary" href="/docs">Read the Docs</a>
-        <a class="btn ghost" href="https://github.com" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+        <a class="btn ghost" href="/download">Download releases</a>
+        <a class="btn ghost" href="https://github.com/DasVR/finn-pentest-harness" target="_blank" rel="noopener noreferrer">View on GitHub</a>
       </div>
     </div>
   </section>
@@ -109,7 +111,7 @@ YOLO enabled — auto-run still sandboxed, still logged`;
   <footer class="landing-footer">
     <span>Finn Pentest Harness v0.3.0</span>
     <div class="footer-links">
-      <a href="/download">Download desktop build</a>
+      <a href="/download">Releases & downloads</a>
       <a href="/docs">Documentation</a>
     </div>
   </footer>

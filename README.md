@@ -65,6 +65,17 @@ python3 -m pytest tests -q
 
 Sandbox tests that need Docker are skipped when the daemon is missing. Tool execution always targets the engagement container, never the host.
 
+## Releases
+
+Tagged builds publish automatically to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases) (macOS `.dmg`, Windows `.exe`, Linux `.AppImage` / `.deb`):
+
+```bash
+git tag v0.2.1
+git push origin v0.2.1
+```
+
+The **Release** workflow builds all three platforms and uploads installers. The site `/download` page pulls the latest release from the GitHub API.
+
 ## Safety
 
 - Approval gate is on by default
