@@ -34,8 +34,7 @@
       }
     ],
     "security": {
-      "csp": null,
-      "dangerousUseHttpScheme": true
+      "csp": null
     },
     "trayIcon": {
       "id": "main",
@@ -62,20 +61,6 @@
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
-      },
-      "wix": {
-        "language": "en-US",
-        "upgradeCode": "C9F6B4A1-2E8D-4B5F-9C3A-1D7E8F6A2B0C",
-        "installDir": "$LOCALAPPDATA\\Programs\\Finn",
-        "perMachine": false,
-        "fragmentPaths": []
-      },
-      "nsis": {
-        "installMode": "perUser",
-        "installDir": "$LOCALAPPDATA\\Programs\\Finn",
-        "oneClick": false,
-        "perMachine": false,
-        "allowElevation": false
       }
     },
     "macOS": {
