@@ -1,0 +1,65 @@
+name: Windows desktop
+
+on:
+  push:
+    branches: [master, cursor/**]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: windows-desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Package Windows installer
+    runs-on: windows-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: x86_64-pc-windows-msvc
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install JS dependencies
+        run: |
+          npm ci --prefix web
+          npm ci --prefix desktop
+        shell: bash
+
+      - name: Build Windows installer
+        working-directory: desktop
+        env:
+          CI: true
+        run: npm run tauri -- build --bundles nsis,msi
+        shell: bash
+
+      - name: Upload Windows packages
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finn-windows-${{ github.sha }}
+          path: |
+            desktop/src-tauri/target/release/bundle/nsis/*.exe
+            desktop/src-tauri/target/release/bundle/msi/*.msi
+          if-no-files-found: warn
+          retention-days: 14

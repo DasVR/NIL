@@ -1,0 +1,75 @@
+name: Linux desktop
+
+on:
+  push:
+    branches: [master, cursor/**]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: linux-desktop-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  package:
+    name: Package Linux AppImage + deb
+    runs-on: ubuntu-latest
+    timeout-minutes: 50
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            web/package-lock.json
+            desktop/package-lock.json
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install Linux system deps
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y \
+            libwebkit2gtk-4.1-dev \
+            build-essential \
+            curl \
+            wget \
+            file \
+            libxdo-dev \
+            libssl-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev
+
+      - name: Cache Rust
+        uses: swatinem/rust-cache@v2
+        with:
+          workspaces: desktop/src-tauri
+
+      - name: Install JS dependencies
+        run: |
+          npm ci --prefix web
+          npm ci --prefix desktop
+
+      - name: Build Linux packages
+        working-directory: desktop
+        env:
+          CI: true
+        run: npm run tauri -- build --bundles appimage,deb
+
+      - name: Upload Linux packages
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: finn-linux-${{ github.sha }}
+          path: |
+            desktop/src-tauri/target/release/bundle/appimage/*.AppImage
+            desktop/src-tauri/target/release/bundle/deb/*.deb
+          if-no-files-found: warn
+          retention-days: 14
