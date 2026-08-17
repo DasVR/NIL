@@ -96,7 +96,29 @@ export interface PentestChatResponse {
 }
 
 export async function pentestChat(body: PentestChatRequest): Promise<PentestChatResponse> {
-  return apiPost('/v1/pentest/chat', body);
+  const result = await apiPost('/v1/chat', {
+    engagement: body.engagement,
+    message: body.message,
+    mode: body.mode || 'chat',
+    hunt: body.mode === 'hunt',
+    session_id: null
+  });
+  return {
+    text: result.text || '',
+    model: result.model || 'unknown',
+    is_refusal: false,
+    score: 0,
+    score_breakdown: {
+      total: 0,
+      quality: 0,
+      filteredness: 0,
+      speed: 0,
+      length_contribution: 0
+    },
+    commands: result.commands || [],
+    escalation_level: 0,
+    response_time_ms: 0
+  };
 }
 
 // ──────────────────────────────────────────────
@@ -116,45 +138,27 @@ export function streamPentestChat(
   onError: (err: Error) => void
 ): () => void {
   const abort = new AbortController();
-  
-  fetch(url('/v1/pentest/chat/stream'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-    signal: abort.signal,
-  }).then(async (res) => {
-    if (!res.ok) {
-      const data = await res.json().catch(() => ({}));
-      throw new Error(data.detail || res.statusText);
-    }
-    
-    const reader = res.body?.getReader();
-    if (!reader) throw new Error('No response body');
-    
-    const decoder = new TextDecoder();
-    let buffer = '';
-    
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-      
-      buffer += decoder.decode(value, { stream: true });
-      const lines = buffer.split('\n');
-      buffer = lines.pop() ?? '';
-      
-      for (const line of lines) {
-        if (line.startsWith('data: ')) {
-          try {
-            const chunk: StreamChunk = JSON.parse(line.slice(6));
-            onChunk(chunk);
-          } catch {
-            // ignore malformed SSE
-          }
-        }
+
+  (async () => {
+    try {
+      const result = await apiPost('/v1/chat', {
+        engagement: body.engagement,
+        message: body.message,
+        mode: body.mode || 'chat',
+        hunt: body.mode === 'hunt',
+        session_id: null
+      });
+      if (abort.signal.aborted) return;
+      const text = result.text || '';
+      if (text) onChunk({ type: 'text', content: text });
+      onChunk({ type: 'done' });
+    } catch (err) {
+      if (!abort.signal.aborted) {
+        onError(err instanceof Error ? err : new Error(String(err)));
       }
     }
-  }).catch(onError);
-  
+  })();
+
   return () => abort.abort();
 }
 
