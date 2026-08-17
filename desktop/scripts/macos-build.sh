@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
+# macos-build.sh — Build the Finn macOS app and DMG with ad-hoc signing.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 DESKTOP="${ROOT}/desktop"
 BUILD_DIR="${DESKTOP}/src-tauri/target/release/bundle"
 
-# Default to app + DMG; override with FINN_BUNDLE_BUILDS=dmg,app,tar.gz
 BUNDLES="${FINN_BUNDLE_BUILDS:-app,dmg}"
 
 echo "==> Finn macOS build"
@@ -14,12 +14,12 @@ echo "    bundles: ${BUNDLES}"
 echo "    signing: ad-hoc (signingIdentity: -)"
 
 cd "${DESKTOP}"
-npm ci
+npm run setup
 
-# Tauri 2 requires the build to be run from the src-tauri directory on macOS
-cd "${DESKTOP}/src-tauri"
+# Ensure cargo-tauri is available.
 cargo install tauri-cli --version "^2.0" --locked 2>/dev/null || true
 
+cd "${DESKTOP}/src-tauri"
 cargo tauri build --bundles "${BUNDLES}"
 
 APP="$(find "${BUILD_DIR}/macos" -maxdepth 1 -name '*.app' -print | head -n 1 || true)"
@@ -28,8 +28,8 @@ if [[ -z "${APP}" ]]; then
   exit 1
 fi
 
-echo "==> Re-signing app bundle"
-xattr -cr "${APP}"
+echo "==> Re-signing app bundle ad-hoc"
+xattr -cr "${APP}" || true
 codesign --force --deep --sign - "${APP}"
 
 echo "==> Verifying"
@@ -42,6 +42,5 @@ echo "DMG:   $(find "${BUILD_DIR}/dmg" -maxdepth 1 -name '*.dmg' -print | head -
 echo ""
 echo "To test locally:"
 echo "  open \"${APP}\""
-echo ""
 echo "Or run the smoke test:"
 echo "  desktop/scripts/macos-launch-smoke.sh"

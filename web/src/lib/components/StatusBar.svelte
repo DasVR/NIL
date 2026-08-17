@@ -2,14 +2,20 @@
   import { appState } from '$lib/stores.svelte';
 </script>
 
-<footer>
-  <button class:on={appState.yolo} onclick={() => appState.toggleYolo()}>
+<footer aria-label="Status bar">
+  <button class="yolo-badge" class:on={appState.yolo} onclick={() => appState.toggleYolo()} aria-pressed={appState.yolo}>
     YOLO: {appState.yolo ? 'ON' : 'OFF'}
   </button>
-  <span>MODE: {appState.mode}</span>
-  <span>ENG: {appState.engagement}</span>
-  <span>MODEL: {appState.model}</span>
-  <span class:ok={appState.connected}>{appState.connected ? 'API up' : 'API down'}</span>
+  <span class="sep">|</span>
+  <span class="mode">MODE: {appState.mode.toUpperCase()}</span>
+  <span class="sep">|</span>
+  <span class="eng">ENG: {appState.engagement}</span>
+  <span class="sep">|</span>
+  <span class="model">{appState.model}</span>
+  <span class="sep">|</span>
+  <span class:ok={appState.connected} class="status">
+    {appState.connected ? 'API up' : 'API down'}
+  </span>
 </footer>
 
 <style>
@@ -17,27 +23,35 @@
     grid-column: 2;
     grid-row: 2;
     display: flex;
-    gap: 1rem;
+    gap: 0.6rem;
     align-items: center;
-    padding: 0.4rem 0.8rem;
-    border-top: 1px solid #1c1c28;
-    font-family: "JetBrains Mono", monospace;
-    font-size: 0.75rem;
-    background: #08080c;
+    padding: 0.35rem 0.8rem;
+    border-top: 1px solid var(--glass-border);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    background: var(--abyss-1);
+    color: var(--text-secondary);
+    user-select: none;
   }
-  button {
-    border-color: var(--muted);
-    color: var(--muted);
-    padding: 0.15rem 0.5rem;
-    font-size: 0.75rem;
+  .yolo-badge {
+    border: 1px solid var(--text-tertiary);
+    color: var(--text-tertiary);
+    padding: 0.1rem 0.45rem;
+    font-size: 0.7rem;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    transition: border-color 200ms, color 200ms;
   }
-  button.on {
+  .yolo-badge.on {
     border-color: var(--danger);
     color: var(--danger);
     animation: pulse 1.4s ease-in-out infinite;
   }
+  .sep { color: var(--text-tertiary); opacity: 0.5; }
   .ok { color: var(--accent); }
+  .status { min-width: 60px; }
   @keyframes pulse {
-    50% { opacity: 0.55; }
+    50% { opacity: 0.45; }
   }
 </style>

@@ -1,338 +1,309 @@
-<script lang="ts">
+<script>
   import { getProviders, type ProviderInfo } from '$lib/api';
   import { appState } from '$lib/stores.svelte';
 
-  // Props
-  export let open = $state(false);
-
-  // Local state
+  let open = $state(false);
   let providers = $state<ProviderInfo[]>([]);
-  let selectedModel = $state(appState.model);
   let loading = $state(false);
+  let search = $state('');
+
+  const categories = [
+    { id: 'appearance', label: 'Appearance' },
+    { id: 'typography', label: 'Typography' },
+    { id: 'motion', label: 'Motion' },
+    { id: 'terminal', label: 'Terminal' },
+    { id: 'chat', label: 'Chat' },
+    { id: 'accessibility', label: 'Accessibility' },
+    { id: 'keyboard', label: 'Keyboard' }
+  ];
+
+  let activeTab = $state('appearance');
 
   async function loadProviders() {
     loading = true;
     try {
-      const res = await getProviders();
-      providers = res.resolved || [];
-    } catch (err) {
-      console.error('Failed to load providers:', err);
+      const data = await getProviders();
+      providers = data.resolved || [];
+    } catch (e) {
+      console.error(e);
     } finally {
       loading = false;
     }
   }
 
-  function selectModel(name: string, model: string) {
-    selectedModel = `${name}/${model}`;
-    appState.model = selectedModel;
+  function set(key, value) {
+    localStorage.setItem(`finn.settings.${key}`, JSON.stringify(value));
+    document.documentElement.style.setProperty(`--${key}`, value);
   }
 
-  function close() {
-    open = false;
+  function get(key, fallback) {
+    try {
+      return JSON.parse(localStorage.getItem(`finn.settings.${key}`) || 'null') ?? fallback;
+    } catch {
+      return fallback;
+    }
   }
+
+  function resetDefaults() {
+    if (!confirm('Reset all settings to defaults?')) return;
+    Object.keys(localStorage).forEach(k => {
+      if (k.startsWith('finn.settings.')) localStorage.removeItem(k);
+    });
+    location.reload();
+  }
+
+  const controls = {
+    appearance: [
+      { key: 'glassBlur', label: 'Glass blur (px)', type: 'range', min: 0, max: 40, step: 1, fallback: 24 },
+      { key: 'scanlines', label: 'Scanlines overlay', type: 'toggle', fallback: false },
+      { key: 'noise', label: 'Noise overlay', type: 'toggle', fallback: false },
+      { key: 'accentHue', label: 'Accent hue shift', type: 'range', min: 0, max: 360, step: 10, fallback: 0 }
+    ],
+    typography: [
+      { key: 'uiFontSize', label: 'UI font size (px)', type: 'range', min: 12, max: 16, step: 1, fallback: 13 },
+      { key: 'monoFontSize', label: 'Mono font size (px)', type: 'range', min: 11, max: 15, step: 1, fallback: 13 }
+    ],
+    motion: [
+      { key: 'animations', label: 'Enable animations', type: 'toggle', fallback: true },
+      { key: 'springIntensity', label: 'Spring intensity (%)', type: 'range', min: 0, max: 100, step: 5, fallback: 100 }
+    ],
+    terminal: [
+      { key: 'termFontSize', label: 'Terminal font size (px)', type: 'range', min: 10, max: 18, step: 1, fallback: 13 },
+      { key: 'termCursorBlink', label: 'Cursor blink', type: 'toggle', fallback: true },
+      { key: 'termScrollback', label: 'Scrollback lines', type: 'range', min: 1000, max: 10000, step: 1000, fallback: 5000 }
+    ],
+    chat: [
+      { key: 'copyBtnVisible', label: 'Always show copy button', type: 'toggle', fallback: false },
+      { key: 'stickToBottom', label: 'Auto-scroll to bottom', type: 'toggle', fallback: true }
+    ],
+    accessibility: [
+      { key: 'highContrast', label: 'High contrast override', type: 'toggle', fallback: false },
+      { key: 'reduceMotion', label: 'Reduce motion', type: 'toggle', fallback: false },
+      { key: 'focusRingWidth', label: 'Focus ring width (px)', type: 'range', min: 1, max: 4, step: 1, fallback: 2 }
+    ],
+    keyboard: [
+      { key: 'shortcuts', label: 'Shortcuts reference', type: 'info', value: 'Cmd/Ctrl+K palette, Cmd/Ctrl+B sidebar, Cmd/Ctrl+J new chat, Cmd/Ctrl+N engagement, Cmd/Ctrl+, settings, Cmd/Ctrl+Y YOLO, Esc close modal' }
+    ]
+  };
 
   $effect(() => {
     if (open) loadProviders();
   });
+
+  $effect(() => {
+    document.documentElement.classList.toggle('high-contrast', get('highContrast', false));
+    document.documentElement.classList.toggle('scanlines', get('scanlines', false));
+    if (get('reduceMotion', false)) {
+      document.documentElement.classList.add('prefers-reduced-motion');
+    }
+  });
+
+  function filteredControls() {
+    const list = controls[activeTab] || [];
+    if (!search.trim()) return list;
+    return list.filter(c => c.label.toLowerCase().includes(search.toLowerCase()));
+  }
 </script>
 
 {#if open}
-<div class="settings-overlay" onclick={close}>
-  <div class="settings-panel" onclick={(e) => e.stopPropagation()}>
-    <div class="settings-header">
-      <h2>⚙️ Settings</h2>
-      <button class="close-btn" onclick={close}>✕</button>
-    </div>
-
-    <div class="settings-body">
-      <!-- Mode Selection -->
-      <div class="section">
-        <h3>🎯 Mode</h3>
-        <div class="mode-grid">
-          {#each ['hunt', 'chat', 'code', 'report'] as mode}
-            <button
-              class="mode-btn {appState.mode === mode ? 'active' : ''}"
-              onclick={() => appState.mode = mode as typeof appState.mode}
-            >
-              {mode.toUpperCase()}
-            </button>
-          {/each}
-        </div>
-      </div>
-
-      <!-- Model Selection -->
-      <div class="section">
-        <h3>🧠 Model</h3>
-        {#if loading}
-          <div class="loading">Loading providers...␤</div>
-        {:else}
-          <div class="provider-list">
-            {#each providers as provider}
+<div class="overlay" onclick={() => (open = false)} role="presentation">
+  <div class="settings-panel" onclick={(e) => e.stopPropagation()} role="dialog" aria-modal="true" aria-labelledby="settings-title">
+    <header>
+      <h1 id="settings-title">Settings</h1>
+      <input class="search" type="search" placeholder="Filter settings…" bind:value={search} aria-label="Filter settings" />
+      <button class="close" onclick={() => (open = false)} aria-label="Close settings">✕</button>
+    </header>
+    <div class="body">
+      <nav class="tabs" role="tablist">
+        {#each categories as cat}
+          <button
+            role="tab"
+            aria-selected={activeTab === cat.id}
+            onclick={() => (activeTab = cat.id)}
+          >{cat.label}</button>
+        {/each}
+      </nav>
+      <div class="content" role="tabpanel">
+        {#each filteredControls() as ctrl}
+          <div class="control-row">
+            <label>{ctrl.label}</label>
+            {#if ctrl.type === 'toggle'}
               <button
-                class="provider-btn {selectedModel === `${provider.name}/${provider.model}` ? 'active' : ''}"
-                onclick={() => selectModel(provider.name, provider.model)}
+                class="toggle"
+                class:on={get(ctrl.key, ctrl.fallback)}
+                onclick={() => set(ctrl.key, !get(ctrl.key, ctrl.fallback))}
+                aria-pressed={get(ctrl.key, ctrl.fallback)}
               >
-                <span class="provider-name">{provider.display_name}</span>
-                <span class="provider-meta">
-                  {#if provider.supports_streaming}<span class="badge">stream</span>{/if}
-                  {#if !provider.enabled}<span class="badge disabled">offline</span>{/if}
-                </span>
+                <span class="thumb"></span>
               </button>
-            {/each}
-            <button
-              class="provider-btn {selectedModel === 'auto' ? 'active' : ''}"
-              onclick={() => selectModel('auto', '')}
-            >
-              <span class="provider-name">🎲 Auto (Best Available)</span>
-            </button>
+            {:else if ctrl.type === 'range'}
+              <input
+                type="range"
+                min={ctrl.min}
+                max={ctrl.max}
+                step={ctrl.step}
+                value={get(ctrl.key, ctrl.fallback)}
+                oninput={(e) => set(ctrl.key, Number(e.target.value))}
+                aria-valuemin={ctrl.min}
+                aria-valuemax={ctrl.max}
+                aria-valuenow={get(ctrl.key, ctrl.fallback)}
+              />
+              <span class="value">{get(ctrl.key, ctrl.fallback)}</span>
+            {:else if ctrl.type === 'info'}
+              <p class="hint">{ctrl.value}</p>
+            {/if}
           </div>
-        {/if}
-      </div>
-
-      <!-- YOLO Toggle -->
-      <div class="section">
-        <h3>🔥 Safety</h3>
-        <div class="toggle-row">
-          <span class="toggle-label">YOLO Mode</span>
-          <button
-            class="toggle {appState.yolo ? 'on' : 'off'}"
-            onclick={() => appState.toggleYolo()}
-          >
-            {appState.yolo ? 'ON' : 'OFF'}
-          </button>
-        </div>
-        <p class="hint">
-          {#if appState.yolo}
-            ⚠️ Commands execute immediately. Use with caution.
-          {:else}
-            ✅ All commands require manual approval before execution.
-          {/if}
-        </p>
-      </div>
-
-      <!-- Visual Effects -->
-      <div class="section">
-        <h3>👁️ Visual Effects</h3>
-        <div class="toggle-row">
-          <span class="toggle-label">Scanlines</span>
-          <button
-            class="toggle {appState.scanlines ? 'on' : 'off'}"
-            onclick={() => appState.scanlines = !appState.scanlines}
-          >
-            {appState.scanlines ? 'ON' : 'OFF'}
-          </button>
-        </div>
-        <div class="toggle-row">
-          <span class="toggle-label">Noise Overlay</span>
-          <button
-            class="toggle {appState.paletteOpen ? 'on' : 'off'}"
-            onclick={() => appState.paletteOpen = !appState.paletteOpen}
-          >
-            {appState.paletteOpen ? 'ON' : 'OFF'}
-          </button>
-        </div>
+        {:else}
+          <div class="empty">No matching settings.</div>
+        {/each}
       </div>
     </div>
+    <footer>
+      <button class="danger" onclick={resetDefaults}>Reset to defaults</button>
+    </footer>
   </div>
 </div>
 {/if}
 
 <style>
-  .settings-overlay {
+  .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.7);
-    backdrop-filter: blur(8px);
+    background: rgba(0,0,0,0.55);
+    display: grid;
+    place-items: center;
+    z-index: 60;
+    animation: finn-fade-in 200ms var(--spring-panel) both;
+  }
+  .settings-panel {
+    width: min(720px, 92vw);
+    max-height: min(80vh, 640px);
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(32px) saturate(1.2);
+    -webkit-backdrop-filter: blur(32px) saturate(1.2);
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-panel);
+    display: flex;
+    flex-direction: column;
+    padding: 0;
+    overflow: hidden;
+  }
+  header {
     display: flex;
     align-items: center;
-    justify-content: center;
-    z-index: 1000;
-    animation: fadeIn 0.2s ease;
+    gap: 0.75rem;
+    padding: 0.8rem 1rem;
+    border-bottom: 1px solid var(--glass-border);
   }
+  h1 {
+    font-size: 1rem;
+    margin: 0;
+    font-weight: 600;
+  }
+  .search {
+    flex: 1;
+    min-width: 0;
+  }
+  .close {
+    width: 32px;
+    height: 32px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+  }
+  .body {
+    display: grid;
+    grid-template-columns: 160px 1fr;
+    flex: 1;
+    overflow: hidden;
+  }
+  .tabs {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+    padding: 0.5rem;
+    border-right: 1px solid var(--glass-border);
+    overflow-y: auto;
+  }
+  .tabs button {
+    text-align: left;
+    border: none;
+    background: transparent;
+    color: var(--text-secondary);
+    font-size: 13px;
+    padding: 0.5rem 0.7rem;
+    border-radius: var(--radius-control);
+    cursor: pointer;
+    transition: background 180ms var(--spring-control), color 120ms var(--spring-control);
+  }
+  .tabs button[aria-selected="true"] {
+    background: var(--accent-12);
+    color: var(--text-primary);
+    box-shadow: inset 2px 0 0 var(--accent);
+  }
+  .content {
+    padding: 0.75rem 1rem;
+    overflow-y: auto;
+  }
+  .control-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid var(--glass-border);
+    gap: 1rem;
+    min-height: 44px;
+  }
+  .control-row label {
+    font-size: 13px;
+    color: var(--text-primary);
+  }
+  .hint { font-size: 12px; color: var(--text-tertiary); margin: 0; }
+  .value { font-family: var(--font-mono); font-size: 12px; color: var(--accent); min-width: 28px; text-align: right; }
+  .toggle {
+    width: 44px;
+    height: 24px;
+    border-radius: 12px;
+    border: 1px solid var(--glass-border);
+    background: var(--abyss-1);
+    position: relative;
+    cursor: pointer;
+    padding: 0;
+    transition: background 150ms var(--spring-control);
+  }
+  .toggle.on {
+    background: var(--accent);
+  }
+  .thumb {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #fff;
+    transition: transform 200ms var(--spring-control);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+  }
+  .toggle.on .thumb {
+    transform: translateX(20px);
+  }
+  footer {
+    padding: 0.6rem 1rem;
+    border-top: 1px solid var(--glass-border);
+    display: flex;
+    justify-content: flex-end;
+  }
+  .empty { color: var(--text-tertiary); font-size: 13px; padding: 1rem 0; }
 
-  @keyframes fadeIn {
+  @keyframes finn-fade-in {
     from { opacity: 0; }
     to { opacity: 1; }
   }
 
-  .settings-panel {
-    background: #0a0a0c;
-    border: 1px solid rgba(0, 217, 146, 0.2);
-    border-radius: 16px;
-    width: 90%;
-    max-width: 480px;
-    max-height: 80vh;
-    overflow-y: auto;
-    box-shadow: 0 20px 60px rgba(0,0,0,0.8);
-    animation: slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1);
-  }
-
-  @keyframes slideUp {
-    from { transform: translateY(20px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  .settings-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 1rem 1.25rem;
-    border-bottom: 1px solid rgba(0, 217, 146, 0.1);
-  }
-
-  .settings-header h2 {
-    margin: 0;
-    font-size: 16px;
-    color: #00d992;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  .close-btn {
-    background: none;
-    border: none;
-    color: #888;
-    cursor: pointer;
-    font-size: 18px;
-    padding: 4px;
-    transition: color 0.2s;
-  }
-  .close-btn:hover { color: #00d992; }
-
-  .settings-body {
-    padding: 1rem 1.25rem;
-    display: flex;
-    flex-direction: column;
-    gap: 1.5rem;
-  }
-
-  .section h3 {
-    margin: 0 0 0.75rem 0;
-    font-size: 12px;
-    color: #888;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  .mode-grid {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    gap: 0.5rem;
-  }
-
-  .mode-btn {
-    background: rgba(0, 217, 146, 0.05);
-    border: 1px solid rgba(0, 217, 146, 0.15);
-    color: #888;
-    padding: 0.5rem;
-    border-radius: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    transition: all 0.2s;
-  }
-  .mode-btn:hover {
-    border-color: rgba(0, 217, 146, 0.3);
-    color: #ccc;
-  }
-  .mode-btn.active {
-    background: rgba(0, 217, 146, 0.15);
-    border-color: rgba(0, 217, 146, 0.4);
-    color: #00d992;
-  }
-
-  .provider-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.5rem;
-  }
-
-  .provider-btn {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    background: rgba(0, 217, 146, 0.03);
-    border: 1px solid rgba(0, 217, 146, 0.1);
-    color: #ccc;
-    padding: 0.625rem 0.75rem;
-    border-radius: 8px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 12px;
-    cursor: pointer;
-    transition: all 0.2s;
-    text-align: left;
-  }
-  .provider-btn:hover {
-    border-color: rgba(0, 217, 146, 0.25);
-    background: rgba(0, 217, 146, 0.06);
-  }
-  .provider-btn.active {
-    border-color: rgba(0, 217, 146, 0.4);
-    background: rgba(0, 217, 146, 0.1);
-    color: #00d992;
-  }
-
-  .provider-name { flex: 1; }
-  .provider-meta { display: flex; gap: 0.25rem; }
-
-  .badge {
-    font-size: 9px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    background: rgba(0, 217, 146, 0.1);
-    color: #00d992;
-  }
-  .badge.disabled {
-    background: rgba(255, 107, 107, 0.1);
-    color: #ff6b6b;
-  }
-
-  .toggle-row {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0.5rem 0;
-  }
-
-  .toggle-label {
-    font-size: 13px;
-    color: #ccc;
-    font-family: 'JetBrains Mono', monospace;
-  }
-
-  .toggle {
-    padding: 0.375rem 0.75rem;
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    border: 1px solid;
-    transition: all 0.2s;
-    min-width: 60px;
-  }
-  .toggle.on {
-    background: rgba(0, 217, 146, 0.15);
-    border-color: rgba(0, 217, 146, 0.4);
-    color: #00d992;
-  }
-  .toggle.off {
-    background: rgba(255, 255, 255, 0.03);
-    border-color: rgba(255, 255, 255, 0.1);
-    color: #666;
-  }
-
-  .hint {
-    margin: 0.5rem 0 0 0;
-    font-size: 11px;
-    color: #666;
-    line-height: 1.5;
-  }
-
-  .loading {
-    color: #666;
-    font-size: 13px;
-    font-family: 'JetBrains Mono', monospace;
-    padding: 1rem;
-    text-align: center;
+  @media (max-width: 640px) {
+    .body { grid-template-columns: 1fr; }
+    .tabs { flex-direction: row; overflow-x: auto; border-right: none; border-bottom: 1px solid var(--glass-border); }
   }
 </style>

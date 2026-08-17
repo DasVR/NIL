@@ -194,7 +194,7 @@
   bind:this={canvas}
   class="dither-overlay"
   style="width: 100%; height: 100%; display: block; opacity: {intensity > 0 ? 1 : 0};"
-/>
+></canvas>
 
 <style>
   .dither-overlay {

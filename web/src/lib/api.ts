@@ -221,6 +221,14 @@ export async function detectRefusal(text: string): Promise<{
   return apiPost('/v1/refusal/detect', { text });
 }
 
+export async function approve(run_id: string, edited_command?: string) {
+  return apiPost('/v1/tools/approve', { run_id, edited_command: edited_command || null });
+}
+
+export async function reject(run_id: string, reason?: string) {
+  return apiPost('/v1/tools/reject', { run_id, reason: reason || 'rejected from UI' });
+}
+
 // ──────────────────────────────────────────────
 // Legacy endpoints (kept for compatibility)
 // ──────────────────────────────────────────────

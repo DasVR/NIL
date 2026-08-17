@@ -1,13 +1,12 @@
-<script lang="ts">
+<script>
   import { appState } from '$lib/stores.svelte';
   import { approve, reject } from '$lib/api';
 
-  // Local state
-  let expandedRunId = $state<string | null>(null);
+  let expandedRunId = $state(null);
   let editedCommand = $state('');
-  let actionLoading = $state<string | null>(null);
+  let actionLoading = $state(null);
 
-  async function handleApprove(runId: string) {
+  async function handleApprove(runId) {
     actionLoading = runId;
     try {
       await approve(runId, editedCommand || undefined);
@@ -20,19 +19,18 @@
     }
   }
 
-  async function handleReject(runId: string) {
+  async function handleReject(runId) {
     actionLoading = runId;
     try {
       await reject(runId);
-    } catch (err) {
-      console.error('Reject failed:', err);
     } finally {
       actionLoading = null;
       expandedRunId = null;
+      editedCommand = '';
     }
   }
 
-  function toggleExpand(runId: string, command: string) {
+  function toggleExpand(runId, command) {
     if (expandedRunId === runId) {
       expandedRunId = null;
       editedCommand = '';
@@ -42,13 +40,13 @@
     }
   }
 
-  function getSafetyColor(level?: string): string {
+  function safetyColor(level) {
     switch (level?.toLowerCase()) {
-      case 'critical': return '#ff3333';
+      case 'critical': return 'var(--danger)';
       case 'high': return '#ff6b6b';
-      case 'medium': return '#ffaa00';
-      case 'low': return '#00d992';
-      default: return '#888';
+      case 'medium': return 'var(--warning)';
+      case 'low': return 'var(--accent)';
+      default: return 'var(--text-tertiary)';
     }
   }
 </script>
@@ -73,11 +71,11 @@
     <div class="pending-list">
       {#each appState.pending as run}
         <div class="run-card">
-          <div class="run-header" onclick={() => toggleExpand(run.run_id, run.command)}>
+          <div class="run-header" role="button" tabindex="0" aria-expanded={expandedRunId === run.run_id} onclick={() => toggleExpand(run.run_id, run.command)} onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggleExpand(run.run_id, run.command); }}}>
             <div class="run-info">
               <span class="tool-name">{run.tool}</span>
               {#if run.safety_level}
-                <span class="safety-badge" style="color: {getSafetyColor(run.safety_level)}; border-color: {getSafetyColor(run.safety_level)}">
+                <span class="safety-badge" style="color: {safetyColor(run.safety_level)}; border-color: {safetyColor(run.safety_level)}">
                   {run.safety_level.toUpperCase()}
                 </span>
               {/if}
@@ -87,42 +85,25 @@
                 class="action-btn approve"
                 onclick={(e) => { e.stopPropagation(); handleApprove(run.run_id); }}
                 disabled={actionLoading === run.run_id}
-              >
-                {actionLoading === run.run_id ? '...' : '✓'}
-              </button>
+                aria-label="Approve"
+              >{actionLoading === run.run_id ? '...' : '✓'}</button>
               <button
                 class="action-btn reject"
                 onclick={(e) => { e.stopPropagation(); handleReject(run.run_id); }}
                 disabled={actionLoading === run.run_id}
-              >
-                {actionLoading === run.run_id ? '...' : '✕'}
-              </button>
+                aria-label="Reject"
+              >{actionLoading === run.run_id ? '...' : '✕'}</button>
             </div>
           </div>
 
           {#if expandedRunId === run.run_id}
             <div class="run-details">
-              <div class="detail-row">
-                <span class="detail-label">Command:</span>
-              </div>
-              <textarea
-                bind:value={editedCommand}
-                rows={3}
-                class="command-editor"
-              ></textarea>
+              <textarea bind:value={editedCommand} rows={3} class="command-editor" aria-label="Edit command"></textarea>
               <div class="detail-actions">
-                <button
-                  class="btn btn-approve"
-                  onclick={() => handleApprove(run.run_id)}
-                  disabled={actionLoading === run.run_id}
-                >
-                  ✓ Approve &amp; Execute
+                <button class="primary" onclick={() => handleApprove(run.run_id)} disabled={actionLoading === run.run_id}>
+                  ✓ Approve & Execute
                 </button>
-                <button
-                  class="btn btn-reject"
-                  onclick={() => handleReject(run.run_id)}
-                  disabled={actionLoading === run.run_id}
-                >
+                <button class="danger" onclick={() => handleReject(run.run_id)} disabled={actionLoading === run.run_id}>
                   ✕ Reject
                 </button>
               </div>
@@ -140,53 +121,47 @@
 
 <style>
   .tool-panel {
-    background: rgba(5, 5, 7, 0.8);
-    border: 1px solid rgba(0, 217, 146, 0.1);
-    border-radius: 12px;
+    background: var(--glass);
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-panel);
     overflow: hidden;
     display: flex;
     flex-direction: column;
-    max-height: 400px;
+    max-height: 420px;
   }
-
   .panel-header {
     display: flex;
     align-items: center;
     gap: 0.5rem;
-    padding: 0.75rem 1rem;
-    border-bottom: 1px solid rgba(0, 217, 146, 0.1);
-    font-family: 'JetBrains Mono', monospace;
+    padding: 0.7rem 1rem;
+    border-bottom: 1px solid var(--glass-border);
+    font-family: var(--font-mono);
     font-size: 13px;
-    color: #00d992;
+    color: var(--accent);
   }
-
   .title { flex: 1; }
-
   .badge-count {
-    background: rgba(255, 107, 107, 0.2);
-    color: #ff6b6b;
+    background: var(--danger-20);
+    color: var(--danger);
     font-size: 10px;
     padding: 1px 6px;
     border-radius: 10px;
-    border: 1px solid rgba(255, 107, 107, 0.3);
+    border: 1px solid rgba(255, 69, 58, 0.3);
   }
-
   .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 0.5rem;
+    gap: 0.4rem;
     padding: 2rem;
-    color: #666;
-    font-family: 'JetBrains Mono', monospace;
+    color: var(--text-tertiary);
+    font-family: var(--font-mono);
     font-size: 12px;
     text-align: center;
   }
-
   .empty-icon { font-size: 24px; }
-  .empty-text { color: #888; }
-  .empty-hint { font-size: 10px; color: #555; }
-
+  .empty-text { color: var(--text-secondary); }
+  .empty-hint { font-size: 10px; }
   .pending-list {
     overflow-y: auto;
     padding: 0.5rem;
@@ -194,162 +169,76 @@
     flex-direction: column;
     gap: 0.5rem;
   }
-
   .run-card {
-    background: rgba(0, 217, 146, 0.03);
+    background: var(--accent-8);
     border: 1px solid rgba(0, 217, 146, 0.1);
-    border-radius: 8px;
+    border-radius: var(--radius-control);
     overflow: hidden;
     transition: border-color 0.2s;
   }
-  .run-card:hover {
-    border-color: rgba(0, 217, 146, 0.2);
-  }
-
+  .run-card:hover { border-color: rgba(0, 217, 146, 0.25); }
   .run-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.625rem 0.75rem;
+    padding: 0.55rem 0.7rem;
     cursor: pointer;
     user-select: none;
   }
-
-  .run-info {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    flex: 1;
-  }
-
+  .run-info { display: flex; align-items: center; gap: 0.45rem; flex: 1; }
   .tool-name {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 12px;
-    color: #ccc;
+    color: var(--text-secondary);
   }
-
   .safety-badge {
     font-size: 9px;
     padding: 1px 4px;
     border-radius: 3px;
     border: 1px solid;
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
   }
-
-  .run-actions {
-    display: flex;
-    gap: 0.25rem;
-  }
-
+  .run-actions { display: flex; gap: 0.25rem; }
   .action-btn {
     width: 28px;
     height: 28px;
-    border-radius: 6px;
+    border-radius: 5px;
     border: 1px solid;
-    background: none;
+    background: transparent;
     cursor: pointer;
     font-size: 14px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    transition: all 0.2s;
+    display: grid;
+    place-items: center;
+    transition: background 0.15s;
   }
-  .action-btn.approve {
-    border-color: rgba(0, 217, 146, 0.3);
-    color: #00d992;
-  }
-  .action-btn.approve:hover:not(:disabled) {
-    background: rgba(0, 217, 146, 0.15);
-  }
-  .action-btn.reject {
-    border-color: rgba(255, 107, 107, 0.3);
-    color: #ff6b6b;
-  }
-  .action-btn.reject:hover:not(:disabled) {
-    background: rgba(255, 107, 107, 0.15);
-  }
-  .action-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-  .run-preview {
-    padding: 0 0.75rem 0.625rem 0.75rem;
-  }
-
+  .action-btn.approve { border-color: rgba(0, 217, 146, 0.3); color: var(--accent); }
+  .action-btn.approve:hover:not(:disabled) { background: rgba(0, 217, 146, 0.15); }
+  .action-btn.reject { border-color: rgba(255, 69, 58, 0.3); color: var(--danger); }
+  .action-btn.reject:hover:not(:disabled) { background: rgba(255, 69, 58, 0.15); }
+  .action-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+  .run-preview { padding: 0 0.7rem 0.55rem; }
   .run-preview code {
-    font-family: 'JetBrains Mono', monospace;
+    font-family: var(--font-mono);
     font-size: 11px;
-    color: #888;
-    background: rgba(0, 0, 0, 0.3);
-    padding: 0.375rem 0.5rem;
+    color: var(--text-tertiary);
+    background: var(--abyss-1);
+    padding: 0.35rem 0.5rem;
     border-radius: 4px;
     display: block;
     overflow-x: auto;
     white-space: nowrap;
   }
-
   .run-details {
-    padding: 0.75rem;
+    padding: 0.7rem;
     border-top: 1px solid rgba(0, 217, 146, 0.08);
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
   }
-
-  .detail-label {
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 10px;
-    color: #666;
-    text-transform: uppercase;
-    letter-spacing: 0.05em;
-  }
-
   .command-editor {
-    background: rgba(0, 0, 0, 0.4);
-    border: 1px solid rgba(0, 217, 146, 0.2);
-    border-radius: 6px;
-    color: #00d992;
-    font-family: 'JetBrains Mono', monospace;
+    width: 100%;
+    font-family: var(--font-mono);
     font-size: 12px;
-    padding: 0.5rem;
-    resize: vertical;
-    min-height: 60px;
   }
-  .command-editor:focus {
-    outline: none;
-    border-color: rgba(0, 217, 146, 0.4);
-  }
-
-  .detail-actions {
-    display: flex;
-    gap: 0.5rem;
-  }
-
-  .btn {
-    flex: 1;
-    padding: 0.5rem;
-    border-radius: 6px;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 11px;
-    cursor: pointer;
-    border: 1px solid;
-    transition: all 0.2s;
-  }
-  .btn:disabled { opacity: 0.3; cursor: not-allowed; }
-
-  .btn-approve {
-    background: rgba(0, 217, 146, 0.1);
-    border-color: rgba(0, 217, 146, 0.3);
-    color: #00d992;
-  }
-  .btn-approve:hover:not(:disabled) {
-    background: rgba(0, 217, 146, 0.2);
-  }
-
-  .btn-reject {
-    background: rgba(255, 107, 107, 0.1);
-    border-color: rgba(255, 107, 107, 0.3);
-    color: #ff6b6b;
-  }
-  .btn-reject:hover:not(:disabled) {
-    background: rgba(255, 107, 107, 0.2);
-  }
+  .detail-actions { display: flex; gap: 0.5rem; }
 </style>
