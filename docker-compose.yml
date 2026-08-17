@@ -1,0 +1,75 @@
+version: "3.8"
+
+services:
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.backend
+    container_name: finn-pentest-backend
+    environment:
+      - FINN_API_HOST=0.0.0.0
+      - FINN_API_PORT=8766
+      - FINN_PENTEST_MASTER_KEY=${FINN_PENTEST_MASTER_KEY:-finn-pentest-dev-key-change-me}
+      - CORS_ORIGIN=*
+      - FINN_SANDBOX_IMAGE=finn-pentest-sandbox:latest
+      - FINN_PENTEST_DIR=/data
+      - PENTEST_API_KEY=${PENTEST_API_KEY}
+      - GODMODE_API_KEY=${GODMODE_API_KEY}
+      - OLLAMA_CLOUD_API_KEY=${OLLAMA_CLOUD_API_KEY}
+      - DEEPSEEK_API_KEY=${DEEPSEEK_API_KEY}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - XAI_API_KEY=${XAI_API_KEY}
+      - GOOGLE_API_KEY=${GOOGLE_API_KEY}
+      - MISTRAL_API_KEY=${MISTRAL_API_KEY}
+      - COHERE_API_KEY=${COHERE_API_KEY}
+    volumes:
+      - finn-data:/data
+      - /var/run/docker.sock:/var/run/docker.sock
+      - ./finn_pentest/sandbox:/app/finn_pentest/sandbox:ro
+    ports:
+      - "8766:8766"
+    restart: unless-stopped
+    networks:
+      - finn-network
+
+  web:
+    build:
+      context: ./web
+      dockerfile: Dockerfile
+    container_name: finn-pentest-web
+    ports:
+      - "5173:5173"
+    restart: unless-stopped
+    networks:
+      - finn-network
+
+  sandbox-builder:
+    build:
+      context: .
+      dockerfile: finn_pentest/sandbox/Dockerfile.sandbox
+    container_name: finn-pentest-sandbox-builder
+    command: sleep infinity
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - finn-network
+
+  sandbox-kali-builder:
+    build:
+      context: .
+      dockerfile: finn_pentest/sandbox/Dockerfile.sandbox.kali
+    container_name: finn-pentest-sandbox-kali-builder
+    command: sleep infinity
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - finn-network
+
+volumes:
+  finn-data:
+    driver: local
+
+networks:
+  finn-network:
+    driver: bridge
