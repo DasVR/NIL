@@ -53,6 +53,7 @@ class AppState {
   busy = $state(false);
   sessionId = $state('');
   paletteOpen = $state(false);
+  settingsOpen = $state(false);
   scanlines = $state(false);
 
   async ping() {

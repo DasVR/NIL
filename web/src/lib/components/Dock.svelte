@@ -1,383 +1,204 @@
-<script lang="ts">
-  import { onMount } from 'svelte';
+<script>
+  import { page } from '$app/stores';
+  import { goto } from '$app/navigation';
+  import { Motion } from 'svelte-motion';
+  import { appState } from '$lib/stores.svelte';
 
-  interface DockItem {
-    id: string;
-    icon: string;
-    label: string;
-    active?: boolean;
-    badge?: number;
-    onClick?: () => void;
-  }
-
-  export let items: DockItem[] = [
-    { id: 'finder', icon: '📁', label: 'Finder' },
-    { id: 'terminal', icon: '💻', label: 'Terminal', active: true },
-    { id: 'browser', icon: '🌐', label: 'Browser' },
-    { id: 'chat', icon: '💬', label: 'Chat', badge: 3 },
-    { id: 'settings', icon: '⚙️', label: 'Settings' },
-    { id: 'trash', icon: '🗑️', label: 'Trash' },
+  const items = [
+    { id: 'chat', href: '/app', label: 'Chat', icon: 'chat' },
+    { id: 'findings', href: '/app/findings', label: 'Findings', icon: 'findings' },
+    { id: 'notes', href: '/app/notes', label: 'Notes', icon: 'notes' },
+    { id: 'tools', href: '/app/tools', label: 'Tools', icon: 'tools' },
+    { id: 'creds', href: '/app/creds', label: 'Creds', icon: 'creds' },
+    { id: 'reports', href: '/app/reports', label: 'Reports', icon: 'reports' },
+    { id: 'loot', href: '/app/loot', label: 'Loot', icon: 'loot' },
+    { id: 'settings', href: '/app/settings', label: 'Settings', icon: 'settings' }
   ];
 
-  export let position: 'bottom' | 'left' | 'right' = 'bottom';
-  export let magnification: number = 2.0;  // max scale on hover
-  export let springStiffness: number = 300;   // spring physics
-  export let springDamping: number = 25;      // spring damping
+  let hoveredId = $state(null);
+  let reducedMotion = $state(false);
 
-  let dockRef: HTMLElement;
-  let mouseX: number = -1000;
-  let mouseY: number = -1000;
-  let scales: number[] = items.map(() => 1);
-  let targetScales: number[] = items.map(() => 1);
-  let velocities: number[] = items.map(() => 0);
-  let animationId: number;
-  let isHovered: boolean = false;
-
-  // Spring physics simulation
-  function updateSpring() {
-    let needsUpdate = false;
-
-    for (let i = 0; i < items.length; i++) {
-      const force = (targetScales[i] - scales[i]) * springStiffness;
-      velocities[i] += force * 0.016; // ~60fps
-      velocities[i] *= (1 - springDamping * 0.001);
-      scales[i] += velocities[i] * 0.016;
-
-      // Snap to target if close enough
-      if (Math.abs(targetScales[i] - scales[i]) > 0.001 || Math.abs(velocities[i]) > 0.001) {
-        needsUpdate = true;
-      }
-    }
-
-    if (needsUpdate) {
-      scales = [...scales];
-      animationId = requestAnimationFrame(updateSpring);
-    }
+  function isActive(href) {
+    const path = $page.url.pathname;
+    return path === href || (href !== '/app' && path.startsWith(href + '/')) || (href === '/app' && path === '/app');
   }
 
-  function handleMouseMove(e: MouseEvent) {
-    if (!dockRef) return;
-    const rect = dockRef.getBoundingClientRect();
-
-    if (position === 'bottom') {
-      mouseX = e.clientX - rect.left;
-      mouseY = e.clientY - rect.top;
-    } else {
-      mouseX = e.clientX - rect.left;
-      mouseY = e.clientY - rect.top;
-    }
-
-    // Calculate target scales based on distance from mouse
-    const iconWidth = 56; // base icon size + gap
-    const centerOffset = iconWidth / 2;
-
-    for (let i = 0; i < items.length; i++) {
-      const iconCenter = i * iconWidth + centerOffset;
-      const distance = Math.abs(mouseX - iconCenter);
-      const maxDist = 150; // influence radius
-
-      if (distance < maxDist && isHovered) {
-        // Smooth falloff from center
-        const t = 1 - distance / maxDist;
-        const smoothT = t * t * (3 - 2 * t); // smoothstep
-        targetScales[i] = 1 + (magnification - 1) * smoothT;
-      } else {
-        targetScales[i] = 1;
-      }
-    }
-
-    cancelAnimationFrame(animationId);
-    updateSpring();
+  function navigate(href) {
+    goto(href);
   }
 
-  function handleMouseEnter() {
-    isHovered = true;
-  }
-
-  function handleMouseLeave() {
-    isHovered = false;
-    targetScales = items.map(() => 1);
-    cancelAnimationFrame(animationId);
-    updateSpring();
-  }
-
-  onMount(() => {
-    return () => {
-      if (animationId) cancelAnimationFrame(animationId);
-    };
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    reducedMotion = mq.matches;
+    const handler = () => (reducedMotion = mq.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
   });
 </script>
 
-<div
-  bind:this={dockRef}
-  class="dock-container"
-  class:bottom={position === 'bottom'}
-  class:left={position === 'left'}
-  class:right={position === 'right'}
-  on:mousemove={handleMouseMove}
-  on:mouseenter={handleMouseEnter}
-  on:mouseleave={handleMouseLeave}
-  role="navigation"
-  aria-label="Application dock"
->
-  <div class="dock-glass"></div>
-  <div class="dock-items" role="menubar">
-    {#each items as item, i}
-      <button
-        class="dock-item"
-        class:active={item.active}
-        style="transform: scale({scales[i]});"
-        on:click={() => item.onClick?.()}
-        role="menuitem"
-        aria-label={item.label}
-        title={item.label}
-      >
-        <div class="dock-icon">{item.icon}</div>
-        {#if item.badge && item.badge > 0}
-          <span class="dock-badge">{item.badge}</span>
-        {/if}
-        {#if item.active}
-          <div class="dock-indicator"></div>
-        {/if}
-        <!-- Tooltip -->
-        <div class="dock-tooltip">
-          {item.label}
-        </div>
-      </button>
+{#snippet dockIcon(name)}
+  {#if name === 'chat'}
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
+  {:else if name === 'findings'}
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/><line x1="12" y1="2" x2="12" y2="6"/><line x1="12" y1="18" x2="12" y2="22"/><line x1="2" y1="12" x2="6" y2="12"/><line x1="18" y1="12" x2="22" y2="12"/></svg>
+  {:else if name === 'notes'}
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg>
+  {:else if name === 'tools'}
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+  {:else if name === 'creds'}
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+  {:else if name === 'reports'}
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M9 17H7A2 2 0 015 15V5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2h-2"/><rect x="9" y="13" width="6" height="8" rx="1"/></svg>
+  {:else if name === 'loot'}
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+  {:else}
+    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
+  {/if}
+{/snippet}
 
-      {#if i < items.length - 1 && items[i + 1]?.id === 'trash'}
-        <div class="dock-separator"></div>
-      {/if}
+<nav class="dock" aria-label="Primary navigation">
+  <div class="dock-inner">
+    {#each items as item (item.id)}
+      {@const active = isActive(item.href)}
+      {@const hovered = hoveredId === item.id}
+      <Motion
+        let:motion
+        animate={{ scale: reducedMotion ? 1 : hovered ? 1.1 : 1 }}
+        transition={{ type: 'spring', stiffness: 420, damping: 22 }}
+      >
+        <button
+          use:motion
+          type="button"
+          class="dock-item"
+          class:active
+          onclick={() => navigate(item.href)}
+          onmouseenter={() => (hoveredId = item.id)}
+          onmouseleave={() => (hoveredId = null)}
+          onfocus={() => (hoveredId = item.id)}
+          onblur={() => (hoveredId = null)}
+          aria-label={item.label}
+          aria-current={active ? 'page' : undefined}
+          title={item.label}
+        >
+          <span class="dock-icon">{@render dockIcon(item.icon)}</span>
+          {#if active}
+            <span class="dock-dot" aria-hidden="true"></span>
+          {/if}
+          <span class="dock-label">{item.label}</span>
+        </button>
+      </Motion>
     {/each}
   </div>
-</div>
+</nav>
 
 <style>
-  .dock-container {
+  .dock {
     position: fixed;
-    z-index: 100;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 8px 12px;
-  }
-
-  .dock-container.bottom {
-    bottom: 12px;
+    bottom: calc(var(--statusbar-height) + 12px);
     left: 50%;
     transform: translateX(-50%);
-    border-radius: 20px;
+    z-index: 80;
+    padding: 6px 10px;
+    border-radius: var(--radius-dock);
+    background: rgba(10, 10, 12, 0.78);
+    border: 1px solid var(--glass-border);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    box-shadow: var(--elevation-2);
   }
 
-  .dock-container.left {
-    left: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    flex-direction: column;
-    border-radius: 20px;
-  }
-
-  .dock-container.right {
-    right: 12px;
-    top: 50%;
-    transform: translateY(-50%);
-    flex-direction: column;
-    border-radius: 20px;
-  }
-
-  /* Glass background */
-  .dock-glass {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    background: rgba(20, 20, 25, 0.65);
-    backdrop-filter: blur(25px) saturate(180%);
-    -webkit-backdrop-filter: blur(25px) saturate(180%);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    box-shadow:
-      0 8px 32px rgba(0, 0, 0, 0.3),
-      inset 0 1px 0 rgba(255, 255, 255, 0.05);
-    z-index: 0;
-  }
-
-  /* Dock items container */
-  .dock-items {
+  .dock-inner {
     display: flex;
-    align-items: center;
+    align-items: flex-end;
     gap: 4px;
-    position: relative;
-    z-index: 1;
   }
 
-  .dock-container.left .dock-items,
-  .dock-container.right .dock-items {
-    flex-direction: column;
-  }
-
-  /* Individual dock item */
   .dock-item {
     position: relative;
     display: flex;
+    flex-direction: column;
     align-items: center;
     justify-content: center;
     width: 52px;
-    height: 52px;
-    border-radius: 14px;
+    min-height: 52px;
+    padding: 6px 4px 10px;
     border: none;
     background: transparent;
+    color: var(--text-secondary);
     cursor: pointer;
-    padding: 0;
-    margin: 0;
-    transition: background-color 0.2s ease;
-    will-change: transform;
+    border-radius: 12px;
     transform-origin: center bottom;
+    transition: background 150ms var(--spring-snappy), color 150ms ease;
   }
 
-  .dock-container.left .dock-item,
-  .dock-container.right .dock-item {
-    transform-origin: center left;
+  .dock-item:hover,
+  .dock-item:focus-visible {
+    background: rgba(255, 255, 255, 0.06);
+    color: var(--text-primary);
   }
 
-  .dock-item:hover {
-    background: rgba(255, 255, 255, 0.08);
+  .dock-item.active {
+    color: var(--accent);
   }
 
-  .dock-item:active {
-    transform: scale(0.95) !important;
+  .dock-item:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
   }
 
-  /* Icon */
   .dock-icon {
-    font-size: 28px;
-    line-height: 1;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.3));
-    transition: filter 0.2s ease;
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
   }
 
-  .dock-item:hover .dock-icon {
-    filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.4));
-  }
-
-  /* Active indicator */
-  .dock-indicator {
+  .dock-dot {
     position: absolute;
-    bottom: -6px;
+    bottom: 4px;
     left: 50%;
     transform: translateX(-50%);
     width: 4px;
     height: 4px;
     border-radius: 50%;
-    background: #00d992;
-    box-shadow: 0 0 6px rgba(0, 217, 146, 0.6);
-    transition: opacity 0.2s ease;
+    background: var(--accent);
   }
 
-  /* Badge */
-  .dock-badge {
+  .dock-label {
     position: absolute;
-    top: -2px;
-    right: -2px;
-    min-width: 18px;
-    height: 18px;
-    padding: 0 5px;
-    border-radius: 9px;
-    background: #ff3b30;
-    color: white;
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-    font-size: 11px;
-    font-weight: 600;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
-    animation: badge-pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes badge-pulse {
-    0%, 100% { transform: scale(1); }
-    50% { transform: scale(1.1); }
-  }
-
-  /* Tooltip */
-  .dock-tooltip {
-    position: absolute;
-    bottom: calc(100% + 12px);
+    bottom: calc(100% + 8px);
     left: 50%;
     transform: translateX(-50%) translateY(4px);
-    padding: 6px 12px;
-    border-radius: 8px;
-    background: rgba(0, 0, 0, 0.8);
-    backdrop-filter: blur(10px);
-    color: rgba(255, 255, 255, 0.9);
-    font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Text', sans-serif;
-    font-size: 13px;
+    padding: 4px 10px;
+    border-radius: var(--radius-control);
+    background: var(--abyss-2);
+    border: 1px solid var(--glass-border);
+    font-size: 11px;
     font-weight: 500;
+    color: var(--text-primary);
     white-space: nowrap;
     opacity: 0;
     pointer-events: none;
-    transition: opacity 0.2s ease, transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-    z-index: 200;
+    transition: opacity 180ms var(--spring-smooth), transform 180ms var(--spring-smooth);
   }
 
-  .dock-container.left .dock-tooltip,
-  .dock-container.right .dock-tooltip {
-    bottom: auto;
-    left: calc(100% + 12px);
-    top: 50%;
-    transform: translateY(-50%) translateX(-4px);
-  }
-
-  .dock-item:hover .dock-tooltip {
+  .dock-item:hover .dock-label,
+  .dock-item:focus-visible .dock-label {
     opacity: 1;
     transform: translateX(-50%) translateY(0);
   }
 
-  .dock-container.left .dock-item:hover .dock-tooltip,
-  .dock-container.right .dock-item:hover .dock-tooltip {
-    transform: translateY(-50%) translateX(0);
-  }
-
-  /* Separator */
-  .dock-separator {
-    width: 1px;
-    height: 36px;
-    background: rgba(255, 255, 255, 0.1);
-    margin: 0 4px;
-  }
-
-  .dock-container.left .dock-separator,
-  .dock-container.right .dock-separator {
-    width: 36px;
-    height: 1px;
-  }
-
-  /* Reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    .dock-item,
-    .dock-icon,
-    .dock-tooltip {
-      transition: none !important;
-      animation: none !important;
-    }
-  }
-
-  /* Mobile */
-  @media (max-width: 768px) {
-    .dock-container {
-      padding: 6px 8px;
-    }
-    .dock-item {
-      width: 44px;
-      height: 44px;
-    }
-    .dock-icon {
-      font-size: 22px;
-    }
-    .dock-tooltip {
+  @media (max-width: 1024px) {
+    .dock {
       display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .dock-label {
+      transition: opacity 120ms ease;
+      transform: translateX(-50%);
     }
   }
 </style>

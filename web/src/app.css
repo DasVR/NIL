@@ -22,13 +22,23 @@
   --radius-control: 8px;
   --radius-badge: 6px;
   --radius-dock: 20px;
-  --shadow-panel: 0 8px 32px rgba(0, 0, 0, 0.4);
+  --radius-window: 10px;
+  --elevation-1: 0 2px 8px rgba(0, 0, 0, 0.28), 0 0 0 1px rgba(255, 255, 255, 0.03);
+  --elevation-2: 0 8px 32px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.04);
+  --elevation-3: 0 28px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --shadow-panel: var(--elevation-2);
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'SF Pro Display', sans-serif;
   --font-mono: 'JetBrains Mono', 'SF Mono', ui-monospace, monospace;
   --spring-panel: cubic-bezier(0.22, 1.0, 0.36, 1.0);
   --spring-control: cubic-bezier(0.34, 1.56, 0.64, 1);
   --spring-layout: cubic-bezier(0.25, 0.8, 0.25, 1.0);
+  --spring-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
+  --spring-smooth: cubic-bezier(0.22, 1, 0.36, 1);
+  --spring-snappy: cubic-bezier(0.25, 0.9, 0.25, 1);
   --sidebar-width: 260px;
+  --titlebar-height: 40px;
+  --dither-intensity: 0.025;
+  --statusbar-height: 28px;
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -36,6 +46,9 @@
     --spring-panel: ease;
     --spring-control: ease;
     --spring-layout: ease;
+    --spring-bouncy: ease;
+    --spring-smooth: ease;
+    --spring-snappy: ease;
   }
 }
 
@@ -48,7 +61,8 @@ html, body {
   color: var(--text-primary);
   font-family: var(--font-sans);
   min-height: 100%;
-  overflow: hidden;
+  overflow-x: hidden;
+  overflow-y: auto;
   -webkit-font-smoothing: antialiased;
 }
 
@@ -76,6 +90,7 @@ button, .btn {
   color: var(--text-primary);
   border-radius: var(--radius-control);
   padding: 0.45rem 0.85rem;
+  min-height: 44px;
   transition: background 150ms var(--spring-control), color 120ms var(--spring-control), transform 180ms var(--spring-control);
 }
 
@@ -134,6 +149,40 @@ input:focus, textarea:focus, select:focus {
   box-shadow: var(--shadow-panel);
 }
 
+/* Liquid glass accent — use on 1–2 hero elements only */
+.liquid-glass {
+  position: relative;
+  isolation: isolate;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-panel);
+  box-shadow: var(--elevation-2);
+  overflow: hidden;
+}
+
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: -20%;
+  z-index: -1;
+  opacity: 0.35;
+  filter: url('#liquid-glass-filter');
+  pointer-events: none;
+}
+
+.liquid-glass::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.06) 0%,
+    transparent 45%,
+    rgba(0, 217, 146, 0.04) 100%
+  );
+  pointer-events: none;
+}
+
 .scanlines::after {
   content: "";
   pointer-events: none;
@@ -154,7 +203,7 @@ input:focus, textarea:focus, select:focus {
   position: fixed;
   inset: 0;
   z-index: 9999;
-  opacity: 0.04;
+  opacity: var(--dither-intensity, 0.025);
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
 }
@@ -170,12 +219,16 @@ input:focus, textarea:focus, select:focus {
 }
 
 @media (forced-colors: active) {
-  .glass-surface, aside, .dock, .window-chrome, .settings-panel {
+  .glass-surface, aside, .dock, .window-chrome, .settings-panel, .liquid-glass {
     background: Canvas;
     border: 1px solid CanvasText;
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
     box-shadow: none;
+  }
+  .liquid-glass::before,
+  .liquid-glass::after {
+    display: none;
   }
   :focus-visible { outline: 2px solid Highlight; }
 }

@@ -3,6 +3,7 @@
   import { appState } from '$lib/stores.svelte';
   import { marked } from 'marked';
   import DOMPurify from 'dompurify';
+  import { Motion } from 'svelte-motion';
 
   const modes = ['hunt', 'chat', 'code', 'report'];
   const quickActions = [
@@ -320,12 +321,18 @@
       {/if}
 
       {#each messages as msg, i (i)}
-        {#if msg.role === 'user'}
-          <article class="message user" aria-label="user message">
-            <div class="user-pill">{msg.content}</div>
-          </article>
-        {:else}
-          <article class="message assistant" aria-label="assistant message">
+        <Motion
+          let:motion
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 420, damping: 30 }}
+        >
+          {#if msg.role === 'user'}
+            <article use:motion class="message user" aria-label="user message">
+              <div class="user-pill">{msg.content}</div>
+            </article>
+          {:else}
+            <article use:motion class="message assistant" aria-label="assistant message">
             <div class="assistant-row">
               <div class="assistant-avatar" aria-hidden="true">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -401,11 +408,18 @@
               </div>
             </div>
           </article>
-        {/if}
+          {/if}
+        </Motion>
       {/each}
 
       {#if isStreaming}
-        <article class="message assistant streaming" aria-busy="true">
+        <Motion
+          let:motion
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ type: 'spring', stiffness: 400, damping: 28 }}
+        >
+        <article use:motion class="message assistant streaming" aria-busy="true">
           <div class="assistant-row">
             <div class="assistant-avatar pulsing" aria-hidden="true">
               <svg width="16" height="16" viewBox="0 0 24 24" fill="none">
@@ -435,6 +449,7 @@
             </div>
           </div>
         </article>
+        </Motion>
       {/if}
     </div>
   </div>
@@ -451,7 +466,7 @@
     {/if}
 
     <div class="composer-shell">
-      <div class="composer glass-surface" class:focused={composerFocused}>
+      <div class="composer" class:focused={composerFocused}>
         <textarea
           bind:this={composerTextarea}
           bind:value={inputText}
@@ -586,10 +601,6 @@
     max-width: 360px;
   }
 
-  .message {
-    animation: finn-fade-in 280ms var(--spring-panel) both;
-  }
-
   .message.user {
     display: flex;
     justify-content: flex-end;
@@ -695,11 +706,11 @@
   .assistant-body :global(.artifact-card),
   .stream-body :global(.artifact-card) {
     margin: 0.65rem 0;
-    border: 1px solid var(--glass-border);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: var(--radius-control);
     overflow: hidden;
-    background: var(--abyss-1);
-    box-shadow: inset 3px 0 0 var(--accent-20);
+    background: #08080a;
+    box-shadow: inset 3px 0 0 var(--accent);
   }
 
   .assistant-body :global(.artifact-header),
@@ -707,8 +718,8 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0.35rem 0.6rem;
-    background: var(--glass);
+    padding: 0.4rem 0.65rem;
+    background: rgba(255, 255, 255, 0.03);
     border-bottom: 1px solid var(--glass-border);
   }
 
@@ -716,9 +727,13 @@
   .stream-body :global(.artifact-lang) {
     font-family: var(--font-mono);
     font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-weight: 600;
+    letter-spacing: 0.04em;
     color: var(--accent);
+    background: var(--accent-8);
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+    border: 1px solid var(--accent-20);
   }
 
   .assistant-body :global(.artifact-copy),
@@ -750,6 +765,8 @@
   .stream-body :global(.artifact-card pre code) {
     font-family: var(--font-mono);
     font-size: 12px;
+    line-height: 1.55;
+    color: #e8e8ec;
     background: transparent;
     padding: 0;
   }
@@ -971,11 +988,17 @@
   .stream-cursor {
     display: inline-block;
     width: 2px;
-    height: 1em;
+    height: 1.1em;
     margin-left: 2px;
     vertical-align: text-bottom;
-    background: var(--accent);
-    animation: cursor-blink 1s step-end infinite;
+    background: linear-gradient(180deg, var(--accent), rgba(0, 217, 146, 0.4));
+    box-shadow: 0 0 6px var(--accent-60);
+    animation: cursor-shimmer 1.2s ease-in-out infinite;
+  }
+
+  @keyframes cursor-shimmer {
+    0%, 100% { opacity: 1; transform: scaleX(1); }
+    50% { opacity: 0.35; transform: scaleX(0.85); }
   }
 
   .composer-zone {
@@ -1014,17 +1037,19 @@
   }
 
   .composer {
-    border-radius: var(--radius-dock);
+    border-radius: var(--radius-panel);
     padding: 0.65rem 0.75rem 0.55rem;
-    transition: border-color 180ms, box-shadow 180ms;
+    background: var(--abyss-1);
+    border: 1px solid var(--glass-border);
+    box-shadow: var(--elevation-1);
+    transition: border-color 180ms var(--spring-snappy), box-shadow 180ms var(--spring-snappy);
   }
 
   .composer.focused {
     border-color: var(--accent-20);
     box-shadow:
-      0 0 0 1px var(--accent-12),
-      0 0 24px rgba(0, 217, 146, 0.08),
-      inset 0 1px 0 rgba(255, 255, 255, 0.04);
+      var(--elevation-1),
+      0 0 0 1px var(--accent-12);
   }
 
   .composer textarea {

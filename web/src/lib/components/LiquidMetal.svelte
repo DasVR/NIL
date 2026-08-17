@@ -2,7 +2,7 @@
   import { onMount, onDestroy } from 'svelte';
 
   // Props
-  export let intensity: number = 0.3;        // 0.0 to 1.0
+  export let intensity: number = 0.22;        // 0.0 to 1.0
   export let speed: number = 1.0;              // animation speed
   export let color1: string = '#00d992';       // primary accent
   export let color2: string = '#050507';       // secondary dark
@@ -268,7 +268,7 @@
   bind:this={canvas}
   class="liquid-metal-canvas"
   style="width: 100%; height: 100%; display: block;"
-/>
+></canvas>
 
 <style>
   .liquid-metal-canvas {
@@ -278,6 +278,13 @@
     width: 100%;
     height: 100%;
     z-index: 0;
-    pointer-events: auto;
+    pointer-events: none;
+    opacity: 0.85;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .liquid-metal-canvas {
+      display: none;
+    }
   }
 </style>

@@ -1,7 +1,8 @@
 <script>
   import { getProviders } from '$lib/api';
+  import { Motion, AnimatePresence } from 'svelte-motion';
 
-  let open = $state(false);
+  let { open = $bindable(false) } = $props();
   let providers = $state([]);
   let loading = $state(false);
   let search = $state('');
@@ -225,7 +226,7 @@
                 {:else if cat.id === 'typography'}
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 7V4h16v3M9 20h6M12 4v16"/></svg>
                 {:else if cat.id === 'motion'}
-                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z"/></svg>
+                  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M4 12c2-4 4-6 8-6s6 2 8 6-4 6-8 6-6-2-8-6z"/></svg>
                 {:else if cat.id === 'terminal'}
                   <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
                 {:else if cat.id === 'chat'}
@@ -248,21 +249,33 @@
             <p>No matching settings for “{search}”</p>
           </div>
         {:else}
-          {#each activeGroups as group}
-            {#if isSearching}
-              <h2 class="search-group-header">{group.label}</h2>
-            {/if}
-            <section class="settings-section">
-              {#if !isSearching}
-                <header class="section-header">{group.label}</header>
-              {/if}
-              <div class="section-body">
-                {#each group.items as ctrl}
-                  {@render controlRow(ctrl)}
+          <AnimatePresence list={[{ key: isSearching ? 'search' : activeTab }]} let:item>
+            <Motion
+              let:motion
+              initial={{ opacity: 0, x: 12 }}
+              animate={{ opacity: 1, x: 0 }}
+              exit={{ opacity: 0, x: -8 }}
+              transition={{ type: 'spring', stiffness: 380, damping: 32 }}
+            >
+              <div use:motion class="content-panel">
+                {#each activeGroups as group}
+                  {#if isSearching}
+                    <h2 class="search-group-header">{group.label}</h2>
+                  {/if}
+                  <section class="settings-section">
+                    {#if !isSearching}
+                      <header class="section-header">{group.label}</header>
+                    {/if}
+                    <div class="section-body">
+                      {#each group.items as ctrl}
+                        {@render controlRow(ctrl)}
+                      {/each}
+                    </div>
+                  </section>
                 {/each}
               </div>
-            </section>
-          {/each}
+            </Motion>
+          </AnimatePresence>
         {/if}
       </div>
     </div>
@@ -470,6 +483,11 @@
     padding: 0.85rem 1rem 1rem;
     overflow-y: auto;
     min-height: 0;
+    position: relative;
+  }
+
+  .content-panel {
+    min-height: 100%;
   }
 
   .search-group-header {
@@ -581,6 +599,11 @@
       border-color 180ms var(--spring-control);
   }
 
+  .switch:focus-visible .switch-track {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
   .switch.on .switch-track {
     background: var(--accent);
     border-color: var(--accent);
@@ -664,6 +687,11 @@
     margin-top: -6px;
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.35);
     transition: transform 180ms var(--spring-control);
+  }
+
+  .slider:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 4px;
   }
 
   .slider:active::-webkit-slider-thumb {
