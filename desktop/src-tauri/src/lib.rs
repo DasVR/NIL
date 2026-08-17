@@ -1,10 +1,10 @@
 use std::process::{Command, Stdio};
 use tauri::{
-    menu::{Menu, MenuItem, PredefinedMenuItem},
+    menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder},
     AppHandle, Manager,
 };
-use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_shell::ShellExt;
@@ -54,8 +54,8 @@ fn show_backend_offline_dialog(app: &AppHandle) {
         // Slight delay so the window exists before the dialog appears.
         tokio::time::sleep(std::time::Duration::from_millis(800)).await;
         let msg = format!(
-            "The Finn backend is not running at {}.\n\n\
-             You can still browse the UI, but scans and tool execution will be unavailable.\n\n\
+            "The Finn backend is not running at {}.\\n\\n\
+             You can still browse the UI, but scans and tool execution will be unavailable.\\n\\n\
              Start the backend with: {}",
             FINN_API_URL, FINN_BACKEND_CMD
         );
@@ -64,9 +64,9 @@ fn show_backend_offline_dialog(app: &AppHandle) {
                 .dialog()
                 .message(msg)
                 .title("Finn backend offline")
-                .ok_button_label("Copy command")
+                .buttons(MessageDialogButtons::OkCustom("Copy command".into()))
                 .show(move |result| {
-                    if let Ok(true) = result {
+                    if result {
                         let _ = app_clone.clipboard().write_text(FINN_BACKEND_CMD);
                         let _ = app_clone.shell().open(FINN_DOCS_URL, None);
                     }
@@ -83,9 +83,8 @@ pub fn running_as_root() -> bool {
 
 #[cfg(windows)]
 pub fn running_as_root() -> bool {
-  // Requires `is_elevated` crate on Windows. For now, return false.
-  // To add real Windows admin detection: cargo add is_elevated
-  false
+    // Requires `is_elevated` crate on Windows. For now, return false.
+    false
 }
 
 #[cfg(not(any(unix, windows)))]
@@ -97,7 +96,7 @@ pub fn running_as_root() -> bool {
 #[tauri::command]
 pub fn explain_sudo_request(command: String) -> String {
     format!(
-        "This tool asked to run with administrator privileges:\n\n```\n{}\n```\n\n\
+        "This tool asked to run with administrator privileges:\\n\\n```\\n{}\\n```\\n\\n\
          Finn's no-sudo policy requires a non-elevated alternative to be tried first. \
          If the tool genuinely cannot work without root (for example raw sockets or certain packet captures), \
          approve the elevated version after reviewing exactly what it will do.",
@@ -153,20 +152,20 @@ pub fn run() {
             #[cfg(target_os = "macos")]
             app.set_activation_policy(tauri::ActivationPolicy::Regular);
 
-            // macOS native About panel values.
-            #[cfg(target_os = "macos")]
-            {
-                app.set_about_panel_metadata(Some(tauri::AboutMetadata::new(
-                    Some("Finn Pentest Harness"),
-                    Some("0.2.1"),
-                    Some("Finn Labs"),
-                    Some("https://github.com/DasVR/finn-pentest-harness"),
-                )));
-            }
-
             let show = MenuItem::with_id(app, "show", "Show Finn", true, None::<&str>)?;
             let hide = MenuItem::with_id(app, "hide", "Hide Finn", true, None::<&str>)?;
-            let about = MenuItem::with_id(app, "about", "About Finn", true, None::<&str>)?;
+            let about = PredefinedMenuItem::about(
+                app,
+                Some("About Finn"),
+                Some(AboutMetadata {
+                    name: Some("Finn Pentest Harness".into()),
+                    version: Some("0.2.1".into()),
+                    short_version: Some("0.2.1".into()),
+                    authors: Some(vec!["Finn Labs".into()]),
+                    website: Some("https://github.com/DasVR/finn-pentest-harness".into()),
+                    ..Default::default()
+                }),
+            )?;
             let perms = MenuItem::with_id(app, "permissions", "Permissions…", true, None::<&str>)?;
             let status = MenuItem::with_id(app, "status", &backend_status_string(), false, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
@@ -189,20 +188,13 @@ pub fn run() {
                         }
                     }
                     "about" => {
-                        #[cfg(target_os = "macos")]
-                        {
-                            let _ = app.show_about_panel();
-                        }
-                        #[cfg(not(target_os = "macos"))]
-                        {
-                            let _ = app.shell().open(FINN_DOCS_URL, None);
-                        }
+                        let _ = app.shell().open(FINN_DOCS_URL, None);
                     }
                     "permissions" => {
-                        let body = "Finn requires these macOS permissions:\n\n\
-                        • Accessibility — Cmd+Shift+F global shortcut (optional)\n\
-                        • Local Network — talk to backend on 127.0.0.1:8766\n\
-                        • Files & Folders — read pentest scripts and write reports\n\n\
+                        let body = "Finn requires these macOS permissions:\\n\\n\
+                        • Accessibility — Cmd+Shift+F global shortcut (optional)\\n\
+                        • Local Network — talk to backend on 127.0.0.1:8766\\n\
+                        • Files & Folders — read pentest scripts and write reports\\n\\n\
                         Administrator access is never used automatically. \
                         Individual tools may request elevation through the approval gate.";
                         if let Some(w) = app.get_webview_window("main") {
@@ -210,9 +202,9 @@ pub fn run() {
                                 .dialog()
                                 .message(body)
                                 .title("Finn Permissions")
-                                .ok_button_label("Open System Settings")
+                                .buttons(MessageDialogButtons::OkCustom("Open System Settings".into()))
                                 .show(move |result| {
-                                    if let Ok(true) = result {
+                                    if result {
                                         let _ = app
                                             .shell()
                                             .open("x-apple.systempreferences:com.apple.preference.security?Privacy", None);
@@ -285,9 +277,9 @@ pub fn run() {
                             Tools will be blocked until you do.",
                         )
                         .title("Administrator mode blocked")
-                        .ok_button_label("Quit")
+                        .buttons(MessageDialogButtons::OkCustom("Quit".into()))
                         .show(move |result| {
-                            if let Ok(true) = result {
+                            if result {
                                 std::process::exit(0);
                             }
                         });
