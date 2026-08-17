@@ -94,7 +94,7 @@ pub fn running_as_root() -> bool {
 
 /// Explain why sudo was requested for a specific command.
 #[tauri::command]
-pub fn explain_sudo_request(command: String) -> String {
+fn explain_sudo_request(command: String) -> String {
     format!(
         "This tool asked to run with administrator privileges:\\n\\n```\\n{}\\n```\\n\\n\
          Finn's no-sudo policy requires a non-elevated alternative to be tried first. \
@@ -106,7 +106,7 @@ pub fn explain_sudo_request(command: String) -> String {
 
 /// Validate that a command does not bypass the no-sudo policy.
 #[tauri::command]
-pub fn check_sudo_policy(command: String) -> Result<String, String> {
+fn check_sudo_policy(command: String) -> Result<String, String> {
     if running_as_root() {
         return Err(
             "Finn is running with administrator privileges. \
@@ -197,6 +197,7 @@ pub fn run() {
                         • Files & Folders — read pentest scripts and write reports\\n\\n\
                         Administrator access is never used automatically. \
                         Individual tools may request elevation through the approval gate.";
+                        let app_handle = app.clone();
                         if let Some(w) = app.get_webview_window("main") {
                             let _ = w
                                 .dialog()
@@ -205,7 +206,7 @@ pub fn run() {
                                 .buttons(MessageDialogButtons::OkCustom("Open System Settings".into()))
                                 .show(move |result| {
                                     if result {
-                                        let _ = app
+                                        let _ = app_handle
                                             .shell()
                                             .open("x-apple.systempreferences:com.apple.preference.security?Privacy", None);
                                     }
