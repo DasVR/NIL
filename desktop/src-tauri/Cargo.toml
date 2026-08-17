@@ -11,7 +11,7 @@ name = "finn_lib"
 crate-type = ["staticlib", "cdylib", "rlib"]
 
 [build-dependencies]
-tauri-build = "2.2"
+tauri-build = { version = "2.2", features = [] }
 serde_json = "1"
 
 [dependencies]
@@ -19,6 +19,7 @@ tauri = { version = "2.2", features = ["tray-icon"] }
 tauri-plugin-global-shortcut = "2.2"
 tauri-plugin-shell = "2.2"
 tauri-plugin-dialog = "2.2"
+tauri-plugin-clipboard-manager = "2.2"
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 

@@ -5,6 +5,7 @@ use tauri::{
     AppHandle, Manager,
 };
 use tauri_plugin_dialog::DialogExt;
+use tauri_plugin_clipboard_manager::ClipboardExt;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_shell::ShellExt;
 
@@ -146,6 +147,7 @@ pub fn run() {
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
+        .plugin(tauri_plugin_clipboard_manager::init())
         .invoke_handler(tauri::generate_handler![check_sudo_policy, explain_sudo_request])
         .setup(|app| {
             #[cfg(target_os = "macos")]
