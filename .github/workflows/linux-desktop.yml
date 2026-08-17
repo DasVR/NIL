@@ -61,7 +61,16 @@ jobs:
         working-directory: desktop
         env:
           CI: true
-        run: npm run tauri -- build --bundles appimage,deb
+        run: |
+          for i in 1 2 3; do
+            echo "Build attempt $i..."
+            if npm run tauri -- build --bundles appimage,deb; then
+              echo "Build succeeded on attempt $i"
+              break
+            fi
+            echo "Build attempt $i failed; waiting 60s before retry..."
+            sleep 60
+          done
 
       - name: Upload Linux packages
         if: always()
