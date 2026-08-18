@@ -4,25 +4,17 @@ on:
   push:
     tags:
       - "v*"
-    branches: [master]
-    paths:
-      - "finn_pentest/**"
-      - "desktop/**"
-      - "web/**"
-      - "plugins/**"
-      - "tools/**"
-      - "sandbox/**"
-      - "pyproject.toml"
-      - "requirements.txt"
-      - "docker-compose.yml"
-      - "Dockerfile.*"
-      - ".github/workflows/release.yml"
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. v0.2.1)"
-        required: true
+        description: "Release tag (e.g. v0.2.1). Leave empty for a test build."
+        required: false
         type: string
+      build_only:
+        description: "Build artifacts only — do NOT publish a GitHub Release."
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
@@ -33,7 +25,6 @@ permissions:
 
 env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
-
 jobs:
   build-macos:
     name: macOS (.app + .dmg)
@@ -192,7 +183,7 @@ jobs:
   publish:
     name: Publish GitHub Release
     needs: [build-macos, build-windows, build-linux]
-    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
+    if: (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')) && !inputs.build_only
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
