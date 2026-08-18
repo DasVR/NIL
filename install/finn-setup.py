@@ -18,7 +18,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-from engine import DOCKER_TOS, find_api_src, find_macos_app, find_wheel, launch_app, run_install  # noqa: E402
+from engine import DOCKER_TOS, SETUP_VERSION, find_api_src, find_macos_app, find_wheel, launch_app, run_install  # noqa: E402
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -79,7 +79,7 @@ def gui_main(args: argparse.Namespace) -> int:
         return cli_main(args)
 
     root = tk.Tk()
-    root.title("Finn Setup")
+    root.title(f"Finn Setup {SETUP_VERSION}")
     root.geometry("720x540")
     root.minsize(640, 480)
     abyss, panel, green, text, dim, border = "#07090d", "#10141c", "#3dff8a", "#e8edf2", "#8b95a3", "#2a3340"

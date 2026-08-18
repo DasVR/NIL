@@ -56,6 +56,13 @@ def test_ignores_unrelated_apps(tmp_path):
     assert engine.is_finn_workstation(finn)
     assert not engine.is_finn_workstation(talkify)
     assert not engine.is_finn_workstation(setup)
+    cursor = tmp_path / "Applications" / "Cursor.app"
+    (cursor / "Contents").mkdir(parents=True)
+    (cursor / "Contents" / "Info.plist").write_text(
+        "<plist><dict><key>CFBundleIdentifier</key><string>com.todesktop.230313mzl4w4u92</string></dict></plist>\n"
+    )
+    assert not engine.is_finn_workstation(cursor)
+    assert engine.is_applications_dir(cursor.parent)
 
 
 def test_find_api_from_install_dir():

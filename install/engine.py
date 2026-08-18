@@ -12,6 +12,7 @@ from pathlib import Path
 from typing import Callable
 
 REPO = os.environ.get("FINN_REPO", "DasVR/finn-pentest-harness")
+SETUP_VERSION = "0.1.3"
 Progress = Callable[[int, str], None]
 
 DOCKER_TOS = """Docker sandbox terms
@@ -61,6 +62,15 @@ def paths_for(privilege: str) -> dict[str, Path]:
     return {"prefix": prefix, "bindir": bindir, "appdir": appdir, "venv": venv}
 
 
+def is_applications_dir(path: Path) -> bool:
+    """~/Applications and /Applications are DESTINATIONS, never search sources."""
+    try:
+        path = path.resolve()
+    except OSError:
+        return False
+    return path.name == "Applications"
+
+
 def walk_roots(start: Path | None = None) -> list[Path]:
     here = Path(start or __file__).resolve().parent
     env = os.environ.get("FINN_SETUP_PAYLOAD")
@@ -84,6 +94,8 @@ def walk_roots(start: Path | None = None) -> list[Path]:
         try:
             resolved = candidate.resolve()
         except OSError:
+            continue
+        if resolved == home() or resolved == Path("/") or is_applications_dir(resolved):
             continue
         if resolved not in roots:
             roots.append(resolved)
@@ -109,12 +121,14 @@ def find_run_api(start: Path | None = None) -> Path | None:
 
 
 def is_finn_workstation(app: Path) -> bool:
-    """True only for Finn Pentest Harness.app — never Talkify, Setup, or a random Downloads .app."""
+    """True only for a Finn workstation bundle that is not already in Applications."""
     try:
         app = app.resolve()
     except OSError:
         return False
     if not app.is_dir() or app.suffix != ".app":
+        return False
+    if is_applications_dir(app.parent):
         return False
     name = app.name.lower()
     if "setup" in name:
@@ -145,6 +159,8 @@ def find_macos_app(start: Path | None = None) -> Path | None:
         try:
             resolved = candidate.resolve()
         except OSError:
+            continue
+        if is_applications_dir(resolved) or resolved == home() or resolved == Path("/"):
             continue
         if resolved not in roots:
             roots.append(resolved)
