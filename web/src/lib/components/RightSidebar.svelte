@@ -10,14 +10,6 @@
     info: { color: '#9a9a94', glow: 'none' }
   };
 
-  const timelineIcons = {
-    scan: '🔍',
-    finding: '⚡',
-    command: '⌘',
-    note: '📝',
-    chat: '💬'
-  };
-
   function severityClass(s) {
     return s?.toLowerCase() || 'info';
   }
@@ -87,18 +79,10 @@
         <span class="label-micro">Timeline</span>
       </div>
       <div class="rs-list timeline-list">
-        {#if appState.timeline.length === 0}
+        {#if !appState.timeline}
           <p class="rs-empty">Activity will appear here.</p>
         {:else}
-          {#each appState.timeline.slice(0, 15) as event}
-            <div class="timeline-item">
-              <span class="timeline-icon">{timelineIcons[event.type] || '•'}</span>
-              <div class="timeline-body">
-                <span class="timeline-title">{event.title}</span>
-                <span class="timeline-time mono">{event.timestamp}</span>
-              </div>
-            </div>
-          {/each}
+          <pre class="timeline-text mono">{appState.timeline}</pre>
         {/if}
       </div>
     </section>
@@ -271,6 +255,16 @@
   /* Timeline */
   .timeline-list {
     gap: 2px;
+  }
+
+  .timeline-text {
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--text-dim);
+    margin: 0;
+    padding: 10px;
+    white-space: pre-wrap;
+    word-break: break-word;
   }
 
   .timeline-item {

@@ -75,7 +75,7 @@ class AppState {
   findings = $state<Finding[]>([]);
   notes = $state('');
   scope = $state('');
-  timeline = $state<TimelineEvent[]>([]);
+  timeline = $state<string>('');
   plugins = $state<Plugin[]>([]);
   creds = $state<Credential[]>([]);
   reports = $state<ReportEntry[]>([]);
@@ -135,11 +135,11 @@ class AppState {
     const [creds, loot, timeline] = await Promise.all([
       listCredentials(this.engagement).catch(() => ({ credentials: [] })),
       listLoot(this.engagement).catch(() => ({ loot: [] })),
-      getTimeline(this.engagement).catch(() => ({ events: [] }))
+      getTimeline(this.engagement).catch(() => ({ timeline: '' }))
     ]);
     this.creds = creds.credentials || [];
     this.loot = loot.loot || [];
-    this.timeline = timeline.events || [];
+    this.timeline = timeline.timeline || '';
     const providers = await apiGet('/v1/providers').catch(() => ({ resolved: [] }));
     const enabled = (providers.resolved || []).find((p: { enabled: boolean }) => p.enabled);
     this.model = enabled ? `${enabled.name}/${enabled.model}` : 'auto';
