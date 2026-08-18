@@ -108,24 +108,70 @@ def find_run_api(start: Path | None = None) -> Path | None:
     return bundled if bundled.is_file() else None
 
 
+def is_finn_workstation(app: Path) -> bool:
+    """True only for Finn Pentest Harness.app — never Talkify, Setup, or a random Downloads .app."""
+    try:
+        app = app.resolve()
+    except OSError:
+        return False
+    if not app.is_dir() or app.suffix != ".app":
+        return False
+    name = app.name.lower()
+    if "setup" in name:
+        return False
+    plist = app / "Contents" / "Info.plist"
+    if plist.is_file():
+        try:
+            text = plist.read_text(encoding="utf-8", errors="ignore")
+        except OSError:
+            text = ""
+        if "ai.finn.pentest.setup" in text:
+            return False
+        if "ai.finn.pentest" in text:
+            return True
+    return "finn" in name and "pentest" in name
+
+
 def find_macos_app(start: Path | None = None) -> Path | None:
     if sys.platform != "darwin":
         return None
-    skip = {"Finn Setup.app"}
-    for root in walk_roots(start):
-        if root.suffix == ".app" and root.is_dir() and root.name not in skip:
-            return root
+    here = Path(start or __file__).resolve().parent
+    env = os.environ.get("FINN_SETUP_PAYLOAD")
+    roots: list[Path] = []
+    if env:
+        roots.append(Path(env).expanduser().resolve())
+    # Kit folder and payload only — do not scan ~/Downloads for the first .app.
+    for candidate in (here, here / "payload", here.parent, here.parent / "payload"):
         try:
-            for item in root.iterdir():
-                if item.suffix == ".app" and item.is_dir() and item.name not in skip:
-                    return item
+            resolved = candidate.resolve()
         except OSError:
             continue
-        nested = list(root.glob("*/*.app"))
-        for item in nested:
-            if item.name not in skip:
-                return item
-    return None
+        if resolved not in roots:
+            roots.append(resolved)
+    hits: list[Path] = []
+    for root in roots:
+        if is_finn_workstation(root):
+            hits.append(root)
+            continue
+        if not root.is_dir():
+            continue
+        try:
+            children = list(root.iterdir())
+        except OSError:
+            continue
+        for item in children:
+            if is_finn_workstation(item):
+                hits.append(item)
+        for item in root.glob("*/*.app"):
+            if is_finn_workstation(item):
+                hits.append(item)
+    seen: set[Path] = set()
+    unique: list[Path] = []
+    for path in hits:
+        if path not in seen:
+            seen.add(path)
+            unique.append(path)
+    return unique[0] if unique else None
 
 
 def find_wheel(start: Path | None = None) -> Path | None:
@@ -252,6 +298,8 @@ def write_cli_wrapper(bindir: Path, prefix: Path, venv: Path) -> Path:
 
 
 def install_macos_app(app: Path, appdir: Path, progress: Progress) -> Path:
+    if not is_finn_workstation(app):
+        raise RuntimeError(f"Refusing to install {app.name} — it is not Finn Pentest Harness.")
     appdir.mkdir(parents=True, exist_ok=True)
     dest = appdir / app.name
     progress(78, f"Installing {app.name} → {dest}")
