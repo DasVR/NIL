@@ -27,7 +27,7 @@
       note: newNote
     };
     try {
-      await apiPost('/v1/creds', body);
+      await apiPost('/v1/credentials', body);
     } catch {
       // Fallback local append until endpoint exists
       creds = [...creds, {
