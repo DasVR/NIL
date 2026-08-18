@@ -65,6 +65,18 @@ def test_ignores_unrelated_apps(tmp_path):
     assert engine.is_applications_dir(cursor.parent)
 
 
+def test_is_zip_file(tmp_path):
+    sys.path.insert(0, str(INSTALL))
+    import engine
+
+    zpath = tmp_path / "ok.zip"
+    zpath.write_bytes(b"PK\x03\x04" + b"\x00" * 8)
+    dmg = tmp_path / "disk.dmg"
+    dmg.write_bytes(b"koly" + b"\x00" * 8)
+    assert engine.is_zip_file(zpath)
+    assert not engine.is_zip_file(dmg)
+
+
 def test_find_api_from_install_dir():
     sys.path.insert(0, str(INSTALL))
     import engine

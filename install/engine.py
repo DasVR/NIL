@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Callable
 
 REPO = os.environ.get("FINN_REPO", "DasVR/finn-pentest-harness")
-SETUP_VERSION = "0.1.3"
+SETUP_VERSION = "0.1.4"
 Progress = Callable[[int, str], None]
 
 DOCKER_TOS = """Docker sandbox terms
@@ -240,7 +240,7 @@ def curl_bytes(url: str, dest: Path | None = None) -> bytes:
     return subprocess.check_output(cmd)
 
 
-def github_asset_url(needle: str, tag: str = "latest") -> str | None:
+def github_asset_url(needle: str, tag: str = "latest", *, suffix: str | None = None) -> str | None:
     if tag == "latest":
         api = f"https://api.github.com/repos/{REPO}/releases/latest"
     else:
@@ -251,11 +251,24 @@ def github_asset_url(needle: str, tag: str = "latest") -> str | None:
         return None
     data = json.loads(raw.decode())
     needle_l = needle.lower()
+    suffix_l = suffix.lower() if suffix else None
     for asset in data.get("assets") or []:
         name = str(asset.get("name", "")).lower()
-        if needle_l in name:
-            return asset.get("browser_download_url")
+        if needle_l not in name:
+            continue
+        if suffix_l and not name.endswith(suffix_l):
+            continue
+        return asset.get("browser_download_url")
     return None
+
+
+def is_zip_file(path: Path) -> bool:
+    try:
+        with path.open("rb") as handle:
+            magic = handle.read(4)
+    except OSError:
+        return False
+    return magic[:2] == b"PK"
 
 
 def copytree(src: Path, dest: Path) -> None:
@@ -330,6 +343,11 @@ def install_macos_app(app: Path, appdir: Path, progress: Progress) -> Path:
 
 def unpack_zip(archive: Path, dest: Path) -> None:
     dest.mkdir(parents=True, exist_ok=True)
+    if not is_zip_file(archive):
+        raise ValueError(
+            f"{archive} is not a zip file (not PKZip). "
+            "A .dmg cannot be unpacked with ditto -k. Use the macOS kit .zip, not the .dmg."
+        )
     if shutil.which("ditto"):
         subprocess.check_call(["ditto", "-x", "-k", str(archive), str(dest)])
     else:
@@ -384,21 +402,30 @@ def run_install(
             if url:
                 wheel = prefix / "finn-pentest.whl"
                 curl_bytes(url, wheel)
-        if sys.platform == "darwin" and app is None:
-            note(24, "Downloading macOS kit from GitHub (curl)…")
-            url = github_asset_url("macos", tag)
+        if sys.platform == "darwin" and app is None and not wheel:
+            note(24, "Downloading macOS kit zip from GitHub (curl)…")
+            url = github_asset_url("macos", tag, suffix=".zip")
             if url:
                 archive = Path("/tmp/finn-macos.zip")
                 curl_bytes(url, archive)
-                unpack = Path("/tmp/finn-macos-unpack")
-                if unpack.exists():
-                    shutil.rmtree(unpack)
-                unpack_zip(archive, unpack)
-                app = find_macos_app(unpack)
-                if api_src is None:
-                    api_src = find_api_src(unpack)
-                if launcher is None:
-                    launcher = find_run_api(unpack)
+                if not is_zip_file(archive):
+                    note(26, "Downloaded file is not a zip (often a .dmg). Skipping desktop; API will still install.")
+                else:
+                    unpack = Path("/tmp/finn-macos-unpack")
+                    if unpack.exists():
+                        shutil.rmtree(unpack)
+                    try:
+                        unpack_zip(archive, unpack)
+                    except (subprocess.CalledProcessError, ValueError) as exc:
+                        note(26, f"Could not unpack macOS kit ({exc}). Continuing with API only.")
+                    else:
+                        app = find_macos_app(unpack)
+                        if api_src is None:
+                            api_src = find_api_src(unpack)
+                        if launcher is None:
+                            launcher = find_run_api(unpack)
+        elif sys.platform == "darwin" and app is None:
+            note(24, "Wheel is present — not downloading a Mac app. Use the finn-macos kit for the workstation .app.")
 
     if api_src is None and wheel is None:
         searched = ", ".join(str(p) for p in walk_roots(start)[:8])
