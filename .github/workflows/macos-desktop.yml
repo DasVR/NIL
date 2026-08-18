@@ -54,7 +54,7 @@ jobs:
         run: bash desktop/scripts/macos-launch-smoke.sh
 
       - name: Build installers (Setup.app, .pkg, Setup DMG, kit zip)
-        if: success() || failure()
+        if: success()
         run: bash desktop/scripts/macos-zip-app.sh
 
       - name: Upload macOS installers
