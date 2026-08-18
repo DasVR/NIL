@@ -43,10 +43,18 @@ export type PendingRun = {
   error?: string;
 };
 
+export type ChatAttachment = {
+  kind: 'block';
+  id: string;
+  label: string;
+};
+
 export type ChatMessage = {
   role: 'user' | 'assistant' | 'system';
   content: string;
   commands?: string[];
+  runIds?: string[];
+  attachments?: ChatAttachment[];
 };
 
 export type TermBlock = {
@@ -71,6 +79,7 @@ export type SpaceLayout = {
   leftOpen: boolean;
   rightOpen: boolean;
   aiPinned: boolean;
+  aiOpen: boolean;
   inspectorTab: InspectorTab;
   activeView: CenterView;
   selectedTargetId: string;

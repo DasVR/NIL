@@ -24,7 +24,10 @@ cd web && npm install && npm run dev</code></pre>
   <h2>Workstation</h2>
   <p>
     Open <a href="/app">/app</a>. Create a Space, paste scope, run commands from the block terminal.
-    <kbd>⌘K</kbd> is the OS of the app. <kbd>⌘J</kbd> summons Finn. <kbd>⌘↵</kbd> approves the pending block.
+    English typed in <kbd>$</kbd> goes to Finn; real commands stay in the shell.
+    <kbd>⌘J</kbd> opens the Finn column beside the workspace (not an overlay).
+    <kbd>⌘↵</kbd> in the terminal approves a pending block; in Finn it sends the message.
+    <kbd>⌘K</kbd> is the OS of the app.
   </p>
 
   <h2>Providers</h2>

@@ -107,7 +107,7 @@
               {/if}
               <span class="hover-actions">
                 <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); copyHost(target.host); }}>copy</button>
-                <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); appState.aiStripOpen = true; appState.send(`Scan ${target.host} and summarize open services.`); }}>ask</button>
+                <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); void appState.send(`Scan ${target.host} and summarize open services.`); }}>ask</button>
               </span>
             </div>
           {/each}

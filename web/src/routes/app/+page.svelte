@@ -16,20 +16,27 @@
         <button type="button" class:on={appState.activeView === 'terminal'} onclick={() => appState.setView('terminal')} title="Terminal (⌘T)">Term</button>
         <button type="button" class:on={appState.activeView === 'artifact'} onclick={() => appState.setView('artifact')} title="Artifact (⌘E)">Artifact</button>
         <button type="button" class:on={appState.activeView === 'split'} onclick={() => appState.setView('split')} title="Split (⌘\\)">Split</button>
-        <button type="button" class:on={appState.aiStripOpen} onclick={() => appState.toggleAi()} title="Finn (⌘J)">Finn</button>
+        <button
+          type="button"
+          class:on={appState.aiStripOpen}
+          class:busy={appState.busy && !appState.aiStripOpen}
+          onclick={() => appState.toggleAi()}
+          title="Finn (⌘J)"
+        >Finn</button>
       </div>
     </div>
 
-    <div class="surface" class:split={appState.activeView === 'split'}>
-      {#if appState.activeView === 'terminal' || appState.activeView === 'split'}
-        <TerminalBlocks />
-      {/if}
-      {#if appState.activeView === 'artifact' || appState.activeView === 'split'}
-        <ArtifactPane />
-      {/if}
+    <div class="work-row">
+      <div class="surface" class:split={appState.activeView === 'split'}>
+        {#if appState.activeView === 'terminal' || appState.activeView === 'split'}
+          <TerminalBlocks />
+        {/if}
+        {#if appState.activeView === 'artifact' || appState.activeView === 'split'}
+          <ArtifactPane />
+        {/if}
+      </div>
+      <AiStrip />
     </div>
-
-    <AiStrip />
   {/if}
 </div>
 
@@ -65,13 +72,21 @@
     color: var(--text-faint);
   }
   .views button.on { color: var(--green); background: var(--green-soft); }
+  .views button.busy { color: var(--green); }
+  .work-row {
+    flex: 1;
+    min-height: 0;
+    display: flex;
+    position: relative;
+    overflow: hidden;
+  }
   .surface {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     display: flex;
     overflow: hidden;
     position: relative;
-    padding-bottom: 26px;
   }
   .surface.split > :global(*) { flex: 1; min-width: 0; }
   .surface.split > :global(.artifact) { border-left: 1px solid var(--glass-border); }

@@ -34,8 +34,11 @@
       appState.pluginMenu = '';
       return;
     }
-    if (appState.aiStripOpen && !appState.aiStripPinned) {
-      appState.aiStripOpen = false;
+    const active = document.activeElement;
+    const typing = isTypingTarget(active);
+    const inFinn = active instanceof HTMLElement && active.dataset.composer === 'finn';
+    if ((inFinn || !typing) && !appState.aiStripPinned) {
+      appState.hideFinn();
     }
   }
 
@@ -54,6 +57,11 @@
 
     const typing = isTypingTarget(ev.target);
     if (typing && (hit.name === 'focusLeft' || hit.name === 'focusCenter' || hit.name === 'focusRight')) {
+      return;
+    }
+    const inFinn =
+      ev.target instanceof HTMLElement && ev.target.dataset.composer === 'finn';
+    if (inFinn && (hit.name === 'approve' || hit.name === 'reject')) {
       return;
     }
 

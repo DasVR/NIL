@@ -212,7 +212,6 @@
         },
         alt: () => {
           appState.selectTarget(t);
-          appState.aiStripOpen = true;
           void appState.send(`Scan ${t.host} and summarize open services.`);
           close();
         },

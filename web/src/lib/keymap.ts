@@ -78,8 +78,8 @@ export const PALETTE_RECENTS_KEY = 'finn.palette.recents';
 export const SHORTCUT_HELP: { keys: string; action: string }[] = [
   { keys: '⌘K', action: 'Command palette' },
   { keys: '⌘P', action: 'Go to target' },
-  { keys: '⌘J', action: 'Toggle AI strip' },
-  { keys: '⌘⇧J', action: 'Pin AI strip' },
+  { keys: '⌘J', action: 'Toggle Finn agent column' },
+  { keys: '⌘⇧J', action: 'Pin Finn agent' },
   { keys: '⌘,', action: 'Settings' },
   { keys: '⌘B', action: 'Toggle sidebar' },
   { keys: '⌘⇧B', action: 'Toggle inspector' },
