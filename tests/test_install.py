@@ -17,6 +17,8 @@ def test_cli_wrapper_syntax():
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-pkg.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-setup-dmg.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "pkg-scripts" / "postinstall")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "strip-adhoc-signature.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "Fix macOS Gatekeeper.command")])
 
 
 def test_find_wheel_in_dist(tmp_path):
@@ -66,6 +68,15 @@ def test_ignores_unrelated_apps(tmp_path):
     )
     assert not engine.is_finn_workstation(cursor)
     assert engine.is_applications_dir(cursor.parent)
+
+
+def test_clear_macos_quarantine_is_safe(tmp_path):
+    sys.path.insert(0, str(INSTALL))
+    import engine
+
+    app = tmp_path / "Finn Pentest Harness.app"
+    app.mkdir()
+    engine.clear_macos_quarantine(app)
 
 
 def test_is_zip_file(tmp_path):

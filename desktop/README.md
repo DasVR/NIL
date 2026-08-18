@@ -18,7 +18,7 @@ Requires macOS 12+ and Xcode command-line tools.
 
 ### First-time permissions
 
-The very first launch may show Gatekeeper. Right-click the `.app` → **Open**, or run `xattr -cr "Finn Pentest Harness.app"`.
+GitHub downloads are quarantined. An ad-hoc-signed app plus that flag makes macOS say the app is **damaged**. CI ships the app **unsigned** and includes **Fix macOS Gatekeeper.command**. Double-click that helper, or run `xattr -cr` on the `.app` / `.pkg` / `.dmg`, then open it. Right-click → Open is enough for “unidentified developer” but not always for “damaged”.
 
 | Permission | Why Finn asks | Required? |
 |------------|---------------|-----------|
@@ -51,7 +51,7 @@ npm run tauri build -- --bundles app,dmg
 
 `npm run build:macos:app` builds **only** the `.app` and zips it (`ditto -c -k --keepParent` so the bundle stays a real Mac application). Unzip on a Mac, then drag the `.app` to `/Applications`.
 
-The default config uses ad-hoc signing (`signingIdentity: "-"`) so builds work without an Apple Developer certificate.
+Distribution builds leave `signingIdentity` unset (unsigned). Ad-hoc signing (`-`) plus a GitHub quarantine flag is what produces the “damaged and can’t be opened” dialog. Developer ID + notarization is optional (`desktop/scripts/macos-notarize.sh`) when you have an Apple certificate.
 
 ### Production signing + notarization
 

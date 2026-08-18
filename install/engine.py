@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Callable
 
 REPO = os.environ.get("FINN_REPO", "DasVR/finn-pentest-harness")
-SETUP_VERSION = "0.1.4"
+SETUP_VERSION = "0.1.5"
 Progress = Callable[[int, str], None]
 
 DOCKER_TOS = """Docker sandbox terms
@@ -338,7 +338,16 @@ def install_macos_app(app: Path, appdir: Path, progress: Progress) -> Path:
         subprocess.check_call(["ditto", str(app), str(dest)])
     else:
         shutil.copytree(app, dest)
+    clear_macos_quarantine(dest)
     return dest
+
+
+def clear_macos_quarantine(path: Path) -> None:
+    """Drop com.apple.quarantine so Gatekeeper does not call a GitHub download 'damaged'."""
+    xattr = shutil.which("xattr")
+    if not xattr or not path.exists():
+        return
+    subprocess.call([xattr, "-cr", str(path)], stdout=subprocess.DEVNULL, stderr=subprocess.DEVNULL)
 
 
 def unpack_zip(archive: Path, dest: Path) -> None:

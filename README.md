@@ -8,11 +8,13 @@ Use this only against systems you are authorized to test.
 
 Download **Finn-Setup** for your OS and double-click it. No Terminal.
 
-- **macOS:** `Finn-Setup.pkg` (Apple Installer) or `Finn-Setup.dmg`
+- **macOS:** `Finn-Setup.pkg` (Apple Installer) or `Finn-Setup.dmg` from the **Finn-Setup-macOS-*** artifact
 - **Windows:** `Finn-Setup.exe`
 - **Linux:** `Finn-Setup.deb` or the AppImage
 
-Then open Finn. The API starts with the app. Do not use the python wheel zip as a Mac installer.
+Then open Finn. The API starts with the app. Do not use the python wheel zip (`finn-python-*`) as a Mac installer.
+
+If macOS says the download is **damaged**, that is Gatekeeper quarantine on a GitHub file, not a corrupt archive. Double-click **Fix macOS Gatekeeper.command** next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then open it again. Right-click → Open also works for “unidentified developer”; it does not always clear the damaged message.
 
 In other terminals:
 

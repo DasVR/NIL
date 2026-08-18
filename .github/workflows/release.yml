@@ -61,7 +61,6 @@ jobs:
         working-directory: desktop
         env:
           CI: true
-          APPLE_SIGNING_IDENTITY: "-"
         run: npm run tauri -- build --bundles app,dmg
 
       - name: Launch smoke test
@@ -306,8 +305,8 @@ jobs:
             echo ""
             echo "| Platform | File | Notes |"
             echo "| --- | --- | --- |"
-            echo "| **macOS (installer)** | \`Finn-Setup-${TAG}-macOS.pkg\` | Double-click. Apple Installer.app — no Terminal. |"
-            echo "| **macOS (Setup DMG)** | \`Finn-Setup-${TAG}-macOS.dmg\` | Open the disk image, double-click Finn Setup.app. |"
+            echo "| **macOS (installer)** | \`Finn-Setup-${TAG}-macOS.pkg\` | Double-click. If macOS says damaged, run \`xattr -cr\` on the file first. |"
+            echo "| **macOS (Setup DMG)** | \`Finn-Setup-${TAG}-macOS.dmg\` | Open the disk image. If Finn Setup.app is \"damaged\", double-click Fix macOS Gatekeeper.command. |"
             echo "| **Windows** | \`Finn-Setup-${TAG}-Windows.exe\` | Double-click. NSIS wizard, current user or all users. |"
             echo "| **Linux** | \`Finn-Setup-${TAG}-Linux.deb\` | Double-click in Ubuntu Software, or \`dpkg -i\`. |"
             echo "| **Linux (AppImage)** | \`Finn-Setup-${TAG}-Linux.AppImage\` | Mark executable in file properties, then double-click. |"

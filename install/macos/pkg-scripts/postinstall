@@ -19,6 +19,7 @@ USER_HOME="${USER_HOME:-/Users/${CONSOLE}}"
 
 mkdir -p "${USER_HOME}/.finn-pentest" "${USER_HOME}/.local/finn" "${USER_HOME}/.local/bin"
 if [[ -d "$APP" ]]; then
+  xattr -cr "$APP" 2>/dev/null || true
   API="$(find "$APP/Contents/Resources" -name 'run-api.py' | head -1 || true)"
   if [[ -n "$API" ]]; then
     API_ROOT="$(dirname "$API")"

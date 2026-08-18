@@ -17,7 +17,11 @@ cleanup() { rm -rf "$STAGE"; }
 trap cleanup EXIT
 
 ditto "$SETUP" "${STAGE}/Finn Setup.app"
+cp "${ROOT}/install/macos/Fix macOS Gatekeeper.command" "${STAGE}/"
+cp "${ROOT}/install/macos/INSTALL.txt" "${STAGE}/"
+chmod +x "${STAGE}/Fix macOS Gatekeeper.command"
 ln -s /Applications "${STAGE}/Applications"
+bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${STAGE}/Finn Setup.app"
 
 VOL="Finn Setup"
 rm -f "${DMG_OUT}"

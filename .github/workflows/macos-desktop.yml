@@ -47,7 +47,6 @@ jobs:
         working-directory: desktop
         env:
           CI: true
-          APPLE_SIGNING_IDENTITY: "-"
         run: npm run tauri -- build --bundles app,dmg
 
       - name: Launch smoke test
