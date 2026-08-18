@@ -11,6 +11,7 @@ from __future__ import annotations
 import argparse
 import sys
 import threading
+import traceback
 from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
@@ -304,10 +305,14 @@ def gui_main(args: argparse.Namespace) -> int:
 
                 root.after(0, done)
             except Exception as exc:
-                def fail() -> None:
-                    status.set(str(exc))
-                    append_log(f"ERROR  {exc}")
-                    messagebox.showerror("Finn Setup", str(exc))
+                err = f"{type(exc).__name__}: {exc}"
+                detail = traceback.format_exc()
+
+                def fail(message: str = err, tb: str = detail) -> None:
+                    status.set(message)
+                    append_log(f"ERROR  {message}")
+                    append_log(tb)
+                    messagebox.showerror("Finn Setup", message)
                     step.set(2)
                     show_step()
 
