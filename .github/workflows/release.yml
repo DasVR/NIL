@@ -4,6 +4,19 @@ on:
   push:
     tags:
       - "v*"
+    branches: [master]
+    paths:
+      - "finn_pentest/**"
+      - "desktop/**"
+      - "web/**"
+      - "plugins/**"
+      - "tools/**"
+      - "sandbox/**"
+      - "pyproject.toml"
+      - "requirements.txt"
+      - "docker-compose.yml"
+      - "Dockerfile.*"
+      - ".github/workflows/release.yml"
   workflow_dispatch:
     inputs:
       tag:
@@ -179,6 +192,7 @@ jobs:
   publish:
     name: Publish GitHub Release
     needs: [build-macos, build-windows, build-linux]
+    if: github.ref_type == 'tag' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
