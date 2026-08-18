@@ -44,7 +44,35 @@
     }
     return blocks;
   }
+
+  // Last Finn status line for the thin collapsed bar.
+  const lastStatus = $derived.by(() => {
+    const msgs = appState.messages;
+    for (let i = msgs.length - 1; i >= 0; i--) {
+      if (msgs[i].role === 'assistant') {
+        const first = msgs[i].content.split('\n').find((l) => l.trim());
+        return first ? first.trim().slice(0, 80) : 'Finn ready';
+      }
+    }
+    return appState.busy ? 'Finn is working…' : 'Finn ready';
+  });
 </script>
+
+<!-- Thin collapsed bar — state 2 of the AI strip state machine -->
+{#if !appState.aiStripOpen && (appState.messages.length > 0 || appState.busy)}
+  <button
+    type="button"
+    class="ai-thin-bar"
+    onclick={() => appState.aiStripOpen = true}
+    title="Expand AI strip (Cmd+J)"
+    aria-label="Expand AI strip"
+  >
+    <span class="thin-dot" class:busy={appState.busy}></span>
+    <span class="thin-label mono">{appState.busy ? 'finn working' : 'finn'}</span>
+    <span class="thin-status mono">{lastStatus}</span>
+    <span class="thin-hint mono">⌘J</span>
+  </button>
+{/if}
 
 {#if appState.aiStripOpen}
   <div class="ai-strip" bind:this={stripRef}>
@@ -165,6 +193,74 @@
     flex-direction: column;
     z-index: 50;
     animation: aiSlideUp 280ms var(--spring-bouncy);
+  }
+
+  /* Thin collapsed bar — 26px, glass-2, top border only */
+  .ai-thin-bar {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 26px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 14px;
+    background: var(--glass-2);
+    border: none;
+    border-top: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
+    color: var(--text-dim);
+    cursor: pointer;
+    z-index: 50;
+    transition: background 150ms var(--spring-control);
+  }
+
+  .ai-thin-bar:hover {
+    background: var(--glass-3);
+  }
+
+  .thin-dot {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green-glow);
+    flex-shrink: 0;
+  }
+
+  .thin-dot.busy {
+    animation: pulse 1.2s ease-in-out infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.35; }
+  }
+
+  .thin-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+
+  .thin-status {
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .thin-hint {
+    font-size: 10px;
+    color: var(--text-faint);
+    flex-shrink: 0;
   }
 
   @keyframes aiSlideUp {
@@ -415,6 +511,8 @@
 
   @media (prefers-reduced-motion: reduce) {
     .ai-strip { animation: none; }
+    .ai-thin-bar { transition: none; }
+    .thin-dot.busy { animation: none; opacity: 1; }
     .send-btn { transition: none; }
     .cursor { animation: none; opacity: 0; }
   }
