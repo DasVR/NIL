@@ -53,16 +53,18 @@ jobs:
       - name: Launch smoke test
         run: bash desktop/scripts/macos-launch-smoke.sh
 
-      - name: Zip .app for download
+      - name: Build installers (Setup.app, .pkg, Setup DMG, kit zip)
         if: success() || failure()
         run: bash desktop/scripts/macos-zip-app.sh
 
-      - name: Upload macOS packages
+      - name: Upload macOS installers
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: finn-macos-${{ github.sha }}
+          name: Finn-Setup-macOS-${{ github.sha }}
           path: |
+            desktop/src-tauri/target/release/bundle/macos/Finn-Setup.pkg
+            desktop/src-tauri/target/release/bundle/macos/Finn-Setup.dmg
             desktop/src-tauri/target/release/bundle/macos/*.zip
             desktop/src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: warn

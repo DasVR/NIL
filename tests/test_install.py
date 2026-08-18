@@ -14,6 +14,9 @@ INSTALL = ROOT / "install"
 def test_cli_wrapper_syntax():
     subprocess.check_call(["bash", "-n", str(INSTALL / "finn-install.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-setup-app.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-pkg.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-setup-dmg.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "pkg-scripts" / "postinstall")])
 
 
 def test_find_wheel_in_dist(tmp_path):

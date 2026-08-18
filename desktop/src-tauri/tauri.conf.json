@@ -70,7 +70,9 @@
       },
       "nsis": {
         "installMode": "both",
-        "displayLanguageSelector": false
+        "displayLanguageSelector": false,
+        "oneClick": false,
+        "allowToChangeInstallationDirectory": true
       }
     },
     "macOS": {

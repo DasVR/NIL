@@ -42,18 +42,22 @@ cp -R "${APP}" "${PAYLOAD}/"
 bash "${ROOT}/install/macos/make-setup-app.sh" "${KIT}/Finn Setup.app" "${PAYLOAD}"
 rm -rf "${PAYLOAD}"
 
+chmod +x "${ROOT}/install/macos/make-pkg.sh" "${ROOT}/install/macos/make-setup-dmg.sh"
+bash "${ROOT}/install/macos/make-pkg.sh" "${BUNDLE_DIR}" "${APP}"
+bash "${ROOT}/install/macos/make-setup-dmg.sh" "${KIT}/Finn Setup.app"
+
 cat > "${KIT}/INSTALL.txt" <<'EOF'
 Finn Setup
 ==========
 
-Double-click  Finn Setup.app
+No Terminal needed.
 
-That is the installer (progress bar, user/admin, online/offline, host/Docker).
-It copies the workstation into Applications (or ~/Applications) and installs
-the API next to it. Then open Finn — the API starts with the app.
+1. Double-click Finn-Setup.pkg (Apple Installer, progress bar)
+   or open Finn-Setup.dmg and double-click Finn Setup.app
 
-You can still drag "Finn Pentest Harness.app" into Applications yourself,
-or open the .dmg. Headless:  python3 install/finn-setup.py --cli --user --offline --host
+2. Open Finn Pentest Harness from Applications. The API starts with the app.
+
+User-only copy (no admin): double-click Finn Setup.app and choose User.
 EOF
 
 OUT="${BUNDLE_DIR}/Finn-Pentest-Harness-macOS.zip"

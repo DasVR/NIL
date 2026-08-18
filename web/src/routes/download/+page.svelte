@@ -14,12 +14,10 @@
   let loading = $state(true);
   let error = $state('');
 
-  const installSnippet = `# macOS — unzip the kit, then double-click Finn Setup.app
-# Windows — run Finn-Pentest-Harness-*-Windows-x64-setup.exe (progress bar, current user or all users)
-# Linux — AppImage, or: python3 install/finn-setup.py
-
-# Headless (same engine as the GUI):
-python3 install/finn-setup.py --cli --user --offline --host`;
+  const installSnippet = `# Double-click — no Terminal
+# macOS:   Finn-Setup.pkg  or  Finn-Setup.dmg
+# Windows: Finn-Setup.exe
+# Linux:   Finn-Setup.deb  or  Finn-Setup.AppImage`;
 
   load();
 
@@ -42,13 +40,19 @@ python3 install/finn-setup.py --cli --user --offline --host`;
 
   function primaryAsset(release) {
     if (!release?.assets?.length) return null;
-    const macosZip = release.assets.find(
-      (a) => a.name.toLowerCase().endsWith('.zip') && /macos|darwin/i.test(a.name)
-    );
-    if (macosZip) return macosZip;
-    const order = ['.dmg', '.exe', '.appimage', '.deb', '.msi'];
-    for (const ext of order) {
-      const hit = release.assets.find((a) => a.name.toLowerCase().endsWith(ext));
+    const prefer = [
+      (a) => a.name.toLowerCase().includes('finn-setup') && a.name.toLowerCase().endsWith('.pkg'),
+      (a) => a.name.toLowerCase().endsWith('.pkg'),
+      (a) => a.name.toLowerCase().includes('finn-setup') && a.name.toLowerCase().endsWith('.exe'),
+      (a) => a.name.toLowerCase().endsWith('.exe'),
+      (a) => a.name.toLowerCase().endsWith('.zip') && /macos|darwin/i.test(a.name),
+      (a) => a.name.toLowerCase().endsWith('.dmg'),
+      (a) => a.name.toLowerCase().endsWith('.deb'),
+      (a) => a.name.toLowerCase().endsWith('.appimage'),
+      (a) => a.name.toLowerCase().endsWith('.msi')
+    ];
+    for (const pred of prefer) {
+      const hit = release.assets.find(pred);
       if (hit) return hit;
     }
     return release.assets[0];
@@ -70,9 +74,9 @@ python3 install/finn-setup.py --cli --user --offline --host`;
     <p class="eyebrow">Desktop builds · {APP_TAG}</p>
     <h1>Download Finn</h1>
     <p class="lede">
-      Native apps for macOS, Windows, and Linux. Unzip the macOS kit and
-      double-click <strong>Finn Setup.app</strong> (progress bar, like a Windows
-      setup.exe). Windows uses the NSIS <strong>.exe</strong> / MSI. The API starts with the app.
+      Native apps for macOS, Windows, and Linux. Double-click
+      <strong>Finn-Setup.pkg</strong> (Mac), <strong>Finn-Setup.exe</strong> (Windows),
+      or <strong>Finn-Setup.deb</strong> (Linux). No Terminal. The API starts with the app.
     </p>
     <div class="hero-actions">
       {#if latest}

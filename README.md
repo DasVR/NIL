@@ -6,17 +6,13 @@ Use this only against systems you are authorized to test.
 
 ## Quick start
 
-**macOS:** unzip the kit and double-click **Finn Setup.app** (progress bar, user/admin, online/offline).
+Download **Finn-Setup** for your OS and double-click it. No Terminal.
 
-**Windows:** run the NSIS **setup.exe** (or MSI). It offers current-user vs all-users, like a typical desktop installer.
+- **macOS:** `Finn-Setup.pkg` (Apple Installer) or `Finn-Setup.dmg`
+- **Windows:** `Finn-Setup.exe`
+- **Linux:** `Finn-Setup.deb` or the AppImage
 
-**Linux:** AppImage / `.deb`, or `python3 install/finn-setup.py`.
-
-```bash
-python3 install/finn-setup.py --cli --user --offline --host
-```
-
-The desktop app starts the bundled API with itself. Do not run `finn api` as a second service.
+Then open Finn. The API starts with the app. Do not use the python wheel zip as a Mac installer.
 
 In other terminals:
 

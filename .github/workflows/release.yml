@@ -67,13 +67,15 @@ jobs:
       - name: Launch smoke test
         run: bash desktop/scripts/macos-launch-smoke.sh
 
-      - name: Zip .app for download
+      - name: Zip kit, Finn Setup.app, .pkg, Setup DMG
         run: bash desktop/scripts/macos-zip-app.sh
 
       - uses: actions/upload-artifact@v4
         with:
           name: finn-macos-release
           path: |
+            desktop/src-tauri/target/release/bundle/macos/Finn-Setup.pkg
+            desktop/src-tauri/target/release/bundle/macos/Finn-Setup.dmg
             desktop/src-tauri/target/release/bundle/macos/*.zip
             desktop/src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
@@ -116,10 +118,21 @@ jobs:
         run: npm run tauri -- build --bundles nsis,msi
         shell: bash
 
+      - name: Name the NSIS file Finn-Setup.exe
+        shell: bash
+        run: |
+          mkdir -p dist-installers
+          exe="$(ls desktop/src-tauri/target/release/bundle/nsis/*.exe | head -1)"
+          cp "$exe" dist-installers/Finn-Setup.exe
+          msi="$(ls desktop/src-tauri/target/release/bundle/msi/*.msi | head -1 || true)"
+          if [[ -n "$msi" ]]; then cp "$msi" dist-installers/Finn-Setup.msi; fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: finn-windows-release
           path: |
+            dist-installers/Finn-Setup.exe
+            dist-installers/Finn-Setup.msi
             desktop/src-tauri/target/release/bundle/nsis/*.exe
             desktop/src-tauri/target/release/bundle/msi/*.msi
           if-no-files-found: error
@@ -181,10 +194,20 @@ jobs:
             sleep 60
           done
 
+      - name: Name Linux installers
+        run: |
+          mkdir -p dist-installers
+          img="$(ls desktop/src-tauri/target/release/bundle/appimage/*.AppImage | head -1 || true)"
+          if [[ -n "$img" ]]; then cp "$img" dist-installers/Finn-Setup.AppImage && chmod +x dist-installers/Finn-Setup.AppImage; fi
+          deb="$(ls desktop/src-tauri/target/release/bundle/deb/*.deb | head -1 || true)"
+          if [[ -n "$deb" ]]; then cp "$deb" dist-installers/Finn-Setup.deb; fi
+
       - uses: actions/upload-artifact@v4
         with:
           name: finn-linux-release
           path: |
+            dist-installers/Finn-Setup.AppImage
+            dist-installers/Finn-Setup.deb
             desktop/src-tauri/target/release/bundle/appimage/*.AppImage
             desktop/src-tauri/target/release/bundle/deb/*.deb
           if-no-files-found: error
@@ -204,8 +227,10 @@ jobs:
       - name: Build wheel
         run: |
           python -m pip install --upgrade pip build
+          python -m pip install -e ".[dev]"
+          python -m pytest tests -q
           python -m build --wheel
-          bash -n install/finn-install.sh
+          bash -n install/finn-install.sh install/macos/make-pkg.sh install/macos/pkg-scripts/postinstall
 
       - uses: actions/upload-artifact@v4
         with:
@@ -218,6 +243,7 @@ jobs:
             install/engine.py
             install/run-api.py
             install/Finn-Setup.cmd
+            install/macos/**
           if-no-files-found: error
           retention-days: 7
 
@@ -248,17 +274,20 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p dist
+          find release-assets -type f -name 'Finn-Setup.pkg' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-macOS.pkg" || true
+          find release-assets -type f -name 'Finn-Setup.dmg' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-macOS.dmg" || true
           find release-assets -type f -iname '*macos*.zip' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-macOS.zip" || true
-          find release-assets -type f -name '*.dmg' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-macOS.dmg" || true
+          find release-assets -type f -name '*.dmg' ! -name 'Finn-Setup*' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-macOS.dmg" || true
+          find release-assets -type f -name 'Finn-Setup.exe' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-Windows.exe" || true
           find release-assets -type f -name '*.exe' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64-setup.exe" || true
+          find release-assets -type f -name 'Finn-Setup.msi' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-Windows.msi" || true
           find release-assets -type f -name '*.msi' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64.msi" || true
+          find release-assets -type f -name 'Finn-Setup.AppImage' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-Linux.AppImage" || true
           find release-assets -type f -name '*.AppImage' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Linux-x86_64.AppImage" || true
+          find release-assets -type f -name 'Finn-Setup.deb' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-Linux.deb" || true
           find release-assets -type f -name '*.deb' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Linux-x86_64.deb" || true
           find release-assets -type f -name '*.whl' | head -1 | xargs -I{} cp "{}" "dist/finn_pentest-${RELEASE_TAG}-py3-none-any.whl" || true
-          cp release-assets/finn-python-release/finn-install.sh dist/finn-install.sh 2>/dev/null || find release-assets -name 'finn-install.sh' | head -1 | xargs -I{} cp "{}" dist/finn-install.sh || true
-          find release-assets -name 'finn-install.ps1' | head -1 | xargs -I{} cp "{}" dist/finn-install.ps1 || true
-          find release-assets -name 'run-api.py' | head -1 | xargs -I{} cp "{}" dist/run-api.py || true
-          chmod +x dist/*.AppImage dist/finn-install.sh 2>/dev/null || true
+          chmod +x dist/*.AppImage 2>/dev/null || true
           ls -lah dist/
           test "$(ls -1 dist | wc -l)" -gt 0
 
@@ -275,18 +304,16 @@ jobs:
             echo ""
             echo "| Platform | File | Notes |"
             echo "| --- | --- | --- |"
-            echo "| **macOS 12+ kit** | \`Finn-Pentest-Harness-${TAG}-macOS.zip\` | Unzip and double-click **Finn Setup.app** (progress bar). Also includes the workstation \`.app\`, \`.dmg\`, and API. |"
-            echo "| **macOS 12+ (DMG)** | \`Finn-Pentest-Harness-${TAG}-macOS.dmg\` | Disk image; drag the app if you skip Setup. |"
-            echo "| **Windows 10+** | \`Finn-Pentest-Harness-${TAG}-Windows-x64-setup.exe\` | NSIS setup with progress; current user or all users. API bundled. |"
-            echo "| **Linux** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.AppImage\` | \`chmod +x\` then run. |"
-            echo "| **Linux (deb)** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.deb\` | Debian/Ubuntu package. |"
-            echo "| **Python wheel** | \`finn_pentest-${TAG}-py3-none-any.whl\` | Offline/online installer payload for the API. |"
+            echo "| **macOS (installer)** | \`Finn-Setup-${TAG}-macOS.pkg\` | Double-click. Apple Installer.app — no Terminal. |"
+            echo "| **macOS (Setup DMG)** | \`Finn-Setup-${TAG}-macOS.dmg\` | Open the disk image, double-click Finn Setup.app. |"
+            echo "| **Windows** | \`Finn-Setup-${TAG}-Windows.exe\` | Double-click. NSIS wizard, current user or all users. |"
+            echo "| **Linux** | \`Finn-Setup-${TAG}-Linux.deb\` | Double-click in Ubuntu Software, or \`dpkg -i\`. |"
+            echo "| **Linux (AppImage)** | \`Finn-Setup-${TAG}-Linux.AppImage\` | Mark executable in file properties, then double-click. |"
             echo ""
             echo "## Quick start"
             echo ""
-            echo "1. **macOS:** unzip the kit → double-click \`Finn Setup.app\`."
-            echo "2. **Windows:** run the \`.exe\` setup."
-            echo "3. Open Finn. The API starts with the app — do not run a separate \`finn api\` process."
+            echo "Download the **Finn-Setup** file for your OS and double-click it. Do not use the python wheel zip as a Mac installer."
+            echo "Open Finn afterward — the API starts with the app."
             echo ""
             echo "## Changes since ${PREV:-initial release}"
             echo ""

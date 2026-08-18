@@ -1,0 +1,57 @@
+#!/bin/bash
+# Runs inside Apple's Installer.app after the .app is copied to /Applications.
+set -euo pipefail
+
+TARGET="${2:-/}"
+APP="${TARGET%/}/Applications/Finn Pentest Harness.app"
+if [[ ! -d "$APP" ]]; then
+  APP="$(find "${TARGET%/}/Applications" -maxdepth 1 -name 'Finn*.app' ! -name '*Setup*' | head -1 || true)"
+fi
+
+CONSOLE="$(stat -f %Su /dev/console 2>/dev/null || true)"
+if [[ -z "$CONSOLE" || "$CONSOLE" == "root" ]]; then
+  CONSOLE="${USER:-}"
+fi
+if [[ -n "$CONSOLE" ]]; then
+  USER_HOME="$(dscl . -read "/Users/${CONSOLE}" NFSHomeDirectory 2>/dev/null | awk '{print $2}')"
+fi
+USER_HOME="${USER_HOME:-/Users/${CONSOLE}}"
+
+mkdir -p "${USER_HOME}/.finn-pentest" "${USER_HOME}/.local/finn" "${USER_HOME}/.local/bin"
+if [[ -d "$APP" ]]; then
+  API="$(find "$APP/Contents/Resources" -name 'run-api.py' | head -1 || true)"
+  if [[ -n "$API" ]]; then
+    API_ROOT="$(dirname "$API")"
+    ditto "$API_ROOT" "${USER_HOME}/.local/finn" || cp -R "$API_ROOT/." "${USER_HOME}/.local/finn/"
+  fi
+fi
+
+cat > "${USER_HOME}/.finn-pentest/runtime.json" <<'EOF'
+{
+  "schema": 1,
+  "setup_complete": true,
+  "variant": "app",
+  "privilege": "admin",
+  "channel": "offline",
+  "sandbox": "host",
+  "features": { "ai": true, "tui": true, "bundled_api": true, "docker": false },
+  "docker_tos_accepted": false,
+  "docker_tos_accepted_at": null
+}
+EOF
+
+if [[ -f "${USER_HOME}/.local/finn/run-api.py" ]]; then
+  cat > "${USER_HOME}/.local/bin/finn-api" <<EOF
+#!/bin/bash
+export FINN_API_ROOT="${USER_HOME}/.local/finn"
+export FINN_VENV="${USER_HOME}/.finn-pentest/venv"
+exec python3 "\$FINN_API_ROOT/run-api.py" "\$@"
+EOF
+  chmod +x "${USER_HOME}/.local/bin/finn-api"
+fi
+
+if [[ -n "$CONSOLE" ]]; then
+  chown -R "${CONSOLE}:staff" "${USER_HOME}/.finn-pentest" "${USER_HOME}/.local/finn" "${USER_HOME}/.local/bin/finn-api" 2>/dev/null || true
+fi
+
+exit 0
