@@ -26,6 +26,24 @@
       if (!appState.aiStripPinned) appState.aiStripOpen = false;
     }
   }
+
+  // Render assistant content as terminal-style blocks, not chat bubbles.
+  // Split on ``` code fences and render fenced blocks as terminal output.
+  function renderBlocks(content) {
+    const parts = content.split(/```/);
+    const blocks = [];
+    for (let i = 0; i < parts.length; i++) {
+      const part = parts[i];
+      if (i % 2 === 1) {
+        // fenced code block
+        const [lang, ...rest] = part.split('\n');
+        blocks.push({ type: 'code', lang: (lang || '').trim(), body: rest.join('\n') });
+      } else if (part.trim()) {
+        blocks.push({ type: 'text', body: part.trim() });
+      }
+    }
+    return blocks;
+  }
 </script>
 
 {#if appState.aiStripOpen}
@@ -36,6 +54,9 @@
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
         <span class="label-micro">Finn</span>
+        {#if appState.mode}
+          <span class="mode-chip mono">{appState.mode}</span>
+        {/if}
       </div>
       <div class="ai-right">
         <button
@@ -75,15 +96,33 @@
         </div>
       {:else}
         {#each appState.messages.slice(-8) as msg}
-          <div class="msg" class:user={msg.role === 'user'} class:assistant={msg.role === 'assistant'}>
-            <span class="msg-role mono">{msg.role === 'user' ? 'you' : 'finn'}</span>
-            <div class="msg-body mono">{msg.content}</div>
-          </div>
+          {#if msg.role === 'user'}
+            <div class="block user-block">
+              <span class="block-prompt mono">$ {msg.content}</span>
+            </div>
+          {:else}
+            <div class="block assistant-block">
+              <div class="block-head mono">
+                <span class="block-tag">finn</span>
+                <span class="block-model">{appState.model}</span>
+              </div>
+              {#each renderBlocks(msg.content) as block}
+                {#if block.type === 'code'}
+                  <pre class="block-code mono"><code>{block.body}</code></pre>
+                {:else}
+                  <div class="block-text mono">{block.body}</div>
+                {/if}
+              {/each}
+            </div>
+          {/if}
         {/each}
         {#if isStreaming}
-          <div class="msg assistant">
-            <span class="msg-role mono">finn</span>
-            <div class="msg-body mono thinking"><span class="cursor">_</span></div>
+          <div class="block assistant-block">
+            <div class="block-head mono">
+              <span class="block-tag">finn</span>
+              <span class="block-model">{appState.model}</span>
+            </div>
+            <div class="block-text mono thinking"><span class="cursor">_</span></div>
           </div>
         {/if}
       {/if}
@@ -147,6 +186,16 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .mode-chip {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green);
+    background: var(--green-soft);
+    padding: 1px 6px;
+    border-radius: 4px;
   }
 
   .ai-right {
@@ -228,34 +277,58 @@
     color: var(--text);
   }
 
-  .msg {
+  /* Terminal-style blocks — no chat bubbles */
+  .block {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 4px;
     padding: 6px 10px;
-    border-radius: 8px;
-    max-width: 92%;
+    border-radius: 6px;
+    max-width: 100%;
   }
 
-  .msg.user {
+  .user-block {
     align-self: flex-end;
     background: var(--glass-3);
+    border: 1px solid var(--glass-border);
   }
 
-  .msg.assistant {
-    align-self: flex-start;
-    background: var(--glass-2);
+  .assistant-block {
+    align-self: stretch;
+    background: var(--abyss-2);
+    border: 1px solid var(--glass-border);
     border-left: 2px solid var(--green);
   }
 
-  .msg-role {
+  .block-prompt {
+    font-size: 12px;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .block-head {
+    display: flex;
+    align-items: center;
+    gap: 8px;
     font-size: 10px;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     color: var(--text-faint);
   }
 
-  .msg-body {
+  .block-tag {
+    color: var(--green);
+    font-weight: 600;
+  }
+
+  .block-model {
+    color: var(--text-faint);
+    text-transform: none;
+    letter-spacing: 0;
+  }
+
+  .block-text {
     font-size: 12px;
     line-height: 1.5;
     color: var(--text);
@@ -263,7 +336,21 @@
     word-break: break-word;
   }
 
-  .msg-body.thinking .cursor {
+  .block-code {
+    margin: 0;
+    padding: 8px 10px;
+    background: var(--abyss);
+    border: 1px solid var(--glass-border);
+    border-radius: 5px;
+    font-size: 11px;
+    line-height: 1.5;
+    color: var(--green-dim);
+    overflow-x: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .block-text.thinking .cursor {
     animation: blink 1s step-end infinite;
     color: var(--green);
   }

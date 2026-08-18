@@ -5,8 +5,9 @@
   let q = $state('');
   let selectedIndex = $state(0);
 
-  const commands = [
-    { id: 'chat', label: 'Go to chat', shortcut: '', run: () => goto('/app') },
+  // Static commands
+  const staticCommands = [
+    { id: 'chat', label: 'Go to workspace', shortcut: '', run: () => goto('/app') },
     { id: 'findings', label: 'Go to findings', shortcut: '', run: () => goto('/app/findings') },
     { id: 'notes', label: 'Go to notes', shortcut: '', run: () => goto('/app/notes') },
     { id: 'tools', label: 'Go to tools', shortcut: '', run: () => goto('/app/tools') },
@@ -19,8 +20,38 @@
     { id: 'newEng', label: 'New engagement', shortcut: '⌘N', run: () => { const n = prompt('Name?'); if (n) appState.createEngagement(n); } }
   ];
 
-  let filtered = $derived(
-    commands.filter((c) => c.label.toLowerCase().includes(q.toLowerCase()))
+  // Dynamic commands from live data — targets, findings, engagements, tools
+  const dynamicCommands = $derived([
+    ...appState.engagements.map((e) => ({
+      id: `eng-${e.name}`,
+      label: `Engagement: ${e.name}`,
+      group: 'engagements',
+      run: () => appState.select(e.name)
+    })),
+    ...appState.targets.map((t) => ({
+      id: `target-${t.id}`,
+      label: `Target: ${t.host}`,
+      group: 'targets',
+      run: () => { appState.activeView = 'terminal'; }
+    })),
+    ...appState.findings.map((f) => ({
+      id: `finding-${f.id}`,
+      label: `Finding: ${f.title}`,
+      group: 'findings',
+      run: () => goto('/app/findings')
+    })),
+    ...appState.plugins.map((p) => ({
+      id: `plugin-${p.name}`,
+      label: `Tool: ${p.name}`,
+      group: 'tools',
+      run: () => goto('/app/tools')
+    }))
+  ]);
+
+  const allCommands = $derived([...staticCommands, ...dynamicCommands]);
+
+  const filtered = $derived(
+    allCommands.filter((c) => c.label.toLowerCase().includes(q.toLowerCase()))
   );
 
   $effect(() => {
@@ -66,7 +97,7 @@
       </svg>
       <input
         bind:value={q}
-        placeholder="Search commands…"
+        placeholder="Search commands, targets, findings, tools…"
         autofocus
         onkeydown={onKey}
         aria-autocomplete="list"
@@ -87,11 +118,22 @@
           tabindex="0"
         >
           <span class="cmd-icon" aria-hidden="true">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75">
-              <polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>
-            </svg>
+            {#if cmd.group === 'engagements'}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M14 9h1M14 13h1"/></svg>
+            {:else if cmd.group === 'targets'}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
+            {:else if cmd.group === 'findings'}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5 19 19M19 5l-2.5 2.5M7.5 16.5 5 19"/></svg>
+            {:else if cmd.group === 'tools'}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
+            {:else}
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
+            {/if}
           </span>
           <span class="cmd-label">{cmd.label}</span>
+          {#if cmd.group}
+            <span class="cmd-group mono">{cmd.group}</span>
+          {/if}
           {#if cmd.shortcut}
             <kbd class="cmd-shortcut">{cmd.shortcut}</kbd>
           {/if}
@@ -99,8 +141,8 @@
       {:else}
         <li class="empty" role="presentation">
           <span class="empty-icon" aria-hidden="true">⌕</span>
-          <span class="empty-text">No commands match “{q}”</span>
-          <span class="empty-hint">Try a different search term</span>
+          <span class="empty-text">No results for “{q}”</span>
+          <span class="empty-hint">Try a command, target, finding, or tool name</span>
         </li>
       {/each}
     </ul>
@@ -153,7 +195,7 @@
 
   .search-icon {
     flex-shrink: 0;
-    color: var(--text-tertiary);
+    color: var(--text-faint);
   }
 
   .search-row input {
@@ -164,7 +206,7 @@
     padding: 0.35rem 0;
     font-size: 16px;
     font-weight: 500;
-    color: var(--text-primary);
+    color: var(--text);
     box-shadow: none;
   }
 
@@ -175,7 +217,7 @@
   }
 
   .search-row input::placeholder {
-    color: var(--text-tertiary);
+    color: var(--text-faint);
     font-weight: 400;
   }
 
@@ -192,9 +234,9 @@
     align-items: center;
     gap: 0.65rem;
     padding: 0.5rem 0.65rem;
-    border-radius: 999px;
+    border-radius: 8px;
     cursor: pointer;
-    color: var(--text-secondary);
+    color: var(--text-dim);
     font-size: 13px;
     transition:
       background 140ms var(--spring-control),
@@ -204,12 +246,12 @@
 
   li:hover:not(.empty) {
     background: rgba(255, 255, 255, 0.05);
-    color: var(--text-primary);
+    color: var(--text);
   }
 
   li.selected {
-    background: var(--accent-12);
-    color: var(--text-primary);
+    background: var(--green-soft);
+    color: var(--text);
     box-shadow:
       inset 0 1px 0 rgba(255, 255, 255, 0.05),
       0 1px 2px rgba(0, 0, 0, 0.15);
@@ -222,13 +264,13 @@
     height: 22px;
     border-radius: 6px;
     background: rgba(255, 255, 255, 0.04);
-    color: var(--text-tertiary);
+    color: var(--text-faint);
     flex-shrink: 0;
   }
 
   li.selected .cmd-icon {
-    color: var(--accent);
-    background: var(--accent-8);
+    color: var(--green);
+    background: var(--green-soft);
   }
 
   .cmd-label {
@@ -239,10 +281,22 @@
     text-overflow: ellipsis;
   }
 
+  .cmd-group {
+    font-size: 9px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-faint);
+    background: var(--abyss-2);
+    border: 1px solid var(--glass-border);
+    border-radius: 4px;
+    padding: 1px 5px;
+    flex-shrink: 0;
+  }
+
   .cmd-shortcut {
     font-family: var(--font-mono);
     font-size: 10px;
-    color: var(--text-tertiary);
+    color: var(--text-faint);
     background: var(--abyss-2);
     border: 1px solid var(--glass-border);
     border-radius: 5px;
@@ -251,7 +305,7 @@
   }
 
   li.selected .cmd-shortcut {
-    color: var(--text-secondary);
+    color: var(--text-dim);
     border-color: rgba(255, 255, 255, 0.1);
   }
 
@@ -267,19 +321,19 @@
 
   .empty-icon {
     font-size: 1.5rem;
-    color: var(--text-tertiary);
+    color: var(--text-faint);
     opacity: 0.5;
     line-height: 1;
   }
 
   .empty-text {
     font-size: 13px;
-    color: var(--text-secondary);
+    color: var(--text-dim);
   }
 
   .empty-hint {
     font-size: 12px;
-    color: var(--text-tertiary);
+    color: var(--text-faint);
   }
 
   .footer-hint {
@@ -291,7 +345,7 @@
     border-top: 1px solid var(--glass-border);
     background: rgba(0, 0, 0, 0.25);
     font-size: 11px;
-    color: var(--text-tertiary);
+    color: var(--text-faint);
   }
 
   .sep {
