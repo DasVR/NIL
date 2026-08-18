@@ -1,4 +1,5 @@
 const STORAGE_KEY = 'finn.apiBase';
+const AUTH_KEY = 'finn.apiKey';
 
 export function defaultApiBase(): string {
   if (typeof window === 'undefined') return 'http://127.0.0.1:8766';
@@ -7,7 +8,7 @@ export function defaultApiBase(): string {
   if ((window as unknown as { __TAURI_INTERNALS__?: unknown }).__TAURI_INTERNALS__) {
     return 'http://127.0.0.1:8766';
   }
-  return '';
+  return 'http://127.0.0.1:8766';
 }
 
 export function getApiBase(): string {
@@ -17,6 +18,22 @@ export function getApiBase(): string {
 
 export function setApiBase(url: string): void {
   localStorage.setItem(STORAGE_KEY, url);
+}
+
+export function getApiKey(): string {
+  if (typeof window === 'undefined') return '';
+  return localStorage.getItem(AUTH_KEY) ?? '';
+}
+
+export function setApiKey(key: string): void {
+  localStorage.setItem(AUTH_KEY, key);
+}
+
+function headers(base: HeadersInit = {}): HeadersInit {
+  const h: Record<string, string> = { 'Content-Type': 'application/json' };
+  const key = getApiKey();
+  if (key) h['Authorization'] = `Bearer ${key}`;
+  return { ...h, ...base };
 }
 
 function url(path: string): string {
@@ -32,13 +49,13 @@ async function parse(res: Response) {
 }
 
 export async function apiGet(path: string) {
-  return parse(await fetch(url(path)));
+  return parse(await fetch(url(path), { headers: headers() }));
 }
 
 export async function apiPost(path: string, body?: unknown) {
   return parse(await fetch(url(path), {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers: headers(),
     body: body === undefined ? undefined : JSON.stringify(body)
   }));
 }
@@ -46,13 +63,13 @@ export async function apiPost(path: string, body?: unknown) {
 export async function apiPut(path: string, body?: unknown) {
   return parse(await fetch(url(path), {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
+    headers: headers(),
     body: body === undefined ? undefined : JSON.stringify(body)
   }));
 }
 
 export async function apiDelete(path: string) {
-  return parse(await fetch(url(path), { method: 'DELETE' }));
+  return parse(await fetch(url(path), { method: 'DELETE', headers: headers() }));
 }
 
 export async function health() {
@@ -139,25 +156,50 @@ export function streamPentestChat(
 ): () => void {
   const abort = new AbortController();
 
-  (async () => {
-    try {
-      const result = await apiPost('/v1/chat', {
-        engagement: body.engagement,
-        message: body.message,
-        mode: body.mode || 'chat',
-        hunt: body.mode === 'hunt',
-        session_id: null
-      });
-      if (abort.signal.aborted) return;
-      const text = result.text || '';
-      if (text) onChunk({ type: 'text', content: text });
-      onChunk({ type: 'done' });
-    } catch (err) {
-      if (!abort.signal.aborted) {
-        onError(err instanceof Error ? err : new Error(String(err)));
+  fetch(url('/v1/pentest/chat/stream'), {
+    method: 'POST',
+    headers: headers(),
+    body: JSON.stringify(body),
+    signal: abort.signal,
+  }).then(async (res) => {
+    if (!res.ok) {
+      const text = await res.text().catch(() => res.statusText);
+      let detail = text;
+      try { detail = JSON.parse(text).detail || text; } catch { /* keep text */ }
+      throw new Error(detail || res.statusText);
+    }
+
+    const reader = res.body?.getReader();
+    if (!reader) throw new Error('No response body');
+
+    const decoder = new TextDecoder();
+    let buffer = '';
+
+    while (true) {
+      const { done, value } = await reader.read();
+      if (done) break;
+
+      buffer += decoder.decode(value, { stream: true });
+      const lines = buffer.split('\n');
+      buffer = lines.pop() ?? '';
+
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const chunk: StreamChunk = JSON.parse(line.slice(6));
+            onChunk(chunk);
+          } catch {
+            // ignore malformed SSE
+          }
+        }
       }
     }
-  })();
+    onChunk({ type: 'done' });
+  }).catch((err) => {
+    if (!abort.signal.aborted) {
+      onError(err instanceof Error ? err : new Error(String(err)));
+    }
+  });
 
   return () => abort.abort();
 }

@@ -5,6 +5,7 @@
   import { appState } from '$lib/stores.svelte';
   import '@xterm/xterm/css/xterm.css';
 
+  let { height = '100%' } = $props();
   let host;
   let term;
   let seen = 0;
@@ -74,48 +75,40 @@
   });
 </script>
 
-<section class="terminal-panel" role="region" aria-label="Terminal">
-  <div class="terminal-chrome">
-    <span class="terminal-title">Terminal</span>
-    <span class="terminal-hint">Live tool output</span>
-  </div>
+<section class="terminal-pane" role="region" aria-label="Terminal" style="height: {height}">
   <div class="terminal-host" bind:this={host}></div>
 </section>
 
 <style>
-  .terminal-panel {
+  .terminal-pane {
     display: flex;
     flex-direction: column;
-    height: 180px;
-    min-height: 120px;
-    resize: vertical;
     overflow: hidden;
-    border-top: 1px solid var(--glass-border);
     background: var(--abyss);
+    position: relative;
   }
-  .terminal-chrome {
-    height: 28px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 12px;
-    background: var(--glass);
-    border-bottom: 1px solid var(--glass-border);
-    font-family: var(--font-sans);
-    font-size: 11px;
-    color: var(--text-secondary);
-    user-select: none;
-  }
+
   .terminal-host {
     flex: 1;
-    padding: 6px 10px;
+    padding: 6px 12px;
     overflow: hidden;
   }
+
   .terminal-host :global(.xterm) {
     height: 100%;
   }
+
   .terminal-host :global(.xterm-viewport) {
     scrollbar-width: thin;
     scrollbar-color: rgba(255, 255, 255, 0.15) transparent;
+  }
+
+  .terminal-host :global(.xterm-viewport::-webkit-scrollbar) {
+    width: 6px;
+  }
+
+  .terminal-host :global(.xterm-viewport::-webkit-scrollbar-thumb) {
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 3px;
   }
 </style>

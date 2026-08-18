@@ -22,6 +22,22 @@ export type Finding = {
   body: string;
 };
 
+export type Target = {
+  id: string;
+  host: string;
+  ip?: string;
+  ports: number[];
+  status: 'pending' | 'scanning' | 'done' | 'error';
+};
+
+export type TimelineEvent = {
+  id: string;
+  timestamp: string;
+  type: 'scan' | 'finding' | 'command' | 'note' | 'chat';
+  title: string;
+  detail?: string;
+};
+
 export type PendingRun = {
   run_id: string;
   engagement: string;
@@ -36,25 +52,51 @@ export type ChatMessage = {
 };
 
 class AppState {
+  // Connection
   connected = $state(false);
   error = $state('');
+
+  // Engagement data
   engagements = $state<Engagement[]>([]);
   engagement = $state('default');
+  targets = $state<Target[]>([]);
   mode = $state<'hunt' | 'chat' | 'code' | 'report'>('chat');
   yolo = $state(false);
   model = $state('auto');
+
+  // Messages
   messages = $state<ChatMessage[]>([]);
+  sessionId = $state('');
+  busy = $state(false);
+
+  // Work product
   pending = $state<PendingRun[]>([]);
   findings = $state<Finding[]>([]);
   notes = $state('');
   scope = $state('');
+  timeline = $state<TimelineEvent[]>([]);
   plugins = $state<Plugin[]>([]);
+
+  // Terminal
   termLines = $state<string[]>([]);
-  busy = $state(false);
-  sessionId = $state('');
+
+  // Layout state — NEW v2
+  leftSidebarOpen = $state(true);
+  rightSidebarOpen = $state(true);
+  aiStripOpen = $state(false);
+  aiStripPinned = $state(false);
+  activeView = $state<'terminal' | 'editor' | 'map' | 'report'>('terminal');
+  terminalHeight = $state(420);
+
+  // UI overlays
   paletteOpen = $state(false);
   settingsOpen = $state(false);
   scanlines = $state(false);
+
+  // Computed
+  activeTarget = $derived(this.targets.find(t => t.status === 'scanning') || this.targets[0]);
+  criticalCount = $derived(this.findings.filter(f => f.severity === 'critical').length);
+  highCount = $derived(this.findings.filter(f => f.severity === 'high').length);
 
   async ping() {
     try {
@@ -166,6 +208,12 @@ class AppState {
   appendTerm(line: string) {
     this.termLines = [...this.termLines, line];
   }
+
+  // Layout helpers
+  toggleLeft() { this.leftSidebarOpen = !this.leftSidebarOpen; }
+  toggleRight() { this.rightSidebarOpen = !this.rightSidebarOpen; }
+  toggleAi() { this.aiStripOpen = !this.aiStripOpen; }
+  pinAi() { this.aiStripPinned = !this.aiStripPinned; }
 }
 
 export const appState = new AppState();

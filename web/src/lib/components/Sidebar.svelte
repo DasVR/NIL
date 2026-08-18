@@ -1,502 +1,421 @@
 <script>
   import { appState } from '$lib/stores.svelte';
-  import { page } from '$app/stores';
-  import { Motion } from 'svelte-motion';
 
-  let {
-    collapsed = false,
-    mobileOpen = false,
-    showNav = false,
-    onToggle = () => {},
-    onMobileClose = () => {}
-  } = $props();
+  const severityDots = {
+    critical: '#ff2d55',
+    high: '#ff5c5c',
+    medium: '#ffb454',
+    low: '#5cb8ff',
+    info: '#9a9a94'
+  };
 
-  const navItems = [
-    { href: '/app', label: 'Chat', icon: 'chat' },
-    { href: '/app/findings', label: 'Findings', icon: 'findings' },
-    { href: '/app/notes', label: 'Notes', icon: 'notes' },
-    { href: '/app/tools', label: 'Tools', icon: 'tools' },
-    { href: '/app/creds', label: 'Creds', icon: 'creds' },
-    { href: '/app/reports', label: 'Reports', icon: 'reports' },
-    { href: '/app/loot', label: 'Loot', icon: 'loot' },
-    { href: '/app/settings', label: 'Settings', icon: 'settings' }
-  ];
-
-  let sidebarWidth = $state(260);
-  let isResizing = $state(false);
-
-  function startResize(e) {
-    isResizing = true;
-    document.body.style.cursor = 'col-resize';
-    window.addEventListener('mousemove', onResize);
-    window.addEventListener('mouseup', stopResize);
+  function addTarget() {
+    const host = prompt('Target hostname or IP?');
+    if (host) {
+      appState.targets = [...appState.targets, {
+        id: crypto.randomUUID(),
+        host,
+        ports: [],
+        status: 'pending'
+      }];
+    }
   }
 
-  function onResize(e) {
-    if (!isResizing) return;
-    const next = Math.min(400, Math.max(200, e.clientX));
-    sidebarWidth = next;
-    document.documentElement.style.setProperty('--sidebar-width', `${next}px`);
+  function selectTarget(t) {
+    // set active target context
   }
 
-  function stopResize() {
-    isResizing = false;
-    document.body.style.cursor = '';
-    window.removeEventListener('mousemove', onResize);
-    window.removeEventListener('mouseup', stopResize);
-  }
-
-  async function addEngagement() {
-    const name = prompt('Engagement name?');
-    if (name) await appState.createEngagement(name.trim());
-  }
-
-  function isActive(href) {
-    const path = $page.url.pathname;
-    return path === href || (href !== '/app' && path.startsWith(href + '/'));
-  }
-
-  function selectEngagement(name) {
-    appState.select(name);
-    onMobileClose();
+  function severityColor(s) {
+    return severityDots[s?.toLowerCase()] || '#9a9a94';
   }
 </script>
 
-{#snippet navIcon(name)}
-  {#if name === 'chat'}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-  {:else if name === 'findings'}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="3"/></svg>
-  {:else if name === 'notes'}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
-  {:else if name === 'tools'}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
-  {:else if name === 'creds'}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
-  {:else if name === 'reports'}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M9 17H7A2 2 0 015 15V5a2 2 0 012-2h10a2 2 0 012 2v10a2 2 0 01-2 2h-2"/><rect x="9" y="13" width="6" height="8" rx="1"/></svg>
-  {:else if name === 'loot'}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
-  {:else}
-    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>
-  {/if}
-{/snippet}
-
-{#if mobileOpen}
-  <button class="mobile-backdrop" type="button" aria-label="Close sidebar" onclick={onMobileClose}></button>
-{/if}
-
-<aside
-  class="sidebar"
-  class:collapsed
-  class:mobile-open={mobileOpen}
-  role="complementary"
-  aria-label="Engagement spaces"
-  style="width: {collapsed ? '72px' : `${sidebarWidth}px`}"
->
-    <div class="brand">
-      <span class="logo">F</span>
-      <span class="brand-text" class:hide={collapsed}>Finn</span>
+<aside class="left-sidebar" class:open={appState.leftSidebarOpen} aria-label="Engagement targets">
+  <div class="ls-header">
+    <div class="ls-brand">
+      <span class="ls-logo">F</span>
+      <span class="ls-title">Finn</span>
     </div>
-
     <button
-      class="palette-btn"
-      onclick={() => {
-        appState.paletteOpen = true;
-        onMobileClose();
-      }}
+      type="button"
+      class="ls-toggle"
+      onclick={() => appState.toggleLeft()}
+      aria-label={appState.leftSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        {#if appState.leftSidebarOpen}
+          <path d="m15 18-6-6 6-6"/>
+        {:else}
+          <path d="m9 18 6-6-6-6"/>
+        {/if}
+      </svg>
+    </button>
+  </div>
+
+  {#if appState.leftSidebarOpen}
+    <!-- Search / Palette -->
+    <button
+      type="button"
+      class="ls-search"
+      onclick={() => appState.paletteOpen = true}
       aria-label="Open command palette"
     >
-      <span class="palette-left">
-        <svg class="palette-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-          <circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/>
-        </svg>
-        <span class="label" class:hide={collapsed}>Search…</span>
-      </span>
-      <kbd class="palette-kbd" class:hide={collapsed}>⌘K</kbd>
-    </button>
-
-    <div class="section" class:hide={collapsed}>Spaces</div>
-
-    <div class="engagements">
-      {#each appState.engagements as eng (eng.name)}
-        <button
-          class="row"
-          class:active={eng.name === appState.engagement}
-          onclick={() => selectEngagement(eng.name)}
-          aria-label={`Select engagement ${eng.name}`}
-          title={eng.name}
-        >
-          <span class="dot">{eng.name[0]?.toUpperCase() || '?'}</span>
-          <span class="label" class:hide={collapsed}>{eng.name}</span>
-        </button>
-      {/each}
-    </div>
-
-    <button class="new-engagement" onclick={addEngagement} aria-label="Create new engagement">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/>
       </svg>
-      <span class="label" class:hide={collapsed}>New Engagement</span>
+      <span>Search…</span>
+      <kbd class="mono">⌘K</kbd>
     </button>
 
-    {#if showNav}
-      <div class="section mobile-nav-label" class:hide={collapsed}>Navigate</div>
-      <nav class="mobile-nav" aria-label="Mobile navigation">
-        {#each navItems as item}
-          <a
-            class="row nav-row"
-            class:active={isActive(item.href)}
-            href={item.href}
-            aria-current={isActive(item.href) ? 'page' : undefined}
-            onclick={onMobileClose}
-          >
-            <span class="icon">{@render navIcon(item.icon)}</span>
-            <span class="label">{item.label}</span>
-          </a>
-        {/each}
-      </nav>
-    {/if}
+    <!-- Targets Tree -->
+    <section class="ls-section">
+      <div class="ls-section-header">
+        <span class="label-micro">Targets</span>
+        <button type="button" class="ls-add-btn" onclick={addTarget} aria-label="Add target">+</button>
+      </div>
+      <div class="ls-list">
+        {#if appState.targets.length === 0}
+          <p class="ls-empty">No targets. Add one to start.</p>
+        {:else}
+          {#each appState.targets as target}
+            <div class="target-row" class:active={appState.activeTarget?.id === target.id} onclick={() => selectTarget(target)}>
+              <span class="target-status" class:scanning={target.status === 'scanning'} class:done={target.status === 'done'} class:error={target.status === 'error'}></span>
+              <span class="target-host mono">{target.host}</span>
+              {#if target.ports.length}
+                <span class="target-ports mono">{target.ports.join(',')}</span>
+              {/if}
+            </div>
+          {/each}
+        {/if}
+      </div>
+    </section>
 
-    <Motion
-      let:motion
-      animate={{ rotate: collapsed ? 0 : 180 }}
-      transition={{ type: 'spring', stiffness: 400, damping: 24 }}
-    >
-    <button
-      use:motion
-      class="collapse desktop-only"
-      onclick={onToggle}
-      aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-    >
-      {collapsed ? '→' : '←'}
-    </button>
-    </Motion>
+    <!-- Findings Quick View -->
+    <section class="ls-section">
+      <div class="ls-section-header">
+        <span class="label-micro">Findings</span>
+        <div class="severity-counts">
+          {#if appState.criticalCount > 0}
+            <span class="count critical">{appState.criticalCount}</span>
+          {/if}
+          {#if appState.highCount > 0}
+            <span class="count high">{appState.highCount}</span>
+          {/if}
+        </div>
+      </div>
+      <div class="ls-list">
+        {#if appState.findings.length === 0}
+          <p class="ls-empty">No findings yet.</p>
+        {:else}
+          {#each appState.findings.slice(0, 8) as finding}
+            <div class="mini-finding">
+              <span class="mini-severity" style="background: {severityColor(finding.severity)}"></span>
+              <span class="mini-title">{finding.title}</span>
+            </div>
+          {/each}
+        {/if}
+      </div>
+    </section>
 
-    {#if !collapsed}
-      <div
-        class="resize-handle"
-        role="separator"
-        aria-orientation="vertical"
-        aria-valuemin={200}
-        aria-valuemax={400}
-        aria-valuenow={sidebarWidth}
-        aria-label="Resize sidebar"
-        onmousedown={startResize}
-        tabindex="0"
-        onkeydown={(e) => {
-          if (e.key === 'ArrowLeft') sidebarWidth = Math.max(200, sidebarWidth - 16);
-          if (e.key === 'ArrowRight') sidebarWidth = Math.min(400, sidebarWidth + 16);
-        }}
-      ></div>
-    {/if}
-  </aside>
+    <!-- Credentials -->
+    <section class="ls-section">
+      <div class="ls-section-header">
+        <span class="label-micro">Creds</span>
+      </div>
+      <div class="ls-list">
+        <p class="ls-empty">Cred store synced with backend.</p>
+      </div>
+    </section>
+  {/if}
+</aside>
 
 <style>
-  .mobile-backdrop {
-    display: none;
-    position: fixed;
-    inset: 0;
-    z-index: 85;
-    border: none;
-    background: rgba(0, 0, 0, 0.55);
-    cursor: pointer;
-    padding: 0;
-  }
-
-  .sidebar {
+  .left-sidebar {
     grid-column: 1;
-    grid-row: 1 / span 2;
-    position: relative;
+    grid-row: 1;
+    background: var(--glass-2);
+    border-right: 1px solid var(--glass-border);
+    backdrop-filter: blur(24px) saturate(1.5);
+    -webkit-backdrop-filter: blur(24px) saturate(1.5);
     display: flex;
     flex-direction: column;
-    gap: 0.2rem;
-    padding: 0.75rem 0.6rem;
-    background: var(--abyss-1);
-    border-right: 1px solid var(--glass-border);
-    min-width: 0;
-    z-index: 90;
-    height: 100%;
     overflow: hidden;
-    transition: width 420ms var(--spring-bouncy), padding 280ms var(--spring-smooth);
+    transition: width 320ms var(--spring-layout), opacity 200ms var(--spring-smooth);
+    width: 0px;
+    opacity: 0;
   }
 
-  .sidebar.collapsed {
-    padding: 0.75rem 0.4rem;
-    align-items: center;
+  .left-sidebar.open {
+    width: var(--sidebar-width);
+    opacity: 1;
   }
 
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    padding: 0.3rem 0.4rem;
-    margin-bottom: 0.4rem;
-  }
-
-  .logo {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    background: var(--accent);
-    color: var(--abyss);
-    font-weight: 800;
-    font-size: 14px;
+  .ls-header {
+    height: 40px;
     flex-shrink: 0;
-  }
-
-  .brand-text {
-    font-weight: 700;
-    color: var(--accent);
-    font-size: 1.05rem;
-    transition: opacity 200ms var(--spring-control);
-  }
-
-  .palette-btn {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: 0.5rem;
-    width: 100%;
-    text-align: left;
-    border-color: rgba(255, 255, 255, 0.08);
-    background: rgba(0, 0, 0, 0.25);
-    color: var(--text-secondary);
-    margin: 0.4rem 0;
-    font-size: 0.78rem;
-    padding: 0.42rem 0.55rem;
-    min-height: 44px;
-    border-radius: var(--radius-control);
+    padding: 0 12px;
+    border-bottom: 1px solid var(--glass-border);
+    background: var(--glass-3);
   }
 
-  .palette-btn:hover {
-    background: rgba(255, 255, 255, 0.06);
-    border-color: rgba(255, 255, 255, 0.12);
-  }
-
-  .palette-left {
+  .ls-brand {
     display: flex;
     align-items: center;
-    gap: 0.45rem;
-    min-width: 0;
+    gap: 8px;
   }
 
-  .palette-icon {
+  .ls-logo {
+    width: 24px;
+    height: 24px;
+    border-radius: 6px;
+    background: var(--green);
+    color: var(--abyss);
+    font-weight: 700;
+    font-size: 14px;
+    display: grid;
+    place-items: center;
     flex-shrink: 0;
-    opacity: 0.55;
   }
 
-  .palette-kbd {
-    font-family: var(--font-mono);
-    font-size: 0.62rem;
-    font-weight: 500;
-    background: var(--abyss-2);
-    padding: 0.12rem 0.35rem;
-    border-radius: 5px;
-    border: 1px solid var(--glass-border);
-    color: var(--text-tertiary);
-    flex-shrink: 0;
-    line-height: 1.4;
-  }
-
-  .section {
-    font-size: 11px;
+  .ls-title {
+    font-size: 14px;
     font-weight: 600;
-    color: var(--text-tertiary);
-    margin: 0.7rem 0.4rem 0.2rem;
-    transition: opacity 200ms var(--spring-control);
+    color: var(--text);
   }
 
-  .engagements {
-    display: flex;
-    flex-direction: column;
-    gap: 0.15rem;
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-  }
-
-  .row {
-    display: flex;
-    align-items: center;
-    gap: 0.55rem;
-    width: 100%;
-    text-align: left;
+  .ls-toggle {
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    min-height: unset;
+    display: grid;
+    place-items: center;
+    border-radius: 5px;
     border: none;
     background: transparent;
-    color: var(--text-secondary);
-    padding: 0.45rem 0.55rem;
-    min-height: 44px;
-    border-radius: var(--radius-control);
-    text-decoration: none;
-    cursor: pointer;
-    transition:
-      background 180ms var(--spring-control),
-      color 120ms var(--spring-control),
-      box-shadow 180ms var(--spring-control);
-    font-size: 0.85rem;
+    color: var(--text-faint);
+    transition: all 150ms var(--spring-control);
   }
 
-  .row:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text-primary);
+  .ls-toggle:hover {
+    background: var(--glass-3);
+    color: var(--text);
   }
 
-  .row.active {
-    background: var(--accent);
-    color: var(--abyss);
-    font-weight: 600;
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.25),
-      inset 0 -2px 4px rgba(0, 0, 0, 0.2);
-  }
-
-  .row.active .dot {
-    background: rgba(5, 5, 7, 0.2);
-    color: var(--abyss);
-  }
-
-  .new-engagement {
+  .ls-search {
+    margin: 8px 10px;
+    height: 32px;
     display: flex;
     align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    width: 100%;
-    margin-top: 0.5rem;
-    padding: 0.5rem 0.65rem;
-    min-height: 44px;
-    border-radius: var(--radius-control);
-    border: 1px dashed var(--accent-20);
-    background: var(--accent-8);
-    color: var(--accent);
+    gap: 8px;
+    padding: 0 10px;
+    border-radius: 6px;
+    background: var(--glass-3);
+    border: 1px solid var(--glass-border);
+    color: var(--text-dim);
     font-size: 12px;
-    font-weight: 600;
-    transition: background 150ms, border-color 150ms;
+    transition: all 150ms var(--spring-control);
   }
 
-  .new-engagement:hover {
-    background: var(--accent-12);
-    border-color: var(--accent-60);
+  .ls-search:hover {
+    border-color: var(--glass-border-strong);
+    color: var(--text);
   }
 
-  .dot {
-    display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 5px;
+  .ls-search kbd {
+    margin-left: auto;
+    font-size: 10px;
+    padding: 2px 5px;
+    border-radius: 4px;
     background: var(--abyss-2);
-    font-size: 0.7rem;
-    font-weight: 600;
-    flex-shrink: 0;
+    border: 1px solid var(--glass-border);
+    color: var(--text-faint);
   }
 
-  .icon {
+  .ls-section {
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    min-height: 0;
+    border-bottom: 1px solid var(--glass-border);
+  }
+
+  .ls-section:last-child {
+    border-bottom: none;
+    flex: 1;
+  }
+
+  .ls-section-header {
+    height: 28px;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 12px;
+    background: rgba(255, 255, 255, 0.02);
+  }
+
+  .ls-add-btn {
+    width: 20px;
+    height: 20px;
+    padding: 0;
+    min-height: unset;
     display: grid;
     place-items: center;
-    width: 22px;
-    height: 22px;
-    flex-shrink: 0;
-    opacity: 0.85;
+    border-radius: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-faint);
+    font-size: 14px;
+    font-weight: 300;
+    transition: all 120ms var(--spring-control);
   }
 
-  .label {
-    transition: opacity 200ms var(--spring-control), width 200ms var(--spring-control);
+  .ls-add-btn:hover {
+    background: var(--glass-3);
+    color: var(--green);
+  }
+
+  .ls-list {
+    overflow-y: auto;
+    padding: 4px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-height: 0;
+  }
+
+  .ls-empty {
+    font-size: 11px;
+    color: var(--text-faint);
+    padding: 12px;
+    text-align: center;
+  }
+
+  /* Target rows */
+  .target-row {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 8px;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: background 120ms var(--spring-control);
+    min-height: 32px;
+  }
+
+  .target-row:hover {
+    background: var(--glass-3);
+  }
+
+  .target-row.active {
+    background: var(--glass-3);
+    border-left: 2px solid var(--green);
+    padding-left: 6px;
+  }
+
+  .target-status {
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  .target-status.scanning {
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green-glow);
+    animation: pulse 1.5s ease-in-out infinite;
+  }
+
+  .target-status.done { background: var(--green-dim); }
+  .target-status.error { background: var(--danger); }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.4; }
+  }
+
+  .target-host {
+    font-size: 12px;
+    color: var(--text);
+    flex: 1;
     white-space: nowrap;
     overflow: hidden;
+    text-overflow: ellipsis;
   }
 
-  .hide {
-    opacity: 0;
-    width: 0;
+  .target-ports {
+    font-size: 10px;
+    color: var(--text-faint);
+    flex-shrink: 0;
+  }
+
+  /* Severity counts */
+  .severity-counts {
+    display: flex;
+    gap: 4px;
+  }
+
+  .count {
+    font-size: 10px;
+    font-weight: 600;
+    padding: 1px 5px;
+    border-radius: 8px;
+    font-family: var(--font-mono);
+  }
+
+  .count.critical {
+    background: var(--critical-soft);
+    color: var(--critical);
+  }
+
+  .count.high {
+    background: var(--danger-soft);
+    color: var(--danger);
+  }
+
+  /* Mini findings */
+  .mini-finding {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 8px;
+    border-radius: 4px;
+    transition: background 120ms var(--spring-control);
+    cursor: pointer;
+  }
+
+  .mini-finding:hover {
+    background: var(--glass-3);
+  }
+
+  .mini-severity {
+    width: 4px;
+    height: 16px;
+    border-radius: 2px;
+    flex-shrink: 0;
+  }
+
+  .mini-title {
+    font-size: 11px;
+    color: var(--text-dim);
+    white-space: nowrap;
     overflow: hidden;
-  }
-
-  .collapse {
-    margin-top: auto;
-    border: 1px solid var(--glass-border);
-    color: var(--text-tertiary);
-    width: 100%;
-    padding: 0.3rem;
-    min-height: 44px;
-    border-radius: var(--radius-control);
-  }
-
-  .resize-handle {
-    position: absolute;
-    top: 0;
-    right: -3px;
-    width: 6px;
-    height: 100%;
-    cursor: col-resize;
-    touch-action: none;
-    z-index: 5;
-    transition: box-shadow 180ms var(--spring-snappy), background 180ms ease;
-  }
-
-  .resize-handle:hover,
-  .resize-handle:focus-visible {
-    background: var(--accent-20);
-    box-shadow: 0 0 12px var(--accent-60);
-    outline: none;
-  }
-
-  .mobile-nav {
-    display: none;
-  }
-
-  .mobile-nav-label {
-    display: none;
-  }
-
-  @media (max-width: 1024px) {
-    .mobile-nav,
-    .mobile-nav-label {
-      display: block;
-    }
-
-    .mobile-nav {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-      margin-top: 0.5rem;
-      border-top: 1px solid var(--glass-border);
-      padding-top: 0.5rem;
-    }
-
-    .desktop-only {
-      display: none;
-    }
-
-    .mobile-backdrop {
-      display: block;
-    }
-
-    .sidebar {
-      position: fixed;
-      left: 0;
-      top: var(--titlebar-height);
-      bottom: var(--statusbar-height);
-      width: min(320px, 88vw) !important;
-      transform: translateX(-105%);
-      transition: transform 380ms var(--spring-layout);
-      box-shadow: var(--elevation-3);
-    }
-
-    .sidebar.mobile-open {
-      transform: translateX(0);
-    }
-
-    .resize-handle {
-      display: none;
-    }
+    text-overflow: ellipsis;
+    flex: 1;
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .sidebar {
+    .left-sidebar {
       transition: none;
+    }
+    .target-status.scanning {
+      animation: none;
+      opacity: 1;
     }
   }
 </style>

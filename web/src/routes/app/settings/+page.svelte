@@ -1,9 +1,10 @@
 <script>
-  import { getApiBase, setApiBase } from '$lib/api';
+  import { getApiBase, setApiBase, getApiKey, setApiKey } from '$lib/api';
   import { appState } from '$lib/stores.svelte';
   import { apiGet, apiPut } from '$lib/api';
 
   let apiBase = $state(getApiBase());
+  let apiKey = $state(getApiKey());
   let providers = $state({ priority: [] });
 
   async function load() {
@@ -13,6 +14,7 @@
 
   async function save() {
     setApiBase(apiBase);
+    setApiKey(apiKey);
     await apiPut('/v1/providers', providers);
     await appState.refresh();
   }
@@ -22,8 +24,10 @@
 
 <section class="page">
   <h1>Settings</h1>
-  <label for="api-base">API base URL (empty = same origin / Vite proxy)</label>
+  <label for="api-base">API base URL</label>
   <input id="api-base" bind:value={apiBase} placeholder="http://127.0.0.1:8766" />
+  <label for="api-key">API key (optional)</label>
+  <input id="api-key" type="password" bind:value={apiKey} placeholder="PENTEST_API_KEY if backend requires auth" />
   <label class="check">
     <input type="checkbox" bind:checked={appState.scanlines} />
     CRT scanlines
