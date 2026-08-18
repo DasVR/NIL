@@ -14,15 +14,10 @@
   let loading = $state(true);
   let error = $state('');
 
-  const installSnippet = `# One-file installer (macOS / Linux)
-curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/install/finn-install.sh | bash -s -- --user --online --host
-
-# Windows (PowerShell)
-# irm https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/install/finn-install.ps1 | iex
-# Or: .\\install\\finn-install.ps1 -User -Online -HostSandbox
-
-# Offline kit: unzip the macOS zip, then
-# bash install/finn-install.sh --user --offline --host`;
+  const installSnippet = `# Double-click — no Terminal
+# macOS:   Finn-Setup.pkg  or  Finn-Setup.dmg
+# Windows: Finn-Setup.exe
+# Linux:   Finn-Setup.deb  or  Finn-Setup.AppImage`;
 
   load();
 
@@ -45,13 +40,19 @@ curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/i
 
   function primaryAsset(release) {
     if (!release?.assets?.length) return null;
-    const macosZip = release.assets.find(
-      (a) => a.name.toLowerCase().endsWith('.zip') && /macos|darwin/i.test(a.name)
-    );
-    if (macosZip) return macosZip;
-    const order = ['.dmg', '.exe', '.appimage', '.deb', '.msi'];
-    for (const ext of order) {
-      const hit = release.assets.find((a) => a.name.toLowerCase().endsWith(ext));
+    const prefer = [
+      (a) => a.name.toLowerCase().includes('finn-setup') && a.name.toLowerCase().endsWith('.pkg'),
+      (a) => a.name.toLowerCase().endsWith('.pkg'),
+      (a) => a.name.toLowerCase().includes('finn-setup') && a.name.toLowerCase().endsWith('.exe'),
+      (a) => a.name.toLowerCase().endsWith('.exe'),
+      (a) => a.name.toLowerCase().endsWith('.zip') && /macos|darwin/i.test(a.name),
+      (a) => a.name.toLowerCase().endsWith('.dmg'),
+      (a) => a.name.toLowerCase().endsWith('.deb'),
+      (a) => a.name.toLowerCase().endsWith('.appimage'),
+      (a) => a.name.toLowerCase().endsWith('.msi')
+    ];
+    for (const pred of prefer) {
+      const hit = release.assets.find(pred);
       if (hit) return hit;
     }
     return release.assets[0];
@@ -73,9 +74,9 @@ curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/i
     <p class="eyebrow">Desktop builds · {APP_TAG}</p>
     <h1>Download Finn</h1>
     <p class="lede">
-      Native apps for macOS, Windows, and Linux. The desktop app always starts the
-      bundled API with itself. Tools default to a <strong>host sandbox</strong>
-      (no Docker). Docker is an optional admin installer path with its own terms.
+      Native apps for macOS, Windows, and Linux. Double-click
+      <strong>Finn-Setup.pkg</strong> (Mac), <strong>Finn-Setup.exe</strong> (Windows),
+      or <strong>Finn-Setup.deb</strong> (Linux). No Terminal. The API starts with the app.
     </p>
     <div class="hero-actions">
       {#if latest}
@@ -169,8 +170,8 @@ curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/i
       </article>
       <article class="asset-card">
         <span class="asset-platform">macOS</span>
-        <strong>DMG or .app</strong>
-        <span class="asset-name">DMG for drag-to-Applications. Zip of the .app if you do not want a disk image.</span>
+        <strong>Finn Setup.app</strong>
+        <span class="asset-name">Unzip the macOS kit and double-click Setup. Progress bar, user vs admin, online vs offline. Windows uses the NSIS .exe / MSI the same way.</span>
       </article>
       <article class="asset-card">
         <span class="asset-platform">Optional</span>

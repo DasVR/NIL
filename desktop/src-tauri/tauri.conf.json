@@ -67,11 +67,15 @@
     "windows": {
       "webviewInstallMode": {
         "type": "downloadBootstrapper"
+      },
+      "nsis": {
+        "installMode": "both",
+        "displayLanguageSelector": false
       }
     },
     "macOS": {
       "minimumSystemVersion": "12.0",
-      "signingIdentity": "-",
+      "signingIdentity": null,
       "entitlements": "Entitlements.plist",
       "exceptionDomain": "127.0.0.1",
       "dmg": {

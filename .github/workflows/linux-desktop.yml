@@ -72,12 +72,25 @@ jobs:
             sleep 60
           done
 
+      - name: Name AppImage Finn-Setup.AppImage
+        run: |
+          mkdir -p dist-installers
+          img="$(ls desktop/src-tauri/target/release/bundle/appimage/*.AppImage | head -1 || true)"
+          if [[ -n "$img" ]]; then
+            cp "$img" dist-installers/Finn-Setup.AppImage
+            chmod +x dist-installers/Finn-Setup.AppImage
+          fi
+          deb="$(ls desktop/src-tauri/target/release/bundle/deb/*.deb | head -1 || true)"
+          if [[ -n "$deb" ]]; then cp "$deb" dist-installers/Finn-Setup.deb; fi
+
       - name: Upload Linux packages
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: finn-linux-${{ github.sha }}
+          name: Finn-Setup-Linux-${{ github.sha }}
           path: |
+            dist-installers/Finn-Setup.AppImage
+            dist-installers/Finn-Setup.deb
             desktop/src-tauri/target/release/bundle/appimage/*.AppImage
             desktop/src-tauri/target/release/bundle/deb/*.deb
           if-no-files-found: warn
@@ -99,16 +112,23 @@ jobs:
           python -m pip install --upgrade pip build
           python -m pip install -e ".[dev]"
           bash -n install/finn-install.sh
+          bash -n install/macos/make-pkg.sh
+          bash -n install/macos/make-setup-app.sh
+          bash -n install/macos/pkg-scripts/postinstall
           python -m pytest tests -q
           python -m build --wheel
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: finn-python-${{ github.sha }}
+          name: finn-api-wheel-${{ github.sha }}
           path: |
             dist/*.whl
             install/finn-install.sh
             install/finn-install.ps1
             install/run-api.py
+            install/finn-setup.py
+            install/engine.py
+            install/Finn-Setup.cmd
+            install/macos/**
           if-no-files-found: warn
           retention-days: 14

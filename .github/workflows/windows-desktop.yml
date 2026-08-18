@@ -53,12 +53,23 @@ jobs:
         run: npm run tauri -- build --bundles nsis,msi
         shell: bash
 
+      - name: Name the NSIS file Finn-Setup.exe
+        shell: bash
+        run: |
+          mkdir -p dist-installers
+          exe="$(ls desktop/src-tauri/target/release/bundle/nsis/*.exe | head -1)"
+          cp "$exe" dist-installers/Finn-Setup.exe
+          msi="$(ls desktop/src-tauri/target/release/bundle/msi/*.msi | head -1 || true)"
+          if [[ -n "$msi" ]]; then cp "$msi" dist-installers/Finn-Setup.msi; fi
+
       - name: Upload Windows packages
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: finn-windows-${{ github.sha }}
+          name: Finn-Setup-Windows-${{ github.sha }}
           path: |
+            dist-installers/Finn-Setup.exe
+            dist-installers/Finn-Setup.msi
             desktop/src-tauri/target/release/bundle/nsis/*.exe
             desktop/src-tauri/target/release/bundle/msi/*.msi
           if-no-files-found: warn

@@ -38,8 +38,14 @@ type GitHubReleaseResponse = {
 
 function assetMeta(name: string): { label: string; platform: string } {
   const lower = name.toLowerCase();
+  if (lower.endsWith('.pkg') || (lower.includes('finn-setup') && lower.endsWith('.pkg'))) {
+    return { label: 'macOS installer (pkg)', platform: 'macOS 12+ — double-click, no Terminal' };
+  }
   if (lower.endsWith('.zip') && /macos|darwin|\.app/i.test(lower)) {
-    return { label: 'macOS kit (.app + .dmg + API)', platform: 'macOS 12+ — unzip, then install or open' };
+    return { label: 'macOS kit (zip)', platform: 'macOS 12+ — unzip, then Finn Setup.app' };
+  }
+  if (lower.includes('finn-setup') && lower.endsWith('.dmg')) {
+    return { label: 'macOS Setup (DMG)', platform: 'macOS 12+ — open, double-click Finn Setup' };
   }
   if (lower.endsWith('.dmg')) return { label: 'macOS (DMG)', platform: 'macOS 12+' };
   if (lower.endsWith('.exe')) return { label: 'Windows', platform: 'Windows 10+' };

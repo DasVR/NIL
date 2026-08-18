@@ -6,33 +6,15 @@ Use this only against systems you are authorized to test.
 
 ## Quick start
 
-One-file installer (downloads the matching GitHub assets for this OS, or use `--offline` with a kit zip):
+Download **Finn-Setup** for your OS and double-click it. No Terminal.
 
-```bash
-bash install/finn-install.sh --user --online --host
-```
+- **macOS:** `Finn-Setup.pkg` (Apple Installer) or `Finn-Setup.dmg` from the **Finn-Setup-macOS-*** artifact
+- **Windows:** `Finn-Setup.exe`
+- **Linux:** `Finn-Setup.deb` or the AppImage
 
-Windows:
+Then open Finn. The API starts with the app. Do not use the python wheel zip (`finn-python-*`) as a Mac installer.
 
-```powershell
-.\install\finn-install.ps1 -User -Online -HostSandbox
-```
-
-Admin + Docker sandbox (still launch the app as a normal user afterward):
-
-```bash
-bash install/finn-install.sh --admin --online --docker --accept-docker-tos
-```
-
-The desktop app starts the bundled API with itself. Do not run `finn api` as a second service.
-
-From a git checkout (dev):
-
-```bash
-python3 -m pip install -e ".[dev]"
-cp .env.example .env
-python3 install/run-api.py   # or: finn api
-```
+If macOS says the download is **damaged**, that is Gatekeeper quarantine on a GitHub file, not a corrupt archive. Double-click **Fix macOS Gatekeeper.command** next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then open it again. Right-click → Open also works for “unidentified developer”; it does not always clear the damaged message.
 
 In other terminals:
 
