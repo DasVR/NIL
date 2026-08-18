@@ -29,8 +29,10 @@
   --glass-4:      rgba(20, 20, 30, 0.72);
   --glass-border: rgba(255, 255, 255, 0.08);
   --glass-border-strong: rgba(255, 255, 255, 0.14);
-  --glass-blur:   28px;
-  --glass-saturate: 1.6;
+  --glass-blur:   32px;
+  --glass-saturate: 1.7;
+  --glass-x: 50%;
+  --glass-y: 0%;
 
   --shadow-panel:  0 8px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px var(--glass-border);
   --shadow-modal:  0 24px 80px rgba(0, 0, 0, 0.65), 0 0 0 1px var(--glass-border-strong);
@@ -126,6 +128,10 @@ html[data-accent='red'] {
     --spring-smooth: ease;
     --spring-snappy: ease;
     --spring-window: ease;
+  }
+  .liquid-glass::before,
+  .glass-overlay::before {
+    background: linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 32%);
   }
 }
 
@@ -225,12 +231,45 @@ input:focus, textarea:focus, select:focus {
   outline: none;
 }
 
-.glass-overlay {
+.glass-overlay,
+.liquid-glass {
+  position: relative;
   background: var(--glass-3);
   border: 1px solid var(--glass-border);
-  backdrop-filter: blur(28px) saturate(1.5);
-  -webkit-backdrop-filter: blur(28px) saturate(1.5);
-  box-shadow: var(--shadow-modal);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturate));
+  box-shadow:
+    inset 0 1px 0 rgba(255, 255, 255, 0.14),
+    var(--shadow-modal);
+  overflow: hidden;
+}
+.liquid-glass::before,
+.glass-overlay::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.09), transparent 28%),
+    radial-gradient(
+      520px circle at var(--glass-x, 50%) var(--glass-y, 8%),
+      rgba(255, 255, 255, 0.1),
+      transparent 46%
+    );
+  mix-blend-mode: screen;
+  opacity: 0.9;
+}
+.liquid-glass-panel {
+  background: color-mix(in srgb, var(--glass-2) 88%, transparent);
+  backdrop-filter: blur(24px) saturate(1.45);
+  -webkit-backdrop-filter: blur(24px) saturate(1.45);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+.liquid-metal-accent {
+  background:
+    linear-gradient(180deg, rgba(255, 255, 255, 0.12), transparent 55%),
+    linear-gradient(90deg, transparent, color-mix(in srgb, var(--green) 18%, transparent), transparent);
 }
 
 .label-micro {

@@ -1,3 +1,16 @@
+export type RuntimeConfig = {
+  schema: number;
+  setup_complete: boolean;
+  variant: 'bundled' | 'dmg' | 'app' | 'docker';
+  sandbox: 'host' | 'docker';
+  features: Record<string, boolean>;
+  docker_tos_accepted: boolean;
+  docker_tos_accepted_at: string | null;
+  sandbox_effective?: string;
+  docker_available?: boolean;
+  docker_tos?: string;
+};
+
 export type Engagement = {
   name: string;
   scope: string;

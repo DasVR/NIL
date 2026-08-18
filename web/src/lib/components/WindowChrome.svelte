@@ -1,39 +1,81 @@
 <script>
   import { appState } from '$lib/stores.svelte';
   import LiquidMetal from './LiquidMetal.svelte';
+  import {
+    closeWindow,
+    minimizeWindow,
+    startWindowDrag,
+    toggleWindowMaximize
+  } from '$lib/tauri';
 
   let { isTauri = false, isMac = false } = $props();
 
   const yoloTitle = $derived(
     appState.yolo
-      ? 'YOLO enabled — commands auto-run (still sandboxed and logged)'
+      ? 'YOLO enabled — commands auto-run (still logged)'
       : 'YOLO disabled — commands require approval'
   );
+
+  function onDragMouseDown(ev) {
+    if (ev.button !== 0) return;
+    if (ev.target instanceof HTMLElement && ev.target.closest('.no-drag')) return;
+    void startWindowDrag();
+  }
+
+  function onDragDblClick(ev) {
+    if (ev.target instanceof HTMLElement && ev.target.closest('.no-drag')) return;
+    void toggleWindowMaximize();
+  }
 </script>
 
-<header class="chrome" class:tauri={isTauri} class:mac={isMac} aria-label="Window title bar">
+<div
+  class="chrome"
+  class:tauri={isTauri}
+  class:mac={isMac}
+  role="toolbar"
+  tabindex="-1"
+  aria-label="Window title bar"
+  data-tauri-drag-region
+  onmousedown={onDragMouseDown}
+  ondblclick={onDragDblClick}
+>
   <div class="metal" aria-hidden="true">
     <LiquidMetal
-      intensity={appState.yolo ? 0.38 : 0.22}
-      speed={0.45}
+      intensity={appState.yolo ? 0.48 : 0.34}
+      speed={0.55}
       color1={appState.yolo ? '#ff5c5c' : '#00d992'}
       interactive={false}
     />
   </div>
-  <div class="drag" data-tauri-drag-region></div>
+  <div class="specular" aria-hidden="true"></div>
+  {#if isTauri && !isMac}
+    <div class="win-controls no-drag">
+      <button type="button" class="win-btn" onclick={() => minimizeWindow()} title="Minimize" aria-label="Minimize">─</button>
+      <button type="button" class="win-btn" onclick={() => toggleWindowMaximize()} title="Maximize" aria-label="Maximize">□</button>
+      <button type="button" class="win-btn close" onclick={() => closeWindow()} title="Close" aria-label="Close">✕</button>
+    </div>
+  {/if}
   <div class="cluster left">
-    <button type="button" class="space-name" onclick={() => (appState.paletteOpen = true)} title="Switch Space">
+    <button
+      type="button"
+      class="space-name no-drag"
+      onclick={() => (appState.paletteOpen = true)}
+      title="Switch Space"
+    >
       {appState.engagement}
     </button>
     {#if appState.activeTarget}
       <span class="host mono">{appState.activeTarget.host}</span>
     {/if}
     <span class="mode-pill">{appState.mode}</span>
+    {#if appState.runtime}
+      <span class="sandbox mono">{appState.runtime.sandbox}</span>
+    {/if}
   </div>
-  <div class="cluster right no-drag">
+  <div class="cluster right">
     <button
       type="button"
-      class="safety"
+      class="safety no-drag"
       class:yolo={appState.yolo}
       onclick={() => appState.toggleYolo()}
       title={yoloTitle}
@@ -41,7 +83,7 @@
     >{appState.yolo ? 'YOLO' : 'SAFE'}</button>
     <span class="dot" class:on={appState.connected} title={appState.connected ? 'API connected' : 'API offline'}></span>
   </div>
-</header>
+</div>
 
 <style>
   .chrome {
@@ -54,16 +96,34 @@
     border-bottom: 1px solid var(--glass-border);
     user-select: none;
     z-index: 40;
+    -webkit-app-region: drag;
+    background: color-mix(in srgb, var(--abyss-1) 55%, transparent);
+    backdrop-filter: blur(22px) saturate(1.55);
+    -webkit-backdrop-filter: blur(22px) saturate(1.55);
   }
-  .metal { position: absolute; inset: 0; opacity: 0.7; pointer-events: none; }
-  .drag { position: absolute; inset: 0; z-index: 0; }
+  .metal { position: absolute; inset: 0; opacity: 0.88; pointer-events: none; }
+  .specular {
+    pointer-events: none;
+    position: absolute;
+    inset: 0 auto auto 0;
+    height: 1px;
+    width: 100%;
+    background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.28), transparent);
+    z-index: 1;
+  }
   .cluster {
     position: relative;
-    z-index: 1;
+    z-index: 2;
     display: flex;
     align-items: center;
     gap: 10px;
     min-width: 0;
+    pointer-events: none;
+  }
+  .cluster :global(button),
+  .cluster .no-drag {
+    pointer-events: auto;
+    -webkit-app-region: no-drag;
   }
   .cluster.left {
     margin-left: 16px;
@@ -71,7 +131,27 @@
   }
   .chrome.mac.tauri .cluster.left { margin-left: 78px; }
   .cluster.right { margin-left: auto; margin-right: 14px; }
-  .no-drag { -webkit-app-region: no-drag; }
+  .win-controls {
+    position: relative;
+    z-index: 3;
+    display: flex;
+    gap: 2px;
+    margin-left: 8px;
+    -webkit-app-region: no-drag;
+    pointer-events: auto;
+  }
+  .win-btn {
+    width: 28px;
+    height: 22px;
+    padding: 0;
+    min-height: unset;
+    border: 0;
+    background: transparent;
+    color: var(--text-dim);
+    font-size: 11px;
+  }
+  .win-btn:hover { background: var(--abyss-3); color: var(--text); }
+  .win-btn.close:hover { background: var(--danger-soft); color: var(--danger); }
   .space-name {
     border: none;
     background: transparent;
@@ -100,6 +180,12 @@
     padding: 2px 6px;
     border-radius: 4px;
   }
+  .sandbox {
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
   .safety {
     font-size: 10px;
     font-weight: 600;
@@ -120,6 +206,7 @@
     height: 7px;
     border-radius: 50%;
     background: var(--danger);
+    pointer-events: auto;
   }
   .dot.on {
     background: var(--green);

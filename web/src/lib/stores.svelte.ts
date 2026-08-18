@@ -26,6 +26,7 @@ import type {
   InspectorTab,
   PendingRun,
   Plugin,
+  RuntimeConfig,
   SpaceLayout,
   Target,
   TermBlock
@@ -42,6 +43,7 @@ export type {
   InspectorTab,
   PendingRun,
   Plugin,
+  RuntimeConfig,
   SpaceLayout,
   Target,
   TermBlock
@@ -170,6 +172,9 @@ class AppState {
   selectedTargetId = $state('');
   selectedFindingId = $state('');
   newSpaceOpen = $state(false);
+  setupOpen = $state(false);
+  setupDismissed = $state(false);
+  runtime = $state<RuntimeConfig | null>(null);
   pluginMenu = $state('');
   paletteMode = $state<'root' | 'goto'>('root');
   focusPane = $state<'left' | 'center' | 'right'>('center');
@@ -183,7 +188,7 @@ class AppState {
   agentPins = $state<TermBlock[]>([]);
   finnFocusSeq = $state(0);
 
-  private runtime = new Map<
+  private spaceSnapshots = new Map<
     string,
     { messages: ChatMessage[]; sessionId: string; blocks: TermBlock[]; artifact: Artifact }
   >();
@@ -231,7 +236,7 @@ class AppState {
   }
 
   snapshotRuntime() {
-    this.runtime.set(this.engagement, {
+    this.spaceSnapshots.set(this.engagement, {
       messages: this.messages,
       sessionId: this.sessionId,
       blocks: this.blocks,
@@ -240,7 +245,7 @@ class AppState {
   }
 
   restoreRuntime(space: string) {
-    const snap = this.runtime.get(space);
+    const snap = this.spaceSnapshots.get(space);
     if (snap) {
       this.messages = snap.messages;
       this.sessionId = snap.sessionId;
@@ -284,6 +289,13 @@ class AppState {
     this.pending = pending.pending || [];
     this.notes = notes.notes || '';
     this.scope = scope.scope || '';
+    try {
+      const rt = (await apiGet('/v1/runtime')) as RuntimeConfig;
+      this.runtime = rt;
+      if (!rt.setup_complete && !this.setupDismissed) this.setupOpen = true;
+    } catch {
+      /* offline */
+    }
     const extras = loadExtraTargets(this.engagement);
     this.targets = hostsToTargets(parseScopeHosts(this.scope), extras);
     if (this.selectedTargetId && !this.targets.some((t) => t.id === this.selectedTargetId)) {
@@ -557,7 +569,7 @@ class AppState {
   async toggleYolo() {
     await apiPost('/v1/yolo/toggle', { engagement: this.engagement, enabled: !this.yolo });
     await this.refresh();
-    toast.show(this.yolo ? 'YOLO on — still sandboxed' : 'YOLO off — approval required', this.yolo ? 'warn' : 'ok');
+    toast.show(this.yolo ? 'YOLO on — commands still logged' : 'YOLO off — approval required', this.yolo ? 'warn' : 'ok');
   }
 
   async approve(runId?: string, edited?: string) {

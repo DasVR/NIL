@@ -63,7 +63,7 @@ Empty keys are skipped. Failover is silent on 429 / 5xx / timeout.
 python3 -m pytest tests -q
 ```
 
-Sandbox tests that need Docker are skipped when the daemon is missing. Tool execution always targets the engagement container, never the host.
+Sandbox tests that need Docker are skipped when the daemon is missing. The default runtime is a **host sandbox** (per-Space folder, no Docker). Docker is opt-in after accepting sandbox terms.
 
 ## Releases
 

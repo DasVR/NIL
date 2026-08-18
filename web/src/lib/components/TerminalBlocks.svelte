@@ -10,7 +10,10 @@
 
   const pendingBlocks = $derived(appState.blocks.filter((b) => b.status === 'pending'));
   const dockerBlocks = $derived(appState.blocks.filter((b) => isDockerDownError(b.stdout)));
-  const dockerDown = $derived(dockerBlocks.length > 0);
+  const dockerDown = $derived(
+    (appState.runtime?.sandbox === 'docker' || appState.runtime?.sandbox_effective === 'docker') &&
+      dockerBlocks.length > 0
+  );
   const dockerRetry = $derived(
     [...dockerBlocks].reverse().find((b) => !looksLikeChat(b.command))?.command || ''
   );
@@ -112,7 +115,7 @@
   <div class="stream">
     {#if dockerDown}
       <div class="docker-banner" role="status">
-        <p>Docker is not running. Finn’s tools need a local engine — start Docker Desktop, then re-run.</p>
+        <p>Docker is not running. Switch to host sandbox in Setup, or start Docker Desktop.</p>
         {#if dockerRetry}
           <button type="button" class="banner-run" onclick={() => appState.proposeShell(dockerRetry)}>
             Re-run `{dockerRetry.slice(0, 48)}`

@@ -11,7 +11,7 @@ use tauri_plugin_shell::ShellExt;
 
 const FINN_API_URL: &str = "http://127.0.0.1:8766";
 const FINN_DOCS_URL: &str = "https://github.com/DasVR/finn-pentest-harness";
-const FINN_BACKEND_CMD: &str = "finn server";
+const FINN_BACKEND_CMD: &str = "finn api";
 
 /// Attempt to start the Finn backend silently (no visible terminal window).
 fn start_backend_silently() {
@@ -25,7 +25,7 @@ fn start_backend_silently() {
     }
 
     let result = child
-        .arg("server")
+        .arg("api")
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())
@@ -45,7 +45,7 @@ fn start_backend_silently() {
     }
 
     let _ = fallback
-        .args(["-m", "finn", "server"])
+        .args(["-m", "uvicorn", "finn_pentest.api.app:app", "--host", "127.0.0.1", "--port", "8766"])
         .stdin(Stdio::null())
         .stdout(Stdio::null())
         .stderr(Stdio::null())

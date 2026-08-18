@@ -11,6 +11,8 @@
   <span class="dot" class:ok={appState.connected}></span>
   <span class="mono dim">{appState.connected ? 'API live' : 'API down'}</span>
   <span class="sep">·</span>
+  <span class="mode">{appState.runtime?.sandbox_effective || appState.runtime?.sandbox || 'host'}</span>
+  <span class="sep">·</span>
   <span class="mode">{appState.mode}</span>
   {#if appState.activeTarget}
     <span class="sep">·</span>
@@ -51,7 +53,11 @@
     height: var(--statusbar-height);
     padding: 0 14px;
     border-top: 1px solid var(--glass-border);
-    background: var(--abyss);
+    background:
+      linear-gradient(180deg, rgba(255, 255, 255, 0.08), transparent 70%),
+      var(--abyss);
+    backdrop-filter: blur(16px) saturate(1.4);
+    -webkit-backdrop-filter: blur(16px) saturate(1.4);
     font-size: 11px;
     color: var(--text-faint);
     flex-shrink: 0;

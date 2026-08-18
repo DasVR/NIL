@@ -129,6 +129,9 @@
     width: 0;
     opacity: 0;
     transition: width 280ms var(--spring-layout), opacity 180ms var(--spring-smooth);
+    backdrop-filter: blur(22px) saturate(1.4);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
   .inspector.open { width: var(--rightbar-width); opacity: 1; }
   .inspector.focus { box-shadow: inset 0 0 0 1px var(--green-soft); }

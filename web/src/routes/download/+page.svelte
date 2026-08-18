@@ -71,8 +71,9 @@ finn api`;
     <p class="eyebrow">Desktop builds · {APP_TAG}</p>
     <h1>Download Finn</h1>
     <p class="lede">
-      Native apps for macOS, Windows, and Linux — built by GitHub Actions on every version tag.
-      The desktop shell wraps the same Svelte workstation; start <code>finn api</code> locally for scans and tools.
+      Native apps for macOS, Windows, and Linux. The desktop build can start
+      <code>finn api</code> inside the app. Tools default to a <strong>host sandbox</strong>
+      (no Docker). Docker is an optional installer variant with its own terms.
     </p>
     <div class="hero-actions">
       {#if latest}
@@ -155,6 +156,27 @@ finn api`;
       </div>
     </section>
   {/if}
+
+  <section class="panel install-panel">
+    <h2>Variants</h2>
+    <div class="asset-grid">
+      <article class="asset-card">
+        <span class="asset-platform">Default</span>
+        <strong>Packaged API</strong>
+        <span class="asset-name">The desktop app launches <code>finn api</code> for you. Host sandbox needs no admin Docker daemon.</span>
+      </article>
+      <article class="asset-card">
+        <span class="asset-platform">macOS</span>
+        <strong>DMG or .app</strong>
+        <span class="asset-name">DMG for drag-to-Applications. Zip of the .app if you do not want a disk image.</span>
+      </article>
+      <article class="asset-card">
+        <span class="asset-platform">Optional</span>
+        <strong>Docker sandbox</strong>
+        <span class="asset-name">Uses your computer as the sandbox host. Docker Desktop usually needs admin. Accept terms in the in-app installer or <code>finn setup --sandbox docker --accept-docker-tos</code>.</span>
+      </article>
+    </div>
+  </section>
 
   <section class="panel install-panel">
     <h2>From source (API + TUI)</h2>

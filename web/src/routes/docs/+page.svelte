@@ -37,10 +37,12 @@ cd web && npm install && npm run dev</code></pre>
     Edit them from Settings (<kbd>⌘,</kbd>), not a separate page.
   </p>
 
-  <h2>Docker</h2>
+  <h2>Sandbox</h2>
   <p>
-    Tool commands run inside a per-engagement container. Install Docker Desktop / Engine
-    before creating a sandbox. The default image is Debian slim with nmap.
+    Tools default to a <strong>host sandbox</strong>: approved commands run in a per-Space folder on this machine.
+    No Docker daemon, no admin install. Switch to Docker in the in-app installer (or
+    <code>finn setup --sandbox docker --accept-docker-tos</code>) if you want container isolation.
+    Docker uses your computer as the sandbox host and typically needs administrator rights to install Docker Desktop.
   </p>
 
   <h2>YOLO</h2>

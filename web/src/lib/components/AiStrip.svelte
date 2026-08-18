@@ -200,8 +200,11 @@
     height: 100%;
     display: flex;
     flex-direction: column;
-    background: var(--abyss-1);
+    background: color-mix(in srgb, var(--abyss-1) 82%, transparent);
     border-left: 1px solid var(--glass-border);
+    backdrop-filter: blur(22px) saturate(1.45);
+    -webkit-backdrop-filter: blur(22px) saturate(1.45);
+    box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.06);
   }
   .chrome {
     height: 36px;
