@@ -5,7 +5,7 @@
   import RightSidebar from '$lib/components/RightSidebar.svelte';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import WindowChrome from '$lib/components/WindowChrome.svelte';
-  import Dock from '$lib/components/Dock.svelte';
+  import StatusBar from '$lib/components/StatusBar.svelte';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import DitherOverlay from '$lib/components/DitherOverlay.svelte';
   import LiquidMetal from '$lib/components/LiquidMetal.svelte';
@@ -134,9 +134,9 @@
     <RightSidebar />
   </div>
 
-  <!-- Status bar / Dock -->
+  <!-- Status / Safety bar -->
   {#if !isMobile}
-    <Dock />
+    <StatusBar />
   {/if}
 
   <!-- Overlays -->

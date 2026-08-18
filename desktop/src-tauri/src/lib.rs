@@ -13,6 +13,45 @@ const FINN_API_URL: &str = "http://127.0.0.1:8766";
 const FINN_DOCS_URL: &str = "https://github.com/DasVR/finn-pentest-harness";
 const FINN_BACKEND_CMD: &str = "finn server";
 
+/// Attempt to start the Finn backend silently (no visible terminal window).
+fn start_backend_silently() {
+    // Try 'finn' binary directly (assumes it's in PATH or installed via pipx)
+    let mut child = std::process::Command::new("finn");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        child.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let result = child
+        .arg("server")
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+
+    if result.is_ok() {
+        return;
+    }
+
+    // Fallback: try `python -m finn server`
+    let mut fallback = std::process::Command::new("python");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x08000000;
+        fallback.creation_flags(CREATE_NO_WINDOW);
+    }
+
+    let _ = fallback
+        .args(["-m", "finn", "server"])
+        .stdin(Stdio::null())
+        .stdout(Stdio::null())
+        .stderr(Stdio::null())
+        .spawn();
+}
+
 fn show_main(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
         let _ = window.unminimize();
@@ -263,6 +302,18 @@ pub fn run() {
             let app_clone = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 if !backend_reachable().await {
+                    // Attempt to auto-start the backend
+                    start_backend_silently();
+                    // Poll for up to 10s
+                    let mut attempts = 0;
+                    while attempts < 20 {
+                        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
+                        if backend_reachable().await {
+                            return;
+                        }
+                        attempts += 1;
+                    }
+                    // Still offline — show dialog
                     show_backend_offline_dialog(&app_clone);
                 }
             });

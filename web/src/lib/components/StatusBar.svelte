@@ -1,5 +1,6 @@
 <script>
   import { appState } from '$lib/stores.svelte';
+  import { appState as state } from '$lib/stores.svelte';
 
   const version = '0.3.0';
 
@@ -9,207 +10,251 @@
       : `Backend offline${appState.error ? `: ${appState.error}` : ''}. Start with finn api`
   );
 
-  const engagementTitle = $derived(`Active engagement: ${appState.engagement}`);
-  const modeTitle = $derived(`Chat mode: ${appState.mode} — controls tool behavior and prompts`);
+  const targetText = $derived(
+    appState.activeTarget?.host || appState.scope?.split(/\n|,/).filter(Boolean)[0] || 'no target'
+  );
+
+  const lastRun = $derived(
+    appState.pending.length > 0
+      ? `pending: ${appState.pending[0].tool}`
+      : appState.termLines.length > 0
+        ? `last: ${appState.termLines.slice(-1)[0]?.slice(0, 28)}`
+        : 'idle'
+  );
+
+  const sandboxStatus = $derived(
+    appState.connected ? 'sandbox ready' : 'offline'
+  );
+
   const yoloTitle = $derived(
     appState.yolo
       ? 'YOLO enabled — commands auto-run (still sandboxed and logged)'
       : 'YOLO disabled — commands require approval before execution'
   );
-  const modelTitle = $derived(`Model routing: ${appState.model}`);
 </script>
 
-<footer class="status-bar" aria-label="Status bar">
-  <div class="status-left">
+<footer class="status-bar" aria-label="Status and safety bar">
+  <div class="status-cluster">
     <button
       type="button"
-      class="status-item connection"
+      class="status-pill connection"
       class:online={appState.connected}
       title={connectionTitle}
       aria-label={appState.connected ? 'API connected' : 'API disconnected'}
     >
       <span class="status-dot" aria-hidden="true"></span>
-      <span>{appState.connected ? 'Connected' : 'Offline'}</span>
+      <span class="mono">{appState.connected ? 'api connected' : 'api offline'}</span>
     </button>
 
-    <span class="divider" aria-hidden="true"></span>
-
-    <span class="status-item" title={engagementTitle}>
-      <span class="label">Eng</span>
-      <span class="value">{appState.engagement}</span>
+    <span class="status-pill mode-pill">
+      <span class="label-micro">mode</span>
+      <span class="mono">{appState.mode}</span>
     </span>
 
-    <span class="divider" aria-hidden="true"></span>
+    <span class="status-pill target-pill" title="Active target / scope">
+      <span class="label-micro">target</span>
+      <span class="mono">{targetText}</span>
+    </span>
+  </div>
 
-    <span class="status-item" title={modeTitle}>
-      <span class="label">Mode</span>
-      <span class="value mode">{appState.mode}</span>
+  <div class="status-cluster center">
+    <span class="status-pill sandbox-pill" title="Sandbox status">
+      <span class="label-micro">sandbox</span>
+      <span class="mono">{sandboxStatus}</span>
     </span>
 
-    <span class="divider" aria-hidden="true"></span>
+    <span class="status-pill run-pill" title="Last tool run">
+      <span class="label-micro">last run</span>
+      <span class="mono">{lastRun}</span>
+    </span>
+  </div>
 
+  <div class="status-cluster right">
     <button
       type="button"
-      class="status-item yolo"
+      class="status-pill yolo-pill"
       class:on={appState.yolo}
       onclick={() => appState.toggleYolo()}
       aria-pressed={appState.yolo}
       title={yoloTitle}
     >
-      <span class="label">YOLO</span>
-      <span class="value">{appState.yolo ? 'ON' : 'OFF'}</span>
+      <span class="label-micro">yolo</span>
+      <span class="mono">{appState.yolo ? 'on' : 'off'}</span>
     </button>
-  </div>
 
-  <div class="status-right">
-    <span class="status-item model" title={modelTitle}>
-      <span class="value mono">{appState.model}</span>
+    <span class="status-pill version-pill">
+      <span class="label-micro">finn</span>
+      <span class="mono">v{version}</span>
     </span>
 
-    <span class="divider" aria-hidden="true"></span>
-
-    <span class="status-item version" title="Finn Pentest Harness version">
-      v{version}
-    </span>
+    <button
+      type="button"
+      class="status-pill gear-btn"
+      onclick={() => appState.settingsOpen = true}
+      aria-label="Open settings"
+      title="Settings (Cmd+,)"
+    >
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
+      </svg>
+    </button>
   </div>
 </footer>
 
 <style>
   .status-bar {
-    grid-column: 1 / -1;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--statusbar-height);
     display: flex;
     align-items: center;
     justify-content: space-between;
     gap: 0.75rem;
-    padding: 0 0.85rem;
-    height: var(--statusbar-height);
+    padding: 0 12px;
+    background: var(--glass-3);
     border-top: 1px solid var(--glass-border);
-    font-family: var(--font-mono);
+    backdrop-filter: blur(12px) saturate(1.3);
+    -webkit-backdrop-filter: blur(12px) saturate(1.3);
     font-size: 11px;
-    background: var(--abyss-1);
-    color: var(--text-secondary);
     user-select: none;
+    z-index: 90;
     min-width: 0;
-    z-index: 15;
   }
 
-  .status-left,
-  .status-right {
+  .status-cluster {
     display: flex;
     align-items: center;
-    gap: 0.5rem;
+    gap: 6px;
     min-width: 0;
   }
 
-  .status-right {
+  .status-cluster.center {
+    flex: 1;
+    justify-content: center;
+  }
+
+  .status-cluster.right {
     flex-shrink: 0;
   }
 
-  .status-item {
+  .status-pill {
     display: inline-flex;
     align-items: center;
-    gap: 0.35rem;
-    padding: 0.15rem 0.35rem;
-    border-radius: 4px;
-    border: none;
-    background: transparent;
-    color: inherit;
-    font: inherit;
-    min-height: 44px;
+    gap: 6px;
+    padding: 2px 8px;
+    border-radius: 5px;
+    border: 1px solid var(--glass-border);
+    background: var(--glass-2);
+    color: var(--text);
+    font-size: 11px;
+    min-height: unset;
     cursor: default;
-    white-space: nowrap;
+    transition: border-color 120ms var(--spring-control), background 120ms var(--spring-control);
   }
 
-  button.status-item {
+  .status-pill:not(.mode-pill, .target-pill, .sandbox-pill, .run-pill, .version-pill):hover {
+    border-color: var(--glass-border-strong);
+  }
+
+  button.status-pill {
     cursor: pointer;
-    transition: background 150ms ease, color 150ms ease;
   }
 
-  button.status-item:hover {
-    background: rgba(255, 255, 255, 0.04);
+  button.status-pill:hover {
+    background: var(--glass-3);
   }
 
-  button.status-item:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 1px;
+  .status-pill .label-micro {
+    color: var(--text-faint);
+    font-size: 9px;
+    letter-spacing: 0.06em;
+  }
+
+  .status-pill .mono {
+    color: var(--text-dim);
+    font-family: var(--font-mono);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 140px;
   }
 
   .connection {
     color: var(--danger);
+    border-color: rgba(255, 92, 92, 0.2);
   }
 
   .connection.online {
-    color: var(--accent);
+    color: var(--green);
+    border-color: rgba(0, 217, 146, 0.2);
+  }
+
+  .connection.online .mono {
+    color: var(--green);
   }
 
   .status-dot {
-    width: 6px;
-    height: 6px;
+    width: 5px;
+    height: 5px;
     border-radius: 50%;
     background: currentColor;
     flex-shrink: 0;
   }
 
-  .label {
-    color: var(--text-tertiary);
-    text-transform: capitalize;
-  }
-
-  .value {
-    color: var(--text-primary);
-  }
-
-  .value.mode {
+  .mode-pill .mono {
+    color: var(--green);
     text-transform: lowercase;
-    color: var(--accent);
   }
 
-  .yolo.on .value {
+  .target-pill .mono {
+    color: var(--text);
+  }
+
+  .yolo-pill.on {
+    background: var(--danger-soft);
+    border-color: rgba(255, 92, 92, 0.3);
+  }
+
+  .yolo-pill.on .mono {
     color: var(--danger);
   }
 
-  .yolo:not(.on) .value {
-    color: var(--accent);
+  .yolo-pill:not(.on) .mono {
+    color: var(--text-dim);
   }
 
-  .mono {
-    font-family: var(--font-mono);
-    max-width: 160px;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .gear-btn {
+    width: 22px;
+    height: 22px;
+    padding: 0;
+    display: grid;
+    place-items: center;
+    color: var(--text-faint);
   }
 
-  .version {
-    color: var(--text-tertiary);
-    font-size: 10px;
+  .gear-btn:hover {
+    color: var(--text);
   }
 
-  .divider {
-    width: 1px;
-    height: 12px;
-    background: var(--glass-border);
-    flex-shrink: 0;
-  }
-
-  @media (max-width: 640px) {
-    .model,
-    .divider:nth-of-type(6) {
-      display: none;
-    }
-
-    .status-left {
-      overflow-x: auto;
-      scrollbar-width: none;
-    }
-
-    .status-left::-webkit-scrollbar {
+  @media (max-width: 860px) {
+    .status-cluster.center {
       display: none;
     }
   }
 
-  @media (max-width: 400px) {
-    .label {
+  @media (max-width: 560px) {
+    .version-pill,
+    .status-pill .label-micro {
       display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .status-pill {
+      transition: none;
     }
   }
 </style>

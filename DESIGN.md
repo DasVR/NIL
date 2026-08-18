@@ -60,7 +60,30 @@ Reference stack: Cursor + Linear + Raycast + iTerm2 + Burp Suite Pro.
 6. **Performance is a feature** — 60 fps floor on 2020 MacBook Air.
 7. **Accessibility is non-negotiable**.
 
-### 2.3 What This Is Explicitly Not
+### 2.3 Density Rules (Cursor + Linear)
+
+Cursor and Linear win because they pack information tightly without feeling cramped. These rules keep implementers from drifting back into airy chat layouts:
+
+| Surface | Padding | Line-height | Notes |
+|---------|---------|-------------|-------|
+| Sidebar rows | 6–8px vertical, 8–10px horizontal | 1.3 | Never exceed 10px vertical. Density beats breathing room here. |
+| Sidebar section header | 28px row height, 0.4rem 0.75rem | 1 | All-caps micro-label. No extra margin below the header. |
+| Finding / target card | 8px 10px | 1.35 | Compact, but text must not feel crushed. |
+| Terminal line | 6px vertical | 1.45 | Sacred. Do not increase. |
+| Status bar | 0 12px horizontal, 26px height | 1 | Single-line, mono-heavy. |
+| AI strip message | 6px 10px | 1.5 | Slightly more air than sidebar because prose is read linearly. |
+
+**Typography rule:**
+- **Sans (Inter)** = labels, headings, button text, human-readable prose.
+- **Mono (JetBrains Mono)** = hostnames, IPs, ports, timestamps, tool output, severity badges, file paths, status bar values, any number inside prose.
+- When in doubt on a sidebar/status row, use mono. It signals "machine data" and increases density.
+
+**Spacing rule:**
+- Use `gap` inside flex/grid containers, never margin stacks.
+- 1px borders + 4–8px gaps create hierarchy better than 16px margins.
+- The only place padding exceeds 12px is modals, empty-state cards, and the main terminal host area.
+
+### 2.4 What This Is Explicitly Not
 
 - Generic AI chat UI with a dark theme
 - Another "agent playground"
@@ -75,7 +98,7 @@ Reference stack: Cursor + Linear + Raycast + iTerm2 + Burp Suite Pro.
 
 ```
 ┌─ Titlebar (liquid metal) ──────────────────────────────────────────────┐
-│ ● ● ●   Finn  ·  engagement-name  ·  target  ·  YOLO  ·  Safe         │
+│ Finn  ·  engagement-name  ·  target  ·  YOLO  ·  Safe                │
 ├────────────┬──────────────────────────────────────────────┬────────────┤
 │            │                                              │            │
 │  Targets   │           Main Workspace                     │  Findings  │
@@ -85,14 +108,15 @@ Reference stack: Cursor + Linear + Raycast + iTerm2 + Burp Suite Pro.
 │            ├──────────────────────────────────────────────┤            │
 │            │  Contextual AI Strip (collapsed by default)  │            │
 └────────────┴──────────────────────────────────────────────┴────────────┘
-│ Dock / Status bar                                                     │
+│ Status / Safety bar                                                   │
 ```
 
 - **Left sidebar** (260px → collapsible): Engagement tree (targets, hosts, services, credentials, notes, artifacts). Very Cursor/Linear.
 - **Center**: Primary work surface. Terminal is the default view when an engagement is open.
 - **Right sidebar**: Findings (severity-colored), evidence, notes, activity timeline.
 - **Bottom / floating**: Contextual AI strip — only expands when you invoke it (Cmd+K / Cmd+J) or when Finn has a high-signal update.
-- **Titlebar**: Always shows engagement context + safety state. Liquid metal material.
+- **Titlebar**: Always shows engagement context + safety state. Liquid metal material. Engagement name is most prominent.
+- **Status / Safety bar**: Always-visible bottom strip. Pure Burp/Cursor energy. Shows current mode, YOLO state, sandbox status, last tool run, connection status.
 
 ### 3.2 Empty / First-run State
 
@@ -100,9 +124,72 @@ Not "Ask Finn anything".
 
 Show last engagement summary, scope, or a clean "New Engagement" flow with target input. Feels like opening Cursor or Linear on a new project.
 
-### 3.3 Command Palette (Cmd+K)
+### 3.3 Contextual AI Strip — Exact States
+
+The AI strip has four defined states. No ambiguous "collapsed by default" behavior:
+
+1. **Hidden**
+   - Height: 0.
+   - Triggered by: default view when no recent Finn activity and user hasn't pinned it.
+   - Keyboard: `Cmd+J` toggles to Expanded. `Esc` from Expanded returns to Hidden unless Pinned.
+
+2. **Thin collapsed bar**
+   - Height: 26px.
+   - Shows: last Finn status line or a subtle thinking indicator.
+   - Background: `--glass-2` with top border only.
+   - Used when: Finn is working on something but doesn't need full focus, or after an interaction that the user hasn't dismissed.
+
+3. **Expanded**
+   - Height: 280px.
+   - Shows: structured cards / terminal-style blocks. No chat bubbles.
+   - Used when: user invokes with `Cmd+J`, Finn has a high-signal update, or user asks for an explanation/draft/report.
+
+4. **Pinned**
+   - Expanded stays open across route changes and interactions.
+   - Toggle via pin icon in the strip header. `Cmd+Shift+J` toggles pin.
+   - State survives session (localStorage).
+
+State transitions:
+- Hidden → Expanded: `Cmd+J`, high-signal update, or clicking a "Explain" / "Draft" action.
+- Expanded → Hidden: `Esc` or close button (only if not pinned).
+- Expanded → Thin: auto-collapse after 8s of inactivity when Finn finishes.
+- Thin → Expanded: click the thin bar or `Cmd+J`.
+- Any state → Pinned: click pin icon or `Cmd+Shift+J`.
+
+### 3.4 Command Palette (Cmd+K)
 
 Raycast-level. Global. Search targets, findings, tools, past commands, AI actions. This becomes one of the main ways to work with Finn.
+
+### 3.5 Titlebar Content Hierarchy
+
+Titlebar is read left-to-right in this priority:
+
+1. **Engagement name** — most prominent. 13px, weight 600, `--text`, mono if it contains machine identifiers.
+2. **Target / scope summary** — secondary. 11px, `--text-dim`, mono.
+3. **YOLO / Safe indicator** — safety state. 10px uppercase, colored pill.
+4. **Connection dot** — tiny status indicator at the far right.
+
+Target + YOLO/Safe live on the right side of the titlebar. Engagement name is centered or left-weighted depending on platform. On web, center alignment is acceptable. On Tauri macOS, engagement name sits immediately after the native window controls region.
+
+### 3.6 Status / Safety Bar
+
+Always-visible bottom strip. This is pure Burp/Cursor energy.
+
+Left cluster:
+- Connection status dot + label (`API connected` / `API offline`)
+- Current mode pill (`HUNT` / `CHAT` / `CODE` / `REPORT`)
+- Active target / scope
+
+Center cluster:
+- Last tool run status (`nmap -sV -sC ...` + exit code / time)
+- Sandbox status (`sandbox ready` / `running` / `dirty`)
+
+Right cluster:
+- YOLO toggle button with exact state
+- Version / build info
+- Quick settings gear
+
+Height: 26px. Font: 11px mono for values, 10px sans for labels. Background: `--glass-3`. Border-top: `1px solid var(--glass-border)`.
 
 ---
 
