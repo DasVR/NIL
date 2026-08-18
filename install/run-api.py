@@ -44,14 +44,14 @@ def venv_python(venv: Path) -> Path:
 def ensure_venv(root: Path) -> Path:
     venv = venv_dir()
     py = venv_python(venv)
-    if py.is_file():
+    wheel = next(root.glob("*.whl"), None)
+    if py.is_file() and _venv_has_pkg(py):
         return py
     venv.parent.mkdir(parents=True, exist_ok=True)
-    subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
-    py = venv_python(venv)
-    wheel = next(root.glob("*.whl"), None)
-    pip = [str(py), "-m", "pip", "install", "--upgrade", "pip"]
-    subprocess.check_call(pip)
+    if not py.is_file():
+        subprocess.check_call([sys.executable, "-m", "venv", str(venv)])
+        py = venv_python(venv)
+    subprocess.check_call([str(py), "-m", "pip", "install", "--upgrade", "pip"])
     if wheel:
         subprocess.check_call([str(py), "-m", "pip", "install", str(wheel)])
     elif (root / "pyproject.toml").is_file():
@@ -61,6 +61,15 @@ def ensure_venv(root: Path) -> Path:
             [str(py), "-m", "pip", "install", "fastapi", "uvicorn[standard]", "httpx", "pydantic", "python-dotenv"]
         )
     return py
+
+
+def _venv_has_pkg(py: Path) -> bool:
+    probe = subprocess.run(
+        [str(py), "-c", "import finn_pentest"],
+        stdout=subprocess.DEVNULL,
+        stderr=subprocess.DEVNULL,
+    )
+    return probe.returncode == 0
 
 
 def prepare_sys_path(root: Path) -> None:

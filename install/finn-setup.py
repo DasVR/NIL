@@ -18,7 +18,7 @@ HERE = Path(__file__).resolve().parent
 if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
-from engine import DOCKER_TOS, find_api_src, find_macos_app, launch_app, run_install  # noqa: E402
+from engine import DOCKER_TOS, find_api_src, find_macos_app, find_wheel, launch_app, run_install  # noqa: E402
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -86,7 +86,9 @@ def gui_main(args: argparse.Namespace) -> int:
     root.configure(bg=abyss)
 
     privilege = tk.StringVar(value=args.privilege)
-    channel = tk.StringVar(value="offline" if find_api_src(HERE) or find_macos_app(HERE) else args.channel)
+    channel = tk.StringVar(
+        value="offline" if find_api_src(HERE) or find_macos_app(HERE) or find_wheel(HERE) else args.channel
+    )
     sandbox = tk.StringVar(value=args.sandbox)
     accept = tk.BooleanVar(value=False)
     step = tk.IntVar(value=0)

@@ -70,12 +70,16 @@ def walk_roots(start: Path | None = None) -> list[Path]:
     for candidate in (
         here,
         here / "payload",
+        here / "dist",
         here.parent,
         here.parent / "api",
+        here.parent / "dist",
         here.parent.parent,
         here.parent.parent / "api",
+        here.parent.parent / "dist",
         Path.cwd(),
         Path.cwd() / "api",
+        Path.cwd() / "dist",
     ):
         try:
             resolved = candidate.resolve()
@@ -125,11 +129,36 @@ def find_macos_app(start: Path | None = None) -> Path | None:
 
 
 def find_wheel(start: Path | None = None) -> Path | None:
+    skip = {"site-packages", ".venv", "venv", "node_modules"}
+    found: list[Path] = []
     for root in walk_roots(start):
-        found = list(root.glob("*.whl")) + list(root.glob("api/*.whl"))
-        if found:
-            return found[0]
-    return None
+        if not root.is_dir():
+            continue
+        for pattern in ("*.whl", "dist/*.whl", "api/*.whl", "install/*.whl"):
+            found.extend(root.glob(pattern))
+        try:
+            for path in root.rglob("*.whl"):
+                if skip.intersection(path.parts):
+                    continue
+                try:
+                    if len(path.relative_to(root).parts) > 4:
+                        continue
+                except ValueError:
+                    continue
+                found.append(path)
+        except OSError:
+            continue
+    files = []
+    seen: set[Path] = set()
+    for path in found:
+        try:
+            resolved = path.resolve()
+        except OSError:
+            continue
+        if resolved.is_file() and resolved not in seen:
+            seen.add(resolved)
+            files.append(resolved)
+    return files[0] if files else None
 
 
 def python_bin() -> str:
@@ -270,6 +299,8 @@ def run_install(
     launcher = find_run_api(start)
     app = find_macos_app(start)
     wheel = find_wheel(start)
+    if wheel:
+        note(8, f"Found wheel {wheel.name}")
 
     note(12, "Preparing folders")
     prefix.mkdir(parents=True, exist_ok=True)
@@ -306,8 +337,10 @@ def run_install(
                     launcher = find_run_api(unpack)
 
     if api_src is None and wheel is None:
+        searched = ", ".join(str(p) for p in walk_roots(start)[:8])
         raise FileNotFoundError(
-            "No API payload found. Unzip the macOS kit (it includes api/) or use a release that has a .whl."
+            "No API package and no .whl found. Put the wheel in dist/ (GitHub python artifact) "
+            f"or unzip the macOS kit. Searched: {searched}"
         )
 
     note(36, "Copying API")

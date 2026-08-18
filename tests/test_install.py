@@ -16,6 +16,21 @@ def test_cli_wrapper_syntax():
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-setup-app.sh")])
 
 
+def test_find_wheel_in_dist(tmp_path):
+    sys.path.insert(0, str(INSTALL))
+    import engine
+
+    artifact = tmp_path / "finn-python"
+    dist = artifact / "dist"
+    inst = artifact / "install"
+    dist.mkdir(parents=True)
+    inst.mkdir()
+    wheel = dist / "finn_pentest-0.1.0-py3-none-any.whl"
+    wheel.write_bytes(b"PK\x03\x04")
+    found = engine.find_wheel(inst)
+    assert found == wheel.resolve()
+
+
 def test_find_api_from_install_dir():
     sys.path.insert(0, str(INSTALL))
     import engine
