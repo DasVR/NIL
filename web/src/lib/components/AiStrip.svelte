@@ -27,15 +27,13 @@
     }
   }
 
-  // Render assistant content as terminal-style blocks, not chat bubbles.
-  // Split on ``` code fences and render fenced blocks as terminal output.
+  // Render markdown-like code blocks cleanly.
   function renderBlocks(content) {
     const parts = content.split(/```/);
     const blocks = [];
     for (let i = 0; i < parts.length; i++) {
       const part = parts[i];
       if (i % 2 === 1) {
-        // fenced code block
         const [lang, ...rest] = part.split('\n');
         blocks.push({ type: 'code', lang: (lang || '').trim(), body: rest.join('\n') });
       } else if (part.trim()) {
@@ -45,7 +43,6 @@
     return blocks;
   }
 
-  // Last Finn status line for the thin collapsed bar.
   const lastStatus = $derived.by(() => {
     const msgs = appState.messages;
     for (let i = msgs.length - 1; i >= 0; i--) {
@@ -58,7 +55,6 @@
   });
 </script>
 
-<!-- Thin collapsed bar — state 2 of the AI strip state machine -->
 {#if !appState.aiStripOpen && (appState.messages.length > 0 || appState.busy)}
   <button
     type="button"
@@ -68,9 +64,9 @@
     aria-label="Expand AI strip"
   >
     <span class="thin-dot" class:busy={appState.busy}></span>
-    <span class="thin-label mono">{appState.busy ? 'finn working' : 'finn'}</span>
-    <span class="thin-status mono">{lastStatus}</span>
-    <span class="thin-hint mono">⌘J</span>
+    <span class="thin-label">{appState.busy ? 'Finn is working' : 'Finn'}</span>
+    <span class="thin-status">{lastStatus}</span>
+    <span class="thin-hint">⌘J</span>
   </button>
 {/if}
 
@@ -81,9 +77,9 @@
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2">
           <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
         </svg>
-        <span class="label-micro">Finn</span>
+        <span class="ai-title">Finn</span>
         {#if appState.mode}
-          <span class="mode-chip mono">{appState.mode}</span>
+          <span class="mode-chip">{appState.mode}</span>
         {/if}
       </div>
       <div class="ai-right">
@@ -114,7 +110,7 @@
     <div class="ai-messages">
       {#if appState.messages.length === 0}
         <div class="ai-empty">
-          <p class="mono">Ask Finn about the current engagement, scope, or findings.</p>
+          <p>Ask Finn about the current engagement, scope, or findings.</p>
           <div class="quick-chips">
             <button class="chip" onclick={() => { inputText = 'Scan target and summarize'; submit(); }}>Scan target</button>
             <button class="chip" onclick={() => { inputText = 'Draft executive summary'; submit(); }}>Draft report</button>
@@ -125,32 +121,34 @@
       {:else}
         {#each appState.messages.slice(-8) as msg}
           {#if msg.role === 'user'}
-            <div class="block user-block">
-              <span class="block-prompt mono">$ {msg.content}</span>
+            <div class="message user">
+              <div class="message-content">{msg.content}</div>
             </div>
           {:else}
-            <div class="block assistant-block">
-              <div class="block-head mono">
-                <span class="block-tag">finn</span>
-                <span class="block-model">{appState.model}</span>
+            <div class="message assistant">
+              <div class="message-meta">
+                <span class="meta-name">Finn</span>
+                <span class="meta-model mono">{appState.model}</span>
               </div>
-              {#each renderBlocks(msg.content) as block}
-                {#if block.type === 'code'}
-                  <pre class="block-code mono"><code>{block.body}</code></pre>
-                {:else}
-                  <div class="block-text mono">{block.body}</div>
-                {/if}
-              {/each}
+              <div class="message-body">
+                {#each renderBlocks(msg.content) as block}
+                  {#if block.type === 'code'}
+                    <pre class="code-block mono"><code>{block.body}</code></pre>
+                  {:else}
+                    <div class="text-block">{block.body}</div>
+                  {/if}
+                {/each}
+              </div>
             </div>
           {/if}
         {/each}
         {#if isStreaming}
-          <div class="block assistant-block">
-            <div class="block-head mono">
-              <span class="block-tag">finn</span>
-              <span class="block-model">{appState.model}</span>
+          <div class="message assistant">
+            <div class="message-meta">
+              <span class="meta-name">Finn</span>
+              <span class="meta-model mono">{appState.model}</span>
             </div>
-            <div class="block-text mono thinking"><span class="cursor">_</span></div>
+            <div class="message-body thinking"><span class="cursor">●</span></div>
           </div>
         {/if}
       {/if}
@@ -158,7 +156,7 @@
 
     <div class="ai-input">
       <textarea
-        class="ai-textarea mono"
+        class="ai-textarea"
         placeholder="Ask Finn..."
         bind:value={inputText}
         onkeydown={handleKeydown}
@@ -195,7 +193,6 @@
     animation: aiSlideUp 280ms var(--spring-bouncy);
   }
 
-  /* Thin collapsed bar — 26px, glass-2, top border only */
   .ai-thin-bar {
     position: absolute;
     bottom: 0;
@@ -240,9 +237,8 @@
   }
 
   .thin-label {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-size: 11px;
+    font-weight: 500;
     color: var(--green);
     flex-shrink: 0;
   }
@@ -282,6 +278,12 @@
     display: flex;
     align-items: center;
     gap: 8px;
+  }
+
+  .ai-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--text);
   }
 
   .mode-chip {
@@ -327,10 +329,10 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
-    padding: 10px 14px;
+    padding: 12px 14px;
     display: flex;
     flex-direction: column;
-    gap: 8px;
+    gap: 12px;
   }
 
   .ai-empty {
@@ -373,86 +375,100 @@
     color: var(--text);
   }
 
-  /* Terminal-style blocks — no chat bubbles */
-  .block {
+  /* Clean structured cards — not terminal, not chat bubbles */
+  .message {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    padding: 6px 10px;
-    border-radius: 6px;
     max-width: 100%;
   }
 
-  .user-block {
+  .message.user {
     align-self: flex-end;
+    align-items: flex-end;
+  }
+
+  .message.user .message-content {
     background: var(--glass-3);
     border: 1px solid var(--glass-border);
-  }
-
-  .assistant-block {
-    align-self: stretch;
-    background: var(--abyss-2);
-    border: 1px solid var(--glass-border);
-    border-left: 2px solid var(--green);
-  }
-
-  .block-prompt {
-    font-size: 12px;
+    border-radius: 12px;
+    border-bottom-right-radius: 4px;
+    padding: 8px 12px;
+    font-size: 13px;
+    line-height: 1.45;
     color: var(--text);
-    white-space: pre-wrap;
-    word-break: break-word;
+    max-width: 520px;
   }
 
-  .block-head {
+  .message.assistant {
+    align-self: flex-start;
+    align-items: flex-start;
+    width: 100%;
+    max-width: 640px;
+  }
+
+  .message-meta {
     display: flex;
     align-items: center;
     gap: 8px;
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-size: 11px;
     color: var(--text-faint);
   }
 
-  .block-tag {
-    color: var(--green);
+  .meta-name {
     font-weight: 600;
+    color: var(--green);
   }
 
-  .block-model {
+  .meta-model {
     color: var(--text-faint);
-    text-transform: none;
-    letter-spacing: 0;
+    font-size: 10px;
   }
 
-  .block-text {
-    font-size: 12px;
+  .message-body {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    background: var(--abyss-2);
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    border-top-left-radius: 4px;
+    font-size: 13px;
     line-height: 1.5;
     color: var(--text);
+  }
+
+  .text-block {
     white-space: pre-wrap;
     word-break: break-word;
   }
 
-  .block-code {
+  .code-block {
     margin: 0;
-    padding: 8px 10px;
-    background: var(--abyss);
+    padding: 10px 12px;
+    background: var(--abyss-3);
     border: 1px solid var(--glass-border);
-    border-radius: 5px;
-    font-size: 11px;
+    border-radius: 8px;
+    font-size: 12px;
     line-height: 1.5;
-    color: var(--green-dim);
+    color: var(--text-dim);
     overflow-x: auto;
     white-space: pre-wrap;
     word-break: break-word;
   }
 
-  .block-text.thinking .cursor {
-    animation: blink 1s step-end infinite;
+  .thinking {
     color: var(--green);
   }
 
+  .thinking .cursor {
+    animation: blink 1.2s ease-in-out infinite;
+  }
+
   @keyframes blink {
-    50% { opacity: 0; }
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
   }
 
   .ai-input {
@@ -470,11 +486,11 @@
     max-height: 120px;
     resize: none;
     padding: 8px 12px;
-    font-size: 12px;
+    font-size: 13px;
     line-height: 1.4;
     background: var(--abyss-2);
     border: 1px solid var(--glass-border);
-    border-radius: 8px;
+    border-radius: 10px;
     color: var(--text);
   }
 
@@ -491,7 +507,7 @@
     min-height: unset;
     display: grid;
     place-items: center;
-    border-radius: 8px;
+    border-radius: 10px;
     background: var(--green);
     color: var(--abyss);
     border: none;
@@ -514,6 +530,6 @@
     .ai-thin-bar { transition: none; }
     .thin-dot.busy { animation: none; opacity: 1; }
     .send-btn { transition: none; }
-    .cursor { animation: none; opacity: 0; }
+    .cursor { animation: none; opacity: 0.5; }
   }
 </style>
