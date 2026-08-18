@@ -2,116 +2,90 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import LiquidMetal from '$lib/components/LiquidMetal.svelte';
-  import DitherOverlay from '$lib/components/DitherOverlay.svelte';
+  import { APP_TAG } from '$lib/version';
 
   onMount(() => {
     if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
       goto('/app');
     }
   });
-
-  const terminalSnippet = `$ finn api --port 8766
-INFO  Finn API listening on http://127.0.0.1:8766
-$ finn chat --engagement acme-corp --mode hunt
-> Scan in-scope targets and propose nmap commands
-Finn  Proposed: nmap -sV -sC 10.10.10.0/24
-       [Approve] [Reject] [Edit]
-$ finn yolo on acme-corp
-YOLO enabled — auto-run still sandboxed, still logged`;
 </script>
 
 <svelte:head>
   <title>Finn Pentest Harness</title>
 </svelte:head>
 
-<DitherOverlay type="grain" intensity={0.018} animate={true} />
-
-<main class="landing">
+<main class="landing marketing">
   <nav class="top-nav">
     <a class="brand" href="/">
       <span class="logo">F</span>
       <span>Finn</span>
     </a>
     <div class="nav-links">
-      <a href="/docs">Read the Docs</a>
-      <a href="/download">Releases</a>
-      <a href="https://github.com/DasVR/finn-pentest-harness" target="_blank" rel="noopener noreferrer">View on GitHub</a>
+      <a href="/docs">Docs</a>
+      <a href="/download">Download</a>
+      <a href="https://github.com/DasVR/finn-pentest-harness" target="_blank" rel="noopener noreferrer">GitHub</a>
       <button class="primary nav-cta" type="button" onclick={() => goto('/app')}>Open Workstation</button>
     </div>
   </nav>
 
-  <section class="hero liquid-glass">
-    <div class="hero-bg">
-      <LiquidMetal intensity={0.18} speed={0.6} interactive={false} />
-    </div>
-    <div class="hero-content">
-      <p class="eyebrow">Authorized pentest workstation</p>
-      <h1>Local-first AI for offensive security work</h1>
-      <p class="lede">
-        Terminal TUI, native desktop, and this browser UI share one FastAPI backend.
-        Finn proposes commands — you approve them. YOLO when you trust the scope.
-        Data stays on disk unless you choose a cloud model.
-      </p>
-      <div class="cta-row">
-        <button class="primary" type="button" onclick={() => goto('/app')}>Open Workstation</button>
-        <a class="btn secondary" href="/docs">Read the Docs</a>
-        <a class="btn ghost" href="/download">Download releases</a>
-        <a class="btn ghost" href="https://github.com/DasVR/finn-pentest-harness" target="_blank" rel="noopener noreferrer">View on GitHub</a>
-      </div>
+  <section class="hero">
+    <p class="eyebrow">Authorized pentest workstation · {APP_TAG}</p>
+    <h1>The pentest workstation with an operator in the chair.</h1>
+    <p class="lede">
+      Engagements are Spaces. The terminal is home. Finn proposes commands — you approve them.
+      YOLO when you trust the scope. Data stays on disk unless you choose a cloud model.
+    </p>
+    <div class="cta-row">
+      <button class="primary" type="button" onclick={() => goto('/app')}>Open Workstation</button>
+      <a class="btn" href="/download">Download</a>
+      <a class="btn ghost" href="/docs">Docs</a>
     </div>
   </section>
 
-  <section class="demo-section">
-    <div class="demo-grid">
-      <div class="terminal-window">
-        <div class="term-chrome">
-          <span class="term-dot red"></span>
-          <span class="term-dot yellow"></span>
-          <span class="term-dot green"></span>
-          <span class="term-title">finn — zsh</span>
-        </div>
-        <pre class="term-body"><code>{terminalSnippet}</code></pre>
-      </div>
+  <section class="frame" aria-hidden="true">
+    <div class="frame-chrome">
+      <div class="metal"><LiquidMetal intensity={0.22} speed={0.4} interactive={false} /></div>
+      <span class="space">acme-corp</span>
+      <span class="host mono">10.0.1.5</span>
+      <span class="mode">hunt</span>
+      <span class="safe">SAFE</span>
+    </div>
+    <div class="frame-body">
+      <aside class="ghost-side">
+        <div class="row on">10.0.1.5</div>
+        <div class="row">api.acme.test</div>
+        <div class="row">10.0.1.0/24</div>
+      </aside>
+      <pre class="ghost-term mono">┌ nmap -sV -sC 10.0.1.5                    exit 0  12.4s
+│ Starting Nmap 7.94 …
+│ 22/tcp open  ssh     OpenSSH 8.9
+│ 443/tcp open ssl/http nginx 1.22
+└ [Copy] [Send to Finn] [Save as evidence]
 
-      <div class="feature-stack">
-        <article class="feature-card">
-          <h3>Approval gate</h3>
-          <p>Every shell command passes through review. Approve, reject, or edit before execution inside the engagement sandbox.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Per-engagement isolation</h3>
-          <p>Separate Docker sandboxes, findings, notes, and scope per client. Nuke one without touching the next.</p>
-        </article>
-        <article class="feature-card">
-          <h3>Bring your own model</h3>
-          <p>Ollama, DeepSeek, Grok, Kimi, or any OpenAI-compatible endpoint. Auto-rotate on rate limits.</p>
-        </article>
-      </div>
+$ _</pre>
+      <aside class="ghost-insp">
+        <div class="finding">CRITICAL · panel RCE</div>
+        <div class="finding">HIGH · default creds</div>
+      </aside>
     </div>
   </section>
 
-  <section class="interfaces">
-    <h2>Three interfaces, one backend</h2>
-    <div class="iface-grid">
-      <article>
-        <h4>Textual TUI</h4>
-        <p>Keyboard-driven terminal UI for SSH sessions and headless boxes.</p>
-      </article>
-      <article>
-        <h4>Tauri desktop</h4>
-        <p>Native window with traffic-light chrome and offline-capable shell.</p>
-      </article>
-      <article>
-        <h4>Browser workstation</h4>
-        <p>Chat, findings, tools, and terminal panes in a single layout.</p>
-      </article>
-    </div>
+  <section class="editorial">
+    <article>
+      <h2>Approval gate</h2>
+      <p>Every shell command is a Warp-style block with Approve / Edit / Reject. Dangerous tools stay sandboxed and logged — even in YOLO.</p>
+    </article>
+    <article>
+      <h2>Your disk</h2>
+      <p>Findings, notes, loot, and scope live per engagement on the machine. Nuke one Space without touching the next.</p>
+    </article>
   </section>
 
   <footer class="landing-footer">
-    <span>Finn Pentest Harness v0.3.0</span>
+    <span>Finn Pentest Harness {APP_TAG}</span>
     <div class="footer-links">
-      <a href="/download">Releases & downloads</a>
+      <a href="/download">Releases</a>
       <a href="/docs">Documentation</a>
     </div>
   </footer>
@@ -121,12 +95,12 @@ YOLO enabled — auto-run still sandboxed, still logged`;
   .landing {
     min-height: 100vh;
     min-height: 100dvh;
-    max-width: 1040px;
+    max-width: 1080px;
     margin: 0 auto;
     padding: 1rem 1.25rem 3rem;
     overflow-x: hidden;
+    overflow-y: auto;
   }
-
   .top-nav {
     display: flex;
     justify-content: space-between;
@@ -135,307 +109,129 @@ YOLO enabled — auto-run still sandboxed, still logged`;
     flex-wrap: wrap;
     padding: 0.5rem 0 1.5rem;
   }
-
   .brand {
     display: flex;
     align-items: center;
     gap: 0.5rem;
     font-weight: 700;
-    color: var(--text-primary);
+    color: var(--text);
     text-decoration: none;
   }
-
-  .brand:hover {
-    text-decoration: none;
-  }
-
   .logo {
     display: grid;
     place-items: center;
     width: 28px;
     height: 28px;
     border-radius: 7px;
-    background: var(--accent);
+    background: var(--green);
     color: var(--abyss);
     font-weight: 800;
     font-size: 14px;
   }
-
   .nav-links {
     display: flex;
     align-items: center;
     gap: 0.85rem;
     flex-wrap: wrap;
   }
-
-  .nav-links a {
-    color: var(--text-secondary);
-    font-size: 13px;
-    text-decoration: none;
-  }
-
-  .nav-links a:hover {
-    color: var(--accent);
-    text-decoration: none;
-  }
-
-  .nav-cta {
-    min-height: 44px;
-    font-size: 13px;
-  }
-
-  .hero {
-    position: relative;
-    padding: 2.5rem 1.75rem;
-    margin-bottom: 2.5rem;
-    min-height: 320px;
-    display: flex;
-    align-items: center;
-  }
-
-  .hero-bg {
-    position: absolute;
-    inset: 0;
-    border-radius: inherit;
-    overflow: hidden;
-    opacity: 0.55;
-    mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-    -webkit-mask-image: linear-gradient(to bottom, black 40%, transparent 100%);
-  }
-
-  .hero-content {
-    position: relative;
-    z-index: 1;
-    max-width: 620px;
-  }
-
+  .nav-links a { color: var(--text-dim); font-size: 13px; }
+  .nav-cta { font-size: 13px; }
+  .hero { padding: 2rem 0 1.5rem; max-width: 720px; }
   .eyebrow {
-    margin: 0 0 0.5rem;
-    color: var(--accent);
+    margin: 0 0 0.75rem;
+    color: var(--green);
     font-family: var(--font-mono);
     font-size: 11px;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
   }
-
   h1 {
-    font-size: clamp(1.75rem, 5vw, 2.75rem);
-    line-height: 1.12;
+    font-size: clamp(2rem, 5vw, 3.1rem);
+    line-height: 1.08;
     margin: 0 0 1rem;
-    letter-spacing: -0.02em;
+    letter-spacing: -0.035em;
+    font-weight: 620;
   }
-
   .lede {
     margin: 0 0 1.5rem;
-    color: var(--text-secondary);
+    color: var(--text-dim);
     line-height: 1.6;
-    font-size: 15px;
+    font-size: 16px;
   }
-
-  .cta-row {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.65rem;
-  }
-
-  .btn.secondary {
-    background: var(--glass);
-    color: var(--text-primary);
-  }
-
-  .btn.ghost {
+  .cta-row { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+  .btn.ghost, a.ghost {
     background: transparent;
     border-color: transparent;
-    color: var(--text-secondary);
+    color: var(--text-dim);
   }
-
-  .btn.ghost:hover {
-    color: var(--accent);
-    background: var(--accent-8);
-    border-color: var(--accent-20);
-  }
-
-  .demo-section {
-    margin-bottom: 2.5rem;
-  }
-
-  .demo-grid {
-    display: grid;
-    grid-template-columns: 1.1fr 0.9fr;
-    gap: 1.25rem;
-    align-items: start;
-  }
-
-  .terminal-window {
-    background: var(--abyss-1);
+  .frame {
     border: 1px solid var(--glass-border);
-    border-radius: var(--radius-panel);
+    border-radius: 12px;
     overflow: hidden;
-    box-shadow: var(--elevation-1);
+    background: var(--abyss);
+    margin: 2rem 0 2.5rem;
+    box-shadow: var(--shadow-panel);
   }
-
-  .term-chrome {
+  .frame-chrome {
+    position: relative;
+    height: 40px;
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 0.55rem 0.75rem;
-    background: var(--abyss-2);
+    gap: 10px;
+    padding: 0 16px;
     border-bottom: 1px solid var(--glass-border);
+    overflow: hidden;
   }
-
-  .term-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
+  .metal { position: absolute; inset: 0; opacity: 0.65; pointer-events: none; }
+  .space { position: relative; font-weight: 600; font-size: 13px; }
+  .host, .mode, .safe { position: relative; font-size: 11px; color: var(--text-dim); }
+  .mode { color: var(--green); text-transform: uppercase; letter-spacing: 0.06em; }
+  .safe { margin-left: auto; color: var(--green); font-weight: 600; font-size: 10px; }
+  .frame-body {
+    display: grid;
+    grid-template-columns: 180px 1fr 180px;
+    min-height: 240px;
   }
-
-  .term-dot.red { background: #ff5f57; }
-  .term-dot.yellow { background: #febc2e; }
-  .term-dot.green { background: #28c840; }
-
-  .term-title {
-    margin-left: 0.5rem;
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-tertiary);
-  }
-
-  .term-body {
-    margin: 0;
-    padding: 1rem;
-    overflow-x: auto;
-    font-family: var(--font-mono);
+  .ghost-side, .ghost-insp {
+    padding: 10px;
+    background: var(--abyss-2);
     font-size: 12px;
-    line-height: 1.55;
-    color: var(--text-secondary);
+    color: var(--text-dim);
+  }
+  .ghost-side { border-right: 1px solid var(--glass-border); }
+  .ghost-insp { border-left: 1px solid var(--glass-border); }
+  .row { height: 28px; display: flex; align-items: center; padding: 0 8px; border-radius: 5px; }
+  .row.on { background: rgba(255,255,255,0.05); box-shadow: inset 2px 0 0 var(--green); color: var(--text); }
+  .ghost-term {
+    margin: 0;
+    padding: 14px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: var(--text-dim);
     background: var(--abyss);
   }
-
-  .term-body code {
-    white-space: pre;
-  }
-
-  .feature-stack {
-    display: flex;
-    flex-direction: column;
-    gap: 0.75rem;
-  }
-
-  .feature-card {
-    padding: 1rem 1.1rem;
-    background: var(--abyss-1);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-control);
-  }
-
-  .feature-card h3 {
-    margin: 0 0 0.35rem;
-    font-size: 14px;
-    color: var(--text-primary);
-  }
-
-  .feature-card p {
-    margin: 0;
-    font-size: 13px;
-    color: var(--text-secondary);
-    line-height: 1.5;
-  }
-
-  .interfaces {
-    margin-bottom: 2rem;
-  }
-
-  .interfaces h2 {
-    font-size: 1.1rem;
-    font-weight: 600;
-    margin: 0 0 1rem;
-    color: var(--text-primary);
-  }
-
-  .iface-grid {
+  .finding { padding: 8px; margin-bottom: 6px; border: 1px solid var(--glass-border); border-radius: 6px; font-size: 11px; }
+  .editorial {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-    gap: 0.75rem;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2.5rem;
   }
-
-  .iface-grid article {
-    padding: 0.85rem 1rem;
-    background: var(--glass);
-    border: 1px solid var(--glass-border);
-    border-radius: var(--radius-control);
-  }
-
-  .iface-grid h4 {
-    margin: 0 0 0.35rem;
-    font-size: 13px;
-    color: var(--accent);
-  }
-
-  .iface-grid p {
-    margin: 0;
-    font-size: 12px;
-    color: var(--text-secondary);
-    line-height: 1.45;
-  }
-
+  .editorial h2 { margin: 0 0 0.4rem; font-size: 18px; letter-spacing: -0.02em; }
+  .editorial p { margin: 0; color: var(--text-dim); line-height: 1.5; font-size: 14px; }
   .landing-footer {
     display: flex;
     justify-content: space-between;
-    align-items: center;
-    flex-wrap: wrap;
     gap: 0.75rem;
+    flex-wrap: wrap;
     padding-top: 1.5rem;
     border-top: 1px solid var(--glass-border);
     font-size: 12px;
-    color: var(--text-tertiary);
+    color: var(--text-faint);
   }
-
-  .footer-links {
-    display: flex;
-    gap: 1rem;
-  }
-
-  .footer-links a {
-    color: var(--text-secondary);
-    text-decoration: none;
-  }
-
-  .footer-links a:hover {
-    color: var(--accent);
-  }
-
-  @media (max-width: 768px) {
-    .demo-grid {
-      grid-template-columns: 1fr;
-    }
-
-    .nav-links {
-      width: 100%;
-      justify-content: flex-start;
-    }
-
-    .hero {
-      padding: 1.75rem 1.25rem;
-      min-height: 280px;
-    }
-
-    .term-body {
-      font-size: 11px;
-    }
-  }
-
-  @media (max-width: 320px) {
-    .landing {
-      padding: 0.75rem;
-    }
-
-    .cta-row {
-      flex-direction: column;
-    }
-
-    .cta-row button,
-    .cta-row a {
-      width: 100%;
-      text-align: center;
-    }
+  .footer-links { display: flex; gap: 1rem; }
+  @media (max-width: 800px) {
+    .frame-body, .editorial { grid-template-columns: 1fr; }
+    .ghost-side, .ghost-insp { display: none; }
   }
 </style>

@@ -5,7 +5,7 @@
 > Built for operators who live in iTerm, Cursor, and Burp — not for people who talk to chatbots.
 
 **Design tokens:** `--abyss #050507` · `--green #00d992` · JetBrains Mono + Inter
-**Status:** v2 is what the current `/app` shell aimed at. **v3 target (complete redesign): [`UX_REDESIGN.md`](./UX_REDESIGN.md).** New UI work follows v3. Fold shipped phases back into this file.
+> **Status:** v3 workstation shipped in `/app` (Spaces, block terminal, inspector, palette, overlay chrome). This file is historical v2 language. **Living spec: [`UX_REDESIGN.md`](./UX_REDESIGN.md).**
 
 > v2 correctly killed chat-as-home. The implementation stopped halfway (orphaned `ChatPanel`/`Dock`, `/app` still labelled Chat, glass with nothing to refract). Do not extend v2 chrome — implement v3 phases.
 

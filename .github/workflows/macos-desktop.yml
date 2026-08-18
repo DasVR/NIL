@@ -53,13 +53,17 @@ jobs:
       - name: Launch smoke test
         run: bash desktop/scripts/macos-launch-smoke.sh
 
+      - name: Zip .app for download
+        if: success() || failure()
+        run: bash desktop/scripts/macos-zip-app.sh
+
       - name: Upload macOS packages
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: finn-macos-${{ github.sha }}
           path: |
-            desktop/src-tauri/target/release/bundle/macos/*.app
+            desktop/src-tauri/target/release/bundle/macos/*.zip
             desktop/src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: warn
           retention-days: 14

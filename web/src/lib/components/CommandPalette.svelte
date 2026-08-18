@@ -1,377 +1,466 @@
-<script>
+<script lang="ts">
+  import { tick } from 'svelte';
   import { goto } from '$app/navigation';
   import { appState } from '$lib/stores.svelte';
+  import { fuzzyFilter, highlightMatch } from '$lib/fuzzy';
+  import { PALETTE_RECENTS_KEY } from '$lib/keymap';
+  import { toast } from '$lib/toast.svelte';
+
+  type Item = {
+    id: string;
+    label: string;
+    hint?: string;
+    section: string;
+    run: () => void | Promise<void>;
+    alt?: () => void | Promise<void>;
+    altHint?: string;
+  };
 
   let q = $state('');
-  let selectedIndex = $state(0);
+  let active = $state(0);
+  let recents = $state<string[]>([]);
+  let inputEl: HTMLInputElement | undefined;
 
-  // Static commands
-  const staticCommands = [
-    { id: 'chat', label: 'Go to workspace', shortcut: '', run: () => goto('/app') },
-    { id: 'findings', label: 'Go to findings', shortcut: '', run: () => goto('/app/findings') },
-    { id: 'notes', label: 'Go to notes', shortcut: '', run: () => goto('/app/notes') },
-    { id: 'tools', label: 'Go to tools', shortcut: '', run: () => goto('/app/tools') },
-    { id: 'settings', label: 'Go to settings', shortcut: '⌘,', run: () => goto('/app/settings') },
-    { id: 'yolo', label: 'Toggle YOLO', shortcut: '⌘Y', run: () => appState.toggleYolo() },
-    { id: 'hunt', label: 'Mode: hunt', shortcut: '', run: () => (appState.mode = 'hunt') },
-    { id: 'chatmode', label: 'Mode: chat', shortcut: '', run: () => (appState.mode = 'chat') },
-    { id: 'code', label: 'Mode: code', shortcut: '', run: () => (appState.mode = 'code') },
-    { id: 'report', label: 'Mode: report', shortcut: '', run: () => (appState.mode = 'report') },
-    { id: 'newEng', label: 'New engagement', shortcut: '⌘N', run: () => { const n = prompt('Name?'); if (n) appState.createEngagement(n); } }
-  ];
+  $effect(() => {
+    if (typeof window === 'undefined') return;
+    recents = JSON.parse(localStorage.getItem(PALETTE_RECENTS_KEY) || '[]');
+    void tick().then(() => inputEl?.focus());
+  });
 
-  // Dynamic commands from live data — targets, findings, engagements, tools
-  const dynamicCommands = $derived([
-    ...appState.engagements.map((e) => ({
-      id: `eng-${e.name}`,
-      label: `Engagement: ${e.name}`,
-      group: 'engagements',
-      run: () => appState.select(e.name)
-    })),
-    ...appState.targets.map((t) => ({
-      id: `target-${t.id}`,
-      label: `Target: ${t.host}`,
-      group: 'targets',
-      run: () => { appState.activeView = 'terminal'; }
-    })),
-    ...appState.findings.map((f) => ({
-      id: `finding-${f.id}`,
-      label: `Finding: ${f.title}`,
-      group: 'findings',
-      run: () => goto('/app/findings')
-    })),
-    ...appState.plugins.map((p) => ({
-      id: `plugin-${p.name}`,
-      label: `Tool: ${p.name}`,
-      group: 'tools',
-      run: () => goto('/app/tools')
-    }))
-  ]);
+  const items = $derived.by((): Item[] => {
+    const out: Item[] = [];
+    const close = () => (appState.paletteOpen = false);
+    const gotoMode = appState.paletteMode === 'goto';
 
-  const allCommands = $derived([...staticCommands, ...dynamicCommands]);
+    if (!gotoMode) {
+      out.push({
+        id: 'new-space',
+        label: 'New Space',
+        hint: '⌘N',
+        section: 'Actions',
+        run: () => {
+          appState.newSpaceOpen = true;
+          close();
+        }
+      });
+      out.push({
+        id: 'toggle-ai',
+        label: appState.aiStripOpen ? 'Hide Finn' : 'Show Finn',
+        hint: '⌘J',
+        section: 'Actions',
+        run: () => {
+          appState.toggleAi();
+          close();
+        }
+      });
+      out.push({
+        id: 'settings',
+        label: 'Open settings',
+        hint: '⌘,',
+        section: 'Actions',
+        run: () => {
+          appState.settingsOpen = true;
+          close();
+        }
+      });
+      out.push({
+        id: 'yolo',
+        label: appState.yolo ? 'Disable YOLO' : 'Enable YOLO',
+        hint: '⌘Y',
+        section: 'Actions',
+        run: () => {
+          void appState.setYolo(!appState.yolo);
+          close();
+        }
+      });
+      out.push({
+        id: 'view-term',
+        label: 'Terminal view',
+        hint: '⌘T',
+        section: 'Actions',
+        run: () => {
+          appState.setView('terminal');
+          close();
+        }
+      });
+      out.push({
+        id: 'view-art',
+        label: 'Artifact view',
+        hint: '⌘E',
+        section: 'Actions',
+        run: () => {
+          appState.setView('artifact');
+          close();
+        }
+      });
+      out.push({
+        id: 'view-split',
+        label: 'Split view',
+        hint: '⌘\\',
+        section: 'Actions',
+        run: () => {
+          appState.setView('split');
+          close();
+        }
+      });
+      out.push({
+        id: 'mode-hunt',
+        label: 'Mode: hunt',
+        hint: '> hunt',
+        section: 'Actions',
+        run: () => {
+          appState.setMode('hunt');
+          toast.show('Hunt mode');
+          close();
+        }
+      });
+      out.push({
+        id: 'mode-chat',
+        label: 'Mode: chat',
+        hint: '> chat',
+        section: 'Actions',
+        run: () => {
+          appState.setMode('chat');
+          close();
+        }
+      });
+      out.push({
+        id: 'mode-report',
+        label: 'Mode: report',
+        hint: '> report',
+        section: 'Actions',
+        run: () => {
+          appState.setMode('report');
+          close();
+        }
+      });
+      out.push({
+        id: 'draft-report',
+        label: 'Draft report artifact',
+        section: 'Actions',
+        run: () => {
+          void appState.draftReport();
+          close();
+        }
+      });
 
-  const filtered = $derived(
-    allCommands.filter((c) => c.label.toLowerCase().includes(q.toLowerCase()))
-  );
+      if (appState.topPending) {
+        const tool = 'tool' in appState.topPending ? appState.topPending.tool : 'command';
+        out.push({
+          id: 'approve',
+          label: `Approve ${tool}`,
+          hint: '⌘↵',
+          section: 'Actions',
+          run: async () => {
+            await appState.approve(appState.topPendingId());
+            close();
+          }
+        });
+        out.push({
+          id: 'reject',
+          label: `Reject ${tool}`,
+          hint: '⌘⇧↵',
+          section: 'Actions',
+          run: async () => {
+            await appState.reject(appState.topPendingId());
+            close();
+          }
+        });
+      }
+
+      for (const p of appState.plugins) {
+        out.push({
+          id: `plugin:${p.name}`,
+          label: `Run ${p.name}`,
+          hint: p.description,
+          section: 'Plugins',
+          run: async () => {
+            const host = appState.activeTarget?.host;
+            if (!host) {
+              toast.show('Select a target first', 'warn');
+              return;
+            }
+            await appState.runPlugin(p.name, host);
+            close();
+          }
+        });
+      }
+
+      for (const e of appState.engagements) {
+        out.push({
+          id: `space:${e.name}`,
+          label: e.name,
+          hint: e.findings_count ? `${e.findings_count} findings` : 'Space',
+          section: 'Spaces',
+          run: async () => {
+            await appState.select(e.name);
+            close();
+          }
+        });
+      }
+    }
+
+    for (const t of appState.targets) {
+      out.push({
+        id: `target:${t.host}`,
+        label: t.host,
+        hint: t.ports.length ? t.ports.join(', ') : 'target',
+        section: 'Targets',
+        run: () => {
+          appState.selectTarget(t);
+          close();
+        },
+        alt: () => {
+          appState.selectTarget(t);
+          appState.aiStripOpen = true;
+          void appState.send(`Scan ${t.host} and summarize open services.`);
+          close();
+        },
+        altHint: 'Ask Finn'
+      });
+    }
+
+    if (!gotoMode) {
+      for (const f of appState.findings) {
+        out.push({
+          id: `finding:${f.id}`,
+          label: f.title,
+          hint: f.severity,
+          section: 'Findings',
+          run: () => {
+            appState.openFindingArtifact(f);
+            close();
+          },
+          alt: () => {
+            appState.askAboutFinding(f, 'Explain this finding and propose next steps.');
+            close();
+          },
+          altHint: 'Explain'
+        });
+      }
+
+      out.push({
+        id: 'docs',
+        label: 'Open documentation',
+        section: 'Help',
+        run: () => {
+          void goto('/docs');
+          close();
+        }
+      });
+    }
+
+    return out;
+  });
+
+  const filtered = $derived.by(() => {
+    let query = q.trim();
+    if (query.startsWith('>')) query = query.slice(1).trim();
+    if (query.startsWith('?')) {
+      return items.filter((i) => i.section === 'Help' || i.id === 'toggle-ai');
+    }
+    const pool = query ? fuzzyFilter(items, query, (item) => `${item.label} ${item.hint ?? ''} ${item.section}`) : items;
+    if (!query) {
+      const recentItems = recents
+        .map((id) => pool.find((i) => i.id === id))
+        .filter((i): i is Item => Boolean(i));
+      const rest = pool.filter((i) => !recents.includes(i.id));
+      return [...recentItems, ...rest].slice(0, 40);
+    }
+    return pool.slice(0, 40);
+  });
+
+  const sections = $derived.by(() => {
+    const map = new Map<string, Item[]>();
+    for (const item of filtered) {
+      const key = !q.trim() && recents.includes(item.id) ? 'Recent' : item.section;
+      const list = map.get(key) ?? [];
+      list.push(item);
+      map.set(key, list);
+    }
+    return [...map.entries()];
+  });
 
   $effect(() => {
     q;
-    selectedIndex = 0;
+    active = 0;
   });
 
-  function pick(cmd) {
-    cmd.run();
-    appState.paletteOpen = false;
-    q = '';
-    selectedIndex = 0;
+  function remember(id: string) {
+    const next = [id, ...recents.filter((x) => x !== id)].slice(0, 8);
+    localStorage.setItem(PALETTE_RECENTS_KEY, JSON.stringify(next));
   }
 
-  function closePalette() {
-    appState.paletteOpen = false;
-    q = '';
-    selectedIndex = 0;
+  async function run(item: Item, alt = false) {
+    remember(item.id);
+    if (alt && item.alt) await item.alt();
+    else await item.run();
   }
 
-  function onKey(ev) {
-    if (ev.key === 'ArrowDown') {
-      ev.preventDefault();
-      if (filtered.length) selectedIndex = (selectedIndex + 1) % filtered.length;
-    } else if (ev.key === 'ArrowUp') {
-      ev.preventDefault();
-      if (filtered.length) selectedIndex = (selectedIndex - 1 + filtered.length) % filtered.length;
-    } else if (ev.key === 'Enter') {
-      ev.preventDefault();
-      if (filtered[selectedIndex]) pick(filtered[selectedIndex]);
-    } else if (ev.key === 'Escape') {
-      closePalette();
+  function onKey(e: KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      active = Math.min(filtered.length - 1, active + 1);
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      active = Math.max(0, active - 1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const item = filtered[active];
+      if (item) void run(item, e.metaKey || e.ctrlKey);
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      if (q) q = '';
+      else {
+        appState.paletteOpen = false;
+        appState.paletteMode = 'root';
+      }
     }
   }
 </script>
 
-{#if appState.paletteOpen}
-<div class="overlay" onclick={closePalette} role="presentation">
-  <div class="palette" onclick={(e) => e.stopPropagation()} role="dialog" aria-label="Command palette">
-    <div class="search-row">
-      <svg class="search-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
-        <circle cx="11" cy="11" r="7"/><path d="M20 20l-3-3"/>
-      </svg>
-      <input
-        bind:value={q}
-        placeholder="Search commands, targets, findings, tools…"
-        autofocus
-        onkeydown={onKey}
-        aria-autocomplete="list"
-        aria-controls="palette-list"
-        aria-activedescendant={filtered[selectedIndex] ? `cmd-${filtered[selectedIndex].id}` : undefined}
-      />
-    </div>
-
-    <ul id="palette-list" role="listbox" class="results">
-      {#each filtered as cmd, i}
-        <li
-          id={`cmd-${cmd.id}`}
-          role="option"
-          aria-selected={i === selectedIndex}
-          class:selected={i === selectedIndex}
-          onclick={() => pick(cmd)}
-          onkeydown={(e) => { if (e.key === 'Enter') pick(cmd); }}
-          tabindex="0"
-        >
-          <span class="cmd-icon" aria-hidden="true">
-            {#if cmd.group === 'engagements'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M3 21h18M5 21V7l7-4 7 4v14M9 9h1M9 13h1M14 9h1M14 13h1"/></svg>
-            {:else if cmd.group === 'targets'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="5"/><circle cx="12" cy="12" r="1"/></svg>
-            {:else if cmd.group === 'findings'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l2.5 2.5M16.5 16.5 19 19M19 5l-2.5 2.5M7.5 16.5 5 19"/></svg>
-            {:else if cmd.group === 'tools'}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/></svg>
-            {:else}
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.75"><polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/></svg>
-            {/if}
-          </span>
-          <span class="cmd-label">{cmd.label}</span>
-          {#if cmd.group}
-            <span class="cmd-group mono">{cmd.group}</span>
-          {/if}
-          {#if cmd.shortcut}
-            <kbd class="cmd-shortcut">{cmd.shortcut}</kbd>
-          {/if}
-        </li>
+<div class="overlay" role="dialog" aria-modal="true" aria-label="Command palette">
+  <button class="backdrop" type="button" aria-label="Close palette" onclick={() => { appState.paletteOpen = false; appState.paletteMode = 'root'; }}></button>
+  <div class="palette">
+    <input
+      bind:this={inputEl}
+      bind:value={q}
+      placeholder={appState.paletteMode === 'goto' ? 'Go to target…' : 'Search Spaces, targets, findings, plugins…'}
+      onkeydown={onKey}
+    />
+    <div class="list" role="listbox">
+      {#each sections as [section, rows]}
+        <div class="sec">{section}</div>
+        {#each rows as item}
+          {@const idx = filtered.indexOf(item)}
+          <button
+            type="button"
+            class="row"
+            class:on={idx === active}
+            role="option"
+            aria-selected={idx === active}
+            onclick={() => run(item)}
+            onmouseenter={() => (active = idx)}
+          >
+            <span class="label">
+              {#each highlightMatch(item.label, q.replace(/^>[ ]?/, '')) as part}
+                <span class:hl={part.hit}>{part.ch}</span>
+              {/each}
+            </span>
+            {#if item.hint}<span class="hint">{item.hint}</span>{/if}
+          </button>
+        {/each}
       {:else}
-        <li class="empty" role="presentation">
-          <span class="empty-icon" aria-hidden="true">⌕</span>
-          <span class="empty-text">No results for “{q}”</span>
-          <span class="empty-hint">Try a command, target, finding, or tool name</span>
-        </li>
+        <p class="empty">No matches.</p>
       {/each}
-    </ul>
-
-    <footer class="footer-hint" aria-hidden="true">
-      <span>↑↓ to navigate</span>
-      <span class="sep">·</span>
-      <span>↵ to run</span>
-      <span class="sep">·</span>
-      <span>esc to close</span>
+    </div>
+    {#if filtered[active]}
+      <aside class="panel">
+        <h3>{filtered[active].label}</h3>
+        <p>{filtered[active].hint || filtered[active].section}</p>
+        {#if filtered[active].altHint}
+          <p class="alt"><kbd>⌘↵</kbd> {filtered[active].altHint}</p>
+        {/if}
+      </aside>
+    {/if}
+    <footer>
+      <span><kbd>↑↓</kbd> move</span>
+      <span><kbd>↵</kbd> run</span>
+      <span><kbd>⌘↵</kbd> alt</span>
+      <span><kbd>esc</kbd> peel</span>
     </footer>
   </div>
 </div>
-{/if}
 
 <style>
   .overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.62);
+    z-index: 100;
     display: grid;
     place-items: start center;
     padding-top: 10vh;
-    z-index: 50;
-    animation: overlay-in 200ms var(--spring-panel) both;
   }
-
+  .backdrop {
+    position: absolute;
+    inset: 0;
+    background: color-mix(in srgb, var(--abyss) 55%, transparent);
+    border: 0;
+    min-height: unset;
+  }
   .palette {
-    width: min(580px, 92vw);
-    background: var(--abyss-1);
-    border: 1px solid var(--glass-border);
-    backdrop-filter: blur(36px) saturate(1.3);
-    -webkit-backdrop-filter: blur(36px) saturate(1.3);
-    border-radius: 14px;
-    box-shadow:
-      0 24px 70px rgba(0, 0, 0, 0.6),
-      0 0 0 1px rgba(255, 255, 255, 0.04),
-      inset 0 1px 0 rgba(255, 255, 255, 0.06);
-    overflow: hidden;
-    animation: palette-in 280ms var(--spring-panel) both;
-  }
-
-  .search-row {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.85rem 1rem;
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .search-icon {
-    flex-shrink: 0;
-    color: var(--text-faint);
-  }
-
-  .search-row input {
-    flex: 1;
-    min-width: 0;
-    border: none;
-    background: transparent;
-    padding: 0.35rem 0;
-    font-size: 16px;
-    font-weight: 500;
-    color: var(--text);
-    box-shadow: none;
-  }
-
-  .search-row input:focus {
-    border: none;
-    box-shadow: none;
-    outline: none;
-  }
-
-  .search-row input::placeholder {
-    color: var(--text-faint);
-    font-weight: 400;
-  }
-
-  .results {
-    list-style: none;
-    margin: 0;
-    padding: 0.4rem;
-    max-height: 340px;
-    overflow-y: auto;
-  }
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: 0.65rem;
-    padding: 0.5rem 0.65rem;
-    border-radius: 8px;
-    cursor: pointer;
-    color: var(--text-dim);
-    font-size: 13px;
-    transition:
-      background 140ms var(--spring-control),
-      color 100ms var(--spring-control),
-      transform 140ms var(--spring-control);
-  }
-
-  li:hover:not(.empty) {
-    background: rgba(255, 255, 255, 0.05);
-    color: var(--text);
-  }
-
-  li.selected {
-    background: var(--green-soft);
-    color: var(--text);
-    box-shadow:
-      inset 0 1px 0 rgba(255, 255, 255, 0.05),
-      0 1px 2px rgba(0, 0, 0, 0.15);
-  }
-
-  .cmd-icon {
+    position: relative;
+    width: min(640px, calc(100vw - 32px));
+    max-height: min(520px, 70vh);
     display: grid;
-    place-items: center;
-    width: 22px;
-    height: 22px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    color: var(--text-faint);
-    flex-shrink: 0;
-  }
-
-  li.selected .cmd-icon {
-    color: var(--green);
-    background: var(--green-soft);
-  }
-
-  .cmd-label {
-    flex: 1;
-    min-width: 0;
-    white-space: nowrap;
+    grid-template-rows: 48px 1fr 32px;
+    grid-template-columns: 1fr 200px;
+    background: var(--glass-3);
+    border: 1px solid var(--glass-border-strong);
+    border-radius: var(--radius-panel);
     overflow: hidden;
-    text-overflow: ellipsis;
+    box-shadow: var(--shadow-modal);
+    backdrop-filter: blur(28px) saturate(1.5);
   }
-
-  .cmd-group {
-    font-size: 9px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--text-faint);
-    background: var(--abyss-2);
-    border: 1px solid var(--glass-border);
-    border-radius: 4px;
-    padding: 1px 5px;
-    flex-shrink: 0;
+  input {
+    grid-column: 1 / -1;
+    height: 48px;
+    border: 0;
+    border-bottom: 1px solid var(--glass-border);
+    background: transparent;
+    color: var(--text);
+    font: 14px/1 var(--font-sans);
+    padding: 0 16px;
+    border-radius: 0;
   }
-
-  .cmd-shortcut {
-    font-family: var(--font-mono);
+  .list {
+    overflow: auto;
+    padding: 6px;
+  }
+  .sec {
     font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
     color: var(--text-faint);
-    background: var(--abyss-2);
-    border: 1px solid var(--glass-border);
-    border-radius: 5px;
-    padding: 0.12rem 0.35rem;
-    flex-shrink: 0;
+    padding: 8px 10px 4px;
   }
-
-  li.selected .cmd-shortcut {
-    color: var(--text-dim);
-    border-color: rgba(255, 255, 255, 0.1);
-  }
-
-  .empty {
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 0.25rem;
-    padding: 2rem 1rem;
-    cursor: default;
-    border-radius: var(--radius-control);
-  }
-
-  .empty-icon {
-    font-size: 1.5rem;
-    color: var(--text-faint);
-    opacity: 0.5;
-    line-height: 1;
-  }
-
-  .empty-text {
-    font-size: 13px;
-    color: var(--text-dim);
-  }
-
-  .empty-hint {
-    font-size: 12px;
-    color: var(--text-faint);
-  }
-
-  .footer-hint {
+  .row {
     display: flex;
+    width: 100%;
     align-items: center;
-    justify-content: center;
-    gap: 0.45rem;
-    padding: 0.55rem 0.85rem;
+    justify-content: space-between;
+    gap: 8px;
+    height: 32px;
+    min-height: unset;
+    padding: 0 10px;
+    border: 0;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--text);
+    font: 13px/1 var(--font-sans);
+    text-align: left;
+  }
+  .row.on { background: var(--abyss-3); }
+  .hint { color: var(--text-faint); font-size: 11px; font-family: var(--font-mono); }
+  .empty { padding: 24px; color: var(--text-faint); font-size: 13px; }
+  .panel {
+    border-left: 1px solid var(--glass-border);
+    padding: 16px;
+    background: var(--abyss);
+  }
+  .panel h3 { margin: 0 0 6px; font-size: 13px; }
+  .panel p { margin: 0; font-size: 12px; color: var(--text-faint); line-height: 1.4; }
+  .alt { margin-top: 10px !important; }
+  footer {
+    grid-column: 1 / -1;
+    display: flex;
+    gap: 14px;
+    align-items: center;
+    padding: 0 12px;
     border-top: 1px solid var(--glass-border);
-    background: rgba(0, 0, 0, 0.25);
     font-size: 11px;
     color: var(--text-faint);
   }
-
-  .sep {
-    opacity: 0.45;
-  }
-
-  @keyframes overlay-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes palette-in {
-    from {
-      opacity: 0;
-      transform: translateY(-8px) scale(0.98);
-    }
-    to {
-      opacity: 1;
-      transform: translateY(0) scale(1);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .overlay,
-    .palette {
-      animation: none !important;
-    }
-  }
+  .hl { color: var(--green); font-weight: 600; }
 </style>

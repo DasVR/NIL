@@ -39,6 +39,11 @@ plutil -lint "${APP}/Contents/Info.plist"
 echo ""
 echo "Built: ${APP}"
 echo "DMG:   $(find "${BUILD_DIR}/dmg" -maxdepth 1 -name '*.dmg' -print | head -n 1 || echo 'none')"
+
+if [[ "${BUNDLES}" == *app* ]]; then
+  bash "${ROOT}/desktop/scripts/macos-zip-app.sh"
+  echo "ZIP:   $(find "${BUILD_DIR}/macos" -maxdepth 1 -name '*.zip' -print | head -n 1 || echo 'none')"
+fi
 echo ""
 echo "To test locally:"
 echo "  open \"${APP}\""

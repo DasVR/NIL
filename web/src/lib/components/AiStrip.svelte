@@ -1,51 +1,12 @@
-<script>
+<script lang="ts">
   import { appState } from '$lib/stores.svelte';
+  import { splitFinnBlocks, extractCommands, renderMarkdown } from '$lib/markdown';
 
   let inputText = $state('');
-  let isStreaming = $state(false);
-  let stripRef;
-
-  async function submit() {
-    if (!inputText.trim() || isStreaming) return;
-    const text = inputText.trim();
-    inputText = '';
-    isStreaming = true;
-    try {
-      await appState.send(text);
-    } finally {
-      isStreaming = false;
-    }
-  }
-
-  function handleKeydown(ev) {
-    if (ev.key === 'Enter' && !ev.shiftKey) {
-      ev.preventDefault();
-      submit();
-    }
-    if (ev.key === 'Escape') {
-      if (!appState.aiStripPinned) appState.aiStripOpen = false;
-    }
-  }
-
-  // Render markdown-like code blocks cleanly.
-  function renderBlocks(content) {
-    const parts = content.split(/```/);
-    const blocks = [];
-    for (let i = 0; i < parts.length; i++) {
-      const part = parts[i];
-      if (i % 2 === 1) {
-        const [lang, ...rest] = part.split('\n');
-        blocks.push({ type: 'code', lang: (lang || '').trim(), body: rest.join('\n') });
-      } else if (part.trim()) {
-        blocks.push({ type: 'text', body: part.trim() });
-      }
-    }
-    return blocks;
-  }
 
   const lastStatus = $derived.by(() => {
     const msgs = appState.messages;
-    for (let i = msgs.length - 1; i >= 0; i--) {
+    for (let i = msgs.length - 1; i >= 0; i -= 1) {
       if (msgs[i].role === 'assistant') {
         const first = msgs[i].content.split('\n').find((l) => l.trim());
         return first ? first.trim().slice(0, 80) : 'Finn ready';
@@ -53,15 +14,38 @@
     }
     return appState.busy ? 'Finn is working…' : 'Finn ready';
   });
+
+  const showThin = $derived(!appState.aiStripOpen && (appState.messages.length > 0 || appState.busy));
+
+  async function submit() {
+    if (!inputText.trim() || appState.busy) return;
+    const text = inputText.trim();
+    inputText = '';
+    await appState.send(text);
+  }
+
+  function handleKeydown(ev: KeyboardEvent) {
+    if (ev.key === 'Enter' && !ev.shiftKey) {
+      ev.preventDefault();
+      void submit();
+    }
+    if (ev.key === 'Escape' && !appState.aiStripPinned) {
+      appState.aiStripOpen = false;
+    }
+  }
+
+  function propose(cmd: string) {
+    void appState.proposeShell(cmd);
+  }
 </script>
 
-{#if !appState.aiStripOpen && (appState.messages.length > 0 || appState.busy)}
+{#if showThin}
   <button
     type="button"
     class="ai-thin-bar"
-    onclick={() => appState.aiStripOpen = true}
-    title="Expand AI strip (Cmd+J)"
-    aria-label="Expand AI strip"
+    onclick={() => (appState.aiStripOpen = true)}
+    title="Expand Finn (⌘J)"
+    aria-label="Expand Finn"
   >
     <span class="thin-dot" class:busy={appState.busy}></span>
     <span class="thin-label">{appState.busy ? 'Finn is working' : 'Finn'}</span>
@@ -71,16 +55,12 @@
 {/if}
 
 {#if appState.aiStripOpen}
-  <div class="ai-strip" bind:this={stripRef}>
+  <div class="ai-strip" role="complementary" aria-label="Finn">
     <div class="ai-strip-chrome">
       <div class="ai-left">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--green)" stroke-width="2">
-          <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
-        </svg>
         <span class="ai-title">Finn</span>
-        {#if appState.mode}
-          <span class="mode-chip">{appState.mode}</span>
-        {/if}
+        <span class="mode-chip">{appState.mode}</span>
+        <span class="mono model">{appState.model}</span>
       </div>
       <div class="ai-right">
         <button
@@ -88,67 +68,48 @@
           class="pin-btn"
           class:pinned={appState.aiStripPinned}
           onclick={() => appState.pinAi()}
-          title={appState.aiStripPinned ? 'Unpin' : 'Pin'}
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M12 2v8M4.93 10.93l1.41 1.41M2 18h8M19.07 10.93l-1.41 1.41M22 18h-8"/>
-          </svg>
-        </button>
-        <button
-          type="button"
-          class="close-btn"
-          onclick={() => appState.aiStripOpen = false}
-          title="Close (Esc)"
-        >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M18 6 6 18M6 6l12 12"/>
-          </svg>
-        </button>
+          title={appState.aiStripPinned ? 'Unpin' : 'Pin (⌘⇧J)'}
+        >Pin</button>
+        <button type="button" class="close-btn" onclick={() => (appState.aiStripOpen = false)} title="Close (Esc)">Close</button>
       </div>
     </div>
 
     <div class="ai-messages">
       {#if appState.messages.length === 0}
         <div class="ai-empty">
-          <p>Ask Finn about the current engagement, scope, or findings.</p>
-          <div class="quick-chips">
-            <button class="chip" onclick={() => { inputText = 'Scan target and summarize'; submit(); }}>Scan target</button>
-            <button class="chip" onclick={() => { inputText = 'Draft executive summary'; submit(); }}>Draft report</button>
-            <button class="chip" onclick={() => { inputText = 'Explain critical findings'; submit(); }}>Explain findings</button>
-            <button class="chip" onclick={() => { inputText = 'Suggest next steps'; submit(); }}>Next steps</button>
-          </div>
+          <p>Ask Finn about this Space — findings, next scans, or a report section.</p>
         </div>
       {:else}
-        {#each appState.messages.slice(-8) as msg}
+        {#each appState.messages.slice(-12) as msg, i (i)}
           {#if msg.role === 'user'}
-            <div class="message user">
-              <div class="message-content">{msg.content}</div>
-            </div>
+            <div class="turn user">{msg.content}</div>
           {:else}
-            <div class="message assistant">
-              <div class="message-meta">
-                <span class="meta-name">Finn</span>
-                <span class="meta-model mono">{appState.model}</span>
-              </div>
-              <div class="message-body">
-                {#each renderBlocks(msg.content) as block}
-                  {#if block.type === 'code'}
-                    <pre class="code-block mono"><code>{block.body}</code></pre>
-                  {:else}
-                    <div class="text-block">{block.body}</div>
-                  {/if}
-                {/each}
-              </div>
+            <div class="turn finn">
+              {#each splitFinnBlocks(msg.content) as block}
+                {#if block.type === 'code'}
+                  <div class="code-wrap">
+                    <pre class="mono">{block.body}</pre>
+                    {#each extractCommands('```\n' + block.body + '\n```') as cmd}
+                      <button type="button" class="propose" onclick={() => propose(cmd)}>Propose `{cmd.slice(0, 60)}`</button>
+                    {/each}
+                  </div>
+                {:else}
+                  <div class="prose">{@html renderMarkdown(block.body)}</div>
+                {/if}
+              {/each}
+              {#if msg.commands?.length}
+                <div class="cmds">
+                  {#each msg.commands as cmd}
+                    <button type="button" class="propose" onclick={() => propose(cmd)}>{cmd}</button>
+                  {/each}
+                </div>
+              {/if}
             </div>
           {/if}
         {/each}
-        {#if isStreaming}
-          <div class="message assistant">
-            <div class="message-meta">
-              <span class="meta-name">Finn</span>
-              <span class="meta-model mono">{appState.model}</span>
-            </div>
-            <div class="message-body thinking"><span class="cursor">●</span></div>
+        {#if appState.busy}
+          <div class="turn finn thinking" aria-live="polite">
+            <span class="orb"></span> thinking
           </div>
         {/if}
       {/if}
@@ -157,21 +118,12 @@
     <div class="ai-input">
       <textarea
         class="ai-textarea"
-        placeholder="Ask Finn..."
+        placeholder="Ask Finn about this Space"
         bind:value={inputText}
         onkeydown={handleKeydown}
         rows="1"
       ></textarea>
-      <button
-        type="button"
-        class="send-btn"
-        onclick={submit}
-        disabled={!inputText.trim() || isStreaming}
-      >
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <path d="M22 2 11 13M22 2l-7 20-4-9-9-4 20-7z"/>
-        </svg>
-      </button>
+      <button type="button" class="send-btn" onclick={submit} disabled={!inputText.trim() || appState.busy}>Send</button>
     </div>
   </div>
 {/if}
@@ -182,22 +134,18 @@
     bottom: 0;
     left: 0;
     right: 0;
-    height: 280px;
+    height: var(--ai-strip-height);
     background: var(--glass-2);
     border-top: 1px solid var(--glass-border);
     backdrop-filter: blur(24px) saturate(1.5);
-    -webkit-backdrop-filter: blur(24px) saturate(1.5);
     display: flex;
     flex-direction: column;
     z-index: 50;
     animation: aiSlideUp 280ms var(--spring-bouncy);
   }
-
   .ai-thin-bar {
     position: absolute;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0; left: 0; right: 0;
     height: 26px;
     display: flex;
     align-items: center;
@@ -206,330 +154,106 @@
     background: var(--glass-2);
     border: none;
     border-top: 1px solid var(--glass-border);
-    backdrop-filter: blur(24px) saturate(1.5);
-    -webkit-backdrop-filter: blur(24px) saturate(1.5);
     color: var(--text-dim);
-    cursor: pointer;
     z-index: 50;
-    transition: background 150ms var(--spring-control);
+    min-height: unset;
   }
-
-  .ai-thin-bar:hover {
-    background: var(--glass-3);
-  }
-
   .thin-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green-glow);
-    flex-shrink: 0;
+    width: 6px; height: 6px; border-radius: 50%;
+    background: var(--green); box-shadow: 0 0 6px var(--green-glow);
   }
-
-  .thin-dot.busy {
-    animation: pulse 1.2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.35; }
-  }
-
-  .thin-label {
-    font-size: 11px;
-    font-weight: 500;
-    color: var(--green);
-    flex-shrink: 0;
-  }
-
-  .thin-status {
-    font-size: 11px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-    min-width: 0;
-  }
-
-  .thin-hint {
-    font-size: 10px;
-    color: var(--text-faint);
-    flex-shrink: 0;
-  }
-
+  .thin-dot.busy { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+  .thin-label { font-size: 11px; font-weight: 500; color: var(--green); }
+  .thin-status { font-size: 11px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .thin-hint { font-size: 10px; color: var(--text-faint); }
   @keyframes aiSlideUp {
     from { transform: translateY(40px); opacity: 0; }
     to { transform: translateY(0); opacity: 1; }
   }
-
   .ai-strip-chrome {
     height: 36px;
-    flex-shrink: 0;
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 14px;
     border-bottom: 1px solid var(--glass-border);
   }
-
-  .ai-left {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .ai-title {
-    font-size: 13px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
+  .ai-left, .ai-right { display: flex; align-items: center; gap: 8px; }
+  .ai-title { font-size: 13px; font-weight: 600; }
   .mode-chip {
-    font-size: 10px;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-    color: var(--green);
-    background: var(--green-soft);
-    padding: 1px 6px;
-    border-radius: 4px;
+    font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--green); background: var(--green-soft); padding: 1px 6px; border-radius: 4px;
   }
-
-  .ai-right {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-  }
-
+  .model { font-size: 10px; color: var(--text-faint); }
   .pin-btn, .close-btn {
-    width: 26px;
-    height: 26px;
-    padding: 0;
-    min-height: unset;
-    display: grid;
-    place-items: center;
-    border-radius: 5px;
-    border: none;
-    background: transparent;
-    color: var(--text-faint);
-    transition: all 150ms var(--spring-control);
+    height: 24px; min-height: unset; padding: 0 8px; font-size: 11px;
+    border: 0; background: transparent; color: var(--text-faint);
   }
-
-  .pin-btn:hover, .close-btn:hover {
-    background: var(--glass-3);
-    color: var(--text);
-  }
-
-  .pin-btn.pinned {
-    color: var(--green);
-  }
-
+  .pin-btn.pinned { color: var(--green); }
   .ai-messages {
-    flex: 1;
-    min-height: 0;
-    overflow-y: auto;
-    padding: 12px 14px;
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
+    flex: 1; min-height: 0; overflow-y: auto;
+    padding: 12px 14px; display: flex; flex-direction: column; gap: 12px;
   }
-
-  .ai-empty {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 12px;
-    height: 100%;
-    opacity: 0.6;
-  }
-
-  .ai-empty p {
-    font-size: 12px;
-    color: var(--text-faint);
-    text-align: center;
-  }
-
-  .quick-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-    justify-content: center;
-  }
-
-  .chip {
-    padding: 4px 10px;
-    font-size: 11px;
-    font-family: var(--font-mono);
-    border-radius: 6px;
-    border: 1px solid var(--glass-border);
-    background: var(--glass-3);
-    color: var(--text-dim);
-    min-height: unset;
-    transition: all 150ms var(--spring-control);
-  }
-
-  .chip:hover {
-    border-color: var(--green-soft);
-    color: var(--text);
-  }
-
-  /* Clean structured cards — not terminal, not chat bubbles */
-  .message {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-    max-width: 100%;
-  }
-
-  .message.user {
+  .ai-empty { display: grid; place-items: center; height: 100%; }
+  .ai-empty p { font-size: 12px; color: var(--text-faint); text-align: center; max-width: 360px; }
+  .turn.user {
     align-self: flex-end;
-    align-items: flex-end;
-  }
-
-  .message.user .message-content {
-    background: var(--glass-3);
-    border: 1px solid var(--glass-border);
-    border-radius: 12px;
-    border-bottom-right-radius: 4px;
-    padding: 8px 12px;
-    font-size: 13px;
-    line-height: 1.45;
-    color: var(--text);
     max-width: 520px;
+    font-size: 13px;
+    color: var(--text);
+    text-align: right;
+    white-space: pre-wrap;
   }
-
-  .message.assistant {
-    align-self: flex-start;
-    align-items: flex-start;
+  .turn.finn {
     width: 100%;
     max-width: 640px;
-  }
-
-  .message-meta {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    font-size: 11px;
-    color: var(--text-faint);
-  }
-
-  .meta-name {
-    font-weight: 600;
-    color: var(--green);
-  }
-
-  .meta-model {
-    color: var(--text-faint);
-    font-size: 10px;
-  }
-
-  .message-body {
     display: flex;
     flex-direction: column;
     gap: 8px;
-    padding: 10px 12px;
-    background: var(--abyss-2);
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    border-top-left-radius: 4px;
-    font-size: 13px;
-    line-height: 1.5;
-    color: var(--text);
   }
-
-  .text-block {
-    white-space: pre-wrap;
-    word-break: break-word;
-  }
-
-  .code-block {
+  .prose { font-size: 13px; line-height: 1.5; color: var(--text); }
+  .prose :global(p) { margin: 0 0 8px; }
+  .code-wrap, .cmds { display: flex; flex-direction: column; gap: 6px; }
+  pre {
     margin: 0;
     padding: 10px 12px;
     background: var(--abyss-3);
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     font-size: 12px;
-    line-height: 1.5;
     color: var(--text-dim);
     overflow-x: auto;
     white-space: pre-wrap;
-    word-break: break-word;
   }
-
-  .thinking {
-    color: var(--green);
-  }
-
-  .thinking .cursor {
-    animation: blink 1.2s ease-in-out infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  .ai-input {
-    flex-shrink: 0;
-    display: flex;
-    align-items: flex-end;
-    gap: 8px;
-    padding: 8px 14px;
-    border-top: 1px solid var(--glass-border);
-  }
-
-  .ai-textarea {
-    flex: 1;
-    min-height: 36px;
-    max-height: 120px;
-    resize: none;
-    padding: 8px 12px;
-    font-size: 13px;
-    line-height: 1.4;
-    background: var(--abyss-2);
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    color: var(--text);
-  }
-
-  .ai-textarea:focus {
-    border-color: var(--green);
-    box-shadow: 0 0 0 2px var(--green-soft);
-    outline: none;
-  }
-
-  .send-btn {
-    width: 36px;
-    height: 36px;
-    padding: 0;
+  .propose {
+    align-self: flex-start;
     min-height: unset;
-    display: grid;
-    place-items: center;
-    border-radius: 10px;
+    height: 26px;
+    font-size: 11px;
+    font-family: var(--font-mono);
+    background: var(--green-soft);
+    color: var(--green);
+    border-color: transparent;
+  }
+  .thinking { color: var(--green); font-size: 12px; display: flex; align-items: center; gap: 8px; }
+  .orb {
+    width: 8px; height: 8px; border-radius: 50%;
     background: var(--green);
-    color: var(--abyss);
-    border: none;
-    flex-shrink: 0;
-    transition: transform 180ms var(--spring-control), opacity 150ms ease;
+    animation: pulse 1.2s ease-in-out infinite;
   }
-
-  .send-btn:hover:not(:disabled) {
-    transform: scale(1.05);
-    opacity: 0.9;
+  .ai-input {
+    display: flex; align-items: flex-end; gap: 8px;
+    padding: 8px 14px; border-top: 1px solid var(--glass-border);
   }
-
-  .send-btn:disabled {
-    opacity: 0.35;
-    cursor: not-allowed;
+  .ai-textarea {
+    flex: 1; min-height: 36px; max-height: 120px; resize: none;
+    padding: 8px 12px; font-size: 13px;
+    background: var(--abyss-2); border-radius: 10px;
   }
-
+  .send-btn { min-height: 36px; }
   @media (prefers-reduced-motion: reduce) {
     .ai-strip { animation: none; }
-    .ai-thin-bar { transition: none; }
-    .thin-dot.busy { animation: none; opacity: 1; }
-    .send-btn { transition: none; }
-    .cursor { animation: none; opacity: 0.5; }
+    .thin-dot.busy, .orb { animation: none; }
   }
 </style>

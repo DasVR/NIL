@@ -32,7 +32,7 @@ npm run tauri dev      # requires Rust + Tauri system deps
 
 If Windows says `'vite' is not recognized`, run `npm install` inside `web/` (or `npm run setup` from `desktop/`), then retry.
 
-The desktop app wraps the same Svelte UI, launches into `/app`, and adds a tray icon plus `Ctrl+Shift+F` (macOS: `Cmd+Shift+F`) to focus. Linux builds need GTK/WebKit (`libgtk-3-dev`, `libwebkit2gtk-4.1-dev`) and Rust 1.85+. Windows needs WebView2 (bundled with Edge). macOS 12+ uses the system WebKit; GitHub Actions packages a `.app` and `.dmg` and smoke-tests that the binary stays up after launch.
+The desktop app wraps the same Svelte UI, launches into `/app`, and adds a tray icon plus `Ctrl+Shift+F` (macOS: `Cmd+Shift+F`) to focus. Linux builds need GTK/WebKit (`libgtk-3-dev`, `libwebkit2gtk-4.1-dev`) and Rust 1.85+. Windows needs WebView2 (bundled with Edge). macOS 12+ uses the system WebKit; GitHub Actions packages a zipped `.app` and a `.dmg`, and smoke-tests that the binary stays up after launch.
 
 If `npm run tauri dev` panics with `PluginInitialization("notification", "... invalid type: map, expected unit")`, open `desktop/src-tauri/tauri.conf.json` and delete the entire `"plugins"` object. Do not leave `"notification": {}` or `"global-shortcut": {}` in that file — Tauri 2 treats those empty objects as invalid. Plugins are registered in `desktop/src-tauri/src/lib.rs`. Then rerun `npm run tauri dev`.
 
@@ -67,14 +67,14 @@ Sandbox tests that need Docker are skipped when the daemon is missing. Tool exec
 
 ## Releases
 
-Tagged builds publish automatically to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases) (macOS `.dmg`, Windows `.exe`, Linux `.AppImage` / `.deb`):
+Tagged builds publish automatically to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases) (macOS `.zip` of the `.app` plus `.dmg`, Windows `.exe`, Linux `.AppImage` / `.deb`):
 
 ```bash
-git tag v0.2.1
-git push origin v0.2.1
+git tag v0.1
+git push origin v0.1
 ```
 
-The **Release** workflow builds all three platforms and uploads installers. The site `/download` page pulls the latest release from the GitHub API.
+The **Release** workflow builds all three platforms and uploads installers. Run it with **macos_only** to skip Windows and Linux. The site `/download` page pulls the latest release from the GitHub API. Unzip the macOS zip and drag `Finn Pentest Harness.app` to Applications.
 
 ## Safety
 

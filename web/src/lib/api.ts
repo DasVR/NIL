@@ -279,7 +279,7 @@ export async function reject(run_id: string, reason?: string) {
 // Legacy endpoints (kept for compatibility)
 // ──────────────────────────────────────────────
 
-export async function connectWs(engagement: string, onEvent: (event: Record<string, unknown>) => void): WebSocket {
+export function connectWs(engagement: string, onEvent: (event: Record<string, unknown>) => void): WebSocket {
   const base = getApiBase() || (typeof window !== 'undefined' ? window.location.origin : 'http://127.0.0.1:8766');
   const wsBase = base.replace(/^http/, 'ws');
   const socket = new WebSocket(`${wsBase}/v1/ws?engagement=${encodeURIComponent(engagement)}`);
@@ -310,8 +310,18 @@ export async function listCredentials(engagement: string, reveal = false): Promi
   return apiGet(`/v1/credentials/${encodeURIComponent(engagement)}?reveal=${reveal}`);
 }
 
-export async function storeCredential(body: { engagement: string; service: string; username: string; password: string; note?: string }): Promise<Credential> {
-  return apiPost('/v1/credentials', body);
+export async function storeCredential(body: {
+  engagement: string;
+  service: string;
+  username: string;
+  password: string;
+  note?: string;
+  notes?: string;
+}): Promise<Credential> {
+  return apiPost('/v1/credentials', {
+    ...body,
+    notes: body.notes ?? body.note
+  });
 }
 
 export async function deleteCredential(engagement: string, credId: number): Promise<unknown> {
@@ -379,8 +389,12 @@ export async function uploadLoot(engagement: string, file: File): Promise<unknow
 // Timeline
 // ──────────────────────────────────────────────
 
-export async function getTimeline(engagement: string): Promise<{ events: TimelineEvent[] }> {
+export async function getTimeline(engagement: string): Promise<{ timeline: string }> {
   return apiGet(`/v1/timeline/${encodeURIComponent(engagement)}`);
+}
+
+export async function getToolHistory(engagement: string, limit = 40): Promise<{ history: Array<Record<string, unknown>> }> {
+  return apiGet(`/v1/tools/history?engagement=${encodeURIComponent(engagement)}&limit=${limit}`);
 }
 
 export async function logTimelineEvent(engagement: string, body: { type: string; title: string; detail?: string }): Promise<unknown> {

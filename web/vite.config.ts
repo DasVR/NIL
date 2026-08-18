@@ -1,10 +1,9 @@
-import type { IncomingMessage, ServerResponse } from 'node:http';
 import { sveltekit } from '@sveltejs/kit/vite';
 import { defineConfig, type Plugin } from 'vite';
 
 function rewriteAppHtml(
-  req: IncomingMessage,
-  _res: ServerResponse,
+  req: { url?: string },
+  _res: unknown,
   next: () => void
 ): void {
   const url = req.url ?? '';

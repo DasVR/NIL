@@ -41,10 +41,15 @@ Finn refuses to run as root and refuses commands prefixed with `sudo` / `doas`. 
 
 ```bash
 cd desktop
-npm run tauri build -- --bundles app,dmg
+npm run build:macos:app
 # output: src-tauri/target/release/bundle/macos/*.app
-#         src-tauri/target/release/bundle/dmg/*.dmg
+#         src-tauri/target/release/bundle/macos/Finn-Pentest-Harness-macOS.zip
+
+npm run tauri build -- --bundles app,dmg
+# also writes src-tauri/target/release/bundle/dmg/*.dmg
 ```
+
+`npm run build:macos:app` builds **only** the `.app` and zips it (`ditto -c -k --keepParent` so the bundle stays a real Mac application). Unzip on a Mac, then drag the `.app` to `/Applications`.
 
 The default config uses ad-hoc signing (`signingIdentity: "-"`) so builds work without an Apple Developer certificate.
 
