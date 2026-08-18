@@ -14,13 +14,15 @@
   let loading = $state(true);
   let error = $state('');
 
-  const installSnippet = `# macOS — Python 3.11+
-brew install python@3.12
-python3.12 -m venv .venv && source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-cp .env.example .env
-finn api`;
+  const installSnippet = `# One-file installer (macOS / Linux)
+curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/install/finn-install.sh | bash -s -- --user --online --host
+
+# Windows (PowerShell)
+# irm https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/install/finn-install.ps1 | iex
+# Or: .\\install\\finn-install.ps1 -User -Online -HostSandbox
+
+# Offline kit: unzip the macOS zip, then
+# bash install/finn-install.sh --user --offline --host`;
 
   load();
 
@@ -71,9 +73,9 @@ finn api`;
     <p class="eyebrow">Desktop builds · {APP_TAG}</p>
     <h1>Download Finn</h1>
     <p class="lede">
-      Native apps for macOS, Windows, and Linux. The desktop build can start
-      <code>finn api</code> inside the app. Tools default to a <strong>host sandbox</strong>
-      (no Docker). Docker is an optional installer variant with its own terms.
+      Native apps for macOS, Windows, and Linux. The desktop app always starts the
+      bundled API with itself. Tools default to a <strong>host sandbox</strong>
+      (no Docker). Docker is an optional admin installer path with its own terms.
     </p>
     <div class="hero-actions">
       {#if latest}
@@ -162,8 +164,8 @@ finn api`;
     <div class="asset-grid">
       <article class="asset-card">
         <span class="asset-platform">Default</span>
-        <strong>Packaged API</strong>
-        <span class="asset-name">The desktop app launches <code>finn api</code> for you. Host sandbox needs no admin Docker daemon.</span>
+        <strong>API with the app</strong>
+        <span class="asset-name">The .app / installer ships the API. Python 3.11+ on PATH is enough; no separate <code>finn api</code> terminal.</span>
       </article>
       <article class="asset-card">
         <span class="asset-platform">macOS</span>

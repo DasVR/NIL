@@ -2,11 +2,13 @@
   import { appState } from '$lib/stores.svelte';
   import { apiPost } from '$lib/api';
 
-  type Variant = 'bundled' | 'dmg' | 'app' | 'docker';
+  type Privilege = 'user' | 'admin';
+  type Channel = 'online' | 'offline';
   type Sandbox = 'host' | 'docker';
 
   let step = $state(0);
-  let variant = $state<Variant>('bundled');
+  let privilege = $state<Privilege>('user');
+  let channel = $state<Channel>('online');
   let sandbox = $state<Sandbox>('host');
   let features = $state({ ai: true, tui: true, bundled_api: true, docker: false });
   let acceptTos = $state(false);
@@ -15,26 +17,29 @@
 
   const tos = $derived(appState.runtime?.docker_tos || '');
 
-  const variants: { id: Variant; title: string; body: string }[] = [
+  const privileges: { id: Privilege; title: string; body: string }[] = [
     {
-      id: 'bundled',
-      title: 'Packaged workstation',
-      body: 'API runs inside the desktop app when Python is on PATH. Default for the NSIS / MSI installer.'
+      id: 'user',
+      title: 'User installer',
+      body: 'No admin. Files under your home directory. Host sandbox is the default.'
     },
     {
-      id: 'dmg',
-      title: 'macOS DMG',
-      body: 'Drag Finn into Applications. Same app; this records how you installed it.'
+      id: 'admin',
+      title: 'Admin installer',
+      body: 'System paths and optional Docker. Still launch Finn as a normal user afterward.'
+    }
+  ];
+
+  const channels: { id: Channel; title: string; body: string }[] = [
+    {
+      id: 'online',
+      title: 'Online',
+      body: 'Download matching GitHub release parts for this OS (app, wheel). Builds locally only with --from-source.'
     },
     {
-      id: 'app',
-      title: 'macOS .app',
-      body: 'Unzip the .app and run it directly. Same binary as the DMG, without the disk image.'
-    },
-    {
-      id: 'docker',
-      title: 'Docker sandbox edition',
-      body: 'Tools run in a per-Space container. Docker Desktop usually needs admin to install.'
+      id: 'offline',
+      title: 'Offline',
+      body: 'Use the .app / .dmg / wheel / API folder next to the installer. No network required.'
     }
   ];
 
@@ -44,12 +49,18 @@
       error = 'Accept the Docker sandbox terms to continue, or pick host sandbox.';
       return;
     }
+    if (sandbox === 'docker' && privilege !== 'admin') {
+      error = 'Docker sandbox is an admin install. Switch to Admin, or use host sandbox.';
+      return;
+    }
     busy = true;
     try {
       const next = await apiPost('/v1/setup', {
-        variant,
+        variant: sandbox === 'docker' ? 'docker' : 'bundled',
+        privilege,
+        channel,
         sandbox,
-        features: { ...features, docker: sandbox === 'docker', bundled_api: variant === 'bundled' || features.bundled_api },
+        features: { ...features, docker: sandbox === 'docker', bundled_api: true },
         accept_docker_tos: sandbox === 'docker' && acceptTos
       });
       appState.runtime = {
@@ -73,13 +84,22 @@
     <header>
       <p class="label-micro">Installer</p>
       <h2 id="setup-title">Set up Finn</h2>
-      <p>Pick a distribution, then how tools run. Docker is optional — host sandbox needs no admin daemon.</p>
+      <p>Same liquid-glass installer. The API always starts with the desktop app — never as a second process you have to remember.</p>
     </header>
 
     {#if step === 0}
+      <p class="hint">Who installs, and whether this machine can reach GitHub.</p>
       <div class="cards">
-        {#each variants as v}
-          <button type="button" class="card" class:on={variant === v.id} onclick={() => { variant = v.id; if (v.id === 'docker') sandbox = 'docker'; }}>
+        {#each privileges as v}
+          <button type="button" class="card" class:on={privilege === v.id} onclick={() => { privilege = v.id; if (v.id === 'user' && sandbox === 'docker') sandbox = 'host'; }}>
+            <strong>{v.title}</strong>
+            <span>{v.body}</span>
+          </button>
+        {/each}
+      </div>
+      <div class="cards stacked">
+        {#each channels as v}
+          <button type="button" class="card" class:on={channel === v.id} onclick={() => (channel = v.id)}>
             <strong>{v.title}</strong>
             <span>{v.body}</span>
           </button>
@@ -88,15 +108,14 @@
     {:else if step === 1}
       <label class="row"><span>AI / Finn agent</span><input type="checkbox" bind:checked={features.ai} /></label>
       <label class="row"><span>TUI (`finn tui`)</span><input type="checkbox" bind:checked={features.tui} /></label>
-      <label class="row"><span>Bundled API inside the app</span><input type="checkbox" bind:checked={features.bundled_api} /></label>
-      <p class="hint">Features are recorded in <code>~/.finn-pentest/runtime.json</code>. You can change them later in Settings → Install.</p>
+      <p class="hint">The API is always bundled and started by the app. Recorded in <code>~/.finn-pentest/runtime.json</code>.</p>
     {:else}
       <div class="cards">
         <button type="button" class="card" class:on={sandbox === 'host'} onclick={() => (sandbox = 'host')}>
           <strong>Host sandbox</strong>
           <span>Approved commands run in a per-Space folder on this machine. No Docker, no admin daemon.</span>
         </button>
-        <button type="button" class="card" class:on={sandbox === 'docker'} onclick={() => (sandbox = 'docker')}>
+        <button type="button" class="card" class:on={sandbox === 'docker'} onclick={() => { sandbox = 'docker'; privilege = 'admin'; }}>
           <strong>Docker sandbox</strong>
           <span>Per-engagement container. Requires Docker Engine and the terms below.</span>
         </button>
@@ -154,6 +173,7 @@
   h2 { margin: 4px 0 8px; font-size: 18px; }
   header p { margin: 0; color: var(--text-dim); font-size: 13px; line-height: 1.45; }
   .cards { display: grid; gap: 8px; }
+  .cards.stacked { margin-top: 8px; }
   .card {
     text-align: left;
     display: flex;

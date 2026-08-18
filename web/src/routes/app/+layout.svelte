@@ -203,7 +203,7 @@
     <main class="main" aria-label="Finn workstation" class:focus={appState.focusPane === 'center'}>
       {#if !appState.connected}
         <div class="banner" role="alert">
-Start the backend with <code class="mono">finn api</code> (or let the desktop app start it) then refresh.
+The bundled API is not reachable. Reopen the desktop app (it starts the API with itself), or refresh if Python is installing dependencies.
         </div>
       {/if}
       {@render children()}

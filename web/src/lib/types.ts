@@ -2,6 +2,8 @@ export type RuntimeConfig = {
   schema: number;
   setup_complete: boolean;
   variant: 'bundled' | 'dmg' | 'app' | 'docker';
+  privilege?: 'user' | 'admin';
+  channel?: 'online' | 'offline';
   sandbox: 'host' | 'docker';
   features: Record<string, boolean>;
   docker_tos_accepted: boolean;

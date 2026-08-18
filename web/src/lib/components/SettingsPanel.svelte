@@ -104,7 +104,8 @@
         <h3>Install</h3>
         <p class="hint">
           Current sandbox: <strong>{appState.runtime?.sandbox_effective || appState.runtime?.sandbox || 'host'}</strong>
-          · variant <strong>{appState.runtime?.variant || 'bundled'}</strong>
+          · <strong>{appState.runtime?.privilege || 'user'}</strong>
+          · <strong>{appState.runtime?.channel || 'online'}</strong>
           {#if appState.runtime?.docker_tos_accepted} · Docker terms accepted{/if}
         </p>
         <button type="button" class="primary" onclick={() => { appState.settingsOpen = false; appState.setupDismissed = false; appState.setupOpen = true; }}>
@@ -112,9 +113,9 @@
         </button>
         <p class="hint">
           Host sandbox runs approved commands in <code>~/.finn-pentest/sandboxes</code> with no Docker.
-          Docker mode uses your computer as the sandbox host and requires the terms in the installer.
-          Desktop builds: DMG or zipped <code>.app</code> on macOS, NSIS/MSI on Windows. The app tries to start
-          <code>finn api</code> inside itself.
+          Docker mode uses your computer as the sandbox host and needs the admin installer plus terms.
+          One-file installers live in <code>install/finn-install.sh</code> and <code>install/finn-install.ps1</code>
+          (user/admin, online/offline). The desktop app always starts the bundled API with itself.
         </p>
       {:else if tab === 'appearance'}
         <h3>Appearance</h3>

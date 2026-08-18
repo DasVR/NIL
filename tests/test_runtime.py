@@ -33,3 +33,15 @@ def test_docker_requires_tos(finn_home, monkeypatch):
         raised = True
     assert raised
     assert sandbox_mode() == "host"
+
+
+def test_privilege_and_channel(finn_home, monkeypatch):
+    monkeypatch.delenv("FINN_SANDBOX", raising=False)
+    bootstrap()
+    cfg = apply_setup(variant="bundled", privilege="admin", channel="offline", sandbox="host")
+    assert cfg.privilege == "admin"
+    assert cfg.channel == "offline"
+    assert cfg.features["bundled_api"] is True
+    again = load_runtime()
+    assert again.privilege == "admin"
+    assert again.channel == "offline"

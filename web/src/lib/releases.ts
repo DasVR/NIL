@@ -39,13 +39,20 @@ type GitHubReleaseResponse = {
 function assetMeta(name: string): { label: string; platform: string } {
   const lower = name.toLowerCase();
   if (lower.endsWith('.zip') && /macos|darwin|\.app/i.test(lower)) {
-    return { label: 'macOS (.app)', platform: 'macOS 12+ — unzip, then open' };
+    return { label: 'macOS kit (.app + .dmg + API)', platform: 'macOS 12+ — unzip, then install or open' };
   }
   if (lower.endsWith('.dmg')) return { label: 'macOS (DMG)', platform: 'macOS 12+' };
   if (lower.endsWith('.exe')) return { label: 'Windows', platform: 'Windows 10+' };
   if (lower.endsWith('.msi')) return { label: 'Windows (MSI)', platform: 'Windows 10+' };
   if (lower.endsWith('.appimage')) return { label: 'Linux', platform: 'Linux x86_64' };
   if (lower.endsWith('.deb')) return { label: 'Linux (deb)', platform: 'Debian/Ubuntu' };
+  if (lower.endsWith('.whl')) return { label: 'Python wheel', platform: 'API (all OS)' };
+  if (lower.includes('finn-install') && lower.endsWith('.sh')) {
+    return { label: 'POSIX installer', platform: 'macOS / Linux' };
+  }
+  if (lower.includes('finn-install') && lower.endsWith('.ps1')) {
+    return { label: 'Windows installer', platform: 'Windows' };
+  }
   return { label: name, platform: 'Download' };
 }
 

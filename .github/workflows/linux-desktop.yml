@@ -82,3 +82,33 @@ jobs:
             desktop/src-tauri/target/release/bundle/deb/*.deb
           if-no-files-found: warn
           retention-days: 14
+
+  python-package:
+    name: Wheel, installer syntax, pytest
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Test and wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m pip install -e ".[dev]"
+          bash -n install/finn-install.sh
+          python -m pytest tests -q
+          python -m build --wheel
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: finn-python-${{ github.sha }}
+          path: |
+            dist/*.whl
+            install/finn-install.sh
+            install/finn-install.ps1
+            install/run-api.py
+          if-no-files-found: warn
+          retention-days: 14
