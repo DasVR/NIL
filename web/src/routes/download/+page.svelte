@@ -7,7 +7,7 @@
     GITHUB_RELEASES_URL,
     GITHUB_REPO_URL
   } from '$lib/releases';
-  import DitherOverlay from '$lib/components/DitherOverlay.svelte';
+  import { APP_TAG } from '$lib/version';
 
   let latest = $state(null);
   let history = $state([]);
@@ -56,9 +56,7 @@ finn api`;
   <title>Download — Finn Pentest Harness</title>
 </svelte:head>
 
-<DitherOverlay type="grain" intensity={0.014} animate={true} />
-
-<main class="releases-page">
+<main class="releases-page marketing">
   <nav class="crumb">
     <a href="/">Finn</a>
     <span>/</span>
@@ -66,7 +64,7 @@ finn api`;
   </nav>
 
   <header class="hero liquid-glass">
-    <p class="eyebrow">Desktop builds · CI-signed bundles</p>
+    <p class="eyebrow">Desktop builds · {APP_TAG}</p>
     <h1>Download Finn</h1>
     <p class="lede">
       Native apps for macOS, Windows, and Linux — built by GitHub Actions on every version tag.
@@ -167,8 +165,8 @@ finn api`;
   <section class="panel trigger-panel">
     <h2>Maintainers: cut a release</h2>
     <p>Tag any commit to build all platforms and publish to GitHub Releases automatically.</p>
-    <pre><code>git tag v0.2.1
-git push origin v0.2.1</code></pre>
+    <pre><code>git tag v0.1
+git push origin v0.1</code></pre>
     <p class="hint">
       Or run the <strong>Release</strong> workflow manually in
       <a href="{GITHUB_REPO_URL}/actions/workflows/release.yml" target="_blank" rel="noopener noreferrer">GitHub Actions</a>.

@@ -1,5 +1,6 @@
 <script>
   import WorkspaceRedirect from '$lib/components/WorkspaceRedirect.svelte';
+  let { data } = $props();
 </script>
 
-<WorkspaceRedirect />
+<WorkspaceRedirect space={data.space} />

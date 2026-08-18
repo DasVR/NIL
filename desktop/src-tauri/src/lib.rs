@@ -198,8 +198,8 @@ pub fn run() {
                 Some("About Finn"),
                 Some(AboutMetadata {
                     name: Some("Finn Pentest Harness".into()),
-                    version: Some("0.2.1".into()),
-                    short_version: Some("0.2.1".into()),
+                    version: Some("0.1.0".into()),
+                    short_version: Some("0.1.0".into()),
                     authors: Some(vec!["Finn Labs".into()]),
                     website: Some("https://github.com/DasVR/finn-pentest-harness".into()),
                     ..Default::default()

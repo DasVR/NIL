@@ -1,63 +1,134 @@
-<script>
+<script lang="ts">
   import { onMount } from 'svelte';
   import { appState } from '$lib/stores.svelte';
+  import { resolveShortcut, isTypingTarget } from '$lib/keymap';
   import Sidebar from '$lib/components/Sidebar.svelte';
-  import RightSidebar from '$lib/components/RightSidebar.svelte';
+  import Inspector from '$lib/components/Inspector.svelte';
   import CommandPalette from '$lib/components/CommandPalette.svelte';
   import WindowChrome from '$lib/components/WindowChrome.svelte';
   import StatusBar from '$lib/components/StatusBar.svelte';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
-  import DitherOverlay from '$lib/components/DitherOverlay.svelte';
-  import LiquidMetal from '$lib/components/LiquidMetal.svelte';
+  import NewSpaceSheet from '$lib/components/NewSpaceSheet.svelte';
+  import HudToast from '$lib/components/HudToast.svelte';
 
   let { children } = $props();
   let isTauri = $state(false);
+  let isMac = $state(false);
   let isMobile = $state(false);
 
-  function onKey(ev) {
-    const mod = ev.metaKey || ev.ctrlKey;
-    if (mod && ev.key.toLowerCase() === 'k') {
-      ev.preventDefault();
-      appState.paletteOpen = true;
-    }
-    if (mod && ev.key.toLowerCase() === 'b') {
-      ev.preventDefault();
-      appState.toggleLeft();
-    }
-    if (mod && ev.key.toLowerCase() === 'shift' && ev.key.toLowerCase() === 'b') {
-      // Cmd+Shift+B toggles right sidebar
-      ev.preventDefault();
-      appState.toggleRight();
-    }
-    if (mod && ev.key.toLowerCase() === 'y') {
-      ev.preventDefault();
-      appState.toggleYolo();
-    }
-    if (mod && ev.key.toLowerCase() === 'j') {
-      ev.preventDefault();
-      appState.toggleAi();
-    }
-    if (mod && ev.key.toLowerCase() === ',') {
-      ev.preventDefault();
-      appState.settingsOpen = true;
-    }
-    if (mod && ev.key.toLowerCase() === 'n') {
-      ev.preventDefault();
-      const name = prompt('Engagement name?');
-      if (name) appState.createEngagement(name.trim());
-    }
-    if (mod && ev.key.toLowerCase() === 't') {
-      ev.preventDefault();
-      appState.activeView = 'terminal';
-    }
-    if (mod && ev.key.toLowerCase() === 'e') {
-      ev.preventDefault();
-      appState.activeView = 'editor';
-    }
-    if (ev.key === 'Escape') {
+  function peel() {
+    if (appState.paletteOpen) {
       appState.paletteOpen = false;
+      appState.paletteMode = 'root';
+      return;
+    }
+    if (appState.settingsOpen) {
       appState.settingsOpen = false;
-      if (appState.aiStripOpen && !appState.aiStripPinned) appState.aiStripOpen = false;
+      return;
+    }
+    if (appState.newSpaceOpen) {
+      appState.newSpaceOpen = false;
+      return;
+    }
+    if (appState.pluginMenu) {
+      appState.pluginMenu = '';
+      return;
+    }
+    if (appState.aiStripOpen && !appState.aiStripPinned) {
+      appState.aiStripOpen = false;
+    }
+  }
+
+  function onKey(ev: KeyboardEvent) {
+    const hit = resolveShortcut(ev);
+    if (!hit) return;
+
+    const overlay =
+      appState.paletteOpen || appState.settingsOpen || appState.newSpaceOpen;
+    if (overlay && hit.name !== 'escape' && hit.name !== 'palette') return;
+    if (appState.paletteOpen && hit.name === 'palette') {
+      ev.preventDefault();
+      appState.paletteOpen = false;
+      return;
+    }
+
+    const typing = isTypingTarget(ev.target);
+    if (typing && (hit.name === 'focusLeft' || hit.name === 'focusCenter' || hit.name === 'focusRight')) {
+      return;
+    }
+
+    ev.preventDefault();
+    switch (hit.name) {
+      case 'palette':
+        appState.paletteMode = 'root';
+        appState.paletteOpen = true;
+        break;
+      case 'gotoTarget':
+        appState.paletteMode = 'goto';
+        appState.paletteOpen = true;
+        break;
+      case 'toggleAi':
+        appState.toggleAi();
+        break;
+      case 'pinAi':
+        appState.pinAi();
+        break;
+      case 'settings':
+        appState.settingsOpen = !appState.settingsOpen;
+        break;
+      case 'toggleLeft':
+        appState.toggleLeft();
+        break;
+      case 'toggleRight':
+        appState.toggleRight();
+        break;
+      case 'toggleYolo':
+        void appState.toggleYolo();
+        break;
+      case 'newSpace':
+        appState.newSpaceOpen = true;
+        break;
+      case 'focusTerminal':
+        appState.setView('terminal');
+        break;
+      case 'artifact':
+        appState.setView('artifact');
+        break;
+      case 'split':
+        appState.setView('split');
+        break;
+      case 'focusLeft':
+        appState.focusPane = 'left';
+        appState.leftSidebarOpen = true;
+        break;
+      case 'focusCenter':
+        appState.focusPane = 'center';
+        break;
+      case 'focusRight':
+        appState.focusPane = 'right';
+        appState.rightSidebarOpen = true;
+        break;
+      case 'approve':
+        void appState.approve(appState.topPendingId());
+        break;
+      case 'reject':
+        void appState.reject(appState.topPendingId());
+        break;
+      case 'save':
+        void appState.saveArtifact();
+        break;
+      case 'escape':
+        peel();
+        break;
+      case 'spaceSwitch': {
+        const space = appState.engagements[hit.spaceIndex ?? 0];
+        if (space) void appState.select(space.name);
+        break;
+      }
+      default: {
+        const _never: never = hit.name;
+        void _never;
+      }
     }
   }
 
@@ -71,12 +142,14 @@
 
   onMount(() => {
     isTauri = Boolean(window.__TAURI_INTERNALS__);
+    isMac = /Mac|iPhone|iPad/.test(navigator.platform) || navigator.userAgent.includes('Mac');
+    appState.loadPrefs();
+    appState.applyLayout(appState.engagement);
     checkViewport();
     window.addEventListener('resize', checkViewport);
-    document.documentElement.classList.toggle('scanlines', appState.scanlines);
-    appState.refresh();
+    void appState.refresh();
     window.addEventListener('keydown', onKey);
-    const timer = setInterval(() => appState.ping(), 8000);
+    const timer = setInterval(() => void appState.ping(), 8000);
     return () => {
       window.removeEventListener('resize', checkViewport);
       window.removeEventListener('keydown', onKey);
@@ -85,43 +158,25 @@
   });
 
   $effect(() => {
-    appState.scanlines;
-    document.documentElement.classList.toggle('scanlines', appState.scanlines);
+    appState.prefs.grain;
+    appState.prefs.scanlines;
+    appState.prefs.theme;
+    appState.prefs.accent;
+    appState.prefs.reducedMotion;
+    appState.applyAppearance();
   });
 </script>
 
-<div class="app-frame">
-  <!-- Titlebar with liquid metal -->
-  <div class="titlebar">
-    <div class="titlebar-metal">
-      <LiquidMetal intensity={0.22} speed={0.5} interactive={false} />
-    </div>
-    <WindowChrome {isTauri} />
-    <div class="titlebar-context">
-      <span class="engagement-name">{appState.engagement}</span>
-      {#if appState.activeTarget}
-        <span class="target-pill">
-          <span class="target-dot"></span>
-          {appState.activeTarget.host}
-        </span>
-      {/if}
-      <span class="safety-indicator" class:yolo={appState.yolo}>
-        {appState.yolo ? 'YOLO' : 'SAFE'}
-      </span>
-    </div>
-  </div>
+<div class="app-frame workstation">
+  <WindowChrome {isTauri} {isMac} />
 
-  <!-- Main 3-pane workspace -->
-  <div class="workspace"
+  <div
+    class="workspace"
     class:left-open={appState.leftSidebarOpen}
     class:right-open={appState.rightSidebarOpen}
-    class:has-dock={!isMobile}
   >
-    <!-- Left sidebar -->
     <Sidebar />
-
-    <!-- Center: primary work surface -->
-    <main class="main" role="main" aria-label="Finn Pentest Harness">
+    <main class="main" aria-label="Finn workstation" class:focus={appState.focusPane === 'center'}>
       {#if !appState.connected}
         <div class="banner" role="alert">
           Backend offline. Start it with <code class="mono">finn api</code> then refresh.
@@ -129,20 +184,23 @@
       {/if}
       {@render children()}
     </main>
-
-    <!-- Right sidebar -->
-    <RightSidebar />
+    <Inspector />
   </div>
 
-  <!-- Status / Safety bar -->
   {#if !isMobile}
     <StatusBar />
   {/if}
 
-  <!-- Overlays -->
-  <CommandPalette />
-  <SettingsPanel bind:open={appState.settingsOpen} />
-  <DitherOverlay type="noise" intensity={0.018} animate={true} />
+  {#if appState.paletteOpen}
+    <CommandPalette />
+  {/if}
+  {#if appState.settingsOpen}
+    <SettingsPanel />
+  {/if}
+  {#if appState.newSpaceOpen}
+    <NewSpaceSheet />
+  {/if}
+  <HudToast />
 </div>
 
 <style>
@@ -156,83 +214,12 @@
     position: relative;
   }
 
-  .titlebar {
-    position: relative;
-    height: var(--titlebar-height);
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    z-index: 100;
-    overflow: hidden;
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .titlebar-metal {
-    position: absolute;
-    inset: 0;
-    z-index: -1;
-    opacity: 0.85;
-  }
-
-  .titlebar-context {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    margin-left: auto;
-    margin-right: 16px;
-    font-family: var(--font-sans);
-    font-size: 12px;
-    color: var(--text-dim);
-    z-index: 2;
-  }
-
-  .engagement-name {
-    font-weight: 500;
-    color: var(--text);
-  }
-
-  .target-pill {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    padding: 2px 8px;
-    border-radius: 6px;
-    background: var(--glass-2);
-    border: 1px solid var(--glass-border);
-    font-family: var(--font-mono);
-    font-size: 11px;
-  }
-
-  .target-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green-glow);
-  }
-
-  .safety-indicator {
-    padding: 2px 8px;
-    border-radius: 4px;
-    background: var(--green-soft);
-    color: var(--green);
-    font-weight: 600;
-    font-size: 10px;
-    letter-spacing: 0.05em;
-  }
-
-  .safety-indicator.yolo {
-    background: var(--danger-soft);
-    color: var(--danger);
-  }
-
   .workspace {
     flex: 1;
     min-height: 0;
     display: grid;
     grid-template-columns: 0px 1fr 0px;
-    grid-template-rows: 1fr;
-    transition: grid-template-columns 380ms var(--spring-layout);
+    transition: grid-template-columns 320ms var(--spring-layout);
     position: relative;
     overflow: hidden;
   }
@@ -240,17 +227,11 @@
   .workspace.left-open {
     grid-template-columns: var(--sidebar-width) 1fr 0px;
   }
-
   .workspace.right-open {
     grid-template-columns: 0px 1fr var(--rightbar-width);
   }
-
   .workspace.left-open.right-open {
     grid-template-columns: var(--sidebar-width) 1fr var(--rightbar-width);
-  }
-
-  .workspace.has-dock .main {
-    padding-bottom: 72px;
   }
 
   .main {
@@ -262,6 +243,9 @@
     position: relative;
     overflow: hidden;
     background: var(--abyss);
+  }
+  .main.focus {
+    box-shadow: inset 0 0 0 1px var(--green-soft);
   }
 
   .banner {
@@ -284,8 +268,6 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .workspace {
-      transition: none;
-    }
+    .workspace { transition: none; }
   }
 </style>

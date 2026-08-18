@@ -70,8 +70,8 @@ Sandbox tests that need Docker are skipped when the daemon is missing. Tool exec
 Tagged builds publish automatically to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases) (macOS `.dmg`, Windows `.exe`, Linux `.AppImage` / `.deb`):
 
 ```bash
-git tag v0.2.1
-git push origin v0.2.1
+git tag v0.1
+git push origin v0.1
 ```
 
 The **Release** workflow builds all three platforms and uploads installers. The site `/download` page pulls the latest release from the GitHub API.

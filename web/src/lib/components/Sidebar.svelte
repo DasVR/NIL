@@ -1,47 +1,65 @@
 <script>
   import { appState } from '$lib/stores.svelte';
+  import { toast } from '$lib/toast.svelte';
 
-  const severityDots = {
-    critical: '#ff2d55',
-    high: '#ff5c5c',
-    medium: '#ffb454',
-    low: '#5cb8ff',
-    info: '#9a9a94'
-  };
+  let addOpen = $state(false);
+  let hostDraft = $state('');
+  let pluginTarget = $state('');
 
-  function addTarget() {
-    const host = prompt('Target hostname or IP?');
-    if (host) {
-      appState.targets = [...appState.targets, {
-        id: crypto.randomUUID(),
-        host,
-        ports: [],
-        status: 'pending'
-      }];
+  const services = $derived(
+    appState.targets.flatMap((t) =>
+      (t.ports.length ? t.ports : []).map((port) => ({
+        id: `${t.id}-${port}`,
+        host: t.host,
+        port
+      }))
+    )
+  );
+
+  function submitTarget() {
+    if (hostDraft.trim()) {
+      appState.addTarget(hostDraft.trim());
+      hostDraft = '';
+      addOpen = false;
     }
   }
 
-  function selectTarget(t) {
-    // set active target context
+  function copyHost(host) {
+    navigator.clipboard.writeText(host);
+    toast.show('Copied host');
   }
 
-  function severityColor(s) {
-    return severityDots[s?.toLowerCase()] || '#9a9a94';
+  async function runPlugin(name) {
+    const target = pluginTarget.trim() || appState.activeTarget?.host;
+    if (!target) {
+      toast.show('Select a target first', 'warn');
+      return;
+    }
+    try {
+      await appState.runPlugin(name, target);
+    } catch (err) {
+      toast.show(err instanceof Error ? err.message : 'Plugin failed', 'danger');
+    }
   }
 </script>
 
-<aside class="left-sidebar" class:open={appState.leftSidebarOpen} aria-label="Engagement targets">
-  <div class="ls-header">
-    <div class="ls-brand">
-      <span class="ls-logo">F</span>
-      <span class="ls-title">Finn</span>
-    </div>
-    <button
-      type="button"
-      class="ls-toggle"
-      onclick={() => appState.toggleLeft()}
-      aria-label={appState.leftSidebarOpen ? 'Collapse sidebar' : 'Expand sidebar'}
-    >
+<aside class="sidebar" class:open={appState.leftSidebarOpen} class:focus={appState.focusPane === 'left'} aria-label="Space tree">
+  <div class="head">
+    {#if appState.leftSidebarOpen}
+      <div class="spaces">
+        {#each appState.engagements.slice(0, 9) as space, i}
+          <button
+            type="button"
+            class="space-dot"
+            class:on={space.name === appState.engagement}
+            title={`${space.name} (Ctrl+${i + 1})`}
+            onclick={() => appState.select(space.name)}
+          >{space.name.slice(0, 1)}</button>
+        {/each}
+        <button type="button" class="space-dot add" onclick={() => (appState.newSpaceOpen = true)} title="New Space">+</button>
+      </div>
+    {/if}
+    <button type="button" class="icon-btn" onclick={() => appState.toggleLeft()} aria-label="Toggle sidebar">
       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         {#if appState.leftSidebarOpen}
           <path d="m15 18-6-6 6-6"/>
@@ -53,369 +71,234 @@
   </div>
 
   {#if appState.leftSidebarOpen}
-    <!-- Search / Palette -->
-    <button
-      type="button"
-      class="ls-search"
-      onclick={() => appState.paletteOpen = true}
-      aria-label="Open command palette"
-    >
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <circle cx="11" cy="11" r="7"/><path d="m20 20-3-3"/>
-      </svg>
-      <span>Search…</span>
-      <kbd class="mono">⌘K</kbd>
+    <button type="button" class="search" onclick={() => { appState.paletteMode = 'root'; appState.paletteOpen = true; }}>
+      <span>Search Space…</span>
+      <kbd>⌘K</kbd>
     </button>
 
-    <!-- Targets Tree -->
-    <section class="ls-section">
-      <div class="ls-section-header">
+    <section class="sec">
+      <div class="sec-h">
         <span class="label-micro">Targets</span>
-        <button type="button" class="ls-add-btn" onclick={addTarget} aria-label="Add target">+</button>
+        <button type="button" class="icon-btn" onclick={() => (addOpen = !addOpen)} aria-label="Add target">+</button>
       </div>
-      <div class="ls-list">
+      {#if addOpen}
+        <form class="add-row" onsubmit={(e) => { e.preventDefault(); submitTarget(); }}>
+          <input class="mono" bind:value={hostDraft} placeholder="host or CIDR" />
+        </form>
+      {/if}
+      <div class="list" role="listbox" aria-label="Targets">
         {#if appState.targets.length === 0}
-          <p class="ls-empty">No targets. Add one to start.</p>
+          <p class="empty">Add a host or paste scope.</p>
         {:else}
-          {#each appState.targets as target}
-            <div class="target-row" class:active={appState.activeTarget?.id === target.id} onclick={() => selectTarget(target)}>
-              <span class="target-status" class:scanning={target.status === 'scanning'} class:done={target.status === 'done'} class:error={target.status === 'error'}></span>
-              <span class="target-host mono">{target.host}</span>
+          {#each appState.targets as target (target.id)}
+            <div
+              class="row"
+              class:on={appState.selectedTargetId === target.id}
+              role="option"
+              aria-selected={appState.selectedTargetId === target.id}
+              tabindex="0"
+              onclick={() => appState.selectTarget(target)}
+              onkeydown={(e) => { if (e.key === 'Enter') appState.selectTarget(target); }}
+            >
+              <span class="st" class:scanning={target.status === 'scanning'} class:done={target.status === 'done'} class:error={target.status === 'error'}></span>
+              <span class="host mono">{target.host}</span>
               {#if target.ports.length}
-                <span class="target-ports mono">{target.ports.join(',')}</span>
+                <span class="meta mono">{target.ports.join(',')}</span>
               {/if}
+              <span class="hover-actions">
+                <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); copyHost(target.host); }}>copy</button>
+                <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); appState.aiStripOpen = true; appState.send(`Scan ${target.host} and summarize open services.`); }}>ask</button>
+              </span>
             </div>
           {/each}
         {/if}
       </div>
     </section>
 
-    <!-- Findings Quick View -->
-    <section class="ls-section">
-      <div class="ls-section-header">
-        <span class="label-micro">Findings</span>
-        <div class="severity-counts">
-          {#if appState.criticalCount > 0}
-            <span class="count critical">{appState.criticalCount}</span>
-          {/if}
-          {#if appState.highCount > 0}
-            <span class="count high">{appState.highCount}</span>
-          {/if}
-        </div>
-      </div>
-      <div class="ls-list">
-        {#if appState.findings.length === 0}
-          <p class="ls-empty">No findings yet.</p>
+    <section class="sec">
+      <div class="sec-h"><span class="label-micro">Services</span></div>
+      <div class="list">
+        {#if services.length === 0}
+          <p class="empty">Ports appear after scans.</p>
         {:else}
-          {#each appState.findings.slice(0, 8) as finding}
-            <div class="mini-finding">
-              <span class="mini-severity" style="background: {severityColor(finding.severity)}"></span>
-              <span class="mini-title">{finding.title}</span>
-            </div>
+          {#each services as svc}
+            <div class="row"><span class="host mono">{svc.host}:{svc.port}</span></div>
           {/each}
         {/if}
       </div>
     </section>
 
-    <!-- Credentials -->
-    <section class="ls-section">
-      <div class="ls-section-header">
+    <section class="sec">
+      <div class="sec-h">
         <span class="label-micro">Creds</span>
+        <span class="count">{appState.creds.length}</span>
       </div>
-      <div class="ls-list">
-        <p class="ls-empty">Cred store synced with backend.</p>
+      <div class="list">
+        {#each appState.creds.slice(0, 6) as cred}
+          <div class="row">
+            <span class="host">{cred.service}</span>
+            <span class="meta mono">{cred.username}</span>
+          </div>
+        {:else}
+          <p class="empty">Empty vault.</p>
+        {/each}
       </div>
     </section>
+
+    <section class="sec grow">
+      <div class="sec-h"><span class="label-micro">Plugins</span></div>
+      <div class="list">
+        {#each appState.plugins as plugin}
+          <button
+            type="button"
+            class="row plugin"
+            class:on={appState.pluginMenu === plugin.name}
+            onclick={() => {
+              appState.pluginMenu = appState.pluginMenu === plugin.name ? '' : plugin.name;
+              pluginTarget = appState.activeTarget?.host || '';
+            }}
+          >
+            <span class="host">{plugin.name}</span>
+            <span class="safety" style="color:{plugin.safety_level === 'dangerous' || plugin.safety_level === 'destructive' ? 'var(--danger)' : 'var(--text-faint)'}">{plugin.safety_level}</span>
+          </button>
+          {#if appState.pluginMenu === plugin.name}
+            <div class="plugin-pop">
+              <p class="hint">{plugin.description}</p>
+              <input class="mono" bind:value={pluginTarget} placeholder="target" />
+              <button type="button" class="run" onclick={() => runPlugin(plugin.name)}>Propose run</button>
+            </div>
+          {/if}
+        {:else}
+          <p class="empty">Start the API to load plugins.</p>
+        {/each}
+      </div>
+    </section>
+
+    {#if appState.criticalCount || appState.highCount}
+      <div class="sev-foot">
+        {#if appState.criticalCount}<span class="pill crit">{appState.criticalCount}C</span>{/if}
+        {#if appState.highCount}<span class="pill high">{appState.highCount}H</span>{/if}
+      </div>
+    {/if}
   {/if}
 </aside>
 
 <style>
-  .left-sidebar {
+  .sidebar {
     grid-column: 1;
-    grid-row: 1;
-    background: var(--glass-2);
+    background: var(--abyss-2);
     border-right: 1px solid var(--glass-border);
-    backdrop-filter: blur(24px) saturate(1.5);
-    -webkit-backdrop-filter: blur(24px) saturate(1.5);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    transition: width 320ms var(--spring-layout), opacity 200ms var(--spring-smooth);
-    width: 0px;
+    width: 0;
     opacity: 0;
+    transition: width 280ms var(--spring-layout), opacity 180ms var(--spring-smooth);
   }
-
-  .left-sidebar.open {
-    width: var(--sidebar-width);
-    opacity: 1;
-  }
-
-  .ls-header {
-    height: 40px;
-    flex-shrink: 0;
+  .sidebar.open { width: var(--sidebar-width); opacity: 1; }
+  .sidebar.focus { box-shadow: inset 0 0 0 1px var(--green-soft); }
+  .head {
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 0 12px;
+    padding: 0 8px;
     border-bottom: 1px solid var(--glass-border);
-    background: var(--glass-3);
+    gap: 6px;
   }
-
-  .ls-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
+  .spaces { display: flex; gap: 4px; min-width: 0; overflow: hidden; }
+  .space-dot {
+    width: 22px; height: 22px; padding: 0; min-height: unset;
+    border-radius: 6px; font-size: 10px; font-weight: 600;
+    background: var(--abyss-3); color: var(--text-dim);
   }
-
-  .ls-logo {
-    width: 24px;
-    height: 24px;
+  .space-dot.on { background: var(--green-soft); color: var(--green); }
+  .space-dot.add { color: var(--text-faint); }
+  .icon-btn {
+    width: 22px; height: 22px; padding: 0; min-height: unset;
+    display: grid; place-items: center;
+    border: none; background: transparent; color: var(--text-faint);
+  }
+  .icon-btn:hover { background: var(--abyss-3); color: var(--text); }
+  .search {
+    margin: 8px 8px 4px;
+    height: 28px;
+    display: flex; align-items: center;
+    padding: 0 8px;
     border-radius: 6px;
-    background: var(--green);
-    color: var(--abyss);
-    font-weight: 700;
-    font-size: 14px;
-    display: grid;
-    place-items: center;
-    flex-shrink: 0;
-  }
-
-  .ls-title {
-    font-size: 14px;
-    font-weight: 600;
-    color: var(--text);
-  }
-
-  .ls-toggle {
-    width: 24px;
-    height: 24px;
-    padding: 0;
-    min-height: unset;
-    display: grid;
-    place-items: center;
-    border-radius: 5px;
-    border: none;
-    background: transparent;
-    color: var(--text-faint);
-    transition: all 150ms var(--spring-control);
-  }
-
-  .ls-toggle:hover {
-    background: var(--glass-3);
-    color: var(--text);
-  }
-
-  .ls-search {
-    margin: 8px 10px;
-    height: 32px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 0 10px;
-    border-radius: 6px;
-    background: var(--glass-3);
+    background: var(--abyss-3);
     border: 1px solid var(--glass-border);
     color: var(--text-dim);
     font-size: 12px;
-    transition: all 150ms var(--spring-control);
-  }
-
-  .ls-search:hover {
-    border-color: var(--glass-border-strong);
-    color: var(--text);
-  }
-
-  .ls-search kbd {
-    margin-left: auto;
-    font-size: 10px;
-    padding: 2px 5px;
-    border-radius: 4px;
-    background: var(--abyss-2);
-    border: 1px solid var(--glass-border);
-    color: var(--text-faint);
-  }
-
-  .ls-section {
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-    min-height: 0;
-    border-bottom: 1px solid var(--glass-border);
-  }
-
-  .ls-section:last-child {
-    border-bottom: none;
-    flex: 1;
-  }
-
-  .ls-section-header {
-    height: 28px;
-    flex-shrink: 0;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: 0 12px;
-    background: rgba(255, 255, 255, 0.02);
-  }
-
-  .ls-add-btn {
-    width: 20px;
-    height: 20px;
-    padding: 0;
     min-height: unset;
-    display: grid;
-    place-items: center;
+  }
+  .search kbd { margin-left: auto; }
+  .sec { border-bottom: 1px solid var(--glass-border); min-height: 0; display: flex; flex-direction: column; }
+  .sec.grow { flex: 1; }
+  .sec-h {
+    height: 28px;
+    display: flex; align-items: center; justify-content: space-between;
+    padding: 0 10px;
+  }
+  .count { font-family: var(--font-mono); font-size: 10px; color: var(--text-faint); }
+  .list { padding: 2px 4px 8px; overflow-y: auto; }
+  .empty { font-size: 11px; color: var(--text-faint); padding: 8px; margin: 0; }
+  .row {
+    display: flex; align-items: center; gap: 8px;
+    height: var(--row-h);
+    padding: 0 8px;
     border-radius: 5px;
     border: none;
     background: transparent;
-    color: var(--text-faint);
-    font-size: 14px;
-    font-weight: 300;
-    transition: all 120ms var(--spring-control);
-  }
-
-  .ls-add-btn:hover {
-    background: var(--glass-3);
-    color: var(--green);
-  }
-
-  .ls-list {
-    overflow-y: auto;
-    padding: 4px;
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    min-height: 0;
-  }
-
-  .ls-empty {
-    font-size: 11px;
-    color: var(--text-faint);
-    padding: 12px;
-    text-align: center;
-  }
-
-  /* Target rows */
-  .target-row {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 6px 8px;
-    border-radius: 5px;
-    cursor: pointer;
-    transition: background 120ms var(--spring-control);
-    min-height: 32px;
-  }
-
-  .target-row:hover {
-    background: var(--glass-3);
-  }
-
-  .target-row.active {
-    background: var(--glass-3);
-    border-left: 2px solid var(--green);
-    padding-left: 6px;
-  }
-
-  .target-status {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--text-faint);
-    flex-shrink: 0;
-  }
-
-  .target-status.scanning {
-    background: var(--green);
-    box-shadow: 0 0 6px var(--green-glow);
-    animation: pulse 1.5s ease-in-out infinite;
-  }
-
-  .target-status.done { background: var(--green-dim); }
-  .target-status.error { background: var(--danger); }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.4; }
-  }
-
-  .target-host {
+    color: var(--text-dim);
+    width: 100%;
+    text-align: left;
+    min-height: unset;
     font-size: 12px;
+    position: relative;
+  }
+  .row:hover { background: rgba(255,255,255,0.04); color: var(--text); }
+  .row.on {
+    background: rgba(255,255,255,0.05);
     color: var(--text);
-    flex: 1;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+    box-shadow: inset 2px 0 0 var(--green);
   }
-
-  .target-ports {
-    font-size: 10px;
-    color: var(--text-faint);
-    flex-shrink: 0;
-  }
-
-  /* Severity counts */
-  .severity-counts {
-    display: flex;
+  .st { width: 6px; height: 6px; border-radius: 50%; background: var(--text-faint); flex-shrink: 0; }
+  .st.scanning { background: var(--green); box-shadow: 0 0 6px var(--green-glow); }
+  .st.done { background: var(--green-dim); }
+  .st.error { background: var(--danger); }
+  .host { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-weight: 500; }
+  .meta { font-size: 10px; color: var(--text-faint); }
+  .safety { font-size: 9px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .hover-actions {
+    display: none;
     gap: 4px;
   }
-
-  .count {
-    font-size: 10px;
-    font-weight: 600;
-    padding: 1px 5px;
-    border-radius: 8px;
-    font-family: var(--font-mono);
+  .row:hover .hover-actions { display: flex; }
+  .mini {
+    font-size: 9px; padding: 1px 5px; min-height: unset;
+    background: var(--abyss-4); color: var(--text-dim);
   }
-
-  .count.critical {
-    background: var(--critical-soft);
-    color: var(--critical);
+  .add-row { padding: 0 8px 6px; }
+  .add-row input { width: 100%; height: 26px; padding: 0 8px; font-size: 12px; }
+  .plugin-pop {
+    margin: 0 6px 6px;
+    padding: 8px;
+    border: 1px solid var(--glass-border);
+    border-radius: 6px;
+    background: var(--abyss-3);
+    display: flex; flex-direction: column; gap: 6px;
   }
-
-  .count.high {
-    background: var(--danger-soft);
-    color: var(--danger);
+  .hint { margin: 0; font-size: 11px; color: var(--text-dim); }
+  .run {
+    font-size: 11px; min-height: unset; padding: 4px 8px;
+    background: var(--green-soft); color: var(--green); border-color: transparent;
   }
-
-  /* Mini findings */
-  .mini-finding {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-    padding: 5px 8px;
-    border-radius: 4px;
-    transition: background 120ms var(--spring-control);
-    cursor: pointer;
-  }
-
-  .mini-finding:hover {
-    background: var(--glass-3);
-  }
-
-  .mini-severity {
-    width: 4px;
-    height: 16px;
-    border-radius: 2px;
-    flex-shrink: 0;
-  }
-
-  .mini-title {
-    font-size: 11px;
-    color: var(--text-dim);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    flex: 1;
-  }
-
+  .sev-foot { display: flex; gap: 6px; padding: 8px 10px; }
+  .pill { font-family: var(--font-mono); font-size: 10px; padding: 1px 6px; border-radius: 8px; }
+  .pill.crit { background: var(--critical-soft); color: var(--critical); }
+  .pill.high { background: var(--danger-soft); color: var(--danger); }
   @media (prefers-reduced-motion: reduce) {
-    .left-sidebar {
-      transition: none;
-    }
-    .target-status.scanning {
-      animation: none;
-      opacity: 1;
-    }
+    .sidebar { transition: none; }
   }
 </style>

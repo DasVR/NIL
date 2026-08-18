@@ -176,7 +176,7 @@
 
   function resize() {
     if (!canvas || !gl) return;
-    const dpr = Math.min(window.devicePixelRatio, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, 1.5);
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * dpr;
     canvas.height = rect.height * dpr;
@@ -184,8 +184,12 @@
   }
 
   function render() {
-    if (!gl) return;
-    time += 0.016;
+    if (!gl || !program) return;
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      time = 0;
+    } else {
+      time += 0.016;
+    }
 
     gl.clearColor(0.02, 0.02, 0.04, 1.0);
     gl.clear(gl.COLOR_BUFFER_BIT);
@@ -203,10 +207,12 @@
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    animationId = requestAnimationFrame(render);
+    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      animationId = requestAnimationFrame(render);
+    }
   }
 
-  let program: WebGLProgram;
+  let program: WebGLProgram | null = null;
 
   onMount(() => {
     gl = canvas.getContext('webgl', { antialias: false, alpha: false });
@@ -257,7 +263,7 @@
   onDestroy(() => {
     if (animationId) cancelAnimationFrame(animationId);
     window.removeEventListener('resize', resize);
-    if (gl) {
+    if (gl && program) {
       gl.deleteProgram(program);
       gl = null;
     }
