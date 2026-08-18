@@ -21,6 +21,15 @@ def test_cli_wrapper_syntax():
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "Fix macOS Gatekeeper.command")])
 
 
+def test_setup_gui_avoids_aqua_double_draw():
+    src = (INSTALL / "finn-setup.py").read_text(encoding="utf-8")
+    assert "tk.Radiobutton" not in src
+    assert "tk.Checkbutton" not in src
+    assert "scrolledtext" not in src
+    assert "tkraise" in src
+    assert "grid_remove" in src
+
+
 def test_find_wheel_in_dist(tmp_path):
     sys.path.insert(0, str(INSTALL))
     import engine
