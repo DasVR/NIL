@@ -1,3 +1,18 @@
+export type RuntimeConfig = {
+  schema: number;
+  setup_complete: boolean;
+  variant: 'bundled' | 'dmg' | 'app' | 'docker';
+  privilege?: 'user' | 'admin';
+  channel?: 'online' | 'offline';
+  sandbox: 'host' | 'docker';
+  features: Record<string, boolean>;
+  docker_tos_accepted: boolean;
+  docker_tos_accepted_at: string | null;
+  sandbox_effective?: string;
+  docker_available?: boolean;
+  docker_tos?: string;
+};
+
 export type Engagement = {
   name: string;
   scope: string;
@@ -43,10 +58,18 @@ export type PendingRun = {
   error?: string;
 };
 
+export type ChatAttachment = {
+  kind: 'block';
+  id: string;
+  label: string;
+};
+
 export type ChatMessage = {
   role: 'user' | 'assistant' | 'system';
   content: string;
   commands?: string[];
+  runIds?: string[];
+  attachments?: ChatAttachment[];
 };
 
 export type TermBlock = {
@@ -71,6 +94,7 @@ export type SpaceLayout = {
   leftOpen: boolean;
   rightOpen: boolean;
   aiPinned: boolean;
+  aiOpen: boolean;
   inspectorTab: InspectorTab;
   activeView: CenterView;
   selectedTargetId: string;

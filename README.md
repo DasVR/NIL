@@ -6,10 +6,32 @@ Use this only against systems you are authorized to test.
 
 ## Quick start
 
+One-file installer (downloads the matching GitHub assets for this OS, or use `--offline` with a kit zip):
+
+```bash
+bash install/finn-install.sh --user --online --host
+```
+
+Windows:
+
+```powershell
+.\install\finn-install.ps1 -User -Online -HostSandbox
+```
+
+Admin + Docker sandbox (still launch the app as a normal user afterward):
+
+```bash
+bash install/finn-install.sh --admin --online --docker --accept-docker-tos
+```
+
+The desktop app starts the bundled API with itself. Do not run `finn api` as a second service.
+
+From a git checkout (dev):
+
 ```bash
 python3 -m pip install -e ".[dev]"
 cp .env.example .env
-finn api
+python3 install/run-api.py   # or: finn api
 ```
 
 In other terminals:
@@ -41,8 +63,9 @@ GitHub zip snapshots named `finn-pentest-harness-master` go stale. Prefer `git c
 ## Layout
 
 - `finn_pentest/` — FastAPI, sandbox, plugins, AI router, TUI, CLI
+- `install/` — one-file user/admin installers (`finn-install.sh`, `finn-install.ps1`) and `run-api.py`
 - `web/` — SvelteKit website (marketing + `/app`)
-- `desktop/` — Tauri 2 wrapper
+- `desktop/` — Tauri 2 wrapper (bundles the API into the app)
 - `prompts/` — professional assessment system prompts
 - `tests/` — pytest
 
@@ -63,18 +86,18 @@ Empty keys are skipped. Failover is silent on 429 / 5xx / timeout.
 python3 -m pytest tests -q
 ```
 
-Sandbox tests that need Docker are skipped when the daemon is missing. Tool execution always targets the engagement container, never the host.
+Sandbox tests that need Docker are skipped when the daemon is missing. The default runtime is a **host sandbox** (per-Space folder, no Docker). Docker is opt-in after accepting sandbox terms.
 
 ## Releases
 
-Tagged builds publish automatically to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases) (macOS `.zip` of the `.app` plus `.dmg`, Windows `.exe`, Linux `.AppImage` / `.deb`):
+Tagged builds publish automatically to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases) (macOS kit zip of the `.app` + `.dmg` + API, Windows `.exe`, Linux `.AppImage` / `.deb`, plus a Python wheel):
 
 ```bash
 git tag v0.1
 git push origin v0.1
 ```
 
-The **Release** workflow builds all three platforms and uploads installers. Run it with **macos_only** to skip Windows and Linux. The site `/download` page pulls the latest release from the GitHub API. Unzip the macOS zip and drag `Finn Pentest Harness.app` to Applications.
+The **Release** workflow builds all three platforms and uploads installers. Run it with **macos_only** to skip Windows and Linux. The site `/download` page pulls the latest release from the GitHub API. Unzip the macOS kit and either run `install/finn-install.sh` or drag `Finn Pentest Harness.app` to Applications. The API is inside the app.
 
 ## Safety
 

@@ -190,13 +190,42 @@ jobs:
           if-no-files-found: error
           retention-days: 7
 
+  python-package:
+    name: Python wheel + one-file installers
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Build wheel
+        run: |
+          python -m pip install --upgrade pip build
+          python -m build --wheel
+          bash -n install/finn-install.sh
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: finn-python-release
+          path: |
+            dist/*.whl
+            install/finn-install.sh
+            install/finn-install.ps1
+            install/run-api.py
+          if-no-files-found: error
+          retention-days: 7
+
   publish:
     name: Publish GitHub Release
-    needs: [build-macos, build-windows, build-linux]
+    needs: [build-macos, build-windows, build-linux, python-package]
     if: >-
       always()
       && !cancelled()
       && needs.build-macos.result == 'success'
+      && needs.python-package.result == 'success'
       && (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped')
       && (needs.build-linux.result == 'success' || needs.build-linux.result == 'skipped')
       && (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.tag != ''))
@@ -222,7 +251,11 @@ jobs:
           find release-assets -type f -name '*.msi' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64.msi" || true
           find release-assets -type f -name '*.AppImage' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Linux-x86_64.AppImage" || true
           find release-assets -type f -name '*.deb' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Linux-x86_64.deb" || true
-          chmod +x dist/*.AppImage 2>/dev/null || true
+          find release-assets -type f -name '*.whl' | head -1 | xargs -I{} cp "{}" "dist/finn_pentest-${RELEASE_TAG}-py3-none-any.whl" || true
+          cp release-assets/finn-python-release/finn-install.sh dist/finn-install.sh 2>/dev/null || find release-assets -name 'finn-install.sh' | head -1 | xargs -I{} cp "{}" dist/finn-install.sh || true
+          find release-assets -name 'finn-install.ps1' | head -1 | xargs -I{} cp "{}" dist/finn-install.ps1 || true
+          find release-assets -name 'run-api.py' | head -1 | xargs -I{} cp "{}" dist/run-api.py || true
+          chmod +x dist/*.AppImage dist/finn-install.sh 2>/dev/null || true
           ls -lah dist/
           test "$(ls -1 dist | wc -l)" -gt 0
 
@@ -239,20 +272,22 @@ jobs:
             echo ""
             echo "| Platform | File | Notes |"
             echo "| --- | --- | --- |"
-            echo "| **macOS 12+ (.app)** | \`Finn-Pentest-Harness-${TAG}-macOS.zip\` | Unzip, then drag the \`.app\` to Applications. Start \`finn api\` first. |"
-            echo "| **macOS 12+ (DMG)** | \`Finn-Pentest-Harness-${TAG}-macOS.dmg\` | Disk image installer. |"
-            echo "| **Windows 10+** | \`Finn-Pentest-Harness-${TAG}-Windows-x64-setup.exe\` | Requires WebView2 (Edge). |"
+            echo "| **macOS 12+ kit** | \`Finn-Pentest-Harness-${TAG}-macOS.zip\` | \`.app\` + \`.dmg\` + bundled API + \`install/finn-install.sh\`. The app starts the API itself. |"
+            echo "| **macOS 12+ (DMG)** | \`Finn-Pentest-Harness-${TAG}-macOS.dmg\` | Disk image installer (API is also inside the .app). |"
+            echo "| **Windows 10+** | \`Finn-Pentest-Harness-${TAG}-Windows-x64-setup.exe\` | Requires WebView2 (Edge). API is bundled. |"
             echo "| **Linux** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.AppImage\` | \`chmod +x\` then run. |"
             echo "| **Linux (deb)** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.deb\` | Debian/Ubuntu package. |"
+            echo "| **Python wheel** | \`finn_pentest-${TAG}-py3-none-any.whl\` | Offline/online installer payload for the API. |"
+            echo "| **POSIX installer** | \`finn-install.sh\` | One file: \`--user/--admin --online/--offline --host/--docker\`. |"
+            echo "| **Windows installer** | \`finn-install.ps1\` | Same flags as PowerShell switches. |"
             echo ""
             echo "## Quick start"
             echo ""
-            echo "1. Install Python 3.11+ and run the backend:"
+            echo "1. Prefer the one-file installer (downloads GitHub parts) or unzip the macOS kit and run it \`--offline\`."
             echo '   ```bash'
-            echo "   pip install -e ."
-            echo "   finn api"
+            echo "   bash finn-install.sh --user --online --host"
             echo '   ```'
-            echo "2. Open the desktop app or browser UI at \`http://127.0.0.1:5173/app\`."
+            echo "2. Open the desktop app. The API starts with it — do not run a separate \`finn api\` process."
             echo "3. Put model keys in \`.env\` (\`OLLAMA_API_KEY\`, \`DEEPSEEK_API_KEY\`, etc.)."
             echo ""
             echo "## Changes since ${PREV:-initial release}"

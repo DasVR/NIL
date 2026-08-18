@@ -113,13 +113,7 @@ Output:
 
 ## Backend status
 
-At launch Finn pings `http://127.0.0.1:8766/health`. If the backend is offline, a dialog explains that the shell still works but scans/tools are unavailable. The tray icon refreshes every 10 seconds and shows **Backend: online/offline**.
-
-Start the backend before opening the app:
-
-```bash
-finn server
-```
+At launch Finn starts the bundled API as a child process and pings `http://127.0.0.1:8766/health`. The tray icon refreshes every 10 seconds and shows **API: online/offline**. You should not run `finn api` separately.
 
 ---
 

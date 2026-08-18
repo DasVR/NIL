@@ -5,7 +5,7 @@
   import { APP_TAG } from '$lib/version';
   import { SHORTCUT_HELP } from '$lib/keymap';
 
-  type Tab = 'general' | 'appearance' | 'ai' | 'api' | 'keyboard';
+  type Tab = 'general' | 'install' | 'appearance' | 'ai' | 'api' | 'keyboard';
   let tab = $state<Tab>('general');
 
   let apiBase = $state(getApiBase());
@@ -20,6 +20,7 @@
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'general', label: 'General' },
+    { id: 'install', label: 'Install' },
     { id: 'appearance', label: 'Appearance' },
     { id: 'ai', label: 'AI' },
     { id: 'api', label: 'API' },
@@ -79,7 +80,7 @@
 
 <div class="overlay" role="dialog" aria-modal="true" aria-labelledby="settings-title">
   <button class="backdrop" type="button" aria-label="Close settings" onclick={() => (appState.settingsOpen = false)}></button>
-  <div class="sheet">
+  <div class="sheet liquid-glass">
     <aside>
       <h2 id="settings-title">Settings</h2>
       {#each tabs as t}
@@ -99,6 +100,23 @@
           <input type="checkbox" bind:checked={appState.prefs.autoApproveOnYolo} onchange={savePrefs} />
         </label>
         <p class="hint">YOLO still requires an explicit toggle. Auto-approve does not skip the HUD.</p>
+      {:else if tab === 'install'}
+        <h3>Install</h3>
+        <p class="hint">
+          Current sandbox: <strong>{appState.runtime?.sandbox_effective || appState.runtime?.sandbox || 'host'}</strong>
+          · <strong>{appState.runtime?.privilege || 'user'}</strong>
+          · <strong>{appState.runtime?.channel || 'online'}</strong>
+          {#if appState.runtime?.docker_tos_accepted} · Docker terms accepted{/if}
+        </p>
+        <button type="button" class="primary" onclick={() => { appState.settingsOpen = false; appState.setupDismissed = false; appState.setupOpen = true; }}>
+          Open installer
+        </button>
+        <p class="hint">
+          Host sandbox runs approved commands in <code>~/.finn-pentest/sandboxes</code> with no Docker.
+          Docker mode uses your computer as the sandbox host and needs the admin installer plus terms.
+          One-file installers live in <code>install/finn-install.sh</code> and <code>install/finn-install.ps1</code>
+          (user/admin, online/offline). The desktop app always starts the bundled API with itself.
+        </p>
       {:else if tab === 'appearance'}
         <h3>Appearance</h3>
         <label class="row">
@@ -139,7 +157,7 @@
           <span>UI sounds</span>
           <input type="checkbox" bind:checked={appState.prefs.sounds} onchange={() => { appState.sounds = appState.prefs.sounds; savePrefs(); }} />
         </label>
-        <p class="hint">Grain is CSS, not canvas. Scanlines are opt-in. Titlebar metal is one WebGL instance.</p>
+        <p class="hint">Grain is CSS, not canvas. Scanlines are opt-in. Titlebar metal plus glass sheen on panels.</p>
       {:else if tab === 'ai'}
         <h3>AI</h3>
         <label class="row">
@@ -206,7 +224,7 @@
     height: min(520px, calc(100vh - 80px));
     display: grid;
     grid-template-columns: 168px 1fr;
-    background: var(--abyss-2);
+    background: color-mix(in srgb, var(--abyss-2) 55%, transparent);
     border: 1px solid var(--glass-border-strong);
     border-radius: var(--radius-panel);
     overflow: hidden;

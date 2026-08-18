@@ -12,9 +12,9 @@
   <p>Finn is a local pentest workstation. Use it only against systems you are authorized to test. The engagement is the product — Finn sits beside the terminal.</p>
 
   <h2>Install</h2>
-  <pre><code>pip install -e .
-cp .env.example .env
-finn api</code></pre>
+  <pre><code>bash install/finn-install.sh --user --online --host
+# or unzip the macOS kit and run the same with --offline</code></pre>
+  <p>The desktop app starts the API with itself. Python 3.11+ must be on PATH.</p>
 
   <p>In another terminal:</p>
   <pre><code>finn tui
@@ -24,7 +24,10 @@ cd web && npm install && npm run dev</code></pre>
   <h2>Workstation</h2>
   <p>
     Open <a href="/app">/app</a>. Create a Space, paste scope, run commands from the block terminal.
-    <kbd>⌘K</kbd> is the OS of the app. <kbd>⌘J</kbd> summons Finn. <kbd>⌘↵</kbd> approves the pending block.
+    English typed in <kbd>$</kbd> goes to Finn; real commands stay in the shell.
+    <kbd>⌘J</kbd> opens the Finn column beside the workspace (not an overlay).
+    <kbd>⌘↵</kbd> in the terminal approves a pending block; in Finn it sends the message.
+    <kbd>⌘K</kbd> is the OS of the app.
   </p>
 
   <h2>Providers</h2>
@@ -34,10 +37,12 @@ cd web && npm install && npm run dev</code></pre>
     Edit them from Settings (<kbd>⌘,</kbd>), not a separate page.
   </p>
 
-  <h2>Docker</h2>
+  <h2>Sandbox</h2>
   <p>
-    Tool commands run inside a per-engagement container. Install Docker Desktop / Engine
-    before creating a sandbox. The default image is Debian slim with nmap.
+    Tools default to a <strong>host sandbox</strong>: approved commands run in a per-Space folder on this machine.
+    No Docker daemon, no admin install. Switch to Docker in the in-app installer (or
+    <code>finn setup --sandbox docker --accept-docker-tos</code>) if you want container isolation.
+    Docker uses your computer as the sandbox host and typically needs administrator rights to install Docker Desktop.
   </p>
 
   <h2>YOLO</h2>

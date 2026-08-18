@@ -2,13 +2,25 @@
   import { appState, pendingId } from '$lib/stores.svelte';
   import type { TermBlock } from '$lib/types';
   import { toast } from '$lib/toast.svelte';
+  import { looksLikeChat, isDockerDownError } from '$lib/intent';
 
   let draft = $state('');
   let editId = $state('');
   let editCmd = $state('');
 
   const pendingBlocks = $derived(appState.blocks.filter((b) => b.status === 'pending'));
-  const rest = $derived(appState.blocks.filter((b) => b.status !== 'pending'));
+  const dockerBlocks = $derived(appState.blocks.filter((b) => isDockerDownError(b.stdout)));
+  const dockerDown = $derived(
+    (appState.runtime?.sandbox === 'docker' || appState.runtime?.sandbox_effective === 'docker') &&
+      dockerBlocks.length > 0
+  );
+  const dockerRetry = $derived(
+    [...dockerBlocks].reverse().find((b) => !looksLikeChat(b.command))?.command || ''
+  );
+  const rest = $derived(
+    appState.blocks.filter((b) => b.status !== 'pending' && !isDockerDownError(b.stdout))
+  );
+  const asking = $derived(looksLikeChat(draft));
 
   function statusLabel(b: TermBlock): string {
     switch (b.status) {
@@ -34,6 +46,10 @@
     if (!cmd) return;
     draft = '';
     try {
+      if (looksLikeChat(cmd)) {
+        await appState.send(cmd);
+        return;
+      }
       await appState.proposeShell(cmd);
     } catch (err) {
       toast.show(err instanceof Error ? err.message : 'Command failed', 'danger');
@@ -57,8 +73,7 @@
   }
 
   function ask(block: TermBlock) {
-    appState.aiStripOpen = true;
-    void appState.send(`Explain this output:\n\n$ ${block.command}\n\n${block.stdout.slice(0, 4000)}`);
+    appState.pinBlockForAgent(block);
   }
 </script>
 
@@ -98,7 +113,17 @@
   {/if}
 
   <div class="stream">
-    {#if rest.length === 0 && pendingBlocks.length === 0}
+    {#if dockerDown}
+      <div class="docker-banner" role="status">
+        <p>Docker is not running. Switch to host sandbox in Setup, or start Docker Desktop.</p>
+        {#if dockerRetry}
+          <button type="button" class="banner-run" onclick={() => appState.proposeShell(dockerRetry)}>
+            Re-run `{dockerRetry.slice(0, 48)}`
+          </button>
+        {/if}
+      </div>
+    {/if}
+    {#if rest.length === 0 && pendingBlocks.length === 0 && !dockerDown}
       <p class="empty">
         {appState.scope.trim()
           ? `Scope loaded · ${appState.targets.length} hosts · press ⌘K to scan`
@@ -118,7 +143,7 @@
           <pre class="out mono">{block.stdout || (block.status === 'running' ? 'running…' : '')}</pre>
           <div class="actions">
             <button type="button" onclick={() => copy(block.stdout || block.command)}>Copy</button>
-            <button type="button" onclick={() => ask(block)}>Send to Finn</button>
+            <button type="button" onclick={() => ask(block)}>Add to Finn</button>
             <button type="button" onclick={() => appState.bookmarkBlock(block)}>Save as evidence</button>
             <button type="button" onclick={() => appState.proposeShell(block.command)}>Re-run</button>
           </div>
@@ -128,15 +153,20 @@
   </div>
 
   <form class="composer" onsubmit={(e) => { e.preventDefault(); void submit(); }}>
-    <span class="prompt mono">$</span>
+    <span class="prompt mono">{asking ? '›' : '$'}</span>
     <textarea
       class="mono"
       rows="1"
+      data-composer="shell"
       bind:value={draft}
-      placeholder={appState.yolo ? 'command — YOLO will run it' : 'command — Enter proposes, ⌘↵ approves pending'}
+      placeholder={asking
+        ? 'Ask Finn — Enter sends to the agent'
+        : appState.yolo
+          ? 'shell command — English goes to Finn'
+          : 'shell command — questions go to Finn · Enter proposes'}
       onkeydown={onComposerKey}
     ></textarea>
-    <button type="submit" class="go" disabled={!draft.trim()}>Run</button>
+    <button type="submit" class="go" disabled={!draft.trim()}>{asking ? 'Ask Finn' : 'Run'}</button>
   </form>
 </section>
 
@@ -182,6 +212,23 @@
     margin: 24px 8px;
     color: var(--text-faint);
     font-size: 13px;
+  }
+  .docker-banner {
+    margin: 4px 0 8px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    border: 1px solid rgba(255, 92, 92, 0.35);
+    background: var(--danger-soft);
+    color: var(--danger);
+    font-size: 12px;
+    line-height: 1.4;
+  }
+  .docker-banner p { margin: 0 0 8px; }
+  .banner-run {
+    height: 24px;
+    min-height: unset;
+    font-size: 11px;
+    padding: 0 8px;
   }
   .block {
     border: 1px solid var(--glass-border);

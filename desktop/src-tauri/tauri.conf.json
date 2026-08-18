@@ -11,7 +11,7 @@
       "cwd": "../../web"
     },
     "beforeBuildCommand": {
-      "script": "npm run build",
+      "script": "node ../desktop/scripts/stage-api.mjs && npm run build",
       "cwd": "../../web"
     }
   },
@@ -60,6 +60,9 @@
       "icons/128x128@2x.png",
       "icons/icon.icns",
       "icons/icon.ico"
+    ],
+    "resources": [
+      "resources/api"
     ],
     "windows": {
       "webviewInstallMode": {

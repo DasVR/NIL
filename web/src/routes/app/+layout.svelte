@@ -9,6 +9,8 @@
   import StatusBar from '$lib/components/StatusBar.svelte';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import NewSpaceSheet from '$lib/components/NewSpaceSheet.svelte';
+  import SetupWizard from '$lib/components/SetupWizard.svelte';
+  import WindowEdges from '$lib/components/WindowEdges.svelte';
   import HudToast from '$lib/components/HudToast.svelte';
 
   let { children } = $props();
@@ -30,12 +32,20 @@
       appState.newSpaceOpen = false;
       return;
     }
+    if (appState.setupOpen) {
+      appState.setupOpen = false;
+      appState.setupDismissed = true;
+      return;
+    }
     if (appState.pluginMenu) {
       appState.pluginMenu = '';
       return;
     }
-    if (appState.aiStripOpen && !appState.aiStripPinned) {
-      appState.aiStripOpen = false;
+    const active = document.activeElement;
+    const typing = isTypingTarget(active);
+    const inFinn = active instanceof HTMLElement && active.dataset.composer === 'finn';
+    if ((inFinn || !typing) && !appState.aiStripPinned) {
+      appState.hideFinn();
     }
   }
 
@@ -44,7 +54,7 @@
     if (!hit) return;
 
     const overlay =
-      appState.paletteOpen || appState.settingsOpen || appState.newSpaceOpen;
+      appState.paletteOpen || appState.settingsOpen || appState.newSpaceOpen || appState.setupOpen;
     if (overlay && hit.name !== 'escape' && hit.name !== 'palette') return;
     if (appState.paletteOpen && hit.name === 'palette') {
       ev.preventDefault();
@@ -54,6 +64,11 @@
 
     const typing = isTypingTarget(ev.target);
     if (typing && (hit.name === 'focusLeft' || hit.name === 'focusCenter' || hit.name === 'focusRight')) {
+      return;
+    }
+    const inFinn =
+      ev.target instanceof HTMLElement && ev.target.dataset.composer === 'finn';
+    if (inFinn && (hit.name === 'approve' || hit.name === 'reject')) {
       return;
     }
 
@@ -140,6 +155,12 @@
     }
   }
 
+  function onGlassSheen(ev: PointerEvent) {
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    document.documentElement.style.setProperty('--glass-x', `${ev.clientX}px`);
+    document.documentElement.style.setProperty('--glass-y', `${ev.clientY}px`);
+  }
+
   onMount(() => {
     isTauri = Boolean(window.__TAURI_INTERNALS__);
     isMac = /Mac|iPhone|iPad/.test(navigator.platform) || navigator.userAgent.includes('Mac');
@@ -149,10 +170,12 @@
     window.addEventListener('resize', checkViewport);
     void appState.refresh();
     window.addEventListener('keydown', onKey);
+    window.addEventListener('pointermove', onGlassSheen);
     const timer = setInterval(() => void appState.ping(), 8000);
     return () => {
       window.removeEventListener('resize', checkViewport);
       window.removeEventListener('keydown', onKey);
+      window.removeEventListener('pointermove', onGlassSheen);
       clearInterval(timer);
     };
   });
@@ -168,6 +191,7 @@
 </script>
 
 <div class="app-frame workstation">
+  <WindowEdges />
   <WindowChrome {isTauri} {isMac} />
 
   <div
@@ -179,7 +203,7 @@
     <main class="main" aria-label="Finn workstation" class:focus={appState.focusPane === 'center'}>
       {#if !appState.connected}
         <div class="banner" role="alert">
-          Backend offline. Start it with <code class="mono">finn api</code> then refresh.
+The bundled API is not reachable. Reopen the desktop app (it starts the API with itself), or refresh if Python is installing dependencies.
         </div>
       {/if}
       {@render children()}
@@ -200,6 +224,9 @@
   {#if appState.newSpaceOpen}
     <NewSpaceSheet />
   {/if}
+  {#if appState.setupOpen}
+    <SetupWizard />
+  {/if}
   <HudToast />
 </div>
 
@@ -210,6 +237,7 @@
     display: flex;
     flex-direction: column;
     background: var(--abyss);
+    background-image: linear-gradient(180deg, rgba(255, 255, 255, 0.035), transparent 88px);
     overflow: hidden;
     position: relative;
   }

@@ -107,7 +107,7 @@
               {/if}
               <span class="hover-actions">
                 <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); copyHost(target.host); }}>copy</button>
-                <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); appState.aiStripOpen = true; appState.send(`Scan ${target.host} and summarize open services.`); }}>ask</button>
+                <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); void appState.send(`Scan ${target.host} and summarize open services.`); }}>ask</button>
               </span>
             </div>
           {/each}
@@ -194,6 +194,9 @@
     width: 0;
     opacity: 0;
     transition: width 280ms var(--spring-layout), opacity 180ms var(--spring-smooth);
+    backdrop-filter: blur(22px) saturate(1.4);
+    -webkit-backdrop-filter: blur(22px) saturate(1.4);
+    box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.06);
   }
   .sidebar.open { width: var(--sidebar-width); opacity: 1; }
   .sidebar.focus { box-shadow: inset 0 0 0 1px var(--green-soft); }
@@ -259,7 +262,9 @@
   }
   .row:hover { background: rgba(255,255,255,0.04); color: var(--text); }
   .row.on {
-    background: rgba(255,255,255,0.05);
+    background:
+      linear-gradient(90deg, color-mix(in srgb, var(--green) 16%, transparent), rgba(255,255,255,0.05) 28%),
+      rgba(255,255,255,0.05);
     color: var(--text);
     box-shadow: inset 2px 0 0 var(--green);
   }

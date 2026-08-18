@@ -33,7 +33,8 @@
     <p class="eyebrow">Authorized pentest workstation · {APP_TAG}</p>
     <h1>The pentest workstation with an operator in the chair.</h1>
     <p class="lede">
-      Engagements are Spaces. The terminal is home. Finn proposes commands — you approve them.
+      Engagements are Spaces. The terminal is home. Talk to Finn like a Cursor agent —
+      English lands in the column beside the shell, real commands stay in `$`.
       YOLO when you trust the scope. Data stays on disk unless you choose a cloud model.
     </p>
     <div class="cta-row">
@@ -61,9 +62,16 @@
 │ Starting Nmap 7.94 …
 │ 22/tcp open  ssh     OpenSSH 8.9
 │ 443/tcp open ssl/http nginx 1.22
-└ [Copy] [Send to Finn] [Save as evidence]
+└ [Copy] [Add to Finn] [Save as evidence]
 
-$ _</pre>
+$ Can you scan 10.0.1.0/24 for http?
+› sent to Finn</pre>
+      <aside class="ghost-finn">
+        <div class="turn-label">You</div>
+        <div class="turn-body">Can you scan 10.0.1.0/24 for http?</div>
+        <div class="turn-label finn">Finn</div>
+        <div class="turn-body">I’ll propose nmap against that range. Approve the card when you’re ready.</div>
+      </aside>
       <aside class="ghost-insp">
         <div class="finding">CRITICAL · panel RCE</div>
         <div class="finding">HIGH · default creds</div>
@@ -72,6 +80,10 @@ $ _</pre>
   </section>
 
   <section class="editorial">
+    <article>
+      <h2>Finn beside the terminal</h2>
+      <p>Ask in English. Finn already has the Space, last runs, and findings — like an agent sitting on the workspace, not a chat overlay.</p>
+    </article>
     <article>
       <h2>Approval gate</h2>
       <p>Every shell command is a Warp-style block with Approve / Edit / Reject. Dangerous tools stay sandboxed and logged — even in YOLO.</p>
@@ -189,17 +201,28 @@ $ _</pre>
   .safe { margin-left: auto; color: var(--green); font-weight: 600; font-size: 10px; }
   .frame-body {
     display: grid;
-    grid-template-columns: 180px 1fr 180px;
+    grid-template-columns: 160px 1fr 200px 160px;
     min-height: 240px;
   }
-  .ghost-side, .ghost-insp {
+  .ghost-side, .ghost-insp, .ghost-finn {
     padding: 10px;
     background: var(--abyss-2);
     font-size: 12px;
     color: var(--text-dim);
   }
   .ghost-side { border-right: 1px solid var(--glass-border); }
+  .ghost-finn { border-left: 1px solid var(--glass-border); }
   .ghost-insp { border-left: 1px solid var(--glass-border); }
+  .turn-label {
+    font-size: 10px;
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-faint);
+    margin-bottom: 4px;
+  }
+  .turn-label.finn { color: var(--green); margin-top: 10px; }
+  .turn-body { font-size: 12px; line-height: 1.45; color: var(--text); margin-bottom: 8px; }
   .row { height: 28px; display: flex; align-items: center; padding: 0 8px; border-radius: 5px; }
   .row.on { background: rgba(255,255,255,0.05); box-shadow: inset 2px 0 0 var(--green); color: var(--text); }
   .ghost-term {
@@ -213,7 +236,7 @@ $ _</pre>
   .finding { padding: 8px; margin-bottom: 6px; border: 1px solid var(--glass-border); border-radius: 6px; font-size: 11px; }
   .editorial {
     display: grid;
-    grid-template-columns: 1fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 2.5rem;
   }
@@ -232,6 +255,6 @@ $ _</pre>
   .footer-links { display: flex; gap: 1rem; }
   @media (max-width: 800px) {
     .frame-body, .editorial { grid-template-columns: 1fr; }
-    .ghost-side, .ghost-insp { display: none; }
+    .ghost-side, .ghost-insp, .ghost-finn { display: none; }
   }
 </style>

@@ -1,56 +1,17 @@
-use std::process::{Command, Stdio};
+mod backend;
+
 use tauri::{
     menu::{AboutMetadata, Menu, MenuItem, PredefinedMenuItem},
     tray::{MouseButton, MouseButtonState, TrayIconBuilder},
-    AppHandle, Manager,
+    AppHandle, Manager, RunEvent,
 };
-use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_clipboard_manager::ClipboardExt;
+use tauri_plugin_dialog::{DialogExt, MessageDialogButtons};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_shell::ShellExt;
 
 const FINN_API_URL: &str = "http://127.0.0.1:8766";
 const FINN_DOCS_URL: &str = "https://github.com/DasVR/finn-pentest-harness";
-const FINN_BACKEND_CMD: &str = "finn server";
-
-/// Attempt to start the Finn backend silently (no visible terminal window).
-fn start_backend_silently() {
-    // Try 'finn' binary directly (assumes it's in PATH or installed via pipx)
-    let mut child = std::process::Command::new("finn");
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-        child.creation_flags(CREATE_NO_WINDOW);
-    }
-
-    let result = child
-        .arg("server")
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn();
-
-    if result.is_ok() {
-        return;
-    }
-
-    // Fallback: try `python -m finn server`
-    let mut fallback = std::process::Command::new("python");
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        const CREATE_NO_WINDOW: u32 = 0x08000000;
-        fallback.creation_flags(CREATE_NO_WINDOW);
-    }
-
-    let _ = fallback
-        .args(["-m", "finn", "server"])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .spawn();
-}
 
 fn show_main(app: &AppHandle) {
     if let Some(window) = app.get_webview_window("main") {
@@ -71,42 +32,23 @@ fn focus_shortcut() -> Shortcut {
     }
 }
 
-/// Check whether the Finn FastAPI backend is reachable.
-async fn backend_reachable() -> bool {
-    let output = Command::new("curl")
-        .args([
-            "-fsS",
-            "--max-time",
-            "1",
-            &format!("{}/health", FINN_API_URL),
-        ])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
-    matches!(output, Ok(s) if s.success())
-}
-
-/// Show a non-blocking native dialog when the backend is offline.
-fn show_backend_offline_dialog(app: &AppHandle) {
+fn show_backend_offline_dialog(app: &AppHandle, detail: String) {
     let app_clone = app.clone();
     tauri::async_runtime::spawn(async move {
-        // Slight delay so the window exists before the dialog appears.
         tokio::time::sleep(std::time::Duration::from_millis(800)).await;
         let msg = format!(
-            "The Finn backend is not running at {}.\\n\\n\
-             You can still browse the UI, but scans and tool execution will be unavailable.\\n\\n\
-             Start the backend with: {}",
-            FINN_API_URL, FINN_BACKEND_CMD
+            "{detail}\n\n\
+             The workstation UI still opens, but scans and tools need the bundled API on {FINN_API_URL}.\n\
+             Install Python 3.11+ if it is missing, then reopen Finn. The API starts with this app."
         );
         if let Some(window) = app_clone.get_webview_window("main") {
             let _ = window
                 .dialog()
                 .message(msg)
-                .title("Finn backend offline")
-                .buttons(MessageDialogButtons::OkCustom("Copy command".into()))
+                .title("Finn API unavailable")
+                .buttons(MessageDialogButtons::OkCustom("Open docs".into()))
                 .show(move |result| {
                     if result {
-                        let _ = app_clone.clipboard().write_text(FINN_BACKEND_CMD);
                         let _ = app_clone.shell().open(FINN_DOCS_URL, None);
                     }
                 });
@@ -122,8 +64,7 @@ pub fn running_as_root() -> bool {
 
 #[cfg(windows)]
 pub fn running_as_root() -> bool {
-    // Requires `is_elevated` crate on Windows. For now, return false.
-    false
+    is_elevated::is_elevated()
 }
 
 #[cfg(not(any(unix, windows)))]
@@ -165,27 +106,22 @@ fn check_sudo_policy(command: String) -> Result<String, String> {
     Ok("ok".to_string())
 }
 
-fn backend_status_string() -> String {
-    // Use a synchronous best-effort check for menu init.
-    let output = Command::new("curl")
-        .args(["-fsS", "--max-time", "1", &format!("{}/health", FINN_API_URL)])
-        .stdout(Stdio::null())
-        .stderr(Stdio::null())
-        .status();
-    if output.map(|s| s.success()).unwrap_or(false) {
-        "Backend: online".to_string()
+fn backend_status_string(online: bool) -> String {
+    if online {
+        "API: online".to_string()
     } else {
-        "Backend: offline".to_string()
+        "API: starting…".to_string()
     }
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
-    tauri::Builder::default()
+    let app = tauri::Builder::default()
         .plugin(tauri_plugin_global_shortcut::Builder::new().build())
         .plugin(tauri_plugin_shell::init())
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_clipboard_manager::init())
+        .manage(backend::Backend::new())
         .invoke_handler(tauri::generate_handler![check_sudo_policy, explain_sudo_request])
         .setup(|app| {
             #[cfg(target_os = "macos")]
@@ -206,7 +142,7 @@ pub fn run() {
                 }),
             )?;
             let perms = MenuItem::with_id(app, "permissions", "Permissions…", true, None::<&str>)?;
-            let status = MenuItem::with_id(app, "status", &backend_status_string(), false, None::<&str>)?;
+            let status = MenuItem::with_id(app, "status", &backend_status_string(false), false, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
             let quit = MenuItem::with_id(app, "quit", "Quit", true, None::<&str>)?;
 
@@ -232,7 +168,7 @@ pub fn run() {
                     "permissions" => {
                         let body = "Finn requires these macOS permissions:\\n\\n\
                         • Accessibility — Cmd+Shift+F global shortcut (optional)\\n\
-                        • Local Network — talk to backend on 127.0.0.1:8766\\n\
+                        • Local Network — talk to the bundled API on 127.0.0.1:8766\\n\
                         • Files & Folders — read pentest scripts and write reports\\n\\n\
                         Administrator access is never used automatically. \
                         Individual tools may request elevation through the approval gate.";
@@ -271,22 +207,23 @@ pub fn run() {
                 eprintln!("Finn: tray icon not created ({err})");
             }
 
-            // Refresh backend status in tray periodically.
             let app_handle = app.handle().clone();
             tauri::async_runtime::spawn(async move {
                 let mut interval = tokio::time::interval(std::time::Duration::from_secs(10));
                 loop {
                     interval.tick().await;
-                    let label = if backend_reachable().await {
-                        "Backend: online"
-                    } else {
-                        "Backend: offline"
-                    };
+                    let online = tauri::async_runtime::spawn_blocking(|| {
+                        let addr: std::net::SocketAddr = "127.0.0.1:8766".parse().expect("addr");
+                        std::net::TcpStream::connect_timeout(&addr, std::time::Duration::from_millis(400))
+                            .is_ok()
+                    })
+                    .await
+                    .unwrap_or(false);
+                    let label = if online { "API: online" } else { "API: offline" };
                     let _ = status_item.set_text(label);
                 }
             });
 
-            // Global shortcut: best-effort, no failure on missing Accessibility.
             if let Err(err) = app.global_shortcut().on_shortcut(
                 focus_shortcut(),
                 |app, _sc, event| {
@@ -298,27 +235,17 @@ pub fn run() {
                 eprintln!("Finn: global shortcut not registered ({err})");
             }
 
-            // Check backend on startup (non-blocking).
-            let app_clone = app.handle().clone();
-            tauri::async_runtime::spawn(async move {
-                if !backend_reachable().await {
-                    // Attempt to auto-start the backend
-                    start_backend_silently();
-                    // Poll for up to 10s
-                    let mut attempts = 0;
-                    while attempts < 20 {
-                        tokio::time::sleep(std::time::Duration::from_millis(500)).await;
-                        if backend_reachable().await {
-                            return;
-                        }
-                        attempts += 1;
-                    }
-                    // Still offline — show dialog
-                    show_backend_offline_dialog(&app_clone);
+            let resource_dir = app.path().resource_dir().unwrap_or_else(|_| {
+                std::path::PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+            });
+            let start_handle = app.handle().clone();
+            std::thread::spawn(move || {
+                let backend = start_handle.state::<backend::Backend>();
+                if let Err(err) = backend.start(&resource_dir) {
+                    show_backend_offline_dialog(&start_handle, err);
                 }
             });
 
-            // No-sudo warning if launched as root/admin.
             if running_as_root() {
                 if let Some(w) = app.get_webview_window("main") {
                     let _ = w
@@ -340,6 +267,12 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
+        .build(tauri::generate_context!())
         .expect("error while running Finn");
+
+    app.run(|app, event| {
+        if matches!(event, RunEvent::Exit | RunEvent::ExitRequested { .. }) {
+            app.state::<backend::Backend>().stop();
+        }
+    });
 }

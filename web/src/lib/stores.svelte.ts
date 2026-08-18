@@ -14,9 +14,11 @@ import {
 import type { Credential, LootItem } from './api';
 import { hostsToTargets, loadExtraTargets, parseScopeHosts, saveExtraTargets } from './scope';
 import { toast } from './toast.svelte';
+import { guessShellTool } from './intent';
 import type {
   Artifact,
   CenterView,
+  ChatAttachment,
   ChatMessage,
   ChatMode,
   Engagement,
@@ -24,6 +26,7 @@ import type {
   InspectorTab,
   PendingRun,
   Plugin,
+  RuntimeConfig,
   SpaceLayout,
   Target,
   TermBlock
@@ -32,6 +35,7 @@ import type {
 export type {
   Artifact,
   CenterView,
+  ChatAttachment,
   ChatMessage,
   ChatMode,
   Engagement,
@@ -39,6 +43,7 @@ export type {
   InspectorTab,
   PendingRun,
   Plugin,
+  RuntimeConfig,
   SpaceLayout,
   Target,
   TermBlock
@@ -79,6 +84,7 @@ const DEFAULT_LAYOUT: SpaceLayout = {
   leftOpen: true,
   rightOpen: true,
   aiPinned: false,
+  aiOpen: false,
   inspectorTab: 'findings',
   activeView: 'terminal',
   selectedTargetId: '',
@@ -166,6 +172,9 @@ class AppState {
   selectedTargetId = $state('');
   selectedFindingId = $state('');
   newSpaceOpen = $state(false);
+  setupOpen = $state(false);
+  setupDismissed = $state(false);
+  runtime = $state<RuntimeConfig | null>(null);
   pluginMenu = $state('');
   paletteMode = $state<'root' | 'goto'>('root');
   focusPane = $state<'left' | 'center' | 'right'>('center');
@@ -176,8 +185,10 @@ class AppState {
   grain = $state(false);
   sounds = $state(false);
   prefs = $state<Prefs>({ ...DEFAULT_PREFS });
+  agentPins = $state<TermBlock[]>([]);
+  finnFocusSeq = $state(0);
 
-  private runtime = new Map<
+  private spaceSnapshots = new Map<
     string,
     { messages: ChatMessage[]; sessionId: string; blocks: TermBlock[]; artifact: Artifact }
   >();
@@ -202,6 +213,7 @@ class AppState {
       leftOpen: this.leftSidebarOpen,
       rightOpen: this.rightSidebarOpen,
       aiPinned: this.aiStripPinned,
+      aiOpen: this.aiStripOpen,
       inspectorTab: this.inspectorTab,
       activeView: this.activeView,
       selectedTargetId: this.selectedTargetId,
@@ -216,7 +228,7 @@ class AppState {
     this.leftSidebarOpen = layout.leftOpen;
     this.rightSidebarOpen = layout.rightOpen;
     this.aiStripPinned = layout.aiPinned;
-    this.aiStripOpen = layout.aiPinned;
+    this.aiStripOpen = layout.aiOpen;
     this.inspectorTab = layout.inspectorTab;
     this.activeView = layout.activeView;
     this.selectedTargetId = layout.selectedTargetId;
@@ -224,7 +236,7 @@ class AppState {
   }
 
   snapshotRuntime() {
-    this.runtime.set(this.engagement, {
+    this.spaceSnapshots.set(this.engagement, {
       messages: this.messages,
       sessionId: this.sessionId,
       blocks: this.blocks,
@@ -233,7 +245,7 @@ class AppState {
   }
 
   restoreRuntime(space: string) {
-    const snap = this.runtime.get(space);
+    const snap = this.spaceSnapshots.get(space);
     if (snap) {
       this.messages = snap.messages;
       this.sessionId = snap.sessionId;
@@ -277,6 +289,13 @@ class AppState {
     this.pending = pending.pending || [];
     this.notes = notes.notes || '';
     this.scope = scope.scope || '';
+    try {
+      const rt = (await apiGet('/v1/runtime')) as RuntimeConfig;
+      this.runtime = rt;
+      if (!rt.setup_complete && !this.setupDismissed) this.setupOpen = true;
+    } catch {
+      /* offline */
+    }
     const extras = loadExtraTargets(this.engagement);
     this.targets = hostsToTargets(parseScopeHosts(this.scope), extras);
     if (this.selectedTargetId && !this.targets.some((t) => t.id === this.selectedTargetId)) {
@@ -388,35 +407,84 @@ class AppState {
     this.persist();
   }
 
+  pinBlockForAgent(block: TermBlock) {
+    if (this.agentPins.some((p) => p.id === block.id)) {
+      this.openFinn({ focus: true });
+      return;
+    }
+    this.agentPins = [...this.agentPins, block];
+    this.openFinn({ focus: true });
+    toast.show('Attached to Finn');
+  }
+
+  unpinAgentBlock(id: string) {
+    this.agentPins = this.agentPins.filter((p) => p.id !== id);
+  }
+
+  openFinn(opts: { focus?: boolean } = {}) {
+    this.aiStripOpen = true;
+    if (opts.focus) this.finnFocusSeq += 1;
+    this.persist();
+  }
+
+  private agentPrompt(userText: string, pins: TermBlock[]): string {
+    if (!pins.length) return userText;
+    const chunks = pins.map(
+      (block) => `Attached terminal @${block.tool}\n$ ${block.command}\n${block.stdout.slice(0, 2500)}`
+    );
+    return `${chunks.join('\n\n')}\n\n${userText}`;
+  }
+
   async send(text: string) {
-    const trimmed = text.trim();
+    const trimmed = text.trim().replace(/^\/ask\s+/i, '');
     if (!trimmed) return;
     this.busy = true;
-    this.aiStripOpen = true;
-    this.messages = [...this.messages, { role: 'user', content: trimmed }];
+    this.openFinn({ focus: true });
+    const pins = this.agentPins;
+    const attachments: ChatAttachment[] = pins.map((b) => ({
+      kind: 'block',
+      id: b.id,
+      label: `$ ${b.command.slice(0, 72)}`
+    }));
+    this.agentPins = [];
+    this.messages = [...this.messages, { role: 'user', content: trimmed, attachments }];
     try {
       await this.ensureEngagement();
       const result = await apiPost('/v1/chat', {
         engagement: this.engagement,
-        message: trimmed,
+        message: this.agentPrompt(trimmed, pins),
         mode: this.mode,
         session_id: this.sessionId || null,
         hunt: this.mode === 'hunt'
       });
       this.sessionId = result.session_id || this.sessionId;
-      if (result.text) {
-        this.messages = [
-          ...this.messages,
-          { role: 'assistant', content: result.text, commands: result.commands || [] }
-        ];
-      }
+      const runIds: string[] = [];
       for (const run of result.runs || []) {
         this.ingestRun(run);
+        const id = String(run.run_id || '');
+        if (id) runIds.push(id);
       }
+      let content = String(result.text || '').trim();
+      if (result.status === 'hunt_started') {
+        content = content || 'Hunt started. I’ll keep working against this Space and propose commands as they come.';
+      }
+      if (!content && (result.commands || []).length) {
+        content = 'Proposed the following. Approve a run in the card, or ask me to change it.';
+      }
+      if (!content && runIds.length) {
+        content = 'Queued tool runs. Approve them here or in the terminal.';
+      }
+      if (!content) {
+        content = 'I didn’t get a reply from the model. Check providers in Settings, then try again.';
+      }
+      this.messages = [
+        ...this.messages,
+        { role: 'assistant', content, commands: result.commands || [], runIds }
+      ];
       await this.refresh();
     } catch (err) {
       this.error = err instanceof Error ? err.message : 'chat failed';
-      this.messages = [...this.messages, { role: 'assistant', content: `Error: ${this.error}` }];
+      this.messages = [...this.messages, { role: 'assistant', content: this.error }];
     } finally {
       this.busy = false;
     }
@@ -436,7 +504,7 @@ class AppState {
     const cmd = command.trim();
     if (!cmd) return;
     await this.ensureEngagement();
-    const tool = cmd.split(/\s+/)[0] || 'shell';
+    const tool = guessShellTool(cmd);
     if (this.yolo) {
       const placeholder: TermBlock = {
         id: crypto.randomUUID(),
@@ -501,7 +569,7 @@ class AppState {
   async toggleYolo() {
     await apiPost('/v1/yolo/toggle', { engagement: this.engagement, enabled: !this.yolo });
     await this.refresh();
-    toast.show(this.yolo ? 'YOLO on — still sandboxed' : 'YOLO off — approval required', this.yolo ? 'warn' : 'ok');
+    toast.show(this.yolo ? 'YOLO on — commands still logged' : 'YOLO off — approval required', this.yolo ? 'warn' : 'ok');
   }
 
   async approve(runId?: string, edited?: string) {
@@ -563,7 +631,6 @@ class AppState {
   }
 
   askAboutFinding(finding: Finding, prompt: string) {
-    this.aiStripOpen = true;
     this.selectFinding(finding);
     void this.send(`${prompt}\n\nFinding: ${finding.title}\n\n${finding.body.slice(0, 4000)}`);
   }
@@ -598,6 +665,13 @@ class AppState {
 
   toggleAi() {
     this.aiStripOpen = !this.aiStripOpen;
+    if (this.aiStripOpen) this.finnFocusSeq += 1;
+    this.persist();
+  }
+
+  hideFinn() {
+    this.aiStripOpen = false;
+    this.persist();
   }
 
   pinAi() {

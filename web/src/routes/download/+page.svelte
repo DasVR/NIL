@@ -14,13 +14,15 @@
   let loading = $state(true);
   let error = $state('');
 
-  const installSnippet = `# macOS — Python 3.11+
-brew install python@3.12
-python3.12 -m venv .venv && source .venv/bin/activate
-python -m pip install --upgrade pip
-python -m pip install -e ".[dev]"
-cp .env.example .env
-finn api`;
+  const installSnippet = `# One-file installer (macOS / Linux)
+curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/install/finn-install.sh | bash -s -- --user --online --host
+
+# Windows (PowerShell)
+# irm https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/install/finn-install.ps1 | iex
+# Or: .\\install\\finn-install.ps1 -User -Online -HostSandbox
+
+# Offline kit: unzip the macOS zip, then
+# bash install/finn-install.sh --user --offline --host`;
 
   load();
 
@@ -71,8 +73,9 @@ finn api`;
     <p class="eyebrow">Desktop builds · {APP_TAG}</p>
     <h1>Download Finn</h1>
     <p class="lede">
-      Native apps for macOS, Windows, and Linux — built by GitHub Actions on every version tag.
-      The desktop shell wraps the same Svelte workstation; start <code>finn api</code> locally for scans and tools.
+      Native apps for macOS, Windows, and Linux. The desktop app always starts the
+      bundled API with itself. Tools default to a <strong>host sandbox</strong>
+      (no Docker). Docker is an optional admin installer path with its own terms.
     </p>
     <div class="hero-actions">
       {#if latest}
@@ -155,6 +158,27 @@ finn api`;
       </div>
     </section>
   {/if}
+
+  <section class="panel install-panel">
+    <h2>Variants</h2>
+    <div class="asset-grid">
+      <article class="asset-card">
+        <span class="asset-platform">Default</span>
+        <strong>API with the app</strong>
+        <span class="asset-name">The .app / installer ships the API. Python 3.11+ on PATH is enough; no separate <code>finn api</code> terminal.</span>
+      </article>
+      <article class="asset-card">
+        <span class="asset-platform">macOS</span>
+        <strong>DMG or .app</strong>
+        <span class="asset-name">DMG for drag-to-Applications. Zip of the .app if you do not want a disk image.</span>
+      </article>
+      <article class="asset-card">
+        <span class="asset-platform">Optional</span>
+        <strong>Docker sandbox</strong>
+        <span class="asset-name">Uses your computer as the sandbox host. Docker Desktop usually needs admin. Accept terms in the in-app installer or <code>finn setup --sandbox docker --accept-docker-tos</code>.</span>
+      </article>
+    </div>
+  </section>
 
   <section class="panel install-panel">
     <h2>From source (API + TUI)</h2>

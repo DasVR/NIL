@@ -212,7 +212,6 @@
         },
         alt: () => {
           appState.selectTarget(t);
-          appState.aiStripOpen = true;
           void appState.send(`Scan ${t.host} and summarize open services.`);
           close();
         },
@@ -321,7 +320,7 @@
 
 <div class="overlay" role="dialog" aria-modal="true" aria-label="Command palette">
   <button class="backdrop" type="button" aria-label="Close palette" onclick={() => { appState.paletteOpen = false; appState.paletteMode = 'root'; }}></button>
-  <div class="palette">
+  <div class="palette liquid-glass">
     <input
       bind:this={inputEl}
       bind:value={q}
