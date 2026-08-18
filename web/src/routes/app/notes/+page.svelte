@@ -1,28 +1,26 @@
 <script>
   import { appState } from '$lib/stores.svelte';
-  import { apiGet, apiPost, apiPut } from '$lib/api';
+  import { apiPut } from '$lib/api';
   import PageHeader from '$lib/components/PageHeader.svelte';
 
   let scopeDraft = $state(appState.scope || '');
   let noteDraft = $state('');
-  let entries = $state([]);
   let saving = $state(false);
   let scopeSaved = $state(false);
 
-  // Load notes entries on mount / engagement change
+  // Notes are stored as a single blob on the engagement (appState.notes).
+  // We render them as timestamped entries split on blank lines.
+  const entries = $derived(
+    appState.notes
+      .split(/\n{2,}/)
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((text) => ({ id: crypto.randomUUID(), text, timestamp: '' }))
+  );
+
   $effect(() => {
     scopeDraft = appState.scope || '';
-    loadEntries();
   });
-
-  async function loadEntries() {
-    try {
-      const data = await apiGet(`/v1/engagements/${appState.engagement}/notes/entries`).catch(() => null);
-      entries = data?.entries || [];
-    } catch {
-      entries = [];
-    }
-  }
 
   async function saveScope() {
     saving = true;
@@ -41,29 +39,15 @@
 
   async function addNote() {
     if (!noteDraft.trim()) return;
-    const entry = {
-      text: noteDraft.trim(),
-      timestamp: new Date().toISOString(),
-      engagement: appState.engagement
-    };
-    try {
-      await apiPost(`/v1/engagements/${appState.engagement}/notes/entries`, entry);
-    } catch {
-      // local fallback
-    }
-    entries = [entry, ...entries];
+    const existing = appState.notes ? appState.notes.trim() + '\n\n' : '';
+    appState.notes = existing + noteDraft.trim();
+    await appState.saveNotes();
     noteDraft = '';
     await appState.refresh();
   }
 
   function linkFinding(f) {
     noteDraft += ` [finding:${f.id}]`;
-  }
-
-  function formatTs(ts) {
-    if (!ts) return '';
-    const d = new Date(ts);
-    return d.toLocaleString();
   }
 </script>
 
@@ -132,12 +116,9 @@
           {#each entries as e}
             <div class="entry-card">
               <div class="entry-meta">
-                <span class="entry-ts mono">{formatTs(e.timestamp)}</span>
+                <span class="entry-ts mono">note</span>
               </div>
               <p class="entry-text">{e.text}</p>
-              {#if e.finding_id}
-                <span class="entry-link mono">→ finding:{e.finding_id}</span>
-              {/if}
             </div>
           {/each}
         </div>

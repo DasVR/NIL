@@ -292,3 +292,97 @@ export async function connectWs(engagement: string, onEvent: (event: Record<stri
   };
   return socket;
 }
+
+// ──────────────────────────────────────────────
+// Credentials
+// ──────────────────────────────────────────────
+
+export interface Credential {
+  id: number;
+  service: string;
+  username: string;
+  password: string;
+  note?: string;
+  last_used?: string;
+}
+
+export async function listCredentials(engagement: string, reveal = false): Promise<{ credentials: Credential[] }> {
+  return apiGet(`/v1/credentials/${encodeURIComponent(engagement)}?reveal=${reveal}`);
+}
+
+export async function storeCredential(body: { engagement: string; service: string; username: string; password: string; note?: string }): Promise<Credential> {
+  return apiPost('/v1/credentials', body);
+}
+
+export async function deleteCredential(engagement: string, credId: number): Promise<unknown> {
+  return apiDelete(`/v1/credentials/${encodeURIComponent(engagement)}/${credId}`);
+}
+
+// ──────────────────────────────────────────────
+// Reports
+// ──────────────────────────────────────────────
+
+export interface ReportEntry {
+  id: string;
+  date: string;
+  format: string;
+  status: string;
+  content?: string;
+}
+
+export async function generateReport(body: { engagement: string; format: string }): Promise<{ report: string }> {
+  return apiPost('/v1/reports/generate', body);
+}
+
+export async function downloadReport(engagement: string, fmt = 'markdown'): Promise<Blob> {
+  const res = await fetch(url(`/v1/reports/${encodeURIComponent(engagement)}/download?fmt=${fmt}`), { headers: headers() });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || res.statusText || 'Download failed');
+  }
+  return res.blob();
+}
+
+// ──────────────────────────────────────────────
+// Loot
+// ──────────────────────────────────────────────
+
+export interface LootItem {
+  id: string;
+  name: string;
+  size: number;
+  source: string;
+  timestamp: string;
+  type: string;
+}
+
+export async function listLoot(engagement: string): Promise<{ loot: LootItem[] }> {
+  return apiGet(`/v1/engagements/${encodeURIComponent(engagement)}/loot`);
+}
+
+export async function uploadLoot(engagement: string, file: File): Promise<unknown> {
+  const form = new FormData();
+  form.append('file', file);
+  const res = await fetch(url(`/v1/engagements/${encodeURIComponent(engagement)}/loot`), {
+    method: 'POST',
+    headers: { Authorization: getApiKey() ? `Bearer ${getApiKey()}` : '' },
+    body: form
+  });
+  if (!res.ok) {
+    const data = await res.json().catch(() => ({}));
+    throw new Error(data.detail || res.statusText || 'Upload failed');
+  }
+  return res.json();
+}
+
+// ──────────────────────────────────────────────
+// Timeline
+// ──────────────────────────────────────────────
+
+export async function getTimeline(engagement: string): Promise<{ events: TimelineEvent[] }> {
+  return apiGet(`/v1/timeline/${encodeURIComponent(engagement)}`);
+}
+
+export async function logTimelineEvent(engagement: string, body: { type: string; title: string; detail?: string }): Promise<unknown> {
+  return apiPost(`/v1/timeline/${encodeURIComponent(engagement)}`, body);
+}

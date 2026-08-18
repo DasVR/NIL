@@ -1,18 +1,16 @@
 <script>
   import { appState } from '$lib/stores.svelte';
-  import { apiGet } from '$lib/api';
+  import { uploadLoot } from '$lib/api';
   import PageHeader from '$lib/components/PageHeader.svelte';
 
   let selected = $state(null);
   let previewText = $state('');
   let previewImage = $state('');
   let loadingPreview = $state(false);
+  let uploading = $state(false);
+  let fileInput;
 
-  // Placeholder loot until endpoint exists
-  let files = $state([
-    // { id: '1', name: 'screenshot.png', size: 124000, source: 'nmap', timestamp: '2025-06-12T14:33:00Z', type: 'image' },
-    // { id: '2', name: 'loot.txt', size: 4200, source: 'gobuster', timestamp: '2025-06-12T15:10:00Z', type: 'text' }
-  ]);
+  const files = $derived(appState.loot);
 
   const typeIcon = {
     image: '🖼',
@@ -37,10 +35,9 @@
     loadingPreview = true;
     try {
       if (f.type?.startsWith('image')) {
-        previewImage = `${f.url || `/v1/loot/${f.id}/download`}`;
+        previewImage = f.url || '';
       } else {
-        const data = await apiGet(`/v1/loot/${f.id}/preview`).catch(() => null);
-        previewText = data?.content || '(preview unavailable)';
+        previewText = f.preview || '(preview unavailable)';
       }
     } catch {
       previewText = '(preview unavailable)';
@@ -49,11 +46,17 @@
     }
   }
 
-  function downloadFile(f) {
-    const a = document.createElement('a');
-    a.href = f.url || `/v1/loot/${f.id}/download`;
-    a.download = f.name;
-    a.click();
+  async function handleUpload(ev) {
+    const file = ev.target.files?.[0];
+    if (!file) return;
+    uploading = true;
+    try {
+      await uploadLoot(appState.engagement, file);
+      await appState.refresh();
+    } finally {
+      uploading = false;
+      if (fileInput) fileInput.value = '';
+    }
   }
 
   function typeFromName(name) {
@@ -66,7 +69,6 @@
   }
 
   function goToTools() {
-    // Navigate to tools page or open AI strip
     appState.aiStripOpen = true;
     appState.send('Run a scan to capture files and loot.');
   }
@@ -79,6 +81,16 @@
     <div class="list-pane">
       <div class="list-toolbar">
         <span class="label-micro">{files.length} files</span>
+        <input
+          bind:this={fileInput}
+          type="file"
+          class="file-input"
+          onchange={handleUpload}
+          aria-label="Upload loot file"
+        />
+        <button type="button" class="toolbar-btn primary" onclick={() => fileInput?.click()} disabled={uploading}>
+          {uploading ? 'Uploading…' : '+ Upload'}
+        </button>
       </div>
 
       {#if files.length === 0}
@@ -124,7 +136,6 @@
           {/if}
 
           <div class="detail-actions">
-            <button type="button" class="toolbar-btn primary" onclick={() => downloadFile(selected)}>Download</button>
             <button type="button" class="toolbar-btn" onclick={() => selected = null}>Close</button>
           </div>
         </div>
@@ -172,6 +183,10 @@
     padding: 0 10px;
     border-bottom: 1px solid var(--glass-border);
     gap: 8px;
+  }
+
+  .file-input {
+    display: none;
   }
 
   .toolbar-btn {

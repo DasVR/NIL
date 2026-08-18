@@ -1,4 +1,5 @@
-import { apiGet, apiPost, apiPut, health } from './api';
+import { apiGet, apiPost, apiPut, health, listCredentials, listLoot, getTimeline } from './api';
+import type { Credential, ReportEntry, LootItem } from './api';
 
 export type Engagement = {
   name: string;
@@ -76,6 +77,9 @@ class AppState {
   scope = $state('');
   timeline = $state<TimelineEvent[]>([]);
   plugins = $state<Plugin[]>([]);
+  creds = $state<Credential[]>([]);
+  reports = $state<ReportEntry[]>([]);
+  loot = $state<LootItem[]>([]);
 
   // Terminal
   termLines = $state<string[]>([]);
@@ -128,6 +132,14 @@ class AppState {
     this.pending = pending.pending || [];
     this.notes = notes.notes || '';
     this.scope = scope.scope || '';
+    const [creds, loot, timeline] = await Promise.all([
+      listCredentials(this.engagement).catch(() => ({ credentials: [] })),
+      listLoot(this.engagement).catch(() => ({ loot: [] })),
+      getTimeline(this.engagement).catch(() => ({ events: [] }))
+    ]);
+    this.creds = creds.credentials || [];
+    this.loot = loot.loot || [];
+    this.timeline = timeline.events || [];
     const providers = await apiGet('/v1/providers').catch(() => ({ resolved: [] }));
     const enabled = (providers.resolved || []).find((p: { enabled: boolean }) => p.enabled);
     this.model = enabled ? `${enabled.name}/${enabled.model}` : 'auto';

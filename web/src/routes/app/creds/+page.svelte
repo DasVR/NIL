@@ -1,6 +1,6 @@
 <script>
   import { appState } from '$lib/stores.svelte';
-  import { apiPost, apiPut } from '$lib/api';
+  import { storeCredential, deleteCredential, listCredentials } from '$lib/api';
   import PageHeader from '$lib/components/PageHeader.svelte';
 
   let selected = $state(null);
@@ -13,10 +13,7 @@
   let newPassword = $state('');
   let newNote = $state('');
 
-  // Placeholder creds data shape; backend may not exist yet
-  let creds = $state([
-    // { id: '1', service: 'ssh', username: 'root', password: 'toor1234', last_used: '2025-06-12T14:33:00Z', note: 'Default test cred' }
-  ]);
+  const creds = $derived(appState.creds);
 
   async function addCred() {
     const body = {
@@ -26,25 +23,36 @@
       password: newPassword,
       note: newNote
     };
-    try {
-      await apiPost('/v1/credentials', body);
-    } catch {
-      // Fallback local append until endpoint exists
-      creds = [...creds, {
-        id: String(Date.now()),
-        service: newService,
-        username: newUsername,
-        password: newPassword,
-        last_used: new Date().toISOString(),
-        note: newNote
-      }];
-    }
+    await storeCredential(body);
     newService = '';
     newUsername = '';
     newPassword = '';
     newNote = '';
     showAdd = false;
     await appState.refresh();
+  }
+
+  async function removeCred(c) {
+    await deleteCredential(appState.engagement, c.id);
+    if (selected?.id === c.id) selected = null;
+    await appState.refresh();
+  }
+
+  async function revealPassword(c) {
+    if (showPassword) {
+      showPassword = false;
+      return;
+    }
+    try {
+      const data = await listCredentials(appState.engagement, true);
+      const found = (data.credentials || []).find((x) => x.id === c.id);
+      if (found) {
+        c.password = found.password;
+        showPassword = true;
+      }
+    } catch {
+      // keep masked
+    }
   }
 
   function selectCred(c) {
@@ -144,7 +152,7 @@
             <span class="label-micro">Password</span>
             <div class="field-row">
               <span class="field-value mono">{showPassword ? selected.password : maskPassword(selected.password)}</span>
-              <button type="button" class="toolbar-btn" onclick={() => showPassword = !showPassword}>
+              <button type="button" class="toolbar-btn" onclick={() => revealPassword(selected)}>
                 {showPassword ? 'Hide' : 'Reveal'}
               </button>
               <button type="button" class="toolbar-btn" onclick={() => copy(selected.password, 'pass')}>
@@ -160,6 +168,7 @@
           {/if}
           <div class="detail-actions">
             <button type="button" class="toolbar-btn primary" onclick={useInTool}>Use in tool</button>
+            <button type="button" class="toolbar-btn danger" onclick={() => removeCred(selected)}>Delete</button>
             <button type="button" class="toolbar-btn" onclick={() => selected = null}>Close</button>
           </div>
         </div>

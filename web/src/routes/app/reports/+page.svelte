@@ -1,41 +1,55 @@
 <script>
   import { appState } from '$lib/stores.svelte';
-  import { apiPost } from '$lib/api';
+  import { generateReport, downloadReport } from '$lib/api';
   import PageHeader from '$lib/components/PageHeader.svelte';
 
   let report = $state('');
   let fmt = $state('markdown');
   let generating = $state(false);
-  let reports = $state([]);
   let selectedReport = $state(null);
+
+  const reports = $derived(appState.reports);
 
   async function generate() {
     generating = true;
     try {
-      const data = await apiPost('/v1/reports/generate', {
-        engagement: appState.engagement,
-        format: fmt
-      });
+      const data = await generateReport({ engagement: appState.engagement, format: fmt });
       report = fmt === 'json' ? JSON.stringify(data.report, null, 2) : data.report;
-      // Simulate adding to history
-      reports = [{ id: crypto.randomUUID(), date: new Date().toLocaleString(), format: fmt, status: 'ready' }, ...reports];
+      appState.reports = [{
+        id: crypto.randomUUID(),
+        date: new Date().toLocaleString(),
+        format: fmt,
+        status: 'ready',
+        content: report
+      }, ...appState.reports];
     } finally {
       generating = false;
     }
   }
 
-  function download() {
+  async function download() {
     if (!report) return;
-    const blob = new Blob([report], { type: 'text/plain' });
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `finn-${appState.engagement}.${fmt === 'json' ? 'json' : 'md'}`;
-    a.click();
+    try {
+      const blob = await downloadReport(appState.engagement, fmt);
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `finn-${appState.engagement}.${fmt === 'json' ? 'json' : 'md'}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } catch {
+      // fallback: download the in-memory draft
+      const blob = new Blob([report], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `finn-${appState.engagement}.${fmt === 'json' ? 'json' : 'md'}`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+    }
   }
 
   function selectReport(r) {
     selectedReport = r;
-    report = '';
+    report = r.content || '';
   }
 </script>
 
