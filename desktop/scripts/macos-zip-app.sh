@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# Build a downloadable macOS kit: .app + .dmg + bundled API + one-file installer.
+# macOS kit: Finn Setup.app (double-click installer) + workstation .app + .dmg + API.
 set -euo pipefail
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
@@ -13,6 +13,7 @@ if [[ -z "${APP}" || ! -d "${APP}" ]]; then
 fi
 
 node "${ROOT}/desktop/scripts/stage-api.mjs"
+chmod +x "${ROOT}/install/macos/make-setup-app.sh" "${ROOT}/install/finn-setup.py" "${ROOT}/install/finn-install.sh"
 
 KIT="${BUNDLE_DIR}/Finn-Pentest-Harness-macOS-kit"
 rm -rf "${KIT}"
@@ -25,37 +26,40 @@ if [[ -n "${DMG}" && -f "${DMG}" ]]; then
 fi
 
 cp -R "${ROOT}/desktop/src-tauri/resources/api/." "${KIT}/api/"
+cp "${ROOT}/install/engine.py" "${KIT}/install/"
+cp "${ROOT}/install/finn-setup.py" "${KIT}/install/"
 cp "${ROOT}/install/finn-install.sh" "${KIT}/install/"
 cp "${ROOT}/install/finn-install.ps1" "${KIT}/install/"
 cp "${ROOT}/install/run-api.py" "${KIT}/install/"
 cp "${ROOT}/install/run-api.py" "${KIT}/"
-chmod +x "${KIT}/install/finn-install.sh" "${KIT}/run-api.py" "${KIT}/install/run-api.py"
+chmod +x "${KIT}/install/finn-install.sh" "${KIT}/install/finn-setup.py"
+
+PAYLOAD="${KIT}/.setup-payload"
+rm -rf "${PAYLOAD}"
+mkdir -p "${PAYLOAD}"
+cp -R "${KIT}/api/." "${PAYLOAD}/"
+cp -R "${APP}" "${PAYLOAD}/"
+bash "${ROOT}/install/macos/make-setup-app.sh" "${KIT}/Finn Setup.app" "${PAYLOAD}"
+rm -rf "${PAYLOAD}"
 
 cat > "${KIT}/INSTALL.txt" <<'EOF'
-Finn macOS kit
-==============
+Finn Setup
+==========
 
-This zip includes the .app, the .dmg (when built), and the API.
+Double-click  Finn Setup.app
 
-1. Online user install (downloads matching GitHub assets if needed):
-     bash install/finn-install.sh --user --online --host
+That is the installer (progress bar, user/admin, online/offline, host/Docker).
+It copies the workstation into Applications (or ~/Applications) and installs
+the API next to it. Then open Finn — the API starts with the app.
 
-2. Offline / air-gapped (uses files in this folder only):
-     bash install/finn-install.sh --user --offline --host
-
-3. Admin install (system paths, optional Docker sandbox):
-     bash install/finn-install.sh --admin --online --docker --accept-docker-tos
-
-Or drag the .app into Applications / open the .dmg. The desktop app starts
-the API itself — do not run `finn api` separately.
-
-Launch Finn as a normal user even after an admin install.
+You can still drag "Finn Pentest Harness.app" into Applications yourself,
+or open the .dmg. Headless:  python3 install/finn-setup.py --cli --user --offline --host
 EOF
 
 OUT="${BUNDLE_DIR}/Finn-Pentest-Harness-macOS.zip"
 rm -f "${OUT}"
 
-echo "==> Kit zip $(basename "${APP}") + API → ${OUT}"
+echo "==> Kit zip with Finn Setup.app → ${OUT}"
 if command -v ditto >/dev/null 2>&1; then
   (cd "${KIT}" && ditto -c -k . "${OUT}")
 else
@@ -63,4 +67,4 @@ else
 fi
 
 ls -lah "${OUT}"
-echo "Unzip on a Mac. Prefer install/finn-install.sh, or drag the .app to /Applications."
+echo "Unzip on a Mac and double-click Finn Setup.app"

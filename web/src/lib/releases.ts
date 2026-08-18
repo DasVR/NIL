@@ -39,7 +39,7 @@ type GitHubReleaseResponse = {
 function assetMeta(name: string): { label: string; platform: string } {
   const lower = name.toLowerCase();
   if (lower.endsWith('.zip') && /macos|darwin|\.app/i.test(lower)) {
-    return { label: 'macOS kit (.app + .dmg + API)', platform: 'macOS 12+ — unzip, then install or open' };
+    return { label: 'macOS kit (Finn Setup.app)', platform: 'macOS 12+ — unzip, double-click Finn Setup' };
   }
   if (lower.endsWith('.dmg')) return { label: 'macOS (DMG)', platform: 'macOS 12+' };
   if (lower.endsWith('.exe')) return { label: 'Windows', platform: 'Windows 10+' };

@@ -1,4 +1,4 @@
-"""Installer scripts and bundled API launcher."""
+"""Finn Setup engine."""
 
 from __future__ import annotations
 
@@ -8,22 +8,38 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
+INSTALL = ROOT / "install"
 
 
-def test_posix_installer_syntax():
-    script = ROOT / "install" / "finn-install.sh"
-    subprocess.check_call(["bash", "-n", str(script)])
+def test_cli_wrapper_syntax():
+    subprocess.check_call(["bash", "-n", str(INSTALL / "finn-install.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-setup-app.sh")])
 
 
-def test_run_api_check():
-    launcher = ROOT / "install" / "run-api.py"
+def test_find_api_from_install_dir():
+    sys.path.insert(0, str(INSTALL))
+    import engine
+
+    found = engine.find_api_src(INSTALL)
+    assert found is not None
+    assert (found / "finn_pentest").is_dir()
+
+
+def test_cli_offline_install(tmp_path, monkeypatch):
+    prefix = tmp_path / "prefix"
+    monkeypatch.setenv("FINN_PREFIX", str(prefix))
+    monkeypatch.setenv("FINN_VENV", str(tmp_path / "venv"))
+    monkeypatch.setenv("FINN_PENTEST_DIR", str(tmp_path / "data"))
     env = os.environ.copy()
-    env["FINN_API_ROOT"] = str(ROOT)
+    env["FINN_PREFIX"] = str(prefix)
+    env["FINN_VENV"] = str(tmp_path / "venv")
+    env["FINN_PENTEST_DIR"] = str(tmp_path / "data")
     env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
-    out = subprocess.check_output([sys.executable, str(launcher), "--check"], env=env, text=True)
-    assert "ok api_root=" in out
-
-
-def test_stage_api_script_exists():
-    assert (ROOT / "desktop" / "scripts" / "stage-api.mjs").is_file()
-    assert (ROOT / "install" / "finn-install.ps1").is_file()
+    subprocess.check_call(
+        [sys.executable, str(INSTALL / "finn-setup.py"), "--cli", "--user", "--offline", "--host"],
+        env=env,
+        cwd=str(ROOT),
+    )
+    assert (prefix / "finn_pentest").is_dir()
+    assert (prefix / "run-api.py").is_file()
+    assert (tmp_path / "data" / "runtime.json").is_file()

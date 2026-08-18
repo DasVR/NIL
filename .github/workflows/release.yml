@@ -214,7 +214,10 @@ jobs:
             dist/*.whl
             install/finn-install.sh
             install/finn-install.ps1
+            install/finn-setup.py
+            install/engine.py
             install/run-api.py
+            install/Finn-Setup.cmd
           if-no-files-found: error
           retention-days: 7
 
@@ -272,23 +275,18 @@ jobs:
             echo ""
             echo "| Platform | File | Notes |"
             echo "| --- | --- | --- |"
-            echo "| **macOS 12+ kit** | \`Finn-Pentest-Harness-${TAG}-macOS.zip\` | \`.app\` + \`.dmg\` + bundled API + \`install/finn-install.sh\`. The app starts the API itself. |"
-            echo "| **macOS 12+ (DMG)** | \`Finn-Pentest-Harness-${TAG}-macOS.dmg\` | Disk image installer (API is also inside the .app). |"
-            echo "| **Windows 10+** | \`Finn-Pentest-Harness-${TAG}-Windows-x64-setup.exe\` | Requires WebView2 (Edge). API is bundled. |"
+            echo "| **macOS 12+ kit** | \`Finn-Pentest-Harness-${TAG}-macOS.zip\` | Unzip and double-click **Finn Setup.app** (progress bar). Also includes the workstation \`.app\`, \`.dmg\`, and API. |"
+            echo "| **macOS 12+ (DMG)** | \`Finn-Pentest-Harness-${TAG}-macOS.dmg\` | Disk image; drag the app if you skip Setup. |"
+            echo "| **Windows 10+** | \`Finn-Pentest-Harness-${TAG}-Windows-x64-setup.exe\` | NSIS setup with progress; current user or all users. API bundled. |"
             echo "| **Linux** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.AppImage\` | \`chmod +x\` then run. |"
             echo "| **Linux (deb)** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.deb\` | Debian/Ubuntu package. |"
             echo "| **Python wheel** | \`finn_pentest-${TAG}-py3-none-any.whl\` | Offline/online installer payload for the API. |"
-            echo "| **POSIX installer** | \`finn-install.sh\` | One file: \`--user/--admin --online/--offline --host/--docker\`. |"
-            echo "| **Windows installer** | \`finn-install.ps1\` | Same flags as PowerShell switches. |"
             echo ""
             echo "## Quick start"
             echo ""
-            echo "1. Prefer the one-file installer (downloads GitHub parts) or unzip the macOS kit and run it \`--offline\`."
-            echo '   ```bash'
-            echo "   bash finn-install.sh --user --online --host"
-            echo '   ```'
-            echo "2. Open the desktop app. The API starts with it — do not run a separate \`finn api\` process."
-            echo "3. Put model keys in \`.env\` (\`OLLAMA_API_KEY\`, \`DEEPSEEK_API_KEY\`, etc.)."
+            echo "1. **macOS:** unzip the kit → double-click \`Finn Setup.app\`."
+            echo "2. **Windows:** run the \`.exe\` setup."
+            echo "3. Open Finn. The API starts with the app — do not run a separate \`finn api\` process."
             echo ""
             echo "## Changes since ${PREV:-initial release}"
             echo ""

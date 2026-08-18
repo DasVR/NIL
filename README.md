@@ -6,33 +6,17 @@ Use this only against systems you are authorized to test.
 
 ## Quick start
 
-One-file installer (downloads the matching GitHub assets for this OS, or use `--offline` with a kit zip):
+**macOS:** unzip the kit and double-click **Finn Setup.app** (progress bar, user/admin, online/offline).
+
+**Windows:** run the NSIS **setup.exe** (or MSI). It offers current-user vs all-users, like a typical desktop installer.
+
+**Linux:** AppImage / `.deb`, or `python3 install/finn-setup.py`.
 
 ```bash
-bash install/finn-install.sh --user --online --host
-```
-
-Windows:
-
-```powershell
-.\install\finn-install.ps1 -User -Online -HostSandbox
-```
-
-Admin + Docker sandbox (still launch the app as a normal user afterward):
-
-```bash
-bash install/finn-install.sh --admin --online --docker --accept-docker-tos
+python3 install/finn-setup.py --cli --user --offline --host
 ```
 
 The desktop app starts the bundled API with itself. Do not run `finn api` as a second service.
-
-From a git checkout (dev):
-
-```bash
-python3 -m pip install -e ".[dev]"
-cp .env.example .env
-python3 install/run-api.py   # or: finn api
-```
 
 In other terminals:
 

@@ -110,5 +110,8 @@ jobs:
             install/finn-install.sh
             install/finn-install.ps1
             install/run-api.py
+            install/finn-setup.py
+            install/engine.py
+            install/Finn-Setup.cmd
           if-no-files-found: warn
           retention-days: 14

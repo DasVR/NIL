@@ -14,15 +14,12 @@
   let loading = $state(true);
   let error = $state('');
 
-  const installSnippet = `# One-file installer (macOS / Linux)
-curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/install/finn-install.sh | bash -s -- --user --online --host
+  const installSnippet = `# macOS — unzip the kit, then double-click Finn Setup.app
+# Windows — run Finn-Pentest-Harness-*-Windows-x64-setup.exe (progress bar, current user or all users)
+# Linux — AppImage, or: python3 install/finn-setup.py
 
-# Windows (PowerShell)
-# irm https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/install/finn-install.ps1 | iex
-# Or: .\\install\\finn-install.ps1 -User -Online -HostSandbox
-
-# Offline kit: unzip the macOS zip, then
-# bash install/finn-install.sh --user --offline --host`;
+# Headless (same engine as the GUI):
+python3 install/finn-setup.py --cli --user --offline --host`;
 
   load();
 
@@ -73,9 +70,9 @@ curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/i
     <p class="eyebrow">Desktop builds · {APP_TAG}</p>
     <h1>Download Finn</h1>
     <p class="lede">
-      Native apps for macOS, Windows, and Linux. The desktop app always starts the
-      bundled API with itself. Tools default to a <strong>host sandbox</strong>
-      (no Docker). Docker is an optional admin installer path with its own terms.
+      Native apps for macOS, Windows, and Linux. Unzip the macOS kit and
+      double-click <strong>Finn Setup.app</strong> (progress bar, like a Windows
+      setup.exe). Windows uses the NSIS <strong>.exe</strong> / MSI. The API starts with the app.
     </p>
     <div class="hero-actions">
       {#if latest}
@@ -169,8 +166,8 @@ curl -fsSL https://raw.githubusercontent.com/DasVR/finn-pentest-harness/master/i
       </article>
       <article class="asset-card">
         <span class="asset-platform">macOS</span>
-        <strong>DMG or .app</strong>
-        <span class="asset-name">DMG for drag-to-Applications. Zip of the .app if you do not want a disk image.</span>
+        <strong>Finn Setup.app</strong>
+        <span class="asset-name">Unzip the macOS kit and double-click Setup. Progress bar, user vs admin, online vs offline. Windows uses the NSIS .exe / MSI the same way.</span>
       </article>
       <article class="asset-card">
         <span class="asset-platform">Optional</span>

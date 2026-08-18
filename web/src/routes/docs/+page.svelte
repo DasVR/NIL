@@ -12,9 +12,10 @@
   <p>Finn is a local pentest workstation. Use it only against systems you are authorized to test. The engagement is the product — Finn sits beside the terminal.</p>
 
   <h2>Install</h2>
-  <pre><code>bash install/finn-install.sh --user --online --host
-# or unzip the macOS kit and run the same with --offline</code></pre>
-  <p>The desktop app starts the API with itself. Python 3.11+ must be on PATH.</p>
+  <pre><code>macOS: unzip the kit → double-click Finn Setup.app
+Windows: run the NSIS setup.exe
+python3 install/finn-setup.py --cli --user --offline --host</code></pre>
+  <p>The desktop app starts the API with itself. Python 3.11+ must be on PATH. Homebrew Python SSL is not used for GitHub — Setup uses curl.</p>
 
   <p>In another terminal:</p>
   <pre><code>finn tui
