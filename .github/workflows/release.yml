@@ -230,7 +230,9 @@ jobs:
           python -m pip install -e ".[dev]"
           python -m pytest tests -q
           python -m build --wheel
-          bash -n install/finn-install.sh install/macos/make-pkg.sh install/macos/pkg-scripts/postinstall
+          bash -n install/finn-install.sh
+          bash -n install/macos/make-pkg.sh
+          bash -n install/macos/pkg-scripts/postinstall
 
       - uses: actions/upload-artifact@v4
         with:
