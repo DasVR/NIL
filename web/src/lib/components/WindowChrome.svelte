@@ -25,63 +25,10 @@
   });
 
   const titleText = $derived(`${pageName} · ${appState.engagement}`);
-
-  async function tauriWindow(action) {
-    if (!isTauri) return false;
-    try {
-      const tauriWindowPath = '@tauri-apps/api/window';
-      const { getCurrentWindow } = await import(/* @vite-ignore */ tauriWindowPath);
-      const win = getCurrentWindow();
-      if (action === 'close') await win.close();
-      else if (action === 'minimize') await win.minimize();
-      else if (action === 'maximize') await win.toggleMaximize();
-      return true;
-    } catch {
-      return false;
-    }
-  }
-
-  async function handleClose() {
-    if (!(await tauriWindow('close'))) {
-      if (window.history.length > 1) window.history.back();
-    }
-  }
-
-  async function handleMinimize() {
-    await tauriWindow('minimize');
-  }
-
-  async function handleMaximize() {
-    await tauriWindow('maximize');
-  }
 </script>
 
 <header class="window-chrome" aria-label="Window title bar">
-  <div class="chrome-left no-drag">
-    <div class="traffic-lights" role="toolbar" aria-label="Window controls">
-      <button
-        type="button"
-        class="traffic close"
-        onclick={handleClose}
-        aria-label="Close window"
-        title="Close"
-      ></button>
-      <button
-        type="button"
-        class="traffic minimize"
-        onclick={handleMinimize}
-        aria-label="Minimize window"
-        title="Minimize"
-      ></button>
-      <button
-        type="button"
-        class="traffic maximize"
-        onclick={handleMaximize}
-        aria-label="Maximize window"
-        title="Maximize"
-      ></button>
-    </div>
-  </div>
+  <div class="chrome-left no-drag"></div>
 
   <div class="chrome-center drag-region" title={titleText}>
     <span class="page-name">{pageName}</span>
@@ -160,46 +107,6 @@
   .chrome-right {
     width: 68px;
     justify-self: end;
-  }
-
-  .traffic-lights {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .traffic {
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: none;
-    padding: 0;
-    cursor: pointer;
-    transition: transform 180ms var(--spring-snappy), filter 120ms ease;
-  }
-
-  .traffic:hover {
-    transform: scale(1.1);
-    filter: brightness(1.08);
-  }
-
-  .traffic:active {
-    transform: scale(0.94);
-  }
-
-  .traffic.close { background: #ff5f57; }
-  .traffic.minimize { background: #febc2e; }
-  .traffic.maximize { background: #28c840; }
-
-  .traffic:focus-visible {
-    outline: 2px solid var(--accent);
-    outline-offset: 2px;
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .traffic {
-      transition: none;
-    }
   }
 
   @media (max-width: 480px) {

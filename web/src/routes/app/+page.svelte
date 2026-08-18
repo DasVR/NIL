@@ -14,9 +14,6 @@
     <div class="terminal-hero">
       <div class="terminal-chrome">
         <div class="chrome-left">
-          <span class="chrome-dot red"></span>
-          <span class="chrome-dot yellow"></span>
-          <span class="chrome-dot green"></span>
           <span class="chrome-title mono">{appState.engagement} — zsh</span>
         </div>
         <div class="chrome-right">
@@ -107,19 +104,7 @@
     gap: 8px;
   }
 
-  .chrome-dot {
-    width: 10px;
-    height: 10px;
-    border-radius: 50%;
-    display: block;
-  }
-
-  .chrome-dot.red { background: #ff5f57; }
-  .chrome-dot.yellow { background: #febc2e; }
-  .chrome-dot.green { background: #28c840; }
-
   .chrome-title {
-    margin-left: 8px;
     font-size: 11px;
     color: var(--text-dim);
     letter-spacing: 0.02em;
