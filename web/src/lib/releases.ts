@@ -38,7 +38,10 @@ type GitHubReleaseResponse = {
 
 function assetMeta(name: string): { label: string; platform: string } {
   const lower = name.toLowerCase();
-  if (lower.endsWith('.dmg')) return { label: 'macOS', platform: 'macOS 12+' };
+  if (lower.endsWith('.zip') && /macos|darwin|\.app/i.test(lower)) {
+    return { label: 'macOS (.app)', platform: 'macOS 12+ — unzip, then open' };
+  }
+  if (lower.endsWith('.dmg')) return { label: 'macOS (DMG)', platform: 'macOS 12+' };
   if (lower.endsWith('.exe')) return { label: 'Windows', platform: 'Windows 10+' };
   if (lower.endsWith('.msi')) return { label: 'Windows (MSI)', platform: 'Windows 10+' };
   if (lower.endsWith('.appimage')) return { label: 'Linux', platform: 'Linux x86_64' };

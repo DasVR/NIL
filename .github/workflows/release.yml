@@ -7,11 +7,16 @@ on:
   workflow_dispatch:
     inputs:
       tag:
-        description: "Release tag (e.g. v0.2.1). Leave empty for a test build."
+        description: "Release tag (e.g. v0.1). Leave empty for a test build."
         required: false
         type: string
       build_only:
         description: "Build artifacts only — do NOT publish a GitHub Release."
+        required: false
+        default: false
+        type: boolean
+      macos_only:
+        description: "Build only macOS (.app zip + DMG). Skip Windows and Linux."
         required: false
         default: false
         type: boolean
@@ -27,7 +32,7 @@ env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
 jobs:
   build-macos:
-    name: macOS (.app + .dmg)
+    name: macOS (.app zip + .dmg)
     runs-on: macos-latest
     timeout-minutes: 50
     steps:
@@ -62,17 +67,21 @@ jobs:
       - name: Launch smoke test
         run: bash desktop/scripts/macos-launch-smoke.sh
 
+      - name: Zip .app for download
+        run: bash desktop/scripts/macos-zip-app.sh
+
       - uses: actions/upload-artifact@v4
         with:
           name: finn-macos-release
           path: |
-            desktop/src-tauri/target/release/bundle/macos/*.app
+            desktop/src-tauri/target/release/bundle/macos/*.zip
             desktop/src-tauri/target/release/bundle/dmg/*.dmg
           if-no-files-found: error
           retention-days: 7
 
   build-windows:
     name: Windows (.exe + .msi)
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.macos_only) }}
     runs-on: windows-latest
     timeout-minutes: 50
     steps:
@@ -118,6 +127,7 @@ jobs:
 
   build-linux:
     name: Linux (AppImage + .deb)
+    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.macos_only) }}
     runs-on: ubuntu-latest
     timeout-minutes: 50
     steps:
@@ -183,7 +193,14 @@ jobs:
   publish:
     name: Publish GitHub Release
     needs: [build-macos, build-windows, build-linux]
-    if: (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.tag != '')) && !inputs.build_only
+    if: >-
+      always()
+      && !cancelled()
+      && needs.build-macos.result == 'success'
+      && (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped')
+      && (needs.build-linux.result == 'success' || needs.build-linux.result == 'skipped')
+      && (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.tag != ''))
+      && (github.event_name != 'workflow_dispatch' || inputs.build_only != true)
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -199,6 +216,7 @@ jobs:
       - name: Prepare release files
         run: |
           mkdir -p dist
+          find release-assets -type f -iname '*macos*.zip' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-macOS.zip" || true
           find release-assets -type f -name '*.dmg' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-macOS.dmg" || true
           find release-assets -type f -name '*.exe' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64-setup.exe" || true
           find release-assets -type f -name '*.msi' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64.msi" || true
@@ -221,7 +239,8 @@ jobs:
             echo ""
             echo "| Platform | File | Notes |"
             echo "| --- | --- | --- |"
-            echo "| **macOS 12+** | \`Finn-Pentest-Harness-${TAG}-macOS.dmg\` | Drag to Applications. Start \`finn api\` first. |"
+            echo "| **macOS 12+ (.app)** | \`Finn-Pentest-Harness-${TAG}-macOS.zip\` | Unzip, then drag the \`.app\` to Applications. Start \`finn api\` first. |"
+            echo "| **macOS 12+ (DMG)** | \`Finn-Pentest-Harness-${TAG}-macOS.dmg\` | Disk image installer. |"
             echo "| **Windows 10+** | \`Finn-Pentest-Harness-${TAG}-Windows-x64-setup.exe\` | Requires WebView2 (Edge). |"
             echo "| **Linux** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.AppImage\` | \`chmod +x\` then run. |"
             echo "| **Linux (deb)** | \`Finn-Pentest-Harness-${TAG}-Linux-x86_64.deb\` | Debian/Ubuntu package. |"

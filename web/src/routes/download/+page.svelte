@@ -43,6 +43,10 @@ finn api`;
 
   function primaryAsset(release) {
     if (!release?.assets?.length) return null;
+    const macosZip = release.assets.find(
+      (a) => a.name.toLowerCase().endsWith('.zip') && /macos|darwin/i.test(a.name)
+    );
+    if (macosZip) return macosZip;
     const order = ['.dmg', '.exe', '.appimage', '.deb', '.msi'];
     for (const ext of order) {
       const hit = release.assets.find((a) => a.name.toLowerCase().endsWith(ext));
