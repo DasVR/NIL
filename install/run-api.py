@@ -100,17 +100,18 @@ def main(argv: list[str]) -> int:
     if "--check" in argv:
         return check(root)
 
-    py = sys.executable
+    prepare_sys_path(root)
     try:
-        prepare_sys_path(root)
         import finn_pentest  # noqa: F401
         import uvicorn  # noqa: F401
     except ImportError:
         try:
             py = str(ensure_venv(root))
         except Exception as exc:
-            print(f"Finn API: could not prepare a venv ({exc}). Install Python 3.11+.", file=sys.stderr)
+            print(f"Finn API: could not prepare a venv ({exc}).", file=sys.stderr)
             return 1
+        if os.name == "nt":
+            return subprocess.call([py, str(Path(__file__).resolve()), *argv])
         os.execv(py, [py, str(Path(__file__).resolve()), *argv])
 
     from finn_pentest.core.bootstrap import bootstrap

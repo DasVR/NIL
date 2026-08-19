@@ -78,18 +78,20 @@ Runs the built `.app` for 12 seconds and verifies it stays up with no panics.
 
 ## Windows
 
-Requires Windows 10+ and the **Microsoft Edge WebView2 Runtime**. If missing, the installer bundle will prompt to install it.
+Requires Windows 10+ . **Finn-Setup.exe** installs the app, WebView2 if needed, a **Start Menu** item, and a **desktop shortcut** named Finn. Python for the API is bundled — open Finn and the API starts with it. Do not run `finn api` / `finn server` separately.
 
 Build:
 
 ```bash
 cd desktop
-npm run tauri build
+npm run setup
+node scripts/stage-windows-python.mjs
+npm run tauri build -- --bundles nsis,msi
 ```
 
 Output:
+- `src-tauri/target/release/bundle/nsis/*.exe` (CI copies this to `Finn-Setup.exe`)
 - `src-tauri/target/release/bundle/msi/*.msi`
-- `src-tauri/target/release/bundle/nsis/*.exe`
 
 The same no-sudo policy applies: Finn blocks commands prefixed with `sudo` / `doas` and warns if launched as Administrator.
 

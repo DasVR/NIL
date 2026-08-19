@@ -38,8 +38,8 @@ fn show_backend_offline_dialog(app: &AppHandle, detail: String) {
         tokio::time::sleep(std::time::Duration::from_millis(800)).await;
         let msg = format!(
             "{detail}\n\n\
-             The workstation UI still opens, but scans and tools need the bundled API on {FINN_API_URL}.\n\
-             Install Python 3.11+ if it is missing, then reopen Finn. The API starts with this app."
+             The workstation UI still opens. Scans and tools need the API on {FINN_API_URL}.\n\
+             The API is supposed to start with this app. Reopen Finn from the Start Menu or desktop shortcut."
         );
         if let Some(window) = app_clone.get_webview_window("main") {
             let _ = window

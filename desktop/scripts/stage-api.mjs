@@ -28,6 +28,7 @@ const copies = [
   ["prompts", "prompts"],
   ["pyproject.toml", "pyproject.toml"],
   ["install/run-api.py", "run-api.py"],
+  ["install/windows/Launch Finn.cmd", "Launch Finn.cmd"],
 ];
 
 for (const [fromRel, toRel] of copies) {
