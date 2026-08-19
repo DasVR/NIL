@@ -25,6 +25,10 @@ def test_cli_wrapper_syntax():
     hooks = (ROOT / "desktop" / "src-tauri" / "windows" / "nsis-hooks.nsh").read_text(encoding="utf-8")
     assert "NSIS_HOOK_POSTINSTALL" in hooks
     assert "Finn.lnk" in hooks
+    stager = (ROOT / "desktop" / "scripts" / "stage-windows-python.mjs").read_text(encoding="utf-8")
+    assert "Expand-Archive" in stager
+    assert "uvicorn[standard]" in stager
+    assert "pip install" in stager and "apiDir" not in stager
 
 
 def test_setup_gui_avoids_aqua_double_draw():
