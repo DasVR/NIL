@@ -43,7 +43,13 @@ function url(path: string): string {
 async function parse(res: Response) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) {
-    throw new Error(data.detail || res.statusText || 'Request failed');
+    const detail = data.detail;
+    const message =
+      (typeof detail === 'string' && detail) ||
+      (typeof data.message === 'string' && data.message) ||
+      res.statusText ||
+      'Request failed';
+    throw new Error(message);
   }
   return data;
 }
@@ -265,6 +271,29 @@ export async function detectRefusal(text: string): Promise<{
   patterns_matched: string[];
 }> {
   return apiPost('/v1/refusal/detect', { text });
+}
+
+export async function startDocker(): Promise<{
+  available: boolean;
+  installed: boolean;
+  started: boolean;
+  code: string | null;
+  message: string;
+  sandbox?: string;
+}> {
+  const res = await fetch(url('/v1/sandbox/start-docker'), {
+    method: 'POST',
+    headers: headers()
+  });
+  const data = await res.json().catch(() => ({}));
+  return {
+    available: Boolean(data.available),
+    installed: data.installed !== false,
+    started: Boolean(data.started),
+    code: data.code || null,
+    message: data.message || data.detail || (res.ok ? 'Docker is running.' : 'Docker did not start.'),
+    sandbox: data.sandbox
+  };
 }
 
 export async function approve(run_id: string, edited_command?: string) {

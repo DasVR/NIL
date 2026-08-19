@@ -35,7 +35,16 @@
           <ArtifactPane />
         {/if}
       </div>
-      <AiStrip />
+      {#if appState.aiStripOpen}
+        <AiStrip />
+      {:else}
+        <button type="button" class="finn-bar" onclick={() => appState.openFinn({ focus: true })}>
+          <span class="dot" class:busy={appState.busy}></span>
+          Finn
+          <span class="mode">{appState.mode}</span>
+          <span class="hint">Ask in English · ⌘J</span>
+        </button>
+      {/if}
     </div>
   {/if}
 </div>
@@ -60,7 +69,14 @@
     border-bottom: 1px solid var(--glass-border);
     background: var(--abyss-1);
   }
-  .chrome-title { font-size: 11px; color: var(--text-dim); }
+  .chrome-title {
+    font-size: 11px;
+    color: var(--text-dim);
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
   .views { display: flex; gap: 4px; }
   .views button {
     height: 24px;
@@ -75,8 +91,10 @@
   .views button.busy { color: var(--green); }
   .work-row {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     display: flex;
+    flex-direction: column;
     position: relative;
     overflow: hidden;
   }
@@ -88,6 +106,39 @@
     overflow: hidden;
     position: relative;
   }
-  .surface.split > :global(*) { flex: 1; min-width: 0; }
+  .surface.split > :global(*) { flex: 1; min-width: 0; min-height: 0; }
   .surface.split > :global(.artifact) { border-left: 1px solid var(--glass-border); }
+  .finn-bar {
+    flex-shrink: 0;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 0 12px;
+    border: 0;
+    border-top: 1px solid var(--glass-border);
+    border-radius: 0;
+    background: var(--abyss-1);
+    color: var(--text-dim);
+    font-size: 12px;
+    min-height: unset;
+    min-width: 0;
+  }
+  .finn-bar:hover { color: var(--text); background: var(--abyss-2); }
+  .finn-bar .mode {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green);
+  }
+  .finn-bar .hint { margin-left: auto; font-size: 11px; color: var(--text-faint); }
+  .finn-bar .dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: var(--green);
+    box-shadow: 0 0 6px var(--green-glow);
+  }
+  .finn-bar .dot.busy { animation: pulse 1.2s ease-in-out infinite; }
+  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 </style>

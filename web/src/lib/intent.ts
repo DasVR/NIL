@@ -107,5 +107,12 @@ export function looksLikeChat(text: string): boolean {
 }
 
 export function isDockerDownError(text: string): boolean {
-  return /docker is not running or not accessible/i.test(text || '');
+  const t = text || '';
+  return (
+    /docker is not running/i.test(t) ||
+    /docker is not installed/i.test(t) ||
+    /docker desktop did not become ready/i.test(t) ||
+    /docker is not running or not accessible/i.test(t) ||
+    /docker sandbox is off until you accept/i.test(t)
+  );
 }

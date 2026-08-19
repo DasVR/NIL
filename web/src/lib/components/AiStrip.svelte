@@ -2,7 +2,7 @@
   import { tick } from 'svelte';
   import { appState, pendingId } from '$lib/stores.svelte';
   import type { TermBlock } from '$lib/types';
-  import { splitFinnBlocks, extractCommands, renderMarkdown } from '$lib/markdown';
+  import { splitFinnBlocks, renderMarkdown } from '$lib/markdown';
 
   let inputText = $state('');
   let threadEl = $state<HTMLDivElement | undefined>(undefined);
@@ -44,10 +44,6 @@
     }
   }
 
-  function propose(cmd: string) {
-    void appState.proposeShell(cmd);
-  }
-
   function blockFor(id: string): TermBlock | undefined {
     return appState.blocks.find((b) => b.runId === id || b.id === id);
   }
@@ -60,7 +56,7 @@
         <span class="dot" class:busy={appState.busy}></span>
         <span class="title">Finn</span>
         <span class="mode">{appState.mode}</span>
-        <span class="mono model">{appState.model}</span>
+        <span class="mono model" title={appState.model}>{appState.model}</span>
       </div>
       <div class="acts">
         <button
@@ -77,8 +73,8 @@
     <div class="thread" bind:this={threadEl}>
       {#if appState.messages.length === 0 && !appState.busy}
         <div class="empty">
-          <p>Talk to Finn the way you’d talk to a Cursor agent. It already sees this Space, recent runs, and findings.</p>
-          <p class="hint">English in `$` comes here. Real commands stay in the terminal.</p>
+          <p>Talk to Finn here. It already sees this Space, recent runs, and findings.</p>
+          <p class="hint">Shell commands stay in `$` above. Approve runs on the card — not a second Run chip.</p>
         </div>
       {:else}
         {#each appState.messages as msg, i (i)}
@@ -99,39 +95,27 @@
               <span class="who-label">Finn</span>
               {#each splitFinnBlocks(msg.content) as block}
                 {#if block.type === 'code'}
-                  <div class="code-wrap">
-                    <pre class="mono">{block.body}</pre>
-                    {#each extractCommands('```\n' + block.body + '\n```') as cmd}
-                      <button type="button" class="propose" onclick={() => propose(cmd)}>Run `{cmd.slice(0, 56)}`</button>
-                    {/each}
-                  </div>
+                  <pre class="mono code">{block.body}</pre>
                 {:else}
                   <div class="prose">{@html renderMarkdown(block.body)}</div>
                 {/if}
               {/each}
-              {#if msg.commands?.length}
-                <div class="cmds">
-                  {#each msg.commands as cmd}
-                    <button type="button" class="propose" onclick={() => propose(cmd)}>{cmd}</button>
-                  {/each}
-                </div>
-              {/if}
               {#each msg.runIds || [] as rid}
                 {@const run = blockFor(rid)}
                 {#if run}
                   <div class="tool" class:pending={run.status === 'pending'} class:bad={run.status === 'error'}>
                     <header>
                       <span class="mono tool-name">{run.tool}</span>
-                      <span class="mono cmd">{run.command}</span>
                       <span class="st">{run.status}</span>
                     </header>
+                    <pre class="cmd-line mono">{run.command}</pre>
                     {#if run.status === 'pending'}
                       <div class="tool-acts">
                         <button type="button" class="primary" onclick={() => appState.approve(pendingId(run))}>Approve</button>
                         <button type="button" onclick={() => appState.reject(pendingId(run))}>Reject</button>
                       </div>
                     {:else if run.stdout}
-                      <pre class="out mono">{run.stdout.slice(0, 1200)}</pre>
+                      <pre class="out mono">{run.stdout}</pre>
                     {/if}
                   </div>
                 {/if}
@@ -151,9 +135,9 @@
             <div class="tool live" class:pending={run.status === 'pending'}>
               <header>
                 <span class="mono tool-name">{run.tool}</span>
-                <span class="mono cmd">{run.command}</span>
                 <span class="st">{run.status}</span>
               </header>
+              <pre class="cmd-line mono">{run.command}</pre>
               {#if run.status === 'pending'}
                 <div class="tool-acts">
                   <button type="button" class="primary" onclick={() => appState.approve(pendingId(run))}>Approve</button>
@@ -170,7 +154,7 @@
       <div class="pins">
         {#each appState.agentPins as pin (pin.id)}
           <button type="button" class="chip" onclick={() => appState.unpinAgentBlock(pin.id)} title="Remove">
-            @{pin.tool} {pin.command.slice(0, 28)}
+            @{pin.tool} {pin.command}
           </button>
         {/each}
       </div>
@@ -194,17 +178,19 @@
 
 <style>
   .agent {
-    width: min(420px, 42vw);
-    min-width: 300px;
+    width: 100%;
+    min-width: 0;
+    min-height: 0;
+    height: var(--ai-strip-height);
+    max-height: 42vh;
     flex-shrink: 0;
-    height: 100%;
     display: flex;
     flex-direction: column;
     background: color-mix(in srgb, var(--abyss-1) 82%, transparent);
-    border-left: 1px solid var(--glass-border);
+    border-top: 1px solid var(--glass-border);
     backdrop-filter: blur(22px) saturate(1.45);
     -webkit-backdrop-filter: blur(22px) saturate(1.45);
-    box-shadow: inset 1px 0 0 rgba(255, 255, 255, 0.06);
+    overflow: hidden;
   }
   .chrome {
     height: 36px;
@@ -214,14 +200,24 @@
     padding: 0 10px;
     border-bottom: 1px solid var(--glass-border);
     flex-shrink: 0;
+    min-width: 0;
+    gap: 8px;
   }
   .who, .acts { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .acts { flex-shrink: 0; }
   .title { font-size: 13px; font-weight: 600; }
   .mode {
     font-size: 10px; text-transform: uppercase; letter-spacing: 0.06em;
     color: var(--green); background: var(--green-soft); padding: 1px 6px; border-radius: 4px;
   }
-  .model { font-size: 10px; color: var(--text-faint); overflow: hidden; text-overflow: ellipsis; }
+  .model {
+    font-size: 10px;
+    color: var(--text-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 28ch;
+  }
   .txt {
     height: 22px; min-height: unset; padding: 0 8px; font-size: 11px;
     border: 0; background: transparent; color: var(--text-faint);
@@ -236,8 +232,9 @@
 
   .thread {
     flex: 1;
+    min-width: 0;
     min-height: 0;
-    overflow-y: auto;
+    overflow: auto;
     padding: 14px 14px 18px;
     display: flex;
     flex-direction: column;
@@ -245,7 +242,7 @@
   }
   .empty { color: var(--text-dim); font-size: 13px; line-height: 1.5; padding: 12px 4px; }
   .empty .hint { color: var(--text-faint); font-size: 12px; }
-  .turn { display: flex; flex-direction: column; gap: 6px; max-width: 100%; }
+  .turn { display: flex; flex-direction: column; gap: 6px; max-width: 100%; min-width: 0; }
   .who-label {
     font-size: 10px; font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
     color: var(--text-faint);
@@ -257,19 +254,39 @@
     line-height: 1.45;
     color: var(--text);
     white-space: pre-wrap;
+    overflow-wrap: anywhere;
   }
-  .prose { font-size: 13px; line-height: 1.55; color: var(--text); }
+  .prose { font-size: 13px; line-height: 1.55; color: var(--text); min-width: 0; overflow-wrap: anywhere; }
   .prose :global(p) { margin: 0 0 8px; }
   .prose :global(p:last-child) { margin-bottom: 0; }
-  .chips, .pins { display: flex; flex-wrap: wrap; gap: 6px; }
+  .prose :global(pre), .prose :global(code) {
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .prose :global(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    border-collapse: collapse;
+  }
+  .prose :global(td), .prose :global(th) {
+    padding: 4px 8px;
+    white-space: normal;
+    word-break: break-word;
+  }
+  .chips, .pins { display: flex; flex-wrap: wrap; gap: 6px; min-width: 0; }
   .pins { padding: 6px 12px; border-top: 1px solid var(--glass-border); }
   .chip {
-    font-size: 10px; height: 22px; min-height: unset; padding: 0 8px;
+    font-size: 10px; height: auto; min-height: 22px; padding: 2px 8px;
     border-radius: 999px; background: var(--abyss-3); color: var(--text-dim);
     border: 1px solid var(--glass-border);
+    max-width: 100%;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
-  .code-wrap, .cmds { display: flex; flex-direction: column; gap: 6px; }
-  pre {
+  pre.code, .cmd-line, .out {
     margin: 0;
     padding: 10px 12px;
     background: var(--abyss);
@@ -277,24 +294,17 @@
     border-radius: 8px;
     font-size: 12px;
     color: var(--text-dim);
-    overflow-x: auto;
     white-space: pre-wrap;
-  }
-  .propose {
-    align-self: flex-start;
-    min-height: unset;
-    height: 26px;
-    font-size: 11px;
-    font-family: var(--font-mono);
-    background: var(--green-soft);
-    color: var(--green);
-    border-color: transparent;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+    max-width: 100%;
   }
   .tool {
     border: 1px solid var(--glass-border);
     border-radius: 8px;
     background: var(--abyss);
     overflow: hidden;
+    min-width: 0;
   }
   .tool.pending { border-color: rgba(255, 180, 84, 0.5); }
   .tool.bad { border-color: rgba(255, 92, 92, 0.4); }
@@ -302,12 +312,12 @@
     display: flex; align-items: center; gap: 8px;
     padding: 6px 10px; min-height: 28px;
   }
-  .tool-name { color: var(--green); font-size: 11px; }
-  .cmd { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 11px; }
-  .st { font-size: 10px; text-transform: uppercase; color: var(--warning); }
-  .tool-acts { display: flex; gap: 6px; padding: 0 10px 8px; }
+  .tool-name { color: var(--green); font-size: 11px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; }
+  .st { font-size: 10px; text-transform: uppercase; color: var(--warning); flex-shrink: 0; }
+  .tool-acts { display: flex; gap: 6px; padding: 0 10px 8px; flex-wrap: wrap; }
   .tool-acts button { height: 24px; min-height: unset; font-size: 11px; padding: 0 8px; }
-  .out { max-height: 160px; border: 0; border-radius: 0; }
+  .cmd-line { border: 0; border-radius: 0; padding: 0 12px 8px; }
+  .out { max-height: 160px; overflow: auto; border: 0; border-radius: 0; }
   .working { flex-direction: row; align-items: center; gap: 8px; color: var(--green); font-size: 13px; }
   .orb {
     width: 8px; height: 8px; border-radius: 50%; background: var(--green);
@@ -321,28 +331,18 @@
     padding: 10px 12px;
     border-top: 1px solid var(--glass-border);
     background: var(--abyss);
+    min-width: 0;
   }
   .composer textarea {
     flex: 1;
+    min-width: 0;
     min-height: 44px;
     max-height: 140px;
     resize: none;
     font-size: 13px;
     border-radius: 8px;
   }
-  .composer button { min-height: 32px; }
-
-  @media (max-width: 900px) {
-    .agent {
-      position: absolute;
-      top: 0;
-      right: 0;
-      bottom: 0;
-      width: min(100%, 420px);
-      z-index: 9;
-      box-shadow: -16px 0 40px rgba(0, 0, 0, 0.45);
-    }
-  }
+  .composer button { min-height: 32px; flex-shrink: 0; }
 
   @media (prefers-reduced-motion: reduce) {
     .dot.busy, .orb { animation: none; }

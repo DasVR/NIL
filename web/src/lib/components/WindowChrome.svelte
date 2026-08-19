@@ -161,6 +161,10 @@
     padding: 0;
     min-height: unset;
     letter-spacing: -0.01em;
+    max-width: 22ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .space-name:hover { color: var(--green); background: transparent; }
   .host {
@@ -185,6 +189,10 @@
     color: var(--text-faint);
     letter-spacing: 0.04em;
     text-transform: uppercase;
+    max-width: 12ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .safety {
     font-size: 10px;

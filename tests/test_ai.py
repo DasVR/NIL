@@ -14,6 +14,7 @@ def test_prompt_layers(finn_home):
     hunt = build_system_prompt("hunt", yolo=True)
     assert "MODE: HUNT" in hunt
     assert "YOLO MODE ACTIVE" in hunt
+    assert "flag encyclopedias" in hunt.lower()
     for mode in VALID_MODES:
         text = build_system_prompt(mode)
         assert text

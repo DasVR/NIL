@@ -35,6 +35,7 @@
 <style>
   .artifact {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
@@ -80,5 +81,12 @@
     padding: 10px;
     border-radius: 8px;
     overflow: auto;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .preview :global(table) {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
   }
 </style>

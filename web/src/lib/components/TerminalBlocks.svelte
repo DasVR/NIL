@@ -11,16 +11,15 @@
   const pendingBlocks = $derived(appState.blocks.filter((b) => b.status === 'pending'));
   const dockerBlocks = $derived(appState.blocks.filter((b) => isDockerDownError(b.stdout)));
   const dockerDown = $derived(
-    (appState.runtime?.sandbox === 'docker' || appState.runtime?.sandbox_effective === 'docker') &&
-      dockerBlocks.length > 0
+    appState.isDockerMode() &&
+      (dockerBlocks.length > 0 ||
+        appState.dockerBusy ||
+        (Boolean(appState.dockerNotice) && !appState.runtime?.docker_available))
   );
-  const dockerRetry = $derived(
-    [...dockerBlocks].reverse().find((b) => !looksLikeChat(b.command))?.command || ''
-  );
+  const dockerRetry = $derived(appState.dockerErrorCommand());
   const rest = $derived(
     appState.blocks.filter((b) => b.status !== 'pending' && !isDockerDownError(b.stdout))
   );
-  const asking = $derived(looksLikeChat(draft));
 
   function statusLabel(b: TermBlock): string {
     switch (b.status) {
@@ -84,13 +83,13 @@
         <div class="block pending">
           <header>
             <span class="tool mono">{block.tool}</span>
-            {#if editId === block.id}
-              <input class="mono" bind:value={editCmd} />
-            {:else}
-              <span class="cmd mono">{block.command}</span>
-            {/if}
             <span class="st">{statusLabel(block)}</span>
           </header>
+          {#if editId === block.id}
+            <input class="mono cmd-edit" bind:value={editCmd} />
+          {:else}
+            <pre class="cmd-line mono">{block.command}</pre>
+          {/if}
           <div class="actions">
             {#if editId === block.id}
               <button type="button" class="primary" onclick={() => { void appState.approve(pendingId(block), editCmd); editId = ''; }}>Approve edited</button>
@@ -115,11 +114,20 @@
   <div class="stream">
     {#if dockerDown}
       <div class="docker-banner" role="status">
-        <p>Docker is not running. Switch to host sandbox in Setup, or start Docker Desktop.</p>
-        {#if dockerRetry}
-          <button type="button" class="banner-run" onclick={() => appState.proposeShell(dockerRetry)}>
-            Re-run `{dockerRetry.slice(0, 48)}`
-          </button>
+        {#if appState.dockerBusy}
+          <p>Starting Docker…</p>
+        {:else}
+          <p>
+            {appState.dockerNotice ||
+              'Docker is not running. Start Docker Desktop, or switch this Space to host sandbox.'}
+          </p>
+          <div class="banner-acts">
+            <button type="button" class="primary" onclick={() => appState.startDocker()}>Start Docker</button>
+            <button type="button" onclick={() => appState.useHostAndRerun(dockerRetry)}>Use host sandbox</button>
+            {#if dockerRetry}
+              <button type="button" onclick={() => appState.retryDockerCommand(dockerRetry)}>Retry command</button>
+            {/if}
+          </div>
         {/if}
       </div>
     {/if}
@@ -127,7 +135,7 @@
       <p class="empty">
         {appState.scope.trim()
           ? `Scope loaded · ${appState.targets.length} hosts · press ⌘K to scan`
-          : 'Type a command, or ⌘K to run a plugin against the active host.'}
+          : 'Type a shell command here. Ask Finn in the strip below.'}
       </p>
     {/if}
     {#each rest as block (block.id)}
@@ -135,10 +143,10 @@
         <header>
           <button type="button" class="fold" onclick={() => appState.toggleBlock(block.id)}>{block.collapsed ? '▸' : '▾'}</button>
           <span class="tool mono">{block.tool}</span>
-          <span class="cmd mono">{block.command}</span>
           <span class="st" class:ok={block.status === 'success'} class:bad={block.status === 'error'}>{statusLabel(block)}</span>
           {#if block.duration != null}<span class="dur mono">{block.duration.toFixed(1)}s</span>{/if}
         </header>
+        <pre class="cmd-line mono">{block.command}</pre>
         {#if !block.collapsed}
           <pre class="out mono">{block.stdout || (block.status === 'running' ? 'running…' : '')}</pre>
           <div class="actions">
@@ -153,31 +161,31 @@
   </div>
 
   <form class="composer" onsubmit={(e) => { e.preventDefault(); void submit(); }}>
-    <span class="prompt mono">{asking ? '›' : '$'}</span>
+    <span class="prompt mono">$</span>
     <textarea
       class="mono"
       rows="1"
       data-composer="shell"
       bind:value={draft}
-      placeholder={asking
-        ? 'Ask Finn — Enter sends to the agent'
-        : appState.yolo
-          ? 'shell command — English goes to Finn'
-          : 'shell command — questions go to Finn · Enter proposes'}
+      placeholder={appState.yolo
+        ? 'shell command — Enter runs (YOLO)'
+        : 'shell command — Enter proposes'}
       onkeydown={onComposerKey}
     ></textarea>
-    <button type="submit" class="go" disabled={!draft.trim()}>{asking ? 'Ask Finn' : 'Run'}</button>
+    <button type="submit" class="go" disabled={!draft.trim()}>Run</button>
   </form>
 </section>
 
 <style>
   .term {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     display: flex;
     flex-direction: column;
     background: var(--abyss);
     position: relative;
+    overflow: hidden;
   }
   .term.scan::after {
     content: "";
@@ -185,12 +193,13 @@
     position: absolute;
     inset: 0;
     z-index: 2;
+    opacity: 0.35;
     background: repeating-linear-gradient(
       to bottom,
       rgba(255, 255, 255, 0.02),
       rgba(255, 255, 255, 0.02) 1px,
       transparent 1px,
-      transparent 3px
+      transparent 4px
     );
   }
   .rail {
@@ -198,9 +207,11 @@
     padding: 8px;
     border-bottom: 1px solid rgba(255, 180, 84, 0.35);
     background: var(--warning-soft);
+    min-width: 0;
   }
   .stream {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     overflow: auto;
     padding: 8px 10px 12px;
@@ -222,9 +233,16 @@
     color: var(--danger);
     font-size: 12px;
     line-height: 1.4;
+    min-width: 0;
+    overflow: hidden;
   }
-  .docker-banner p { margin: 0 0 8px; }
-  .banner-run {
+  .docker-banner p {
+    margin: 0 0 8px;
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+  .banner-acts { display: flex; flex-wrap: wrap; gap: 6px; }
+  .banner-acts button {
     height: 24px;
     min-height: unset;
     font-size: 11px;
@@ -235,6 +253,7 @@
     border-radius: 8px;
     background: var(--abyss-2);
     overflow: hidden;
+    min-width: 0;
   }
   .block.pending {
     border-color: rgba(255, 180, 84, 0.55);
@@ -248,17 +267,32 @@
     gap: 8px;
     padding: 6px 10px;
     min-height: 28px;
+    min-width: 0;
   }
   .fold {
     width: 18px; height: 18px; padding: 0; min-height: unset;
     border: 0; background: transparent; color: var(--text-faint);
   }
-  .tool { color: var(--green); font-size: 11px; }
-  .cmd { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 12px; }
-  .st { font-size: 10px; color: var(--warning); text-transform: uppercase; letter-spacing: 0.04em; }
+  .tool { color: var(--green); font-size: 11px; flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .st { font-size: 10px; color: var(--warning); text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0; }
   .st.ok { color: var(--green); }
   .st.bad { color: var(--danger); }
   .dur { font-size: 10px; color: var(--text-faint); }
+  .cmd-line, .cmd-edit {
+    margin: 0;
+    padding: 4px 12px 8px;
+    font-size: 12px;
+    line-height: 1.4;
+    color: var(--text);
+    white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
+  }
+  .cmd-edit {
+    width: calc(100% - 24px);
+    margin: 0 12px 8px;
+    padding: 6px 8px;
+  }
   .out {
     margin: 0;
     padding: 8px 12px 10px;
@@ -267,6 +301,7 @@
     color: var(--text-dim);
     white-space: pre-wrap;
     word-break: break-word;
+    overflow-wrap: anywhere;
     max-height: 280px;
     overflow: auto;
     background: var(--abyss);
@@ -290,14 +325,16 @@
     padding: 8px 10px;
     border-top: 1px solid var(--glass-border);
     background: var(--abyss-1);
+    min-width: 0;
   }
   .prompt { color: var(--green); padding-bottom: 8px; }
   .composer textarea {
     flex: 1;
+    min-width: 0;
     min-height: 32px;
     max-height: 120px;
     resize: none;
     font-size: 13px;
   }
-  .go { min-height: 32px; }
+  .go { min-height: 32px; flex-shrink: 0; }
 </style>
