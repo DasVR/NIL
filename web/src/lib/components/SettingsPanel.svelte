@@ -17,6 +17,8 @@
   let newBase = $state('');
   let newKey = $state('');
   let newModel = $state('');
+  let acceptDockerTos = $state(false);
+  let sandboxError = $state('');
 
   const tabs: { id: Tab; label: string }[] = [
     { id: 'general', label: 'General' },
@@ -108,6 +110,39 @@
           · <strong>{appState.runtime?.channel || 'online'}</strong>
           {#if appState.runtime?.docker_tos_accepted} · Docker terms accepted{/if}
         </p>
+        <label class="row">
+          <span>Sandbox</span>
+          <select
+            value={appState.runtime?.sandbox || 'host'}
+            onchange={(e) => {
+              const next = (e.currentTarget as HTMLSelectElement).value as 'host' | 'docker';
+              if (next === 'docker' && !appState.runtime?.docker_tos_accepted && !acceptDockerTos) {
+                sandboxError = 'Accept the Docker sandbox terms below, then switch.';
+                e.currentTarget.value = appState.runtime?.sandbox || 'host';
+                return;
+              }
+              sandboxError = '';
+              void appState.setSandbox(next, { acceptTos: acceptDockerTos || Boolean(appState.runtime?.docker_tos_accepted) }).catch((err) => {
+                sandboxError = err instanceof Error ? err.message : 'Could not switch sandbox';
+              });
+            }}
+          >
+            <option value="host">Host</option>
+            <option value="docker">Docker</option>
+          </select>
+        </label>
+        {#if (appState.runtime?.sandbox || 'host') === 'docker' || !appState.runtime?.docker_tos_accepted}
+          <label class="row">
+            <span>Accept Docker sandbox terms</span>
+            <input type="checkbox" bind:checked={acceptDockerTos} />
+          </label>
+        {/if}
+        {#if sandboxError}<p class="hint err">{sandboxError}</p>{/if}
+        {#if appState.runtime?.sandbox === 'docker'}
+          <button type="button" onclick={() => appState.startDocker()} disabled={appState.dockerBusy}>
+            {appState.dockerBusy ? 'Starting Docker…' : 'Start Docker'}
+          </button>
+        {/if}
         <button type="button" class="primary" onclick={() => { appState.settingsOpen = false; appState.setupDismissed = false; appState.setupOpen = true; }}>
           Open installer
         </button>
@@ -293,6 +328,7 @@
     letter-spacing: 0;
   }
   .hint { font-size: 12px; color: var(--text-faint); margin-top: 12px; line-height: 1.45; }
+  .hint.err { color: var(--danger); }
   .prov, .add {
     display: flex;
     gap: 8px;

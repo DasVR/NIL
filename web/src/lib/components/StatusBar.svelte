@@ -22,7 +22,7 @@
   <span class="grow center">
     {#if last}
       <span class="mono last" title={last.command}>
-        {last.command.slice(0, 48)}{last.command.length > 48 ? '…' : ''}
+        {last.command}
         {#if last.exitCode != null}<span class="dim"> exit {last.exitCode}</span>{/if}
         {#if last.duration != null}<span class="dim"> {last.duration.toFixed(1)}s</span>{/if}
       </span>
@@ -78,7 +78,7 @@
   .grow { flex: 1; min-width: 0; }
   .center { display: flex; justify-content: center; }
   .last {
-    max-width: 420px;
+    max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;

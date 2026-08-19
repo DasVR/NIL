@@ -244,6 +244,7 @@ The bundled API is not reachable. Reopen the desktop app (it starts the API with
 
   .workspace {
     flex: 1;
+    min-width: 0;
     min-height: 0;
     display: grid;
     grid-template-columns: 0px 1fr 0px;

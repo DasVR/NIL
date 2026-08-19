@@ -9,12 +9,14 @@ import {
   getToolHistory,
   generateReport,
   approve as apiApprove,
-  reject as apiReject
+  reject as apiReject,
+  startDocker as apiStartDocker,
+  connectWs
 } from './api';
 import type { Credential, LootItem } from './api';
 import { hostsToTargets, loadExtraTargets, parseScopeHosts, saveExtraTargets } from './scope';
 import { toast } from './toast.svelte';
-import { guessShellTool } from './intent';
+import { guessShellTool, isDockerDownError } from './intent';
 import type {
   Artifact,
   CenterView,
@@ -84,7 +86,7 @@ const DEFAULT_LAYOUT: SpaceLayout = {
   leftOpen: true,
   rightOpen: true,
   aiPinned: false,
-  aiOpen: false,
+  aiOpen: true,
   inspectorTab: 'findings',
   activeView: 'terminal',
   selectedTargetId: '',
@@ -178,6 +180,8 @@ class AppState {
   pluginMenu = $state('');
   paletteMode = $state<'root' | 'goto'>('root');
   focusPane = $state<'left' | 'center' | 'right'>('center');
+  dockerBusy = $state(false);
+  dockerNotice = $state('');
 
   paletteOpen = $state(false);
   settingsOpen = $state(false);
@@ -192,6 +196,8 @@ class AppState {
     string,
     { messages: ChatMessage[]; sessionId: string; blocks: TermBlock[]; artifact: Artifact }
   >();
+  private socket: WebSocket | null = null;
+  private wsEngagement = '';
 
   activeTarget = $derived(
     this.targets.find((t) => t.id === this.selectedTargetId) || this.targets[0]
@@ -320,6 +326,7 @@ class AppState {
     const providers = await apiGet('/v1/providers').catch(() => ({ resolved: [] }));
     const enabled = (providers.resolved || []).find((p: { enabled: boolean }) => p.enabled);
     this.model = enabled ? `${enabled.name}/${enabled.model}` : 'auto';
+    this.connectEvents();
 
     const pendingIds = new Set(this.pending.map((p) => p.run_id));
     const known = new Set(this.blocks.map((b) => b.runId).filter(Boolean));
@@ -361,6 +368,7 @@ class AppState {
     this.engagement = name;
     this.applyLayout(name);
     this.restoreRuntime(name);
+    this.wsEngagement = '';
     await this.refresh();
     this.persist();
   }
@@ -498,6 +506,127 @@ class AppState {
     } else {
       this.blocks = [...this.blocks, block];
     }
+    this.applyNmapPorts(block.command, block.stdout);
+  }
+
+  private applyNmapPorts(command: string, stdout: string) {
+    const ports = [...stdout.matchAll(/(\d+)\/(?:tcp|udp)\s+open(?:\|filtered)?/gi)]
+      .map((m) => Number(m[1]))
+      .filter((n) => n > 0);
+    if (!ports.length) return;
+    const token = command
+      .split(/\s+/)
+      .find((t) => !t.startsWith('-') && t !== 'sudo' && t !== 'nmap' && t !== 'ncat' && /[.:]/.test(t));
+    if (!token) return;
+    const host = token.replace(/^[a-z]+:\/\//i, '').split('/')[0].split(':')[0];
+    this.targets = this.targets.map((t) =>
+      t.host === host || t.host.startsWith(host)
+        ? { ...t, ports: [...new Set([...t.ports, ...ports])], status: 'done' }
+        : t
+    );
+    saveExtraTargets(this.engagement, this.targets);
+  }
+
+  isDockerMode() {
+    return this.runtime?.sandbox_effective === 'docker' || this.runtime?.sandbox === 'docker';
+  }
+
+  dockerErrorCommand() {
+    return [...this.blocks].reverse().find((b) => isDockerDownError(b.stdout))?.command || '';
+  }
+
+  connectEvents() {
+    if (typeof window === 'undefined') return;
+    const live =
+      this.socket &&
+      this.wsEngagement === this.engagement &&
+      (this.socket.readyState === WebSocket.OPEN || this.socket.readyState === WebSocket.CONNECTING);
+    if (live) return;
+    try {
+      this.socket?.close();
+    } catch {
+      /* ignore */
+    }
+    this.wsEngagement = this.engagement;
+    this.socket = connectWs(this.engagement, (ev) => this.handleEvent(ev));
+  }
+
+  private attachRunToLast(id: string) {
+    if (!id) return;
+    const msgs = [...this.messages];
+    const last = msgs[msgs.length - 1];
+    if (last?.role !== 'assistant') return;
+    const runIds = [...new Set([...(last.runIds || []), id])];
+    msgs[msgs.length - 1] = { ...last, runIds };
+    this.messages = msgs;
+  }
+
+  handleEvent(ev: Record<string, unknown>) {
+    const type = String(ev.type || '');
+    const run = ev.run;
+    if (run && typeof run === 'object') {
+      this.ingestRun(run as Record<string, unknown>);
+      const id = String((run as { run_id?: string }).run_id || '');
+      if (id && (type === 'tool.proposed' || type === 'approval.pending')) {
+        this.attachRunToLast(id);
+      }
+    }
+    if (type === 'chat.message') {
+      const content = String(ev.content || '').trim();
+      if (content) {
+        const last = this.messages[this.messages.length - 1];
+        if (!(last?.role === 'assistant' && last.content === content)) {
+          this.messages = [...this.messages, { role: 'assistant', content }];
+          this.openFinn();
+        }
+      }
+    }
+    if (type === 'tool.completed' || type === 'tool.error') {
+      void this.refresh();
+    }
+  }
+
+  async setSandbox(sandbox: 'host' | 'docker', opts: { acceptTos?: boolean } = {}) {
+    const next = await apiPost('/v1/runtime/sandbox', {
+      sandbox,
+      accept_docker_tos: Boolean(opts.acceptTos)
+    });
+    this.runtime = { ...(this.runtime || {}), ...next };
+    this.dockerNotice = '';
+    toast.show(`Sandbox: ${sandbox}`);
+    await this.refresh();
+  }
+
+  async startDocker() {
+    this.dockerBusy = true;
+    this.dockerNotice = 'Starting Docker…';
+    try {
+      const launch = await apiStartDocker();
+      this.dockerNotice = launch.available ? '' : launch.message;
+      await this.refresh();
+      if (launch.available) toast.show('Docker is running');
+      else toast.show(launch.message, 'danger');
+      return launch;
+    } catch (err) {
+      const message = err instanceof Error ? err.message : 'Docker did not start.';
+      this.dockerNotice = message;
+      toast.show(message, 'danger');
+      return { available: false, installed: false, started: false, code: null, message };
+    } finally {
+      this.dockerBusy = false;
+    }
+  }
+
+  async useHostAndRerun(command?: string) {
+    await this.setSandbox('host');
+    const cmd = (command || this.dockerErrorCommand()).trim();
+    if (cmd) await this.proposeShell(cmd);
+  }
+
+  async retryDockerCommand(command?: string) {
+    const cmd = (command || this.dockerErrorCommand()).trim();
+    if (!cmd) return;
+    await this.proposeShell(cmd);
   }
 
   async proposeShell(command: string) {
@@ -579,11 +708,24 @@ class AppState {
       (pending && 'run_id' in pending ? pending.run_id : this.blocks.find((b) => b.status === 'pending')?.runId);
     if (!id) return;
     this.blocks = this.blocks.map((b) => (b.runId === id ? { ...b, status: 'running' } : b));
-    await apiApprove(id, edited);
-    const executed = await apiPost('/v1/tools/execute', { run_id: id });
-    this.ingestRun(executed);
-    toast.show(executed.status === 'failed' ? 'Command failed' : 'Command completed', executed.status === 'failed' ? 'danger' : 'ok');
+    const needDocker = this.isDockerMode() && !this.runtime?.docker_available;
+    if (needDocker) {
+      this.dockerBusy = true;
+      this.dockerNotice = 'Starting Docker…';
+    }
+    try {
+      await apiApprove(id, edited);
+      const executed = await apiPost('/v1/tools/execute', { run_id: id });
+      this.ingestRun(executed);
+      toast.show(
+        executed.status === 'failed' ? 'Command failed' : 'Command completed',
+        executed.status === 'failed' ? 'danger' : 'ok'
+      );
+    } finally {
+      this.dockerBusy = false;
+    }
     await this.refresh();
+    window.setTimeout(() => void this.refresh(), 1600);
   }
 
   async reject(runId?: string) {

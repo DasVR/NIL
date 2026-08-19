@@ -64,16 +64,25 @@
     border-color: rgba(255, 45, 85, 0.35);
     box-shadow: var(--shadow-critical);
   }
-  header { display: flex; align-items: center; gap: 8px; }
-  .sev { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; }
-  .cvss, .file { font-size: 10px; color: var(--text-faint); }
-  h3 { margin: 0; font-size: 13px; font-weight: 600; }
-  p { margin: 4px 0 0; font-size: 12px; color: var(--text-dim); line-height: 1.45; }
+  header { display: flex; align-items: center; gap: 8px; min-width: 0; }
+  .sev { font-size: 10px; font-weight: 700; letter-spacing: 0.04em; flex-shrink: 0; }
+  .cvss, .file {
+    font-size: 10px;
+    color: var(--text-faint);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    min-width: 0;
+  }
+  h3 { margin: 0; font-size: 13px; font-weight: 600; overflow-wrap: anywhere; }
+  p { margin: 4px 0 0; font-size: 12px; color: var(--text-dim); line-height: 1.45; overflow-wrap: anywhere; }
   pre {
     margin: 4px 0 0;
     font-size: 11px;
     color: var(--text-dim);
     white-space: pre-wrap;
+    word-break: break-word;
+    overflow-wrap: anywhere;
     max-height: 120px;
     overflow: auto;
   }

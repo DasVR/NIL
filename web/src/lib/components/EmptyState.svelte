@@ -37,7 +37,8 @@
   <div class="empty-content">
     <h1>New Space</h1>
     <p>
-      Name an engagement and paste scope. The terminal is home — Finn sits beside it.
+      The terminal is home — Finn sits under it.
+
     </p>
     <label>
       Name

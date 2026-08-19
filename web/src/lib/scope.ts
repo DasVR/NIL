@@ -41,6 +41,6 @@ export function loadExtraTargets(space: string): Target[] {
 export function saveExtraTargets(space: string, targets: Target[]) {
   localStorage.setItem(
     `finn.targets.${space}`,
-    JSON.stringify(targets.filter((t) => !t.id.startsWith('scope-')))
+    JSON.stringify(targets.filter((t) => t.ports.length > 0 || !t.id.startsWith('scope-')))
   );
 }

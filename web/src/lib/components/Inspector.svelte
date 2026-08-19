@@ -127,6 +127,8 @@
     flex-direction: column;
     overflow: hidden;
     width: 0;
+    min-width: 0;
+    min-height: 0;
     opacity: 0;
     transition: width 280ms var(--spring-layout), opacity 180ms var(--spring-smooth);
     backdrop-filter: blur(22px) saturate(1.4);
@@ -168,7 +170,7 @@
   .row.on { background: rgba(255,255,255,0.05); color: var(--text); box-shadow: inset 2px 0 0 var(--green); }
   .bar { width: 3px; height: 14px; border-radius: 2px; flex-shrink: 0; }
   .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-  .meta { font-size: 10px; color: var(--text-faint); }
+  .meta { font-size: 10px; color: var(--text-faint); flex-shrink: 0; }
   .label { font-size: 10px; color: var(--green); }
   .back { min-height: unset; font-size: 11px; align-self: flex-start; }
   .notes textarea { width: 100%; min-height: 80px; font-size: 12px; }

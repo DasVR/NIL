@@ -192,6 +192,8 @@
     flex-direction: column;
     overflow: hidden;
     width: 0;
+    min-width: 0;
+    min-height: 0;
     opacity: 0;
     transition: width 280ms var(--spring-layout), opacity 180ms var(--spring-smooth);
     backdrop-filter: blur(22px) saturate(1.4);
