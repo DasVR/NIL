@@ -27,7 +27,8 @@ def test_cli_wrapper_syntax():
     assert "Finn.lnk" in hooks
     stager = (ROOT / "desktop" / "scripts" / "stage-windows-python.mjs").read_text(encoding="utf-8")
     assert "Expand-Archive" in stager
-    assert '-C", dest' not in stager
+    assert "uvicorn[standard]" in stager
+    assert "pip install" in stager and "apiDir" not in stager
 
 
 def test_setup_gui_avoids_aqua_double_draw():
