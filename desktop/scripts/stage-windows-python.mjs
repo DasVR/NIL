@@ -40,13 +40,25 @@ async function download(url, to) {
   await pipeline(Readable.fromWeb(res.body), createWriteStream(to));
 }
 
-const zipPath = join(dest, "python-embed.zip");
+function unzipWindows(zip, destDir) {
+  // Git's tar on Actions treats "D:" in -C as a remote host.
+  const ps = `Expand-Archive -LiteralPath ${JSON.stringify(zip)} -DestinationPath ${JSON.stringify(destDir)} -Force`;
+  const expand = spawnSync("powershell.exe", ["-NoProfile", "-NonInteractive", "-Command", ps], {
+    stdio: "inherit",
+  });
+  if (expand.status === 0) {
+    return;
+  }
+  const tar = spawnSync("tar", ["--force-local", "-xf", zip], { cwd: destDir, stdio: "inherit" });
+  if (tar.status !== 0) {
+    throw new Error("failed to unzip embeddable Python");
+  }
+}
+
+const zipPath = join(root, "desktop", "src-tauri", "resources", "python-embed.zip");
 console.log(`stage-windows-python: fetching ${ZIP_URL}`);
 await download(ZIP_URL, zipPath);
-const unzip = spawnSync("tar", ["-xf", zipPath, "-C", dest], { stdio: "inherit" });
-if (unzip.status !== 0) {
-  throw new Error("failed to unzip embeddable Python");
-}
+unzipWindows(zipPath, dest);
 rmSync(zipPath, { force: true });
 
 const pth = join(dest, "python312._pth");
