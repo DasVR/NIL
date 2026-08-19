@@ -8,5 +8,11 @@
         "resizable": true
       }
     ]
+  },
+  "bundle": {
+    "resources": [
+      "resources/api",
+      "resources/python"
+    ]
   }
 }

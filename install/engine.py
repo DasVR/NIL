@@ -57,6 +57,8 @@ def paths_for(privilege: str) -> dict[str, Path]:
         else:
             prefix = home() / ".local" / "finn"
         bindir = Path(os.environ.get("XDG_BIN_HOME", str(home() / ".local/bin")))
+        if sys.platform == "win32":
+            bindir = prefix
         appdir = home() / "Applications" if sys.platform == "darwin" else prefix
         venv = data_dir() / "venv"
     return {"prefix": prefix, "bindir": bindir, "appdir": appdir, "venv": venv}

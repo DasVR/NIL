@@ -19,6 +19,12 @@ def test_cli_wrapper_syntax():
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "pkg-scripts" / "postinstall")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "strip-adhoc-signature.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "Fix macOS Gatekeeper.command")])
+    assert (INSTALL / "windows" / "Launch Finn.cmd").is_file()
+    bat = (ROOT / "desktop" / "scripts" / "windows-install.bat").read_text(encoding="utf-8")
+    assert "finn server" not in bat
+    hooks = (ROOT / "desktop" / "src-tauri" / "windows" / "nsis-hooks.nsh").read_text(encoding="utf-8")
+    assert "NSIS_HOOK_POSTINSTALL" in hooks
+    assert "Finn.lnk" in hooks
 
 
 def test_setup_gui_avoids_aqua_double_draw():
@@ -127,3 +133,15 @@ def test_cli_offline_install(tmp_path, monkeypatch):
     assert (prefix / "finn_pentest").is_dir()
     assert (prefix / "run-api.py").is_file()
     assert (tmp_path / "data" / "runtime.json").is_file()
+
+
+def test_windows_user_paths_use_localappdata(tmp_path, monkeypatch):
+    sys.path.insert(0, str(INSTALL))
+    import engine
+
+    monkeypatch.setattr(engine.sys, "platform", "win32")
+    monkeypatch.delenv("FINN_PREFIX", raising=False)
+    monkeypatch.setenv("LOCALAPPDATA", str(tmp_path / "AppData" / "Local"))
+    paths = engine.paths_for("user")
+    assert paths["prefix"].name == "Finn"
+    assert paths["bindir"] == paths["prefix"]

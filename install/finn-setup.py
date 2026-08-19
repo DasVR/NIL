@@ -193,8 +193,15 @@ def gui_main(args: argparse.Namespace) -> int:
 
     p0 = page()
     tk.Label(p0, text="Who is installing?", bg=abyss, fg=text, font=ui_bold).pack(anchor="w", pady=(0, 8))
-    option_card(p0, "This Mac, this user", "No administrator password. Files under your home folder, including ~/Applications.", privilege, "user").pack(fill=tk.X, pady=5)
-    option_card(p0, "This Mac, all users", "System folders. You still open Finn as a normal user afterward.", privilege, "admin").pack(fill=tk.X, pady=5)
+    if sys.platform == "win32":
+        option_card(p0, "This PC, this user", "No administrator password. Files under your user folder.", privilege, "user").pack(fill=tk.X, pady=5)
+        option_card(p0, "This PC, all users", "Program Files. You still open Finn as a normal user afterward.", privilege, "admin").pack(fill=tk.X, pady=5)
+    elif sys.platform == "darwin":
+        option_card(p0, "This Mac, this user", "No administrator password. Files under your home folder, including ~/Applications.", privilege, "user").pack(fill=tk.X, pady=5)
+        option_card(p0, "This Mac, all users", "System folders. You still open Finn as a normal user afterward.", privilege, "admin").pack(fill=tk.X, pady=5)
+    else:
+        option_card(p0, "This computer, this user", "No administrator password. Files under your home folder.", privilege, "user").pack(fill=tk.X, pady=5)
+        option_card(p0, "This computer, all users", "System folders. You still open Finn as a normal user afterward.", privilege, "admin").pack(fill=tk.X, pady=5)
 
     p1 = page()
     tk.Label(p1, text="Where do the files come from?", bg=abyss, fg=text, font=ui_bold).pack(anchor="w", pady=(0, 8))

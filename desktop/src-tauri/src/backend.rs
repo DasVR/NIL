@@ -1,5 +1,6 @@
 //! Start the bundled Finn API as a child of the desktop app.
 
+use std::fs::{self, OpenOptions};
 use std::io::{Read, Write};
 use std::net::{TcpStream, ToSocketAddrs};
 use std::path::{Path, PathBuf};
@@ -8,8 +9,16 @@ use std::sync::Mutex;
 use std::thread;
 use std::time::Duration;
 
+const API_HOST: &str = "127.0.0.1";
+const API_PORT: &str = "8766";
+
 pub struct Backend {
     child: Mutex<Option<Child>>,
+}
+
+struct Python {
+    program: PathBuf,
+    prefix_args: Vec<String>,
 }
 
 impl Backend {
@@ -23,30 +32,80 @@ impl Backend {
         if health_ok() {
             return Ok(());
         }
-        let python = find_python()?;
+        let python = find_python(resource_dir)?;
         let launcher = find_launcher(resource_dir)?;
-        let mut cmd = Command::new(&python);
-        cmd.arg(&launcher)
-            .env("FINN_API_ROOT", launcher.parent().unwrap_or(resource_dir))
+        let api_root = launcher.parent().unwrap_or(resource_dir).to_path_buf();
+        let log_path = api_log_path();
+        if let Some(dir) = log_path.parent() {
+            let _ = fs::create_dir_all(dir);
+        }
+        {
+            let mut header = OpenOptions::new()
+                .create(true)
+                .append(true)
+                .open(&log_path)
+                .map_err(|e| format!("could not write API log {}: {e}", log_path.display()))?;
+            let _ = writeln!(
+                header,
+                "---- Finn API start ----\npython={:?} launcher={}",
+                python.program,
+                launcher.display()
+            );
+        }
+        let log_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&log_path)
+            .map_err(|e| format!("could not write API log {}: {e}", log_path.display()))?;
+        let log_err = log_file
+            .try_clone()
+            .map_err(|e| format!("could not clone API log: {e}"))?;
+
+        let mut cmd = Command::new(&python.program);
+        cmd.args(&python.prefix_args)
+            .arg(&launcher)
+            .env("FINN_API_ROOT", &api_root)
+            .env("FINN_API_HOST", API_HOST)
+            .env("FINN_API_PORT", API_PORT)
+            .env("PYTHONUNBUFFERED", "1")
+            .env(
+                "PYTHONPATH",
+                match std::env::var("PYTHONPATH") {
+                    Ok(existing) if !existing.is_empty() => {
+                        format!("{}{}{}", api_root.display(), path_sep(), existing)
+                    }
+                    _ => api_root.display().to_string(),
+                },
+            )
             .stdin(Stdio::null())
-            .stdout(Stdio::null())
-            .stderr(Stdio::null());
+            .stdout(Stdio::from(log_file))
+            .stderr(Stdio::from(log_err));
         #[cfg(windows)]
         {
             use std::os::windows::process::CommandExt;
             const CREATE_NO_WINDOW: u32 = 0x0800_0000;
             cmd.creation_flags(CREATE_NO_WINDOW);
         }
-        let child = cmd
-            .spawn()
-            .map_err(|e| format!("could not start Finn API ({python:?} {launcher:?}): {e}"))?;
-        *self.child.lock().expect("backend mutex") = Some(child);
-        if !wait_healthy() {
-            return Err(
-                "Finn API started but did not become healthy on http://127.0.0.1:8766."
-                    .into(),
-            );
+        let mut child = cmd.spawn().map_err(|e| {
+            format!(
+                "could not start Finn API ({:?} {}): {e}",
+                python.program,
+                launcher.display()
+            )
+        })?;
+        if !wait_healthy(&mut child) {
+            let tail = read_log_tail(&log_path);
+            let died = matches!(child.try_wait(), Ok(Some(_)));
+            *self.child.lock().expect("backend mutex") = Some(child);
+            if died {
+                return Err(format!(
+                    "Finn API exited before it was ready on http://{API_HOST}:{API_PORT}.\nLog: {}\n{tail}",
+                    log_path.display()
+                ));
+            }
+            return Ok(());
         }
+        *self.child.lock().expect("backend mutex") = Some(child);
         Ok(())
     }
 
@@ -60,19 +119,88 @@ impl Backend {
     }
 }
 
-fn find_python() -> Result<String, String> {
-    for name in ["python3", "python"] {
-        if Command::new(name)
-            .arg("-c")
-            .arg("import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)")
-            .status()
-            .map(|s| s.success())
-            .unwrap_or(false)
-        {
-            return Ok(name.into());
+fn path_sep() -> &'static str {
+    if cfg!(windows) {
+        ";"
+    } else {
+        ":"
+    }
+}
+
+pub fn api_log_path() -> PathBuf {
+    if let Ok(dir) = std::env::var("LOCALAPPDATA") {
+        return PathBuf::from(dir).join("Finn").join("api.log");
+    }
+    if let Ok(home) = std::env::var("HOME") {
+        return PathBuf::from(home).join(".finn-pentest").join("api.log");
+    }
+    std::env::temp_dir().join("finn-api.log")
+}
+
+fn read_log_tail(path: &Path) -> String {
+    let Ok(bytes) = fs::read(path) else {
+        return String::new();
+    };
+    let text = String::from_utf8_lossy(&bytes);
+    let clipped: String = text.chars().rev().take(1200).collect();
+    clipped.chars().rev().collect()
+}
+
+fn python_is_311(program: &Path, prefix_args: &[String]) -> bool {
+    let mut cmd = Command::new(program);
+    cmd.args(prefix_args)
+        .arg("-c")
+        .arg("import sys; raise SystemExit(0 if sys.version_info >= (3, 11) else 1)");
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000);
+    }
+    cmd.status().map(|s| s.success()).unwrap_or(false)
+}
+
+fn find_python(resource_dir: &Path) -> Result<Python, String> {
+    let bundled = [
+        resource_dir.join("python").join("python.exe"),
+        resource_dir.join("python").join("python3"),
+        resource_dir.join("python").join("bin").join("python3"),
+        resource_dir.join("resources").join("python").join("python.exe"),
+    ];
+    for path in bundled {
+        if path.is_file() {
+            return Ok(Python {
+                program: path,
+                prefix_args: Vec::new(),
+            });
         }
     }
-    Err("Python 3.11+ is required. Install it, then reopen Finn.".into())
+
+    #[cfg(windows)]
+    {
+        let py = PathBuf::from("py");
+        let prefix = vec!["-3".to_string()];
+        if python_is_311(&py, &prefix) {
+            return Ok(Python {
+                program: py,
+                prefix_args: prefix,
+            });
+        }
+    }
+
+    for name in ["python3", "python"] {
+        let program = PathBuf::from(name);
+        if python_is_311(&program, &[]) {
+            return Ok(Python {
+                program,
+                prefix_args: Vec::new(),
+            });
+        }
+    }
+
+    Err(format!(
+        "Python 3.11+ was not found (bundled runtime missing under {}).",
+        resource_dir.display()
+    ))
 }
 
 fn find_launcher(resource_dir: &Path) -> Result<PathBuf, String> {
@@ -90,17 +218,20 @@ fn find_launcher(resource_dir: &Path) -> Result<PathBuf, String> {
 }
 
 fn health_ok() -> bool {
-    probe("127.0.0.1:8766")
+    probe(&format!("{API_HOST}:{API_PORT}"))
 }
 
-fn wait_healthy() -> bool {
-    for _ in 0..48 {
+fn wait_healthy(child: &mut Child) -> bool {
+    for _ in 0..120 {
         if health_ok() {
             return true;
         }
+        if matches!(child.try_wait(), Ok(Some(_))) {
+            return false;
+        }
         thread::sleep(Duration::from_millis(250));
     }
-    false
+    health_ok()
 }
 
 fn probe(addr: &str) -> bool {

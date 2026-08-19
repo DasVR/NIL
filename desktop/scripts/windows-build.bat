@@ -16,6 +16,14 @@ if %errorlevel% neq 0 (
     exit /b 1
 )
 
+echo [Finn] Bundling Python with the API...
+node "%~dp0stage-windows-python.mjs"
+if %errorlevel% neq 0 (
+    echo [Finn] Bundled Python step failed.
+    pause
+    exit /b 1
+)
+
 :: Add Windows target if missing.
 rustup target add x86_64-pc-windows-msvc
 

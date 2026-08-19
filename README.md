@@ -9,7 +9,7 @@ Use this only against systems you are authorized to test.
 Download **Finn-Setup** for your OS and double-click it. No Terminal.
 
 - **macOS:** `Finn-Setup.pkg` (Apple Installer) or `Finn-Setup.dmg` from the **Finn-Setup-macOS-*** artifact
-- **Windows:** `Finn-Setup.exe`
+- **Windows:** `Finn-Setup.exe` — double-click, then open **Finn** from the Start Menu or desktop. The API starts with the app (Python is bundled; you do not run a separate server).
 - **Linux:** `Finn-Setup.deb` or the AppImage
 
 Then open Finn. The API starts with the app. Do not use the python wheel zip (`finn-python-*`) as a Mac installer.
