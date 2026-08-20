@@ -14,11 +14,23 @@ INSTALL = ROOT / "install"
 def test_cli_wrapper_syntax():
     subprocess.check_call(["bash", "-n", str(INSTALL / "unix" / "install.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-app.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "setup-launcher.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-pkg.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-dmg.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "pkg-scripts" / "postinstall")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "adhoc-sign.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "strip-adhoc-signature.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "fix-gatekeeper.command")])
+    adhoc = (INSTALL / "macos" / "adhoc-sign.sh").read_text(encoding="utf-8")
+    assert "--remove-signature" not in adhoc
+    assert "codesign --force --deep --sign -" in adhoc
+    strip = (INSTALL / "macos" / "strip-adhoc-signature.sh").read_text(encoding="utf-8")
+    assert "adhoc-sign.sh" in strip
+    assert "--remove-signature" not in strip
+    gk = (INSTALL / "macos" / "fix-gatekeeper.command").read_text(encoding="utf-8")
+    assert "codesign --force --deep --sign -" in gk
+    post = (INSTALL / "macos" / "pkg-scripts" / "postinstall").read_text(encoding="utf-8")
+    assert "codesign --force --deep --sign -" in post
     assert (INSTALL / "windows" / "launch.cmd").is_file()
     assert (INSTALL / "windows" / "setup.cmd").is_file()
     assert (INSTALL / "wizard.py").is_file()
@@ -41,9 +53,36 @@ def test_setup_gui_avoids_aqua_double_draw():
     assert "scrolledtext" not in src
     assert "tkraise" in src
     assert "grid_remove" in src
+    assert "create_text" in src
+    assert "Who is installing?" in src
+    assert "Where do the files come from?" in src
+    assert "How should tools run?" in src
     assert "from palette import COLOR" in src
     assert "#07090d" not in src
     assert "#3dff8a" not in src
+
+
+def test_macos_setup_app_bundles_launcher(tmp_path):
+    out = tmp_path / "Finn Setup.app"
+    subprocess.check_call(["bash", str(INSTALL / "macos" / "make-app.sh"), str(out)])
+    exe = out / "Contents" / "MacOS" / "Finn Setup"
+    assert exe.is_file()
+    text = exe.read_text(encoding="utf-8")
+    assert "pick_tk_python" in text
+    assert "choose from list" in text
+    assert (out / "Contents" / "Resources" / "wizard.py").is_file()
+    assert (out / "Contents" / "Resources" / "engine.py").is_file()
+    assert (out / "Contents" / "Resources" / "palette.py").is_file()
+    assert "Who is installing?" in (out / "Contents" / "Resources" / "wizard.py").read_text(encoding="utf-8")
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "setup-launcher.sh")])
+    launcher = (INSTALL / "macos" / "setup-launcher.sh").read_text(encoding="utf-8")
+    assert "pick_tk_python" in launcher
+    assert "choose from list" in launcher
+    assert "tkinter" in launcher
+    assert "--cli --user --offline --host" not in launcher
+    make_app = (INSTALL / "macos" / "make-app.sh").read_text(encoding="utf-8")
+    assert "setup-launcher.sh" in make_app
+    assert "--cli --user --offline --host" not in make_app
 
 
 def test_palette_matches_web_tokens():
@@ -66,7 +105,7 @@ def test_find_wheel_in_dist(tmp_path):
     inst = artifact / "install"
     dist.mkdir(parents=True)
     inst.mkdir()
-    wheel = dist / "finn_pentest-1.1.0-py3-none-any.whl"
+    wheel = dist / "finn_pentest-1.1.1-py3-none-any.whl"
     wheel.write_bytes(b"PK\x03\x04")
     found = engine.find_wheel(inst)
     assert found == wheel.resolve()
@@ -113,6 +152,7 @@ def test_clear_macos_quarantine_is_safe(tmp_path):
     app = tmp_path / "Finn Pentest Harness.app"
     app.mkdir()
     engine.clear_macos_quarantine(app)
+    engine.adhoc_sign_macos_app(app)
 
 
 def test_is_zip_file(tmp_path):

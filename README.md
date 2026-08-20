@@ -18,7 +18,7 @@ Download **Finn-Setup** for your OS from [Releases](https://github.com/DasVR/fin
 
 Do **not** use the Python wheel zip as a Mac installer.
 
-If macOS says the file is **damaged**, that is Gatekeeper quarantine on a GitHub download. Double-click `fix-gatekeeper.command` next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then open it again.
+If macOS says **Finn Pentest Harness cannot be opened** (or is **damaged**), that is Gatekeeper quarantine on a GitHub download — Apple Silicon also refuses unsigned binaries. Double-click `fix-gatekeeper.command` next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then Right-click → Open.
 
 Headless from a clone:
 
@@ -125,8 +125,8 @@ Docker sandbox tests skip when the daemon is missing.
 Tagged builds publish to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases):
 
 ```bash
-git tag v1.1
-git push origin v1.1
+git tag v1.1.1
+git push origin v1.1.1
 ```
 
 The **Release** workflow builds macOS, Windows, and Linux installers plus a Python wheel. `/download` reads the latest GitHub release.
