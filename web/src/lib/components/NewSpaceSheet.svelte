@@ -1,13 +1,7 @@
 <script lang="ts">
   import { appState } from '$lib/stores.svelte';
+  import { SPACE_TEMPLATES } from '$lib/space-templates';
   import { tick } from 'svelte';
-
-  const templates = [
-    { name: 'external-pt', label: 'External pentest', scope: '10.0.0.0/24, example.com' },
-    { name: 'internal-net', label: 'Internal network', scope: '192.168.1.0/24' },
-    { name: 'web-app', label: 'Web application', scope: 'https://app.example.com' },
-    { name: 'wireless', label: 'Wireless audit', scope: 'SSID: CorpNet' }
-  ];
 
   let name = $state('');
   let scope = $state('');
@@ -38,7 +32,7 @@
     }
   }
 
-  function useTemplate(t: (typeof templates)[number]) {
+  function useTemplate(t: (typeof SPACE_TEMPLATES)[number]) {
     name = t.name;
     scope = t.scope;
   }
@@ -61,7 +55,7 @@
     </label>
     <div class="templates">
       <span class="label-micro">Templates</span>
-      {#each templates as t}
+      {#each SPACE_TEMPLATES as t}
         <button type="button" class="tpl" onclick={() => useTemplate(t)}>
           <span>{t.label}</span>
           <span class="mono dim">{t.scope}</span>

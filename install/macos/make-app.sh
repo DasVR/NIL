@@ -13,6 +13,8 @@ mkdir -p "${MACOS}" "${RES}/payload"
 
 cp "${ROOT}/install/engine.py" "${RES}/"
 cp "${ROOT}/install/palette.py" "${RES}/"
+cp "${ROOT}/install/catalog.py" "${RES}/"
+cp "${ROOT}/install/catalog.json" "${RES}/"
 cp "${ROOT}/install/wizard.py" "${RES}/"
 cp "${ROOT}/install/run-api.py" "${RES}/"
 cp "${ROOT}/install/run-api.py" "${RES}/payload/"

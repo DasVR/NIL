@@ -1,0 +1,121 @@
+{
+  "product": "Finn Pentest Harness",
+  "eras": [
+    {
+      "id": "install",
+      "title": "Install",
+      "body": "Double-click Finn-Setup for your OS. No Terminal. The API starts with the app."
+    },
+    {
+      "id": "welcome",
+      "title": "Welcome",
+      "body": "Open Finn. Confirm how tools run. Name the first Space and paste scope."
+    },
+    {
+      "id": "workstation",
+      "title": "Workstation",
+      "body": "Terminal is home. Finn sits beside it. Approve every command, or YOLO when the scope is yours."
+    }
+  ],
+  "systems": {
+    "macos": {
+      "id": "macos",
+      "name": "macOS",
+      "here": "this Mac",
+      "requirement": "macOS 12+",
+      "primary": {
+        "file": "Finn-Setup.pkg",
+        "exts": [".pkg"],
+        "label": "macOS installer (pkg)",
+        "action": "Double-click. Apple Installer runs Finn Setup."
+      },
+      "also": [
+        { "file": "Finn-Setup.dmg", "exts": [".dmg"], "label": "macOS Setup (DMG)", "action": "Open the disk image, then double-click Finn Setup.app." },
+        { "file": "Finn-Setup-macOS.zip", "exts": [".zip"], "label": "macOS kit (zip)", "action": "Unzip, then double-click Finn Setup.app. Do not use the Python wheel zip." }
+      ],
+      "paths": {
+        "user": "~/Applications, ~/.local/finn, ~/.finn-pentest",
+        "admin": "/Applications, /usr/local/finn"
+      },
+      "first_launch": [
+        "Open Finn Pentest Harness. The API starts with the app — do not run finn api in another terminal.",
+        "If macOS says the app cannot be opened or is damaged, that is Gatekeeper quarantine on a GitHub download. Double-click fix-gatekeeper.command next to the app, or run xattr -cr on the .pkg / .app / .dmg, then Right-click → Open.",
+        "Grant Local Network when asked (required). Files & Folders for reports. Accessibility is optional (⌘⇧F summon)."
+      ],
+      "headless": "python3 install/wizard.py --cli --user --offline --host"
+    },
+    "windows": {
+      "id": "windows",
+      "name": "Windows",
+      "here": "this PC",
+      "requirement": "Windows 10+",
+      "primary": {
+        "file": "Finn-Setup.exe",
+        "exts": [".exe"],
+        "label": "Windows installer",
+        "action": "Double-click. NSIS wizard, Start Menu + desktop shortcut named Finn. WebView2 is installed if missing. Python for the API is bundled."
+      },
+      "also": [
+        { "file": "Finn-Setup.msi", "exts": [".msi"], "label": "Windows (MSI)", "action": "Enterprise-style installer. Same bundled API." }
+      ],
+      "paths": {
+        "user": "%LOCALAPPDATA%\\Finn and %USERPROFILE%\\.finn-pentest",
+        "admin": "%ProgramFiles%\\Finn"
+      },
+      "first_launch": [
+        "Open Finn from the Start Menu or the desktop shortcut. The API starts with the app.",
+        "Do not run finn api / finn server in a second window.",
+        "If Windows SmartScreen warns on a GitHub download, More info → Run anyway. Launch as a normal user, not Administrator."
+      ],
+      "headless": "powershell -File install/windows/install.ps1 -Cli -User -Offline -HostSandbox"
+    },
+    "linux": {
+      "id": "linux",
+      "name": "Linux",
+      "here": "this computer",
+      "requirement": "x86_64, GTK 3 + WebKitGTK 4.1",
+      "primary": {
+        "file": "Finn-Setup.deb",
+        "exts": [".deb"],
+        "label": "Linux (deb)",
+        "action": "Open in Software Center, or: sudo dpkg -i Finn-Setup.deb"
+      },
+      "also": [
+        { "file": "Finn-Setup.AppImage", "exts": [".appimage"], "label": "Linux (AppImage)", "action": "chmod +x Finn-Setup.AppImage && ./Finn-Setup.AppImage" },
+        { "file": "Finn-Setup.rpm", "exts": [".rpm"], "label": "Linux (rpm)", "action": "Open in the distro installer, or: sudo rpm -i Finn-Setup.rpm" }
+      ],
+      "paths": {
+        "user": "~/.local/finn, ~/.local/bin, ~/.finn-pentest",
+        "admin": "/usr/local/finn, /usr/local/bin"
+      },
+      "first_launch": [
+        "Open Finn from the app menu, or run the AppImage. The API starts with the app.",
+        "Need GTK/WebKit only when building from source (libgtk-3-dev, libwebkit2gtk-4.1-dev).",
+        "Do not run the desktop binary as root."
+      ],
+      "headless": "bash install/unix/install.sh --user --offline --host"
+    },
+    "web": {
+      "id": "web",
+      "name": "Browser",
+      "here": "this browser",
+      "requirement": "Python 3.11+ API on 127.0.0.1:8766",
+      "primary": {
+        "file": "/app",
+        "exts": [],
+        "label": "Workstation in the browser",
+        "action": "cd web && npm install && npm run dev — then open /app. Marketing routes do not need the API."
+      },
+      "also": [],
+      "paths": {
+        "user": "~/.finn-pentest",
+        "admin": "~/.finn-pentest"
+      },
+      "first_launch": [
+        "The desktop app is the normal install. The browser workstation talks to the same local API.",
+        "Create a Space, paste scope, press ⌘K to scan."
+      ],
+      "headless": "python3 install/wizard.py --cli --user --offline --host"
+    }
+  }
+}

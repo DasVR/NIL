@@ -2,6 +2,9 @@
 
 Wraps `web/` and talks to the FastAPI backend on `http://127.0.0.1:8766`.
 
+Operator journey (install → welcome → workstation): [`docs/WELCOME.md`](../docs/WELCOME.md).
+Per-OS files: [`install/catalog.json`](../install/catalog.json).
+
 ```bash
 cd desktop
 npm run setup        # npm install for web/ and desktop/

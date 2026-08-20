@@ -383,6 +383,26 @@ class AppState {
     toast.show(`Space ${name} ready`);
     this.newSpaceOpen = false;
     await this.select(name);
+    this.seedWelcomeBlock(scope);
+  }
+
+  seedWelcomeBlock(scope: string) {
+    const hosts = parseScopeHosts(scope);
+    const n = hosts.length;
+    const hostBit = n === 0 ? 'no hosts parsed' : n === 1 ? '1 host' : `${n} hosts`;
+    this.blocks = [
+      {
+        id: crypto.randomUUID(),
+        command: 'scope loaded',
+        tool: 'space',
+        status: 'success',
+        stdout: `${hostBit} · press ⌘K to scan`,
+        createdAt: Date.now(),
+        collapsed: false,
+        safetyLevel: 'safe'
+      },
+      ...this.blocks
+    ];
   }
 
   selectTarget(target: Target) {

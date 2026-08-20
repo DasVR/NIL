@@ -145,13 +145,13 @@
           </button>
         {/if}
         <button type="button" class="primary" onclick={() => { appState.settingsOpen = false; appState.setupDismissed = false; appState.setupOpen = true; }}>
-          Open installer
+          Open welcome
         </button>
         <p class="hint">
           Host sandbox runs approved commands in <code>~/.finn-pentest/sandboxes</code> with no Docker.
           Docker mode uses your computer as the sandbox host and needs the admin installer plus terms.
-          One-file installers live in <code>install/unix/install.sh</code> and <code>install/windows/install.ps1</code>
-          (user/admin, online/offline). The desktop app always starts the bundled API with itself.
+          User vs admin and online vs offline belong to Finn Setup on disk, not this sheet.
+          See <code>docs/WELCOME.md</code>. The desktop app always starts the bundled API with itself.
         </p>
       {:else if tab === 'appearance'}
         <h3>Appearance</h3>

@@ -2,7 +2,9 @@
   import { onMount } from 'svelte';
   import { goto } from '$app/navigation';
   import LiquidMetal from '$lib/components/LiquidMetal.svelte';
+  import MarketingNav from '$lib/components/MarketingNav.svelte';
   import { APP_TAG } from '$lib/version';
+  import { INSTALL_ERAS, INSTALL_OS_ORDER, INSTALL_SYSTEMS } from '$lib/os';
 
   onMount(() => {
     if (typeof window !== 'undefined' && window.__TAURI_INTERNALS__) {
@@ -16,31 +18,43 @@
 </svelte:head>
 
 <main class="landing marketing">
-  <nav class="top-nav">
-    <a class="brand" href="/">
-      <span class="logo">F</span>
-      <span>Finn</span>
-    </a>
-    <div class="nav-links">
-      <a href="/docs">Docs</a>
-      <a href="/download">Download</a>
-      <a href="https://github.com/DasVR/finn-pentest-harness" target="_blank" rel="noopener noreferrer">GitHub</a>
-      <button class="primary nav-cta" type="button" onclick={() => goto('/app')}>Open Workstation</button>
-    </div>
-  </nav>
+  <MarketingNav current="home" />
 
   <section class="hero">
     <p class="eyebrow">Authorized pentest workstation · {APP_TAG}</p>
     <h1>Terminal first.<br />Finn beside you.</h1>
     <p class="lede">
       A Space is an engagement. The block terminal is home. Finn is a glass strip you summon —
-      never a chat landing page. Approve every command. YOLO when the scope is yours.
+      never a chat landing page. Install is one double-click per OS. Welcome is the first Space.
     </p>
     <div class="cta-row">
-      <button class="primary" type="button" onclick={() => goto('/app')}>Open Workstation</button>
-      <a class="btn" href="/download">Download</a>
+      <a class="btn primary" href="/download">Download for your OS</a>
+      <button class="btn" type="button" onclick={() => goto('/app')}>Open Workstation</button>
       <a class="btn ghost" href="/docs">Docs</a>
     </div>
+  </section>
+
+  <ol class="eras">
+    {#each INSTALL_ERAS as era, i}
+      <li>
+        <span class="n mono">{i + 1}</span>
+        <div>
+          <h2>{era.title}</h2>
+          <p>{era.body}</p>
+        </div>
+      </li>
+    {/each}
+  </ol>
+
+  <section class="os-row" aria-label="Installers by operating system">
+    {#each INSTALL_OS_ORDER.filter((id) => id !== 'web') as id}
+      {@const spec = INSTALL_SYSTEMS[id]}
+      <a class="os-card" href="/download#{id}">
+        <span class="label-micro">{spec.requirement}</span>
+        <strong>{spec.name}</strong>
+        <span class="mono">{spec.primary.file}</span>
+      </a>
+    {/each}
   </section>
 
   <section class="frame" aria-hidden="true">
@@ -57,23 +71,14 @@
         <div class="row">api.acme.test</div>
         <div class="row">10.0.1.0/24</div>
       </aside>
-      <pre class="ghost-term mono">┌ nmap -sV -sC 10.0.1.5                    exit 0  12.4s
-│ Starting Nmap 7.94 …
+      <pre class="ghost-term mono">┌ scope loaded                              ok
+│ 3 hosts · press ⌘K to scan
+└
+
+┌ nmap -sV -sC 10.0.1.5                    exit 0  12.4s
 │ 22/tcp open  ssh     OpenSSH 8.9
 │ 443/tcp open ssl/http nginx 1.22
-└ [Copy] [Add to Finn] [Save as evidence]
-
-$ Can you scan 10.0.1.0/24 for http?
-› sent to Finn</pre>
-      <aside class="ghost-finn">
-        <div class="card">
-          <header class="card-meta">
-            <span class="who">Finn</span>
-            <span class="mono model">auto</span>
-          </header>
-          <p>I’ll propose nmap against that range. Approve the pending block when you’re ready.</p>
-        </div>
-      </aside>
+└ [Copy] [Add to Finn] [Save as evidence]</pre>
       <aside class="ghost-insp">
         <div class="finding">CRITICAL · panel RCE</div>
         <div class="finding">HIGH · default creds</div>
@@ -111,41 +116,6 @@ $ Can you scan 10.0.1.0/24 for http?
     overflow-x: hidden;
     overflow-y: auto;
   }
-  .top-nav {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 1rem;
-    flex-wrap: wrap;
-    padding: 0.5rem 0 1.5rem;
-  }
-  .brand {
-    display: flex;
-    align-items: center;
-    gap: 0.5rem;
-    font-weight: 700;
-    color: var(--text);
-    text-decoration: none;
-  }
-  .logo {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 28px;
-    border-radius: 7px;
-    background: var(--green);
-    color: var(--abyss);
-    font-weight: 800;
-    font-size: 14px;
-  }
-  .nav-links {
-    display: flex;
-    align-items: center;
-    gap: 0.85rem;
-    flex-wrap: wrap;
-  }
-  .nav-links a { color: var(--text-dim); font-size: 13px; }
-  .nav-cta { font-size: 13px; }
   .hero { padding: 3.5rem 0 2rem; max-width: 860px; }
   .eyebrow {
     margin: 0 0 0.75rem;
@@ -169,12 +139,55 @@ $ Can you scan 10.0.1.0/24 for http?
     font-size: 18px;
     max-width: 36em;
   }
-  .cta-row { display: flex; flex-wrap: wrap; gap: 0.65rem; }
+  .cta-row { display: flex; flex-wrap: wrap; gap: 0.65rem; align-items: center; }
+  .cta-row .primary, .cta-row .btn { text-decoration: none; }
   .btn.ghost, a.ghost {
     background: transparent;
     border-color: transparent;
     color: var(--text-dim);
   }
+  .eras {
+    list-style: none;
+    margin: 0 0 1.75rem;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 1rem;
+  }
+  .eras li { display: flex; gap: 10px; align-items: flex-start; }
+  .eras h2 { margin: 0 0 4px; font-size: 15px; letter-spacing: -0.02em; }
+  .eras p { margin: 0; font-size: 13px; color: var(--text-dim); line-height: 1.45; }
+  .n {
+    width: 22px;
+    height: 22px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    font-size: 11px;
+    color: var(--green);
+    flex-shrink: 0;
+  }
+  .os-row {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+    margin-bottom: 2rem;
+  }
+  .os-card {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: var(--radius-control);
+    background: var(--abyss-2);
+    color: inherit;
+    text-decoration: none;
+  }
+  .os-card:hover { border-color: var(--green); text-decoration: none; }
+  .os-card strong { font-size: 15px; }
+  .os-card .mono { font-size: 11px; color: var(--text-faint); }
   .frame {
     border: 1px solid var(--glass-border);
     border-radius: 12px;
@@ -204,45 +217,14 @@ $ Can you scan 10.0.1.0/24 for http?
     min-height: 280px;
     position: relative;
   }
-  .ghost-finn {
-    position: absolute;
-    right: 12px;
-    bottom: 12px;
-    width: 240px;
-    padding: 12px;
-    border-radius: var(--radius-panel);
-    background: var(--glass-3);
-    backdrop-filter: blur(24px) saturate(1.6);
-    -webkit-backdrop-filter: blur(24px) saturate(1.6);
-    border: 1px solid var(--glass-border-strong);
-    box-shadow: var(--shadow-panel);
-    z-index: 2;
-  }
   .ghost-side, .ghost-insp {
     padding: 10px;
     background: var(--abyss-2);
     font-size: 12px;
     color: var(--text-dim);
   }
-  .ghost-finn {
-    font-size: 12px;
-    color: var(--text-dim);
-  }
   .ghost-side { border-right: 1px solid var(--glass-border); }
   .ghost-insp { border-left: 1px solid var(--glass-border); }
-  .card {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-    padding: 10px 12px;
-    border: 1px solid var(--glass-border);
-    border-radius: 10px;
-    background: var(--abyss-2);
-  }
-  .card-meta { display: flex; align-items: center; gap: 8px; }
-  .card-meta .who { font-size: 11px; font-weight: 600; color: var(--green); }
-  .card-meta .model { font-size: 10px; color: var(--text-faint); }
-  .card p { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text); }
   .row { height: 28px; display: flex; align-items: center; padding: 0 8px; border-radius: 5px; }
   .row.on { background: rgba(255,255,255,0.05); box-shadow: inset 2px 0 0 var(--green); color: var(--text); }
   .ghost-term {
@@ -274,7 +256,7 @@ $ Can you scan 10.0.1.0/24 for http?
   }
   .footer-links { display: flex; gap: 1rem; }
   @media (max-width: 800px) {
-    .frame-body, .editorial { grid-template-columns: 1fr; }
-    .ghost-side, .ghost-insp, .ghost-finn { display: none; }
+    .frame-body, .editorial, .eras, .os-row { grid-template-columns: 1fr; }
+    .ghost-side, .ghost-insp { display: none; }
   }
 </style>

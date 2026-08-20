@@ -23,6 +23,7 @@ if str(HERE) not in sys.path:
 
 from engine import DOCKER_TOS, SETUP_VERSION, find_api_src, find_macos_app, find_wheel, launch_app, run_install  # noqa: E402
 from palette import COLOR  # noqa: E402
+from catalog import launch_lines, welcome_line  # noqa: E402
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -156,11 +157,11 @@ def gui_main(args: argparse.Namespace) -> int:
         canvas.pack(anchor="w", fill=tk.X)
         canvas.create_text(0, height // 2, text=line, fill=fill, anchor="w", font=font)
 
-    banner(shell, "INSTALLER", green, ("Helvetica", 10), 18)
+    banner(shell, "WELCOME", green, ("Helvetica", 10), 18)
     banner(shell, "Finn Setup", text, ("Helvetica", 22, "bold"), 36)
     banner(
         shell,
-        "Choose user vs all-users, offline vs download, and host vs Docker, then Install.",
+        "Welcome era: who installs, where files come from, how tools run — then Install.",
         dim,
         ui_small,
         22,
@@ -342,7 +343,7 @@ def gui_main(args: argparse.Namespace) -> int:
     p2 = page()
     done_canvas = tk.Canvas(p2, bg=abyss, highlightthickness=0, bd=0, height=40)
     done_canvas.pack(anchor="w", fill=tk.X, pady=(8, 10))
-    done_canvas.create_text(0, 20, text="Finn is installed.", fill=green, anchor="w", font=("Helvetica", 18, "bold"))
+    done_canvas.create_text(0, 20, text=welcome_line(), fill=green, anchor="w", font=("Helvetica", 18, "bold"))
     done_detail = tk.Text(
         p2,
         height=8,
@@ -376,7 +377,7 @@ def gui_main(args: argparse.Namespace) -> int:
                 frame.grid_remove()
         refresh_cards()
         sync_tos()
-        labels = {0: "Options", 1: "Installing", 2: "Done"}
+        labels = {0: "Welcome", 1: "Installing", 2: "Launch"}
         step_canvas.itemconfigure(step_item, text=labels.get(idx, ""))
         if idx == 0:
             next_btn.config(text="Install", state=tk.NORMAL, bg=green, fg=on_green)
@@ -431,14 +432,16 @@ def gui_main(args: argparse.Namespace) -> int:
 
                 def done() -> None:
                     lines = [
+                        welcome_line(),
                         f"API: {result['prefix']}",
                         f"CLI: {result['wrapper']}",
                     ]
                     if result.get("app"):
                         lines.append(f"App: {result['app']}")
                     else:
-                        lines.append("Desktop app: not in this folder — open the macOS kit zip and run Setup from there.")
+                        lines.append("Desktop app: not in this folder — open the kit zip and run Setup from there.")
                     lines.append("The workstation starts the API itself. Launch Finn as a normal user.")
+                    lines.extend(launch_lines())
                     done_detail.configure(state=tk.NORMAL)
                     done_detail.delete("1.0", tk.END)
                     done_detail.insert("1.0", "\n".join(lines))
