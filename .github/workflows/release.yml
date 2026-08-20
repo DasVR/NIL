@@ -229,8 +229,9 @@ jobs:
           python -m pip install -e ".[dev]"
           python -m pytest tests -q
           python -m build --wheel
-          bash -n install/finn-install.sh
+          bash -n install/unix/install.sh
           bash -n install/macos/make-pkg.sh
+          bash -n install/macos/make-app.sh
           bash -n install/macos/pkg-scripts/postinstall
 
       - uses: actions/upload-artifact@v4
@@ -238,12 +239,13 @@ jobs:
           name: finn-python-release
           path: |
             dist/*.whl
-            install/finn-install.sh
-            install/finn-install.ps1
-            install/finn-setup.py
+            install/unix/install.sh
+            install/windows/install.ps1
+            install/windows/setup.cmd
+            install/wizard.py
             install/engine.py
+            install/palette.py
             install/run-api.py
-            install/Finn-Setup.cmd
             install/macos/**
           if-no-files-found: error
           retention-days: 7
@@ -306,7 +308,7 @@ jobs:
             echo "| Platform | File | Notes |"
             echo "| --- | --- | --- |"
             echo "| **macOS (installer)** | \`Finn-Setup-${TAG}-macOS.pkg\` | Double-click. If macOS says damaged, run \`xattr -cr\` on the file first. |"
-            echo "| **macOS (Setup DMG)** | \`Finn-Setup-${TAG}-macOS.dmg\` | Open the disk image. If Finn Setup.app is \"damaged\", double-click Fix macOS Gatekeeper.command. |"
+            echo "| **macOS (Setup DMG)** | \`Finn-Setup-${TAG}-macOS.dmg\` | Open the disk image. If Finn Setup.app is \"damaged\", double-click fix-gatekeeper.command. |"
             echo "| **Windows** | \`Finn-Setup-${TAG}-Windows.exe\` | Double-click. Start Menu + desktop shortcut. API starts with the app. |"
             echo "| **Linux** | \`Finn-Setup-${TAG}-Linux.deb\` | Double-click in Ubuntu Software, or \`dpkg -i\`. |"
             echo "| **Linux (AppImage)** | \`Finn-Setup-${TAG}-Linux.AppImage\` | Mark executable in file properties, then double-click. |"

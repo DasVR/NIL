@@ -256,7 +256,22 @@
     let query = q.trim();
     if (query.startsWith('>')) query = query.slice(1).trim();
     if (query.startsWith('?')) {
-      return items.filter((i) => i.section === 'Help' || i.id === 'toggle-ai');
+      const ask = query.slice(1).trim();
+      if (!ask) {
+        return items.filter((i) => i.section === 'Help' || i.id === 'toggle-ai');
+      }
+      return [
+        {
+          id: 'ask-finn',
+          label: `Ask Finn: ${ask}`,
+          hint: 'handoff',
+          section: 'Finn',
+          run: () => {
+            void appState.send(ask);
+            close();
+          }
+        }
+      ];
     }
     const pool = query ? fuzzyFilter(items, query, (item) => `${item.label} ${item.hint ?? ''} ${item.section}`) : items;
     if (!query) {

@@ -12,7 +12,8 @@ RES="${OUT}/Contents/Resources"
 mkdir -p "${MACOS}" "${RES}/payload"
 
 cp "${ROOT}/install/engine.py" "${RES}/"
-cp "${ROOT}/install/finn-setup.py" "${RES}/"
+cp "${ROOT}/install/palette.py" "${RES}/"
+cp "${ROOT}/install/wizard.py" "${RES}/"
 cp "${ROOT}/install/run-api.py" "${RES}/"
 cp "${ROOT}/install/run-api.py" "${RES}/payload/"
 
@@ -50,10 +51,10 @@ if [[ -z "$PY" ]]; then
   exit 1
 fi
 if ! "$PY" -c "import tkinter" >/dev/null 2>&1; then
-  osascript -e 'display alert "Finn Setup" message "This installer needs Tk. On Homebrew run: brew install python-tk. Or run: python3 install/finn-setup.py --cli --user --offline --host"'
-  exec "$PY" "${RES}/finn-setup.py" --cli --user --offline --host
+  osascript -e 'display alert "Finn Setup" message "This installer needs Tk. On Homebrew run: brew install python-tk. Or run: python3 install/wizard.py --cli --user --offline --host"'
+  exec "$PY" "${RES}/wizard.py" --cli --user --offline --host
 fi
-exec "$PY" "${RES}/finn-setup.py"
+exec "$PY" "${RES}/wizard.py"
 EOF
 chmod +x "${MACOS}/Finn Setup"
 

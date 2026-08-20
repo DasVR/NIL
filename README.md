@@ -14,7 +14,15 @@ Download **Finn-Setup** for your OS and double-click it. No Terminal.
 
 Then open Finn. The API starts with the app. Do not use the python wheel zip (`finn-python-*`) as a Mac installer.
 
-If macOS says the download is **damaged**, that is Gatekeeper quarantine on a GitHub file, not a corrupt archive. Double-click **Fix macOS Gatekeeper.command** next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then open it again. Right-click → Open also works for “unidentified developer”; it does not always clear the damaged message.
+If macOS says the download is **damaged**, that is Gatekeeper quarantine on a GitHub file, not a corrupt archive. Double-click **fix-gatekeeper.command** next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then open it again. Right-click → Open also works for “unidentified developer”; it does not always clear the damaged message.
+
+Headless from a clone:
+
+```bash
+python3 install/wizard.py --cli --user --offline --host
+# or
+bash install/unix/install.sh --user --offline --host
+```
 
 In other terminals:
 
@@ -45,11 +53,13 @@ GitHub zip snapshots named `finn-pentest-harness-master` go stale. Prefer `git c
 ## Layout
 
 - `finn_pentest/` — FastAPI, sandbox, plugins, AI router, TUI, CLI
-- `install/` — one-file user/admin installers (`finn-install.sh`, `finn-install.ps1`) and `run-api.py`
+- `install/` — Setup wizard, engine, and OS folders (`unix/`, `windows/`, `macos/`). See `install/README.md`.
 - `web/` — SvelteKit website (marketing + `/app`)
 - `desktop/` — Tauri 2 wrapper (bundles the API into the app)
 - `prompts/` — professional assessment system prompts
 - `tests/` — pytest
+- `docs/history/` — retired design docs
+- `cursor-research/` — bookmarks research (polish input; `UX_REDESIGN.md` wins)
 
 ## Providers
 
@@ -79,11 +89,11 @@ git tag v1
 git push origin v1
 ```
 
-The **Release** workflow builds all three platforms and uploads installers. Run it with **macos_only** to skip Windows and Linux. The site `/download` page pulls the latest release from the GitHub API. Unzip the macOS kit and either run `install/finn-install.sh` or drag `Finn Pentest Harness.app` to Applications. The API is inside the app.
+The **Release** workflow builds all three platforms and uploads installers. Run it with **macos_only** to skip Windows and Linux. The site `/download` page pulls the latest release from the GitHub API. Unzip the macOS kit and either run `install/unix/install.sh` or drag `Finn Pentest Harness.app` to Applications. The API is inside the app.
 
 ## Safety
 
 - Approval gate is on by default
 - YOLO is per-engagement, still sandboxed and logged
 - Code mode writes assessment scripts and parsers, not exploit kits
-- Recon plugins ship: nmap, nuclei, ffuf, gobuster
+- Recon plugins ship: nmap, httpx, whatweb, sslscan, nuclei, nikto, ffuf, gobuster, subfinder

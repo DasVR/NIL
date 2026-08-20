@@ -4,6 +4,7 @@
   import { SEVERITY_COLOR, SEVERITY_ORDER } from '$lib/findings';
   import { parseTimeline } from '$lib/timeline';
   import FindingCard from './FindingCard.svelte';
+  import DataList from './DataList.svelte';
   import { toast } from '$lib/toast.svelte';
 
   const tabs: { id: InspectorTab; label: string }[] = [
@@ -56,19 +57,24 @@
         {:else if sortedFindings.length === 0}
           <p class="empty">No findings yet. Run a scan — results land here, not in the tree.</p>
         {:else}
-          {#each sortedFindings as finding (finding.id)}
-            {@const sev = (finding.severity || 'info').toLowerCase()}
-            <button
-              type="button"
-              class="row"
-              class:on={appState.selectedFindingId === finding.id}
-              onclick={() => appState.selectFinding(finding)}
-            >
-              <span class="bar" style="background:{SEVERITY_COLOR[sev] || SEVERITY_COLOR.info}"></span>
-              <span class="title">{finding.title}</span>
-              <span class="meta mono">{sev}</span>
-            </button>
-          {/each}
+          <DataList
+            label="Findings"
+            empty="No findings yet. Run a scan — results land here, not in the tree."
+            rows={sortedFindings.map((finding) => {
+              const sev = (finding.severity || 'info').toLowerCase();
+              return {
+                id: finding.id,
+                title: finding.title,
+                meta: sev,
+                accent: SEVERITY_COLOR[sev] || SEVERITY_COLOR.info,
+                selected: appState.selectedFindingId === finding.id
+              };
+            })}
+            onSelect={(id) => {
+              const finding = sortedFindings.find((f) => f.id === id);
+              if (finding) appState.selectFinding(finding);
+            }}
+          />
         {/if}
       </div>
     {:else if appState.inspectorTab === 'evidence'}
@@ -76,12 +82,16 @@
         {#if appState.loot.length === 0}
           <p class="empty">Loot and bookmarked blocks appear here.</p>
         {:else}
-          {#each appState.loot as item (item.id)}
-            <div class="row">
-              <span class="title">{item.name}</span>
-              <span class="meta mono">{item.type}</span>
-            </div>
-          {/each}
+          <DataList
+            label="Evidence"
+            empty="Loot and bookmarked blocks appear here."
+            rows={appState.loot.map((item) => ({
+              id: item.id,
+              title: item.name,
+              meta: item.type,
+              monoTitle: false
+            }))}
+          />
         {/if}
       </div>
     {:else if appState.inspectorTab === 'timeline'}
@@ -165,8 +175,6 @@
   }
   .row.event { height: auto; min-height: 28px; align-items: flex-start; flex-wrap: wrap; padding: 6px 8px; }
   .row:hover { background: rgba(255,255,255,0.04); color: var(--text); }
-  .row.on { background: rgba(255,255,255,0.05); color: var(--text); box-shadow: inset 2px 0 0 var(--green); }
-  .bar { width: 3px; height: 14px; border-radius: 2px; flex-shrink: 0; }
   .title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
   .meta { font-size: 10px; color: var(--text-faint); flex-shrink: 0; }
   .label { font-size: 10px; color: var(--green); }
@@ -176,4 +184,5 @@
   @media (prefers-reduced-motion: reduce) {
     .inspector { transition: none; }
   }
+  :global(html.reduce-motion) .inspector { transition: none; }
 </style>

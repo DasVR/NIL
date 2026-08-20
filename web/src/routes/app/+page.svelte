@@ -4,6 +4,9 @@
   import ArtifactPane from '$lib/components/ArtifactPane.svelte';
   import AiStrip from '$lib/components/AiStrip.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
+  import ThinkingOrbs from '$lib/components/ThinkingOrbs.svelte';
+
+  const thinVisible = $derived(!appState.aiStripOpen && !appState.aiStripHidden);
 </script>
 
 <div class="workspace-page">
@@ -52,12 +55,16 @@
       </div>
       {#if appState.aiStripOpen}
         <AiStrip />
-      {:else}
-        <button type="button" class="finn-bar" onclick={() => appState.openFinn({ focus: true })}>
-          <span class="dot" class:busy={appState.busy}></span>
-          Finn
+      {:else if thinVisible}
+        <button type="button" class="finn-bar glass-overlay" onclick={() => appState.openFinn({ focus: true })}>
+          {#if appState.busy}
+            <ThinkingOrbs label="Finn is working" />
+          {:else}
+            <span class="dot"></span>
+          {/if}
+          <span>Finn</span>
           <span class="mode">{appState.mode}</span>
-          <span class="hint">Ask in English · ⌘J</span>
+          <span class="hint">{appState.busy ? 'Working on this Space' : 'Ask in English · ⌘J'}</span>
         </button>
       {/if}
     </div>
@@ -142,7 +149,7 @@
   .surface.split > :global(.artifact) { border-left: 1px solid var(--glass-border); }
   .finn-bar {
     flex-shrink: 0;
-    height: 32px;
+    height: var(--ai-strip-thin);
     display: flex;
     align-items: center;
     gap: 8px;
@@ -150,13 +157,13 @@
     border: 0;
     border-top: 1px solid var(--glass-border);
     border-radius: 0;
-    background: var(--abyss-1);
+    background: color-mix(in srgb, var(--abyss-1) 82%, transparent);
     color: var(--text-dim);
     font-size: 12px;
     min-height: unset;
     min-width: 0;
   }
-  .finn-bar:hover { color: var(--text); background: var(--abyss-2); }
+  .finn-bar:hover { color: var(--text); }
   .finn-bar .mode {
     font-size: 10px;
     text-transform: uppercase;
@@ -170,7 +177,6 @@
     border-radius: 50%;
     background: var(--green);
     box-shadow: 0 0 6px var(--green-glow);
+    flex-shrink: 0;
   }
-  .finn-bar .dot.busy { animation: pulse 1.2s ease-in-out infinite; }
-  @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
 </style>

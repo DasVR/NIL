@@ -44,8 +44,11 @@ The shipped plugins form a recon chain. Finn should walk it, not fire everything
 nmap (discover hosts + open ports)
   → httpx (which ports actually speak HTTP, titles, tech)
     → whatweb (fingerprint the stack)
+    → sslscan (TLS config on 443)
     → nuclei (template-based vuln checks on the live URLs)
+    → nikto (classic web misconfig pass)
     → ffuf / gobuster (content + path discovery on confirmed web services)
+subfinder (passive subdomains when the target is a domain, not an IP)
 ```
 
 Match the tool to the target shape: `nmap` takes IPs/CIDRs, the HTTP tools take hosts or

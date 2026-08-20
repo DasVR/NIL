@@ -2,8 +2,9 @@
 """Finn Setup — standalone installer with a progress-bar wizard.
 
 Double-click Finn Setup.app (macOS), Finn-Setup.exe (Windows NSIS), or run:
-  python3 install/finn-setup.py
-  python3 install/finn-setup.py --cli --user --offline --host
+  python3 install/wizard.py
+  python3 install/wizard.py --cli --user --offline --host
+  bash install/unix/install.sh --user --offline --host
 """
 
 from __future__ import annotations
@@ -19,6 +20,7 @@ if str(HERE) not in sys.path:
     sys.path.insert(0, str(HERE))
 
 from engine import DOCKER_TOS, SETUP_VERSION, find_api_src, find_macos_app, find_wheel, launch_app, run_install  # noqa: E402
+from palette import COLOR  # noqa: E402
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -73,7 +75,7 @@ def gui_main(args: argparse.Namespace) -> int:
         print(
             "Finn Setup needs Tk (the windowed installer).\n"
             "macOS Homebrew:  brew install python-tk@3.14\n"
-            "Or run headless: python3 install/finn-setup.py --cli --user --offline --host",
+            "Or run headless: python3 install/wizard.py --cli --user --offline --host",
             file=sys.stderr,
         )
         return cli_main(args)
@@ -82,7 +84,15 @@ def gui_main(args: argparse.Namespace) -> int:
     # if you set fg/bg. Hidden pages stacked with pack_forget also leak
     # scrollbars. Custom cards + one raised page avoid both.
 
-    abyss, panel, green, text, dim, border = "#07090d", "#10141c", "#3dff8a", "#e8edf2", "#8b95a3", "#2a3340"
+    abyss, panel, green, text, dim, border = (
+        COLOR["abyss"],
+        COLOR["abyss_3"],
+        COLOR["green"],
+        COLOR["text"],
+        COLOR["text_dim"],
+        COLOR["abyss_4"],
+    )
+    on_green = COLOR["abyss"]
     ui_font, ui_bold, ui_small, mono = ("Helvetica", 13), ("Helvetica", 13, "bold"), ("Helvetica", 11), ("Menlo", 11)
 
     root = tk.Tk()
@@ -301,9 +311,9 @@ def gui_main(args: argparse.Namespace) -> int:
             step_label.config(text="Done")
         back_btn.config(state=tk.NORMAL if idx in (1, 2) else tk.DISABLED)
         if idx < 2:
-            next_btn.config(text="Continue", state=tk.NORMAL, bg=green, fg="#04140a")
+            next_btn.config(text="Continue", state=tk.NORMAL, bg=green, fg=on_green)
         elif idx == 2:
-            next_btn.config(text="Install", state=tk.NORMAL, bg=green, fg="#04140a")
+            next_btn.config(text="Install", state=tk.NORMAL, bg=green, fg=on_green)
         else:
             next_btn.config(text="Install", state=tk.DISABLED, bg=panel, fg=dim)
         if idx == 4:
@@ -420,7 +430,7 @@ def gui_main(args: argparse.Namespace) -> int:
         text="Continue",
         command=next_page,
         bg=green,
-        fg="#04140a",
+        fg=on_green,
         relief=tk.FLAT,
         padx=18,
         pady=8,

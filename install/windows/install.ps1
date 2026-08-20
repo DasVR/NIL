@@ -14,7 +14,8 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
-$Here = Split-Path -Parent $MyInvocation.MyCommand.Path
+$WindowsDir = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Here = Split-Path -Parent $WindowsDir
 $py = $null
 foreach ($cmd in @("py", "python", "python3")) {
   try {
@@ -38,4 +39,4 @@ if ($AcceptDockerTos) { $argv += "--accept-docker-tos" }
 if ($PrintDockerTos) { $argv += "--print-docker-tos" }
 if ($Tag) { $argv += "--tag"; $argv += $Tag }
 
-& $py (Join-Path $Here "finn-setup.py") @argv
+& $py (Join-Path $Here "wizard.py") @argv

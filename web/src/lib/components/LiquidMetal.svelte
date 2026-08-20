@@ -185,7 +185,10 @@
 
   function render() {
     if (!gl || !program) return;
-    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches ||
+      document.documentElement.classList.contains('reduce-motion')
+    ) {
       time = 0;
     } else {
       time += 0.016;
@@ -207,7 +210,10 @@
 
     gl.drawArrays(gl.TRIANGLES, 0, 6);
 
-    if (!window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    if (
+      !window.matchMedia('(prefers-reduced-motion: reduce)').matches &&
+      !document.documentElement.classList.contains('reduce-motion')
+    ) {
       animationId = requestAnimationFrame(render);
     }
   }
@@ -292,5 +298,8 @@
     .liquid-metal-canvas {
       display: none;
     }
+  }
+  :global(html.reduce-motion) .liquid-metal-canvas {
+    display: none;
   }
 </style>

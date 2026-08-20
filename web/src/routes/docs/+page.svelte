@@ -13,8 +13,8 @@
 
   <h2>Install</h2>
   <pre><code>macOS: unzip the kit → double-click Finn Setup.app
-Windows: run the NSIS setup.exe
-python3 install/finn-setup.py --cli --user --offline --host</code></pre>
+Windows: run Finn-Setup.exe
+python3 install/wizard.py --cli --user --offline --host</code></pre>
   <p>The desktop app starts the API with itself. Python 3.11+ must be on PATH. Homebrew Python SSL is not used for GitHub — Setup uses curl.</p>
 
   <p>In another terminal:</p>
