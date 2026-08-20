@@ -18,7 +18,7 @@ Requires macOS 12+ and Xcode command-line tools.
 
 ### First-time permissions
 
-GitHub downloads are quarantined. An ad-hoc-signed app plus that flag makes macOS say the app is **damaged**. CI ships the app **unsigned** and includes **fix-gatekeeper.command**. Double-click that helper, or run `xattr -cr` on the `.app` / `.pkg` / `.dmg`, then open it. Right-click → Open is enough for “unidentified developer” but not always for “damaged”.
+GitHub downloads are quarantined. Apple Silicon refuses **unsigned** Mach-O with “cannot be opened”. CI ships an **ad-hoc-signed** app plus **fix-gatekeeper.command**. After download, double-click that helper (it clears quarantine and re-signs), or run `xattr -cr` on the `.app` / `.pkg` / `.dmg`, then Right-click → Open.
 
 | Permission | Why Finn asks | Required? |
 |------------|---------------|-----------|
@@ -51,7 +51,7 @@ npm run tauri build -- --bundles app,dmg
 
 `npm run build:macos:app` builds **only** the `.app` and zips it (`ditto -c -k --keepParent` so the bundle stays a real Mac application). Unzip on a Mac, then drag the `.app` to `/Applications`.
 
-Distribution builds leave `signingIdentity` unset (unsigned). Ad-hoc signing (`-`) plus a GitHub quarantine flag is what produces the “damaged and can’t be opened” dialog. Developer ID + notarization is optional (`desktop/scripts/macos-notarize.sh`) when you have an Apple certificate.
+Distribution builds leave `signingIdentity` unset and **ad-hoc-sign** (`codesign --sign -`) with `Entitlements.plist`. A leftover GitHub quarantine flag can still block first launch; `fix-gatekeeper.command` clears it. Developer ID + notarization is optional (`desktop/scripts/macos-notarize.sh`) when you have an Apple certificate.
 
 ### Production signing + notarization
 

@@ -4,9 +4,10 @@ Finn Setup (macOS)
 Download artifact: Finn-Setup-macOS-<sha>
 Use Finn-Setup.pkg or Finn-Setup.dmg. Do not use finn-python-* / the wheel zip as a Mac installer.
 
-If macOS says the app is "damaged"
-----------------------------------
-That is Gatekeeper, not a broken download. GitHub puts a quarantine flag on the file.
+If macOS says the app “cannot be opened” or is “damaged”
+--------------------------------------------------------
+That is Gatekeeper, not a broken download. GitHub puts a quarantine flag
+on the file. Apple Silicon also refuses unsigned binaries.
 
 1. Double-click fix-gatekeeper.command (same folder as the app), or
 2. Right-click the .app / .pkg → Open, or
@@ -18,13 +19,14 @@ Or in Terminal:
   xattr -cr ~/Downloads/"Finn Setup.app"
   xattr -cr ~/Downloads/"Finn Pentest Harness.app"
 
-Then open it again.
+Then Right-click → Open.
 
 Install (no Terminal)
 ---------------------
 1. Double-click Finn-Setup.pkg (Apple Installer, progress bar)
-   or open Finn-Setup.dmg and double-click Finn Setup.app
-2. Open Finn Pentest Harness. The API starts with the app.
+   or open Finn-Setup.dmg / the kit zip and double-click Finn Setup.app
+2. Finn Setup shows who / offline vs download / host vs Docker. Pick options, then Install.
+3. Open Finn Pentest Harness. The API starts with the app.
 
 User-only copy (no admin): double-click Finn Setup.app and choose User.
 The app can live in ~/Applications.

@@ -11,7 +11,7 @@ BUNDLES="${FINN_BUNDLE_BUILDS:-app,dmg}"
 echo "==> Finn macOS build"
 echo "    root: ${ROOT}"
 echo "    bundles: ${BUNDLES}"
-echo "    signing: none (unsigned; strip ad-hoc before shipping)"
+echo "    signing: ad-hoc (Apple Silicon cannot launch unsigned apps)"
 
 cd "${DESKTOP}"
 npm run setup
@@ -28,8 +28,8 @@ if [[ -z "${APP}" ]]; then
   exit 1
 fi
 
-echo "==> Clearing quarantine / ad-hoc signature (avoids macOS 'damaged' on GitHub downloads)"
-bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${APP}"
+echo "==> Ad-hoc signing + clearing quarantine"
+bash "${ROOT}/install/macos/adhoc-sign.sh" "${APP}"
 
 echo "==> Verifying"
 codesign -dv --verbose=2 "${APP}" || true

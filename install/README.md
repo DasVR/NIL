@@ -10,7 +10,7 @@ Double-click **Finn-Setup** for your OS. No Terminal. The API starts with the ap
 
 Do **not** use the Python wheel zip as a Mac installer.
 
-If macOS says the download is **damaged**, that is Gatekeeper quarantine on a GitHub file. Double-click `fix-gatekeeper.command` next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`.
+If macOS says the app **cannot be opened** or is **damaged**, that is Gatekeeper quarantine on a GitHub file (Apple Silicon also refuses unsigned binaries). Double-click `fix-gatekeeper.command` next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then Right-click → Open.
 
 ## Layout
 
@@ -32,7 +32,9 @@ install/
     make-dmg.sh      Finn-Setup.dmg
     fix-gatekeeper.command
     install.txt
-    strip-adhoc-signature.sh
+    setup-launcher.sh   Finn Setup.app executable
+    adhoc-sign.sh
+    strip-adhoc-signature.sh  (wrapper → adhoc-sign.sh)
     pkg-scripts/postinstall
 ```
 

@@ -21,7 +21,7 @@ cp "${ROOT}/install/macos/fix-gatekeeper.command" "${STAGE}/"
 cp "${ROOT}/install/macos/install.txt" "${STAGE}/"
 chmod +x "${STAGE}/fix-gatekeeper.command"
 ln -s /Applications "${STAGE}/Applications"
-bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${STAGE}/Finn Setup.app"
+bash "${ROOT}/install/macos/adhoc-sign.sh" "${STAGE}/Finn Setup.app"
 
 VOL="Finn Setup"
 rm -f "${DMG_OUT}"
