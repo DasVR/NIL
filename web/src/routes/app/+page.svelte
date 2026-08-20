@@ -13,9 +13,24 @@
     <div class="surface-chrome">
       <span class="chrome-title mono">{appState.engagement}</span>
       <div class="views">
-        <button type="button" class:on={appState.activeView === 'terminal'} onclick={() => appState.setView('terminal')} title="Terminal (⌘T)">Term</button>
-        <button type="button" class:on={appState.activeView === 'artifact'} onclick={() => appState.setView('artifact')} title="Artifact (⌘E)">Artifact</button>
-        <button type="button" class:on={appState.activeView === 'split'} onclick={() => appState.setView('split')} title="Split (⌘\\)">Split</button>
+        <button type="button" class:on={appState.activeView === 'terminal'} onclick={() => appState.setView('terminal')} title="Terminal (⌘T)">
+          <svg class="vicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="m5 8 4 4-4 4" /><path d="M13 16h6" />
+          </svg>
+          Term
+        </button>
+        <button type="button" class:on={appState.activeView === 'artifact'} onclick={() => appState.setView('artifact')} title="Artifact (⌘E)">
+          <svg class="vicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M6 3h8l4 4v14H6z" /><path d="M13 3v5h5" />
+          </svg>
+          Artifact
+        </button>
+        <button type="button" class:on={appState.activeView === 'split'} onclick={() => appState.setView('split')} title="Split (⌘\\)">
+          <svg class="vicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="4" y="5" width="16" height="14" rx="1.5" /><path d="M12 5v14" />
+          </svg>
+          Split
+        </button>
         <button
           type="button"
           class:on={appState.aiStripOpen}
@@ -86,9 +101,26 @@
     border: 1px solid transparent;
     background: transparent;
     color: var(--text-faint);
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
   }
+  .vicon {
+    width: 13px;
+    height: 13px;
+    flex-shrink: 0;
+    opacity: 0.7;
+    transform: scale(0.9);
+    transition: transform 220ms var(--spring-bouncy), opacity 160ms var(--spring-smooth);
+  }
+  .views button.on .vicon { opacity: 1; transform: scale(1); }
+  .views button:hover .vicon { opacity: 1; }
   .views button.on { color: var(--green); background: var(--green-soft); }
   .views button.busy { color: var(--green); }
+  @media (prefers-reduced-motion: reduce) {
+    .vicon { transition: none; }
+  }
+  :global(html.reduce-motion) .vicon { transition: none; }
   .work-row {
     flex: 1;
     min-width: 0;

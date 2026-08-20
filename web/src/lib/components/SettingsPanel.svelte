@@ -192,7 +192,7 @@
           <span>UI sounds</span>
           <input type="checkbox" bind:checked={appState.prefs.sounds} onchange={() => { appState.sounds = appState.prefs.sounds; savePrefs(); }} />
         </label>
-        <p class="hint">Grain is CSS, not canvas. Scanlines are opt-in. Titlebar metal plus glass sheen on panels.</p>
+        <p class="hint">Grain is CSS, not canvas. Scanlines are opt-in. UI sounds are synthesized (no files), off by default, and stay silent under reduced motion.</p>
       {:else if tab === 'ai'}
         <h3>AI</h3>
         <label class="row">

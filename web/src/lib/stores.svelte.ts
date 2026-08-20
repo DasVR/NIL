@@ -16,6 +16,7 @@ import {
 import type { Credential, LootItem } from './api';
 import { hostsToTargets, loadExtraTargets, parseScopeHosts, saveExtraTargets } from './scope';
 import { toast } from './toast.svelte';
+import { playCue, setSoundsEnabled } from './sound';
 import { guessShellTool, isDockerDownError } from './intent';
 import type {
   Artifact,
@@ -632,6 +633,7 @@ class AppState {
   async proposeShell(command: string) {
     const cmd = command.trim();
     if (!cmd) return;
+    playCue('press');
     await this.ensureEngagement();
     const tool = guessShellTool(cmd);
     if (this.yolo) {
@@ -717,6 +719,7 @@ class AppState {
       await apiApprove(id, edited);
       const executed = await apiPost('/v1/tools/execute', { run_id: id });
       this.ingestRun(executed);
+      playCue(executed.status === 'failed' ? 'error' : 'success');
       toast.show(
         executed.status === 'failed' ? 'Command failed' : 'Command completed',
         executed.status === 'failed' ? 'danger' : 'ok'
@@ -736,6 +739,7 @@ class AppState {
     if (!id) return;
     await apiReject(id);
     this.blocks = this.blocks.map((b) => (b.runId === id ? { ...b, status: 'rejected' } : b));
+    playCue('error');
     toast.show('Command rejected', 'info');
     await this.refresh();
   }
@@ -823,6 +827,7 @@ class AppState {
   }
 
   setView(view: CenterView) {
+    if (view !== this.activeView) playCue('press');
     this.activeView = view;
     this.focusPane = 'center';
     this.persist();
@@ -855,6 +860,7 @@ class AppState {
     this.grain = this.prefs.grain;
     this.scanlines = this.prefs.scanlines;
     this.sounds = this.prefs.sounds;
+    setSoundsEnabled(this.sounds);
     this.applyAppearance();
   }
 
@@ -866,6 +872,7 @@ class AppState {
       sounds: this.sounds
     };
     localStorage.setItem('finn.prefs', JSON.stringify(this.prefs));
+    setSoundsEnabled(this.sounds);
     this.applyAppearance();
   }
 
