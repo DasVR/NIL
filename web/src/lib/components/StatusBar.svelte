@@ -42,7 +42,12 @@
     {appState.yolo ? 'YOLO' : 'SAFE'}
   </button>
   <span class="mono dim">{APP_TAG}</span>
-  <button type="button" class="gear" onclick={() => (appState.settingsOpen = true)} title="Settings (⌘,)">⚙</button>
+  <button type="button" class="gear" onclick={() => (appState.settingsOpen = true)} title="Settings (⌘,)" aria-label="Settings">
+    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true">
+      <circle cx="12" cy="12" r="3" />
+      <path d="M12 2v3M12 19v3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M2 12h3M19 12h3M4.9 19.1 7 17M17 7l2.1-2.1" />
+    </svg>
+  </button>
 </footer>
 
 <style>
@@ -102,5 +107,5 @@
     color: var(--green);
   }
   .yolo.on { color: var(--danger); }
-  .gear { color: var(--text-faint); font-size: 12px; }
+  .gear { color: var(--text-faint); display: grid; place-items: center; padding: 0 4px; }
 </style>

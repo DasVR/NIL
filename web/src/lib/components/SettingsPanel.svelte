@@ -4,6 +4,7 @@
   import { getApiBase, getApiKey, setApiBase, setApiKey, apiGet, apiPut } from '$lib/api';
   import { APP_TAG } from '$lib/version';
   import { SHORTCUT_HELP } from '$lib/keymap';
+  import { ACCENTS } from '$lib/tokens';
 
   type Tab = 'general' | 'install' | 'appearance' | 'ai' | 'api' | 'keyboard';
   let tab = $state<Tab>('general');
@@ -149,7 +150,7 @@
         <p class="hint">
           Host sandbox runs approved commands in <code>~/.finn-pentest/sandboxes</code> with no Docker.
           Docker mode uses your computer as the sandbox host and needs the admin installer plus terms.
-          One-file installers live in <code>install/finn-install.sh</code> and <code>install/finn-install.ps1</code>
+          One-file installers live in <code>install/unix/install.sh</code> and <code>install/windows/install.ps1</code>
           (user/admin, online/offline). The desktop app always starts the bundled API with itself.
         </p>
       {:else if tab === 'appearance'}
@@ -164,13 +165,18 @@
         </label>
         <label class="row">
           <span>Accent</span>
-          <select bind:value={appState.prefs.accent} onchange={savePrefs}>
-            <option value="green">Green</option>
-            <option value="red">Red</option>
-            <option value="blue">Blue</option>
-            <option value="teal">Teal</option>
-            <option value="amber">Amber</option>
-          </select>
+          <div class="swatches" role="radiogroup" aria-label="Accent">
+            {#each ACCENTS as name}
+              <button
+                type="button"
+                class="swatch"
+                class:on={appState.prefs.accent === name}
+                data-accent={name}
+                aria-pressed={appState.prefs.accent === name}
+                onclick={() => { appState.prefs.accent = name; savePrefs(); }}
+              >{name}</button>
+            {/each}
+          </div>
         </label>
         <label class="row">
           <span>Reduced motion</span>
@@ -352,4 +358,22 @@
   }
   dt { font-family: var(--font-mono); color: var(--text-dim); font-size: 12px; }
   dd { margin: 0; color: var(--text); }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .swatch {
+    height: 24px;
+    min-height: unset;
+    padding: 0 8px;
+    font-size: 11px;
+    text-transform: capitalize;
+    border-color: var(--glass-border);
+    color: var(--text-dim);
+  }
+  .swatch.on { color: var(--green); border-color: var(--green); background: var(--green-soft); }
+  .swatch[data-accent='green'].on { color: #00d992; }
+  .swatch[data-accent='red'] { --sw: #ff5c5c; }
+  .swatch[data-accent='blue'] { --sw: #5cb8ff; }
+  .swatch[data-accent='teal'] { --sw: #2ee6c7; }
+  .swatch[data-accent='amber'] { --sw: #ffb454; }
+  .swatch[data-accent='green'] { --sw: #00d992; }
+  .swatch { box-shadow: inset 0 -2px 0 var(--sw, var(--green)); }
 </style>

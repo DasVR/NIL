@@ -87,7 +87,7 @@ const DEFAULT_LAYOUT: SpaceLayout = {
   leftOpen: true,
   rightOpen: true,
   aiPinned: false,
-  aiOpen: true,
+  aiOpen: false,
   inspectorTab: 'findings',
   activeView: 'terminal',
   selectedTargetId: '',
@@ -170,6 +170,7 @@ class AppState {
   rightSidebarOpen = $state(true);
   aiStripOpen = $state(false);
   aiStripPinned = $state(false);
+  aiStripHidden = $state(false);
   activeView = $state<CenterView>('terminal');
   inspectorTab = $state<InspectorTab>('findings');
   selectedTargetId = $state('');
@@ -431,6 +432,7 @@ class AppState {
   }
 
   openFinn(opts: { focus?: boolean } = {}) {
+    this.aiStripHidden = false;
     this.aiStripOpen = true;
     if (opts.focus) this.finnFocusSeq += 1;
     this.persist();
@@ -810,19 +812,33 @@ class AppState {
   }
 
   toggleAi() {
+    if (this.aiStripHidden) {
+      this.aiStripHidden = false;
+      this.aiStripOpen = true;
+      this.finnFocusSeq += 1;
+      this.persist();
+      return;
+    }
     this.aiStripOpen = !this.aiStripOpen;
     if (this.aiStripOpen) this.finnFocusSeq += 1;
     this.persist();
   }
 
   hideFinn() {
-    this.aiStripOpen = false;
+    if (this.aiStripOpen) {
+      this.aiStripOpen = false;
+    } else {
+      this.aiStripHidden = true;
+    }
     this.persist();
   }
 
   pinAi() {
     this.aiStripPinned = !this.aiStripPinned;
-    if (this.aiStripPinned) this.aiStripOpen = true;
+    if (this.aiStripPinned) {
+      this.aiStripHidden = false;
+      this.aiStripOpen = true;
+    }
     this.persist();
   }
 

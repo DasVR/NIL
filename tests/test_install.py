@@ -12,14 +12,17 @@ INSTALL = ROOT / "install"
 
 
 def test_cli_wrapper_syntax():
-    subprocess.check_call(["bash", "-n", str(INSTALL / "finn-install.sh")])
-    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-setup-app.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "unix" / "install.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-app.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-pkg.sh")])
-    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-setup-dmg.sh")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-dmg.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "pkg-scripts" / "postinstall")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "strip-adhoc-signature.sh")])
-    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "Fix macOS Gatekeeper.command")])
-    assert (INSTALL / "windows" / "Launch Finn.cmd").is_file()
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "fix-gatekeeper.command")])
+    assert (INSTALL / "windows" / "launch.cmd").is_file()
+    assert (INSTALL / "windows" / "setup.cmd").is_file()
+    assert (INSTALL / "wizard.py").is_file()
+    assert (INSTALL / "palette.py").is_file()
     bat = (ROOT / "desktop" / "scripts" / "windows-install.bat").read_text(encoding="utf-8")
     assert "finn server" not in bat
     hooks = (ROOT / "desktop" / "src-tauri" / "windows" / "nsis-hooks.nsh").read_text(encoding="utf-8")
@@ -32,12 +35,26 @@ def test_cli_wrapper_syntax():
 
 
 def test_setup_gui_avoids_aqua_double_draw():
-    src = (INSTALL / "finn-setup.py").read_text(encoding="utf-8")
+    src = (INSTALL / "wizard.py").read_text(encoding="utf-8")
     assert "tk.Radiobutton" not in src
     assert "tk.Checkbutton" not in src
     assert "scrolledtext" not in src
     assert "tkraise" in src
     assert "grid_remove" in src
+    assert "from palette import COLOR" in src
+    assert "#07090d" not in src
+    assert "#3dff8a" not in src
+
+
+def test_palette_matches_web_tokens():
+    sys.path.insert(0, str(INSTALL))
+    import palette
+
+    css = (ROOT / "web" / "src" / "app.css").read_text(encoding="utf-8")
+    assert "--abyss:        #050507;" in css or "--abyss:" in css and palette.COLOR["abyss"] == "#050507"
+    assert palette.COLOR["green"] == "#00d992"
+    assert palette.COLOR["abyss"] in css
+    assert palette.COLOR["green"] in css
 
 
 def test_find_wheel_in_dist(tmp_path):
@@ -130,13 +147,28 @@ def test_cli_offline_install(tmp_path, monkeypatch):
     env["FINN_PENTEST_DIR"] = str(tmp_path / "data")
     env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
     subprocess.check_call(
-        [sys.executable, str(INSTALL / "finn-setup.py"), "--cli", "--user", "--offline", "--host"],
+        [sys.executable, str(INSTALL / "wizard.py"), "--cli", "--user", "--offline", "--host"],
         env=env,
         cwd=str(ROOT),
     )
     assert (prefix / "finn_pentest").is_dir()
     assert (prefix / "run-api.py").is_file()
     assert (tmp_path / "data" / "runtime.json").is_file()
+
+
+def test_unix_cli_wrapper_offline_install(tmp_path, monkeypatch):
+    prefix = tmp_path / "prefix"
+    env = os.environ.copy()
+    env["FINN_PREFIX"] = str(prefix)
+    env["FINN_VENV"] = str(tmp_path / "venv")
+    env["FINN_PENTEST_DIR"] = str(tmp_path / "data")
+    env["PYTHONPATH"] = str(ROOT) + os.pathsep + env.get("PYTHONPATH", "")
+    subprocess.check_call(
+        ["bash", str(INSTALL / "unix" / "install.sh"), "--user", "--offline", "--host"],
+        env=env,
+        cwd=str(ROOT),
+    )
+    assert (prefix / "finn_pentest").is_dir()
 
 
 def test_windows_user_paths_use_localappdata(tmp_path, monkeypatch):

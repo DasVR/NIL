@@ -381,4 +381,5 @@
   @media (prefers-reduced-motion: reduce) {
     .dot.busy { animation: none; }
   }
+  :global(html.reduce-motion) .dot.busy { animation: none; }
 </style>

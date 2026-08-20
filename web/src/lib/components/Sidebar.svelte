@@ -1,4 +1,4 @@
-<script>
+<script lang="ts">
   import { appState } from '$lib/stores.svelte';
   import { toast } from '$lib/toast.svelte';
 
@@ -24,12 +24,23 @@
     }
   }
 
-  function copyHost(host) {
+  function copyHost(host: string) {
     navigator.clipboard.writeText(host);
     toast.show('Copied host');
   }
 
-  async function runPlugin(name) {
+  function hostBadges(host: string) {
+    const needle = host.toLowerCase();
+    const hits = appState.findings.filter((f) =>
+      `${f.title} ${f.body} ${f.file}`.toLowerCase().includes(needle)
+    );
+    return {
+      critical: hits.filter((f) => f.severity?.toLowerCase() === 'critical').length,
+      high: hits.filter((f) => f.severity?.toLowerCase() === 'high').length
+    };
+  }
+
+  async function runPlugin(name: string) {
     const target = pluginTarget.trim() || appState.activeTarget?.host;
     if (!target) {
       toast.show('Select a target first', 'warn');
@@ -91,6 +102,7 @@
           <p class="empty">Add a host or paste scope.</p>
         {:else}
           {#each appState.targets as target (target.id)}
+            {@const badges = hostBadges(target.host)}
             <div
               class="row"
               class:on={appState.selectedTargetId === target.id}
@@ -105,8 +117,11 @@
               {#if target.ports.length}
                 <span class="meta mono">{target.ports.join(',')}</span>
               {/if}
+              {#if badges.critical}<span class="pill crit">{badges.critical}C</span>{/if}
+              {#if badges.high}<span class="pill high">{badges.high}H</span>{/if}
               <span class="hover-actions">
                 <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); copyHost(target.host); }}>copy</button>
+                <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); void appState.runPlugin('nmap', target.host); }}>nmap</button>
                 <button type="button" class="mini" onclick={(e) => { e.stopPropagation(); void appState.send(`Scan ${target.host} and summarize open services.`); }}>ask</button>
               </span>
             </div>
@@ -306,4 +321,5 @@
   @media (prefers-reduced-motion: reduce) {
     .sidebar { transition: none; }
   }
+  :global(html.reduce-motion) .sidebar { transition: none; }
 </style>

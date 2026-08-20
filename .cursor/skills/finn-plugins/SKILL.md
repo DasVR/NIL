@@ -1,6 +1,6 @@
 ---
 name: finn-plugins
-description: How to add or change a Finn tool plugin (nmap, nuclei, ffuf, gobuster, httpx, whatweb). Use when adding a scanner, changing generated commands, parsing tool output, or touching finn_pentest/plugins.
+description: How to add or change a Finn tool plugin (nmap, nuclei, ffuf, gobuster, httpx, whatweb, nikto, sslscan, subfinder). Use when adding a scanner, changing generated commands, parsing tool output, or touching finn_pentest/plugins.
 ---
 
 # Finn tool plugins
@@ -43,7 +43,7 @@ class HttpxPlugin(BasePlugin):
 
 | Level | Meaning | Examples |
 |---|---|---|
-| `safe` | Read-only or low-noise probing | `nmap`, `nuclei`, `ffuf`, `httpx`, `whatweb` |
+| `safe` | Read-only or low-noise probing | `nmap`, `nuclei`, `ffuf`, `httpx`, `whatweb`, `nikto`, `sslscan`, `subfinder` |
 | `caution` | Noisy, high request volume, or easy to misaim | `gobuster` |
 | `dangerous` | Can change target state — extra confirmation | none shipped |
 

@@ -18,7 +18,7 @@ Requires macOS 12+ and Xcode command-line tools.
 
 ### First-time permissions
 
-GitHub downloads are quarantined. An ad-hoc-signed app plus that flag makes macOS say the app is **damaged**. CI ships the app **unsigned** and includes **Fix macOS Gatekeeper.command**. Double-click that helper, or run `xattr -cr` on the `.app` / `.pkg` / `.dmg`, then open it. Right-click → Open is enough for “unidentified developer” but not always for “damaged”.
+GitHub downloads are quarantined. An ad-hoc-signed app plus that flag makes macOS say the app is **damaged**. CI ships the app **unsigned** and includes **fix-gatekeeper.command**. Double-click that helper, or run `xattr -cr` on the `.app` / `.pkg` / `.dmg`, then open it. Right-click → Open is enough for “unidentified developer” but not always for “damaged”.
 
 | Permission | Why Finn asks | Required? |
 |------------|---------------|-----------|

@@ -6,7 +6,7 @@
 
 This document is the plan to completely rebuild the desktop/web UI. It is grounded in:
 
-1. Current design docs (`DESIGN.md`, `DESIGN.md.old`, `SPEC.md`, historical `RESEARCH.md` UI chapter)
+1. Current design docs (`DESIGN.md`, `docs/history/design-v1.md`, `SPEC.md`, historical `RESEARCH.md` UI chapter)
 2. A code-level review of `web/` + Tauri chrome
 3. Apple HIG for macOS 26/27 (Liquid Glass, concentric windows, edge-to-edge sidebars)
 4. The twelve apps this product was originally pulled from
@@ -51,7 +51,7 @@ That split is why the UI feels like a themed web app instead of a Mac tool. Effe
 | Doc | What it actually says | What shipped |
 |---|---|---|
 | Historical `RESEARCH.md` (Aug 13) | Apple HIG springs, Jakub Antalik effects, Mac dock, **chat bubbles**, clarifying questions about scope | Effects components + chat-first instinct |
-| `DESIGN.md.old` | Full macOS costume: traffic lights, dock magnification, chat bubbles, dither, scanlines, liquid metal everywhere | Partial: Dock, WindowChrome, LiquidMetal, ChatPanel |
+| `docs/history/design-v1.md` | Full macOS costume: traffic lights, dock magnification, chat bubbles, dither, scanlines, liquid metal everywhere | Partial: Dock, WindowChrome, LiquidMetal, ChatPanel |
 | `DESIGN.md` v2 | Terminal-first 3-pane, AI strip with 4 states, Raycast palette, kill chat-as-home | Partial shell. AI strip still uses user/assistant bubbles. Palette is substring filter. |
 | `SPEC.md` | Dual TUI + desktop; Phase 4 still lists "chat bubbles with markdown" | TUI is still a chat Log + "Message the copilot…" |
 | Current `RESEARCH.md` | Anti-refusal / model research. UI chapter was overwritten. | No living UI research in-repo until this file |
@@ -939,5 +939,5 @@ No new shaders. No landing rewrite yet. That PR should already kill the AI-app f
 
 ---
 
-*Compiled against `DESIGN.md` v2, `DESIGN.md.old`, `SPEC.md`, historical UI research (commits `067b461`, `47c3452`), and the `web/` + Tauri tree on `master`.*
+*Compiled against `DESIGN.md` v2, `docs/history/design-v1.md`, `SPEC.md`, historical UI research (commits `067b461`, `47c3452`), and the `web/` + Tauri tree on `master`.*
 *References: Apple HIG / WWDC25–26 Liquid Glass, Linear design notes, Raycast manual (Root Search + Action Panel), Arc Spaces, Warp blocks, Claude artifacts/composer, Perplexity answer+sources, Folk lists, Framer motion craft, Wegonorth hero type.*

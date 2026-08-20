@@ -13,15 +13,15 @@ if [[ -z "${APP}" || ! -d "${APP}" ]]; then
 fi
 
 node "${ROOT}/desktop/scripts/stage-api.mjs"
-chmod +x "${ROOT}/install/macos/make-setup-app.sh" "${ROOT}/install/finn-setup.py" "${ROOT}/install/finn-install.sh"
-chmod +x "${ROOT}/install/macos/strip-adhoc-signature.sh" "${ROOT}/install/macos/Fix macOS Gatekeeper.command"
+chmod +x "${ROOT}/install/macos/make-app.sh" "${ROOT}/install/wizard.py" "${ROOT}/install/unix/install.sh"
+chmod +x "${ROOT}/install/macos/strip-adhoc-signature.sh" "${ROOT}/install/macos/fix-gatekeeper.command"
 
 # Unsigned + no quarantine: ad-hoc signed GitHub downloads look "damaged" to Gatekeeper.
 bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${APP}"
 
 KIT="${BUNDLE_DIR}/Finn-Pentest-Harness-macOS-kit"
 rm -rf "${KIT}"
-mkdir -p "${KIT}/api" "${KIT}/install"
+mkdir -p "${KIT}/api"
 
 cp -R "${APP}" "${KIT}/"
 bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${KIT}/$(basename "${APP}")"
@@ -31,28 +31,24 @@ if [[ -n "${DMG}" && -f "${DMG}" ]]; then
 fi
 
 cp -R "${ROOT}/desktop/src-tauri/resources/api/." "${KIT}/api/"
-cp "${ROOT}/install/engine.py" "${KIT}/install/"
-cp "${ROOT}/install/finn-setup.py" "${KIT}/install/"
-cp "${ROOT}/install/finn-install.sh" "${KIT}/install/"
-cp "${ROOT}/install/finn-install.ps1" "${KIT}/install/"
-cp "${ROOT}/install/run-api.py" "${KIT}/install/"
+cp -R "${ROOT}/install" "${KIT}/install"
 cp "${ROOT}/install/run-api.py" "${KIT}/"
-cp "${ROOT}/install/macos/Fix macOS Gatekeeper.command" "${KIT}/"
-cp "${ROOT}/install/macos/INSTALL.txt" "${KIT}/"
-chmod +x "${KIT}/install/finn-install.sh" "${KIT}/install/finn-setup.py" "${KIT}/Fix macOS Gatekeeper.command"
+cp "${ROOT}/install/macos/fix-gatekeeper.command" "${KIT}/"
+cp "${ROOT}/install/macos/install.txt" "${KIT}/"
+chmod +x "${KIT}/install/unix/install.sh" "${KIT}/install/wizard.py" "${KIT}/fix-gatekeeper.command"
 
 PAYLOAD="${KIT}/.setup-payload"
 rm -rf "${PAYLOAD}"
 mkdir -p "${PAYLOAD}"
 cp -R "${KIT}/api/." "${PAYLOAD}/"
 cp -R "${APP}" "${PAYLOAD}/"
-bash "${ROOT}/install/macos/make-setup-app.sh" "${KIT}/Finn Setup.app" "${PAYLOAD}"
+bash "${ROOT}/install/macos/make-app.sh" "${KIT}/Finn Setup.app" "${PAYLOAD}"
 rm -rf "${PAYLOAD}"
 bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${KIT}/Finn Setup.app"
 
-chmod +x "${ROOT}/install/macos/make-pkg.sh" "${ROOT}/install/macos/make-setup-dmg.sh"
+chmod +x "${ROOT}/install/macos/make-pkg.sh" "${ROOT}/install/macos/make-dmg.sh"
 bash "${ROOT}/install/macos/make-pkg.sh" "${BUNDLE_DIR}" "${APP}"
-bash "${ROOT}/install/macos/make-setup-dmg.sh" "${KIT}/Finn Setup.app"
+bash "${ROOT}/install/macos/make-dmg.sh" "${KIT}/Finn Setup.app"
 
 OUT="${BUNDLE_DIR}/Finn-Pentest-Harness-macOS.zip"
 rm -f "${OUT}"
@@ -65,4 +61,4 @@ else
 fi
 
 ls -lah "${OUT}"
-echo "Unzip on a Mac. If macOS says damaged, double-click Fix macOS Gatekeeper.command"
+echo "Unzip on a Mac. If macOS says damaged, double-click fix-gatekeeper.command"

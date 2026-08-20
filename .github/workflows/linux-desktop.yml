@@ -111,9 +111,9 @@ jobs:
         run: |
           python -m pip install --upgrade pip build
           python -m pip install -e ".[dev]"
-          bash -n install/finn-install.sh
+          bash -n install/unix/install.sh
           bash -n install/macos/make-pkg.sh
-          bash -n install/macos/make-setup-app.sh
+          bash -n install/macos/make-app.sh
           bash -n install/macos/pkg-scripts/postinstall
           python -m pytest tests -q
           python -m build --wheel
@@ -123,12 +123,13 @@ jobs:
           name: finn-api-wheel-${{ github.sha }}
           path: |
             dist/*.whl
-            install/finn-install.sh
-            install/finn-install.ps1
+            install/unix/install.sh
+            install/windows/install.ps1
+            install/windows/setup.cmd
             install/run-api.py
-            install/finn-setup.py
+            install/wizard.py
             install/engine.py
-            install/Finn-Setup.cmd
+            install/palette.py
             install/macos/**
           if-no-files-found: warn
           retention-days: 14

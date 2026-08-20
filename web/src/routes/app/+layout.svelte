@@ -45,7 +45,7 @@
     const typing = isTypingTarget(active);
     const inFinn = active instanceof HTMLElement && active.dataset.composer === 'finn';
     if ((inFinn || !typing) && !appState.aiStripPinned) {
-      appState.hideFinn();
+      if (appState.aiStripOpen || !appState.aiStripHidden) appState.hideFinn();
     }
   }
 
@@ -203,7 +203,7 @@
     <main class="main" aria-label="Finn workstation" class:focus={appState.focusPane === 'center'}>
       {#if !appState.connected}
         <div class="banner" role="alert">
-The bundled API is not reachable. Reopen the desktop app (it starts the API with itself), or refresh if Python is installing dependencies.
+          The bundled API is not reachable. Reopen the desktop app (it starts the API with itself), or refresh if Python is installing dependencies.
         </div>
       {/if}
       {@render children()}
@@ -278,11 +278,11 @@ The bundled API is not reachable. Reopen the desktop app (it starts the API with
   }
 
   .banner {
-    background: rgba(255, 45, 85, 0.12);
-    color: #ffd0d0;
+    background: var(--critical-soft);
+    color: var(--critical);
     padding: 0.5rem 1rem;
     font-size: 0.8rem;
-    border-bottom: 1px solid rgba(255, 45, 85, 0.2);
+    border-bottom: 1px solid var(--glass-border);
     flex-shrink: 0;
     font-family: var(--font-mono);
   }
@@ -299,4 +299,5 @@ The bundled API is not reachable. Reopen the desktop app (it starts the API with
   @media (prefers-reduced-motion: reduce) {
     .workspace { transition: none; }
   }
+  :global(html.reduce-motion) .workspace { transition: none; }
 </style>

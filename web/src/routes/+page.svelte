@@ -67,10 +67,13 @@
 $ Can you scan 10.0.1.0/24 for http?
 › sent to Finn</pre>
       <aside class="ghost-finn">
-        <div class="turn-label">You</div>
-        <div class="turn-body">Can you scan 10.0.1.0/24 for http?</div>
-        <div class="turn-label finn">Finn</div>
-        <div class="turn-body">I’ll propose nmap against that range. Approve the card when you’re ready.</div>
+        <div class="card">
+          <header class="card-meta">
+            <span class="who">Finn</span>
+            <span class="mono model">auto</span>
+          </header>
+          <p>I’ll propose nmap against that range. Approve the pending block when you’re ready.</p>
+        </div>
       </aside>
       <aside class="ghost-insp">
         <div class="finding">CRITICAL · panel RCE</div>
@@ -80,10 +83,6 @@ $ Can you scan 10.0.1.0/24 for http?
   </section>
 
   <section class="editorial">
-    <article>
-      <h2>Finn beside the terminal</h2>
-      <p>Ask in English. Finn already has the Space, last runs, and findings — like an agent sitting on the workspace, not a chat overlay.</p>
-    </article>
     <article>
       <h2>Approval gate</h2>
       <p>Every shell command is a Warp-style block with Approve / Edit / Reject. Dangerous tools stay sandboxed and logged — even in YOLO.</p>
@@ -213,16 +212,19 @@ $ Can you scan 10.0.1.0/24 for http?
   .ghost-side { border-right: 1px solid var(--glass-border); }
   .ghost-finn { border-left: 1px solid var(--glass-border); }
   .ghost-insp { border-left: 1px solid var(--glass-border); }
-  .turn-label {
-    font-size: 10px;
-    font-weight: 600;
-    letter-spacing: 0.06em;
-    text-transform: uppercase;
-    color: var(--text-faint);
-    margin-bottom: 4px;
+  .card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: 10px 12px;
+    border: 1px solid var(--glass-border);
+    border-radius: 10px;
+    background: var(--abyss-2);
   }
-  .turn-label.finn { color: var(--green); margin-top: 10px; }
-  .turn-body { font-size: 12px; line-height: 1.45; color: var(--text); margin-bottom: 8px; }
+  .card-meta { display: flex; align-items: center; gap: 8px; }
+  .card-meta .who { font-size: 11px; font-weight: 600; color: var(--green); }
+  .card-meta .model { font-size: 10px; color: var(--text-faint); }
+  .card p { margin: 0; font-size: 12px; line-height: 1.45; color: var(--text); }
   .row { height: 28px; display: flex; align-items: center; padding: 0 8px; border-radius: 5px; }
   .row.on { background: rgba(255,255,255,0.05); box-shadow: inset 2px 0 0 var(--green); color: var(--text); }
   .ghost-term {
@@ -236,7 +238,7 @@ $ Can you scan 10.0.1.0/24 for http?
   .finding { padding: 8px; margin-bottom: 6px; border: 1px solid var(--glass-border); border-radius: 6px; font-size: 11px; }
   .editorial {
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr;
+    grid-template-columns: 1fr 1fr;
     gap: 1.5rem;
     margin-bottom: 2.5rem;
   }

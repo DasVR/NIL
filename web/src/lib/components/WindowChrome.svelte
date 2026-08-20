@@ -1,6 +1,7 @@
 <script>
   import { appState } from '$lib/stores.svelte';
   import LiquidMetal from './LiquidMetal.svelte';
+  import { cssToken, COLOR } from '$lib/tokens';
   import {
     closeWindow,
     minimizeWindow,
@@ -15,6 +16,15 @@
       ? 'YOLO enabled — commands auto-run (still logged)'
       : 'YOLO disabled — commands require approval'
   );
+  const metalColor = $derived.by(() => {
+    void appState.prefs.accent;
+    void appState.prefs.theme;
+    return appState.yolo ? cssToken('--danger', COLOR.danger) : cssToken('--green', COLOR.green);
+  });
+  const metalBase = $derived.by(() => {
+    void appState.prefs.theme;
+    return cssToken('--abyss', COLOR.abyss);
+  });
 
   function onDragMouseDown(ev) {
     if (ev.button !== 0) return;
@@ -43,7 +53,8 @@
     <LiquidMetal
       intensity={appState.yolo ? 0.48 : 0.34}
       speed={0.55}
-      color1={appState.yolo ? '#ff5c5c' : '#00d992'}
+      color1={metalColor}
+      color2={metalBase}
       interactive={false}
     />
   </div>
