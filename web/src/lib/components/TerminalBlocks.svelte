@@ -256,9 +256,39 @@
     min-width: 0;
   }
   .block.pending {
+    position: relative;
     border-color: rgba(255, 180, 84, 0.55);
     box-shadow: 0 0 0 1px rgba(255, 180, 84, 0.25);
   }
+  .block.pending::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    padding: 1px;
+    background: conic-gradient(
+      from var(--beam-angle, 0deg),
+      transparent 0deg,
+      var(--warning) 35deg,
+      transparent 85deg,
+      transparent 360deg
+    );
+    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    -webkit-mask-composite: xor;
+    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+    mask-composite: exclude;
+    animation: beam-rotate 2.6s linear infinite;
+    pointer-events: none;
+  }
+  .block.pending > * { position: relative; z-index: 2; }
+  @keyframes beam-rotate {
+    to { --beam-angle: 360deg; }
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .block.pending::before { display: none; }
+  }
+  :global(html.reduce-motion) .block.pending::before { display: none; }
   .block.error { border-color: rgba(255, 92, 92, 0.4); }
   .block.rejected { opacity: 0.65; }
   header {

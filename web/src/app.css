@@ -137,6 +137,12 @@ html[data-accent='red'] {
 
 * { box-sizing: border-box; }
 
+@property --beam-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
 html, body {
   margin: 0;
   padding: 0;
