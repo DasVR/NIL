@@ -1,6 +1,6 @@
 # Finn Workstation — UI/UX Redesign Plan (v3)
 
-> **Status:** Implemented as v1.1 (`APP_TAG = v1.1`). `/app` is the Space workstation. This file remains the IA source of truth.
+> **Status:** Implemented as v1.1.1 (`APP_TAG = v1.1.1`). `/app` is the Space workstation. This file remains the IA source of truth.
 > **Product:** A first-party macOS pentest workstation that happens to have the best AI operator sitting next to you.
 > **Rule:** The engagement is the product. Finn is a senior sitting beside the terminal — never the homepage.
 

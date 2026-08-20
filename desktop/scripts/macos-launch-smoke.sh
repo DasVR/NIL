@@ -41,7 +41,15 @@ if ! plutil -p "${PLIST}" | grep -q NSAllowsLocalNetworking; then
 fi
 
 xattr -cr "${APP}" || true
-codesign --force --deep --sign - "${APP}"
+ENT="${APP}/Contents/Resources/Entitlements.plist"
+if [[ ! -f "${ENT}" ]]; then
+  ENT="${ROOT}/desktop/src-tauri/Entitlements.plist"
+fi
+if [[ -f "${ENT}" ]]; then
+  codesign --force --deep --sign - --entitlements "${ENT}" "${APP}"
+else
+  codesign --force --deep --sign - "${APP}"
+fi
 codesign -dv --verbose=2 "${APP}" || true
 
 export RUST_BACKTRACE=1

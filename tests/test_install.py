@@ -17,8 +17,19 @@ def test_cli_wrapper_syntax():
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-pkg.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "make-dmg.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "pkg-scripts" / "postinstall")])
+    subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "adhoc-sign.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "strip-adhoc-signature.sh")])
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "fix-gatekeeper.command")])
+    adhoc = (INSTALL / "macos" / "adhoc-sign.sh").read_text(encoding="utf-8")
+    assert "--remove-signature" not in adhoc
+    assert "codesign --force --deep --sign -" in adhoc
+    strip = (INSTALL / "macos" / "strip-adhoc-signature.sh").read_text(encoding="utf-8")
+    assert "adhoc-sign.sh" in strip
+    assert "--remove-signature" not in strip
+    gk = (INSTALL / "macos" / "fix-gatekeeper.command").read_text(encoding="utf-8")
+    assert "codesign --force --deep --sign -" in gk
+    post = (INSTALL / "macos" / "pkg-scripts" / "postinstall").read_text(encoding="utf-8")
+    assert "codesign --force --deep --sign -" in post
     assert (INSTALL / "windows" / "launch.cmd").is_file()
     assert (INSTALL / "windows" / "setup.cmd").is_file()
     assert (INSTALL / "wizard.py").is_file()
@@ -66,7 +77,7 @@ def test_find_wheel_in_dist(tmp_path):
     inst = artifact / "install"
     dist.mkdir(parents=True)
     inst.mkdir()
-    wheel = dist / "finn_pentest-1.1.0-py3-none-any.whl"
+    wheel = dist / "finn_pentest-1.1.1-py3-none-any.whl"
     wheel.write_bytes(b"PK\x03\x04")
     found = engine.find_wheel(inst)
     assert found == wheel.resolve()
@@ -113,6 +124,7 @@ def test_clear_macos_quarantine_is_safe(tmp_path):
     app = tmp_path / "Finn Pentest Harness.app"
     app.mkdir()
     engine.clear_macos_quarantine(app)
+    engine.adhoc_sign_macos_app(app)
 
 
 def test_is_zip_file(tmp_path):

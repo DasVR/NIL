@@ -14,17 +14,17 @@ fi
 
 node "${ROOT}/desktop/scripts/stage-api.mjs"
 chmod +x "${ROOT}/install/macos/make-app.sh" "${ROOT}/install/wizard.py" "${ROOT}/install/unix/install.sh"
-chmod +x "${ROOT}/install/macos/strip-adhoc-signature.sh" "${ROOT}/install/macos/fix-gatekeeper.command"
+chmod +x "${ROOT}/install/macos/adhoc-sign.sh" "${ROOT}/install/macos/strip-adhoc-signature.sh" "${ROOT}/install/macos/fix-gatekeeper.command"
 
-# Unsigned + no quarantine: ad-hoc signed GitHub downloads look "damaged" to Gatekeeper.
-bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${APP}"
+# Apple Silicon rejects unsigned Mach-O ("cannot be opened"). Ad-hoc-sign, then xattr -cr.
+bash "${ROOT}/install/macos/adhoc-sign.sh" "${APP}"
 
 KIT="${BUNDLE_DIR}/Finn-Pentest-Harness-macOS-kit"
 rm -rf "${KIT}"
 mkdir -p "${KIT}/api"
 
 cp -R "${APP}" "${KIT}/"
-bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${KIT}/$(basename "${APP}")"
+bash "${ROOT}/install/macos/adhoc-sign.sh" "${KIT}/$(basename "${APP}")"
 DMG="$(find "${DMG_DIR}" -maxdepth 1 -name '*.dmg' -print 2>/dev/null | head -n 1 || true)"
 if [[ -n "${DMG}" && -f "${DMG}" ]]; then
   cp "${DMG}" "${KIT}/"
@@ -44,7 +44,7 @@ cp -R "${KIT}/api/." "${PAYLOAD}/"
 cp -R "${APP}" "${PAYLOAD}/"
 bash "${ROOT}/install/macos/make-app.sh" "${KIT}/Finn Setup.app" "${PAYLOAD}"
 rm -rf "${PAYLOAD}"
-bash "${ROOT}/install/macos/strip-adhoc-signature.sh" "${KIT}/Finn Setup.app"
+bash "${ROOT}/install/macos/adhoc-sign.sh" "${KIT}/Finn Setup.app"
 
 chmod +x "${ROOT}/install/macos/make-pkg.sh" "${ROOT}/install/macos/make-dmg.sh"
 bash "${ROOT}/install/macos/make-pkg.sh" "${BUNDLE_DIR}" "${APP}"
@@ -61,4 +61,4 @@ else
 fi
 
 ls -lah "${OUT}"
-echo "Unzip on a Mac. If macOS says damaged, double-click fix-gatekeeper.command"
+echo "Unzip on a Mac. If macOS says it cannot be opened, double-click fix-gatekeeper.command"

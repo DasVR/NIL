@@ -20,6 +20,14 @@ USER_HOME="${USER_HOME:-/Users/${CONSOLE}}"
 mkdir -p "${USER_HOME}/.finn-pentest" "${USER_HOME}/.local/finn" "${USER_HOME}/.local/bin"
 if [[ -d "$APP" ]]; then
   xattr -cr "$APP" 2>/dev/null || true
+  ENT="${APP}/Contents/Resources/Entitlements.plist"
+  if command -v codesign >/dev/null 2>&1; then
+    if [[ -f "$ENT" ]]; then
+      codesign --force --deep --sign - --entitlements "$ENT" "$APP" 2>/dev/null || true
+    else
+      codesign --force --deep --sign - "$APP" 2>/dev/null || true
+    fi
+  fi
   API="$(find "$APP/Contents/Resources" -name 'run-api.py' | head -1 || true)"
   if [[ -n "$API" ]]; then
     API_ROOT="$(dirname "$API")"
