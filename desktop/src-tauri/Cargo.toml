@@ -1,6 +1,6 @@
 [package]
 name = "finn"
-version = "1.0.0"
+version = "1.1.0"
 description = "Finn Pentest Harness desktop"
 authors = ["Finn"]
 edition = "2021"

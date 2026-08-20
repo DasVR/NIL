@@ -12,7 +12,7 @@ from pathlib import Path
 from typing import Callable
 
 REPO = os.environ.get("FINN_REPO", "DasVR/finn-pentest-harness")
-SETUP_VERSION = "1.0.0"
+SETUP_VERSION = "1.1.0"
 Progress = Callable[[int, str], None]
 
 DOCKER_TOS = """Docker sandbox terms

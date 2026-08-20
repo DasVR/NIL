@@ -1,30 +1,42 @@
 # Finn Pentest Harness
 
-Dual-interface, AI-driven pentest workstation. Terminal TUI, local website, and Tauri desktop app share one FastAPI backend on `http://127.0.0.1:8766`.
+A local pentest **workstation**. Engagements are Spaces. The terminal is home. Finn sits beside the shell — it is not the homepage.
 
 Use this only against systems you are authorized to test.
 
-## Quick start
+The desktop app, the site at `/app`, and the TUI share one FastAPI backend on `http://127.0.0.1:8766`.
 
-Download **Finn-Setup** for your OS and double-click it. No Terminal.
+## Install
 
-- **macOS:** `Finn-Setup.pkg` (Apple Installer) or `Finn-Setup.dmg` from the **Finn-Setup-macOS-*** artifact
-- **Windows:** `Finn-Setup.exe` — double-click, then open **Finn** from the Start Menu or desktop. The API starts with the app (Python is bundled; you do not run a separate server).
-- **Linux:** `Finn-Setup.deb` or the AppImage
+Download **Finn-Setup** for your OS from [Releases](https://github.com/DasVR/finn-pentest-harness/releases) and double-click it. No Terminal. The API starts with the app.
 
-Then open Finn. The API starts with the app. Do not use the python wheel zip (`finn-python-*`) as a Mac installer.
+| OS | File |
+|---|---|
+| macOS | `Finn-Setup.pkg` or `Finn-Setup.dmg` |
+| Windows | `Finn-Setup.exe` |
+| Linux | `Finn-Setup.deb` or `Finn-Setup.AppImage` |
 
-If macOS says the download is **damaged**, that is Gatekeeper quarantine on a GitHub file, not a corrupt archive. Double-click **fix-gatekeeper.command** next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then open it again. Right-click → Open also works for “unidentified developer”; it does not always clear the damaged message.
+Do **not** use the Python wheel zip as a Mac installer.
+
+If macOS says the file is **damaged**, that is Gatekeeper quarantine on a GitHub download. Double-click `fix-gatekeeper.command` next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then open it again.
 
 Headless from a clone:
 
 ```bash
 python3 install/wizard.py --cli --user --offline --host
-# or
+# same as
 bash install/unix/install.sh --user --offline --host
 ```
 
-In other terminals:
+Windows:
+
+```powershell
+powershell -File install/windows/install.ps1 -Cli -User -Offline -HostSandbox
+```
+
+Full installer tree: [`install/README.md`](install/README.md).
+
+Then open Finn. In other terminals:
 
 ```bash
 finn tui
@@ -32,68 +44,96 @@ finn tui
 cd web && npm install && npm run dev   # http://127.0.0.1:5173
 ```
 
-Open `/app` for the workstation. Landing, docs, and download pages are public and do not need the API.
+`/app` is the workstation. `/`, `/docs`, and `/download` do not need the API.
 
-### Desktop
+## Workstation
+
+Terminal is the default surface. Finn is a column you summon (`⌘J`), never a chat landing page. Every shell command is a block with Approve / Edit / Reject. YOLO auto-runs and is still sandboxed and logged.
+
+| Shortcut | Action |
+|---|---|
+| `⌘K` | Command palette |
+| `⌘J` | Toggle Finn |
+| `⌘↵` | Approve pending command |
+| `⌘⇧↵` | Reject pending |
+| `⌘Y` | YOLO |
+| `⌘T` / `⌘E` / `⌘\` | Terminal / Artifact / Split |
+| `⌘,` | Settings |
+| `Esc` | Peel one layer |
+
+Type English in Finn. Type real commands in `$`. Palette `? how do I…` hands the question to Finn.
+
+## Desktop from source
 
 ```bash
 cd desktop
-npm run setup          # installs web/ and desktop/ npm deps
-npm run tauri dev      # requires Rust + Tauri system deps
+npm run setup          # web/ + desktop/ npm deps
+npm run tauri dev      # Rust + Tauri system deps
 ```
 
-If Windows says `'vite' is not recognized`, run `npm install` inside `web/` (or `npm run setup` from `desktop/`), then retry.
+If Windows says `'vite' is not recognized`, run `npm install` inside `web/` first.
 
-The desktop app wraps the same Svelte UI, launches into `/app`, and adds a tray icon plus `Ctrl+Shift+F` (macOS: `Cmd+Shift+F`) to focus. Linux builds need GTK/WebKit (`libgtk-3-dev`, `libwebkit2gtk-4.1-dev`) and Rust 1.85+. Windows needs WebView2 (bundled with Edge). macOS 12+ uses the system WebKit; GitHub Actions packages a zipped `.app` and a `.dmg`, and smoke-tests that the binary stays up after launch.
+The Tauri app launches `/app`, starts the bundled API, and adds a tray icon plus `Ctrl+Shift+F` (macOS: `⌘⇧F`) to focus. Linux needs GTK/WebKit (`libgtk-3-dev`, `libwebkit2gtk-4.1-dev`) and Rust 1.85+. Windows needs WebView2. macOS 12+ uses system WebKit.
 
-If `npm run tauri dev` panics with `PluginInitialization("notification", "... invalid type: map, expected unit")`, open `desktop/src-tauri/tauri.conf.json` and delete the entire `"plugins"` object. Do not leave `"notification": {}` or `"global-shortcut": {}` in that file — Tauri 2 treats those empty objects as invalid. Plugins are registered in `desktop/src-tauri/src/lib.rs`. Then rerun `npm run tauri dev`.
-
-GitHub zip snapshots named `finn-pentest-harness-master` go stale. Prefer `git clone` / `git pull origin master` over reusing an old unzipped folder.
+Prefer `git clone` / `git pull origin master` over a stale GitHub source zip.
 
 ## Layout
 
-- `finn_pentest/` — FastAPI, sandbox, plugins, AI router, TUI, CLI
-- `install/` — Setup wizard, engine, and OS folders (`unix/`, `windows/`, `macos/`). See `install/README.md`.
-- `web/` — SvelteKit website (marketing + `/app`)
-- `desktop/` — Tauri 2 wrapper (bundles the API into the app)
-- `prompts/` — professional assessment system prompts
-- `tests/` — pytest
-- `docs/history/` — retired design docs
-- `cursor-research/` — bookmarks research (polish input; `UX_REDESIGN.md` wins)
+| Path | What |
+|---|---|
+| `finn_pentest/` | FastAPI, sandbox, plugins, AI router, TUI, CLI |
+| `install/` | Setup wizard, engine, OS folders — see `install/README.md` |
+| `web/` | SvelteKit (marketing + `/app`) |
+| `desktop/` | Tauri 2 wrapper |
+| `prompts/` | Assessment system prompts |
+| `tests/` | pytest |
+| `UX_REDESIGN.md` | Living UI spec |
+| `cursor-research/` | Bookmarks research (polish input; the living spec wins) |
+
+## Recon plugins
+
+Authorized testing only. Shipped scanners, in hunt order:
+
+`nmap` → `httpx` → `whatweb` → `sslscan` → `nuclei` → `nikto` → `ffuf` / `gobuster` · `subfinder` on domains.
+
+They appear in the sidebar and palette. No extra routes.
+
+Default runtime is a **host sandbox** (per-Space folder). Docker is opt-in after accepting sandbox terms.
 
 ## Providers
 
-Copy `~/.finn-pentest/providers.json` (created on first `finn api`) and set:
+`~/.finn-pentest/providers.json` is created on first `finn api`. Set any of:
 
 - `DEEPSEEK_API_KEY`
 - `XAI_API_KEY`
 - `MOONSHOT_API_KEY`
 - `OLLAMA_API_KEY`
 
-Empty keys are skipped. Failover is silent on 429 / 5xx / timeout.
+Empty keys are skipped. Failover is silent on 429 / 5xx / timeout. Edit providers from Settings (`⌘,`).
 
 ## Tests
 
 ```bash
 python3 -m pytest tests -q
+cd web && npm run check && npm run build
 ```
 
-Sandbox tests that need Docker are skipped when the daemon is missing. The default runtime is a **host sandbox** (per-Space folder, no Docker). Docker is opt-in after accepting sandbox terms.
+Docker sandbox tests skip when the daemon is missing.
 
 ## Releases
 
-Tagged builds publish automatically to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases) (macOS kit zip of the `.app` + `.dmg` + API, Windows `.exe`, Linux `.AppImage` / `.deb`, plus a Python wheel):
+Tagged builds publish to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases):
 
 ```bash
-git tag v1
-git push origin v1
+git tag v1.1
+git push origin v1.1
 ```
 
-The **Release** workflow builds all three platforms and uploads installers. Run it with **macos_only** to skip Windows and Linux. The site `/download` page pulls the latest release from the GitHub API. Unzip the macOS kit and either run `install/unix/install.sh` or drag `Finn Pentest Harness.app` to Applications. The API is inside the app.
+The **Release** workflow builds macOS, Windows, and Linux installers plus a Python wheel. `/download` reads the latest GitHub release.
 
 ## Safety
 
 - Approval gate is on by default
 - YOLO is per-engagement, still sandboxed and logged
 - Code mode writes assessment scripts and parsers, not exploit kits
-- Recon plugins ship: nmap, httpx, whatweb, sslscan, nuclei, nikto, ffuf, gobuster, subfinder
+- Recon and assessment only — no exploit kits, C2, or credential stuffing
