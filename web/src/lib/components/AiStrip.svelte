@@ -193,15 +193,11 @@
     width: 100%;
     min-width: 0;
     min-height: 0;
-    height: var(--ai-strip-height);
-    max-height: 42vh;
-    flex-shrink: 0;
+    height: 100%;
     display: flex;
     flex-direction: column;
-    background: color-mix(in srgb, var(--abyss-1) 82%, transparent);
-    border-top: 1px solid var(--glass-border);
-    backdrop-filter: blur(22px) saturate(1.45);
-    -webkit-backdrop-filter: blur(22px) saturate(1.45);
+    background: transparent;
+    border: 0;
     overflow: hidden;
   }
   .chrome {
@@ -255,15 +251,16 @@
   .empty { color: var(--text-dim); font-size: 13px; line-height: 1.5; padding: 12px 4px; }
   .empty .hint { color: var(--text-faint); font-size: 12px; }
   .turn { display: flex; flex-direction: column; gap: 6px; max-width: 100%; min-width: 0; }
-  .turn.user { align-items: flex-end; }
+  .turn.user { align-items: flex-start; }
   .turn.user .body {
-    font-size: 13px;
+    font-size: 12px;
     line-height: 1.45;
-    color: var(--text);
+    color: var(--text-dim);
     white-space: pre-wrap;
     overflow-wrap: anywhere;
-    text-align: right;
-    max-width: 85%;
+    text-align: left;
+    max-width: 100%;
+    font-family: var(--font-sans);
   }
   .card {
     display: flex;

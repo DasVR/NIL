@@ -5,8 +5,9 @@
   import AiStrip from '$lib/components/AiStrip.svelte';
   import EmptyState from '$lib/components/EmptyState.svelte';
   import ThinkingOrbs from '$lib/components/ThinkingOrbs.svelte';
+  import MorphIcon from '$lib/components/MorphIcon.svelte';
 
-  const thinVisible = $derived(!appState.aiStripOpen && !appState.aiStripHidden);
+  const thinVisible = $derived(!appState.aiStripHidden);
 </script>
 
 <div class="workspace-page">
@@ -14,24 +15,18 @@
     <EmptyState />
   {:else}
     <div class="surface-chrome">
-      <span class="chrome-title mono">{appState.engagement}</span>
+      <span class="chrome-title label-micro">Primary</span>
       <div class="views">
         <button type="button" class:on={appState.activeView === 'terminal'} onclick={() => appState.setView('terminal')} title="Terminal (⌘T)">
-          <svg class="vicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="m5 8 4 4-4 4" /><path d="M13 16h6" />
-          </svg>
+          <MorphIcon name="term" on={appState.activeView === 'terminal'} />
           Term
         </button>
         <button type="button" class:on={appState.activeView === 'artifact'} onclick={() => appState.setView('artifact')} title="Artifact (⌘E)">
-          <svg class="vicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <path d="M6 3h8l4 4v14H6z" /><path d="M13 3v5h5" />
-          </svg>
+          <MorphIcon name="artifact" on={appState.activeView === 'artifact'} />
           Artifact
         </button>
-        <button type="button" class:on={appState.activeView === 'split'} onclick={() => appState.setView('split')} title="Split (⌘\\)">
-          <svg class="vicon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
-            <rect x="4" y="5" width="16" height="14" rx="1.5" /><path d="M12 5v14" />
-          </svg>
+        <button type="button" class:on={appState.activeView === 'split'} onclick={() => appState.setView('split')} title="Split (⌘\)">
+          <MorphIcon name="split" on={appState.activeView === 'split'} />
           Split
         </button>
         <button
@@ -40,7 +35,10 @@
           class:busy={appState.busy && !appState.aiStripOpen}
           onclick={() => appState.toggleAi()}
           title="Finn (⌘J)"
-        >Finn</button>
+        >
+          <MorphIcon name="finn" on={appState.aiStripOpen} />
+          Finn
+        </button>
       </div>
     </div>
 
@@ -54,8 +52,11 @@
         {/if}
       </div>
       {#if appState.aiStripOpen}
-        <AiStrip />
-      {:else if thinVisible}
+        <div class="finn-sheet liquid-glass">
+          <AiStrip />
+        </div>
+      {/if}
+      {#if thinVisible}
         <button type="button" class="finn-bar glass-overlay" onclick={() => appState.openFinn({ focus: true })}>
           {#if appState.busy}
             <ThinkingOrbs label="Finn is working" />
@@ -92,12 +93,10 @@
     background: var(--abyss-1);
   }
   .chrome-title {
-    font-size: 11px;
-    color: var(--text-dim);
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 10px;
+    color: var(--text-faint);
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
   }
   .views { display: flex; gap: 4px; }
   .views button {
@@ -112,22 +111,8 @@
     align-items: center;
     gap: 5px;
   }
-  .vicon {
-    width: 13px;
-    height: 13px;
-    flex-shrink: 0;
-    opacity: 0.7;
-    transform: scale(0.9);
-    transition: transform 220ms var(--spring-bouncy), opacity 160ms var(--spring-smooth);
-  }
-  .views button.on .vicon { opacity: 1; transform: scale(1); }
-  .views button:hover .vicon { opacity: 1; }
   .views button.on { color: var(--green); background: var(--green-soft); }
   .views button.busy { color: var(--green); }
-  @media (prefers-reduced-motion: reduce) {
-    .vicon { transition: none; }
-  }
-  :global(html.reduce-motion) .vicon { transition: none; }
   .work-row {
     flex: 1;
     min-width: 0;
@@ -144,10 +129,32 @@
     display: flex;
     overflow: hidden;
     position: relative;
+    padding-bottom: var(--ai-strip-thin);
   }
   .surface.split > :global(*) { flex: 1; min-width: 0; min-height: 0; }
   .surface.split > :global(.artifact) { border-left: 1px solid var(--glass-border); }
+  .finn-sheet {
+    position: absolute;
+    left: 10px;
+    right: 10px;
+    bottom: calc(var(--ai-strip-thin) + 8px);
+    height: min(46vh, 340px);
+    z-index: 6;
+    overflow: hidden;
+    border-radius: var(--radius-panel);
+    box-shadow: var(--shadow-modal);
+    animation: finn-rise 280ms var(--spring-panel);
+  }
+  @keyframes finn-rise {
+    from { opacity: 0; transform: translateY(12px); }
+    to { opacity: 1; transform: none; }
+  }
   .finn-bar {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 5;
     flex-shrink: 0;
     height: var(--ai-strip-thin);
     display: flex;
@@ -157,7 +164,6 @@
     border: 0;
     border-top: 1px solid var(--glass-border);
     border-radius: 0;
-    background: color-mix(in srgb, var(--abyss-1) 82%, transparent);
     color: var(--text-dim);
     font-size: 12px;
     min-height: unset;
@@ -179,4 +185,8 @@
     box-shadow: 0 0 6px var(--green-glow);
     flex-shrink: 0;
   }
+  @media (prefers-reduced-motion: reduce) {
+    .finn-sheet { animation: none; }
+  }
+  :global(html.reduce-motion) .finn-sheet { animation: none; }
 </style>

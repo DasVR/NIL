@@ -31,11 +31,10 @@
 
   <section class="hero">
     <p class="eyebrow">Authorized pentest workstation · {APP_TAG}</p>
-    <h1>The pentest workstation with an operator in the chair.</h1>
+    <h1>Terminal first.<br />Finn beside you.</h1>
     <p class="lede">
-      Engagements are Spaces. The terminal is home. Talk to Finn like a Cursor agent —
-      English lands in the column beside the shell, real commands stay in `$`.
-      YOLO when you trust the scope. Data stays on disk unless you choose a cloud model.
+      A Space is an engagement. The block terminal is home. Finn is a glass strip you summon —
+      never a chat landing page. Approve every command. YOLO when the scope is yours.
     </p>
     <div class="cta-row">
       <button class="primary" type="button" onclick={() => goto('/app')}>Open Workstation</button>
@@ -147,7 +146,7 @@ $ Can you scan 10.0.1.0/24 for http?
   }
   .nav-links a { color: var(--text-dim); font-size: 13px; }
   .nav-cta { font-size: 13px; }
-  .hero { padding: 2rem 0 1.5rem; max-width: 720px; }
+  .hero { padding: 3.5rem 0 2rem; max-width: 860px; }
   .eyebrow {
     margin: 0 0 0.75rem;
     color: var(--green);
@@ -157,17 +156,18 @@ $ Can you scan 10.0.1.0/24 for http?
     text-transform: uppercase;
   }
   h1 {
-    font-size: clamp(2rem, 5vw, 3.1rem);
-    line-height: 1.08;
-    margin: 0 0 1rem;
-    letter-spacing: -0.035em;
-    font-weight: 620;
+    font-size: clamp(2.6rem, 8vw, 4.6rem);
+    line-height: 0.98;
+    margin: 0 0 1.25rem;
+    letter-spacing: -0.055em;
+    font-weight: 650;
   }
   .lede {
-    margin: 0 0 1.5rem;
+    margin: 0 0 1.75rem;
     color: var(--text-dim);
-    line-height: 1.6;
-    font-size: 16px;
+    line-height: 1.55;
+    font-size: 18px;
+    max-width: 36em;
   }
   .cta-row { display: flex; flex-wrap: wrap; gap: 0.65rem; }
   .btn.ghost, a.ghost {
@@ -200,17 +200,35 @@ $ Can you scan 10.0.1.0/24 for http?
   .safe { margin-left: auto; color: var(--green); font-weight: 600; font-size: 10px; }
   .frame-body {
     display: grid;
-    grid-template-columns: 160px 1fr 200px 160px;
-    min-height: 240px;
+    grid-template-columns: 160px 1fr 200px;
+    min-height: 280px;
+    position: relative;
   }
-  .ghost-side, .ghost-insp, .ghost-finn {
+  .ghost-finn {
+    position: absolute;
+    right: 12px;
+    bottom: 12px;
+    width: 240px;
+    padding: 12px;
+    border-radius: var(--radius-panel);
+    background: var(--glass-3);
+    backdrop-filter: blur(24px) saturate(1.6);
+    -webkit-backdrop-filter: blur(24px) saturate(1.6);
+    border: 1px solid var(--glass-border-strong);
+    box-shadow: var(--shadow-panel);
+    z-index: 2;
+  }
+  .ghost-side, .ghost-insp {
     padding: 10px;
     background: var(--abyss-2);
     font-size: 12px;
     color: var(--text-dim);
   }
+  .ghost-finn {
+    font-size: 12px;
+    color: var(--text-dim);
+  }
   .ghost-side { border-right: 1px solid var(--glass-border); }
-  .ghost-finn { border-left: 1px solid var(--glass-border); }
   .ghost-insp { border-left: 1px solid var(--glass-border); }
   .card {
     display: flex;
