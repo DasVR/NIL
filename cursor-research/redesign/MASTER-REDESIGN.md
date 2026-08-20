@@ -1,7 +1,13 @@
 # FINN WORKSTATION — FULL REDESIGN SYSTEM (v5)
 
-> **Status:** REDESIGN v5. **Direction locked by Arriq:** "like Claude, with the UI design of cursor AGENTS."
-> **Product:** An AI agent workstation where the **Agent panel is the star** (Cursor's Agents window) wrapped in **Claude's clean, quiet, high-signal dark UI**.
+> **Status:** Research only — not the living product spec.
+> Workstation IA is [`UX_REDESIGN.md`](../../UX_REDESIGN.md) (v3, terminal-first).
+> Install, welcome, and per-OS first launch are [`docs/WELCOME.md`](../../docs/WELCOME.md).
+> This file is an Agents-window exploration (Claude conversation × Cursor Agents). Do not
+> implement it as a chat homepage, and do not let it override the installer catalog.
+>
+> Historical note: "like Claude, with the UI design of cursor AGENTS."
+> **Product (shipped):** A first-party pentest workstation. Finn is a summoned column.
 > **Grounded 100% in Arriq's Twitter bookmarks** — NOT generic AI web design.
 
 ---

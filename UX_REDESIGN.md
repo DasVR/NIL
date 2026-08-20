@@ -545,9 +545,11 @@ Live preview on appearance. Providers stay here (the only reason the settings *p
 
 ### 4.9 First-run / empty Space
 
-Not a chatbot empty state.
+Not a chatbot empty state. Full journey (download → OS installer → first Space) is [`docs/WELCOME.md`](./docs/WELCOME.md). OS files and first-launch notes live in [`install/catalog.json`](./install/catalog.json).
 
-Wegonorth-quiet: engagement name field, scope textarea, four templates as **rows** (not a marketing grid), recent Spaces below. After create → terminal with a first block: `scope loaded · 3 hosts · press ⌘K to scan`.
+Three eras: **Install** (native Finn-Setup) → **Welcome** (sandbox + first Space) → **Workstation**. The in-app sheet is not a second installer — user vs admin and online vs offline stay in the native wizard.
+
+Wegonorth-quiet empty Space: engagement name field, scope textarea, four templates as **rows** (not a marketing grid), recent Spaces below. After create → terminal with a first block: `scope loaded · 3 hosts · press ⌘K to scan`.
 
 ### 4.10 Kill the route-as-app model
 

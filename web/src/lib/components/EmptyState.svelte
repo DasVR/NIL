@@ -1,12 +1,9 @@
 <script lang="ts">
   import { appState } from '$lib/stores.svelte';
+  import { SPACE_TEMPLATES } from '$lib/space-templates';
+  import { detectHostOS, welcomeLine } from '$lib/os';
 
-  const templates = [
-    { name: 'external-pt', label: 'External pentest', scope: '10.0.0.0/24, example.com' },
-    { name: 'internal-net', label: 'Internal network', scope: '192.168.1.0/24' },
-    { name: 'web-app', label: 'Web application', scope: 'https://app.example.com' },
-    { name: 'wireless', label: 'Wireless audit', scope: 'SSID: CorpNet' }
-  ];
+  const os = detectHostOS();
 
   let name = $state('');
   let scope = $state('');
@@ -35,10 +32,11 @@
 
 <div class="empty-state">
   <div class="empty-content">
+    <p class="label-micro">Welcome</p>
     <h1>New Space</h1>
     <p>
-      The terminal is home — Finn sits under it.
-
+      {welcomeLine(os)}
+      The terminal is home — Finn sits under it. Name the engagement, paste scope, then press ⌘K to scan.
     </p>
     <label>
       Name
@@ -55,7 +53,7 @@
 
     <div class="template-grid">
       <span class="label-micro">Templates</span>
-      {#each templates as t}
+      {#each SPACE_TEMPLATES as t}
         <button type="button" class="template-card" onclick={() => create(t.name, t.scope)}>
           <span class="template-name">{t.label}</span>
           <span class="template-scope mono">{t.scope}</span>

@@ -35,6 +35,8 @@ def test_cli_wrapper_syntax():
     assert (INSTALL / "windows" / "setup.cmd").is_file()
     assert (INSTALL / "wizard.py").is_file()
     assert (INSTALL / "palette.py").is_file()
+    assert (INSTALL / "catalog.py").is_file()
+    assert (INSTALL / "catalog.json").is_file()
     bat = (ROOT / "desktop" / "scripts" / "windows-install.bat").read_text(encoding="utf-8")
     assert "finn server" not in bat
     hooks = (ROOT / "desktop" / "src-tauri" / "windows" / "nsis-hooks.nsh").read_text(encoding="utf-8")
@@ -57,6 +59,9 @@ def test_setup_gui_avoids_aqua_double_draw():
     assert "Who is installing?" in src
     assert "Where do the files come from?" in src
     assert "How should tools run?" in src
+    assert "from catalog import" in src
+    assert "Welcome era" in src
+    assert '"Welcome"' in src
     assert "from palette import COLOR" in src
     assert "#07090d" not in src
     assert "#3dff8a" not in src
@@ -73,6 +78,8 @@ def test_macos_setup_app_bundles_launcher(tmp_path):
     assert (out / "Contents" / "Resources" / "wizard.py").is_file()
     assert (out / "Contents" / "Resources" / "engine.py").is_file()
     assert (out / "Contents" / "Resources" / "palette.py").is_file()
+    assert (out / "Contents" / "Resources" / "catalog.py").is_file()
+    assert (out / "Contents" / "Resources" / "catalog.json").is_file()
     assert "Who is installing?" in (out / "Contents" / "Resources" / "wizard.py").read_text(encoding="utf-8")
     subprocess.check_call(["bash", "-n", str(INSTALL / "macos" / "setup-launcher.sh")])
     launcher = (INSTALL / "macos" / "setup-launcher.sh").read_text(encoding="utf-8")
@@ -82,6 +89,7 @@ def test_macos_setup_app_bundles_launcher(tmp_path):
     assert "--cli --user --offline --host" not in launcher
     make_app = (INSTALL / "macos" / "make-app.sh").read_text(encoding="utf-8")
     assert "setup-launcher.sh" in make_app
+    assert "catalog.json" in make_app
     assert "--cli --user --offline --host" not in make_app
 
 
@@ -221,3 +229,51 @@ def test_windows_user_paths_use_localappdata(tmp_path, monkeypatch):
     paths = engine.paths_for("user")
     assert paths["prefix"].name == "Finn"
     assert paths["bindir"] == paths["prefix"]
+
+
+def test_catalog_matches_web_copy():
+    native = (INSTALL / "catalog.json").read_text(encoding="utf-8")
+    web = (ROOT / "web" / "src" / "lib" / "install-catalog.json").read_text(encoding="utf-8")
+    assert native == web
+    sys.path.insert(0, str(INSTALL))
+    import catalog
+
+    data = catalog.load_catalog()
+    assert [era["id"] for era in data["eras"]] == ["install", "welcome", "workstation"]
+    for os_id, primary in (
+        ("macos", "Finn-Setup.pkg"),
+        ("windows", "Finn-Setup.exe"),
+        ("linux", "Finn-Setup.deb"),
+    ):
+        spec = data["systems"][os_id]
+        assert spec["primary"]["file"] == primary
+        assert spec["first_launch"]
+        assert spec["paths"]["user"]
+        assert spec["headless"]
+    assert catalog.welcome_line("darwin") == "Welcome. Finn is on this Mac."
+    assert catalog.welcome_line("win32") == "Welcome. Finn is on this PC."
+    assert catalog.welcome_line("linux") == "Welcome. Finn is on this computer."
+    assert "Gatekeeper" in " ".join(catalog.launch_lines("darwin"))
+    assert "SmartScreen" in " ".join(catalog.launch_lines("win32"))
+    assert "AppImage" in " ".join(catalog.launch_lines("linux")) or "chmod" in data["systems"]["linux"]["also"][0]["action"]
+
+
+def test_welcome_docs_exist():
+    welcome = (ROOT / "docs" / "WELCOME.md").read_text(encoding="utf-8")
+    assert "Install era" in welcome
+    assert "Welcome era" in welcome
+    assert "Workstation era" in welcome
+    assert "catalog.json" in welcome
+    ux = (ROOT / "UX_REDESIGN.md").read_text(encoding="utf-8")
+    assert "docs/WELCOME.md" in ux
+    assert "SetupWizard" not in (ROOT / "web" / "src" / "routes" / "app" / "+layout.svelte").read_text(
+        encoding="utf-8"
+    )
+    layout = (ROOT / "web" / "src" / "routes" / "app" / "+layout.svelte").read_text(encoding="utf-8")
+    assert "WelcomeSheet" in layout
+    empty = (ROOT / "web" / "src" / "lib" / "components" / "EmptyState.svelte").read_text(encoding="utf-8")
+    assert "welcomeLine" in empty
+    stores = (ROOT / "web" / "src" / "lib" / "stores.svelte.ts").read_text(encoding="utf-8")
+    assert "seedWelcomeBlock" in stores
+    assert "scope loaded" in stores
+

@@ -6,9 +6,10 @@ description: Design rules for the Finn workstation UI in web/. Use when editing 
 # Finn workstation UI
 
 The living spec is `UX_REDESIGN.md` (v3). `DESIGN.md` is v2 history — read it for token
-lineage, never for information architecture. `docs/history/design-v1.md` is the v1 costume.
+lineage, never for information architecture. `docs/WELCOME.md` is install + first-run +
+per-OS launch. `docs/history/design-v1.md` is the v1 costume.
 `cursor-research/TWITTER-BOOKMARKS-FULL-RESEARCH.md` is polish input only; where it
-contradicts v3, v3 wins.
+contradicts v3, v3 wins. `cursor-research/redesign/MASTER-REDESIGN.md` is research, not IA.
 
 The product is an engagement, not a chatbot. Terminal is the default surface. Finn is a
 column you summon, never the homepage.

@@ -1,34 +1,42 @@
-<script>
+<script lang="ts">
+  import MarketingNav from '$lib/components/MarketingNav.svelte';
   import {
     fetchLatestRelease,
     fetchRecentReleases,
     formatBytes,
     formatReleaseDate,
     GITHUB_RELEASES_URL,
-    GITHUB_REPO_URL
+    GITHUB_REPO_URL,
+    type GitHubRelease,
+    type ReleaseAsset
   } from '$lib/releases';
   import { APP_TAG } from '$lib/version';
+  import {
+    INSTALL_ERAS,
+    INSTALL_OS_ORDER,
+    INSTALL_SYSTEMS,
+    assetsForOS,
+    detectHostOS,
+    preferredAsset,
+    type HostOS
+  } from '$lib/os';
 
-  let latest = $state(null);
-  let history = $state([]);
+  let latest = $state<GitHubRelease | null>(null);
+  let history = $state<GitHubRelease[]>([]);
   let loading = $state(true);
   let error = $state('');
+  let os = $state<HostOS>('web');
 
-  const installSnippet = `# Double-click — no Terminal
-# macOS:   Finn-Setup.pkg  or  Finn-Setup.dmg
-# Windows: Finn-Setup.exe
-# Linux:   Finn-Setup.deb  or  Finn-Setup.AppImage`;
+  const desktopOs = $derived(INSTALL_OS_ORDER.filter((id) => id !== 'web'));
 
   load();
 
   async function load() {
     loading = true;
     error = '';
+    os = detectHostOS();
     try {
-      const [latestRelease, recent] = await Promise.all([
-        fetchLatestRelease(),
-        fetchRecentReleases(8)
-      ]);
+      const [latestRelease, recent] = await Promise.all([fetchLatestRelease(), fetchRecentReleases(8)]);
       latest = latestRelease;
       history = recent;
     } catch (err) {
@@ -38,24 +46,8 @@
     }
   }
 
-  function primaryAsset(release) {
-    if (!release?.assets?.length) return null;
-    const prefer = [
-      (a) => a.name.toLowerCase().includes('finn-setup') && a.name.toLowerCase().endsWith('.pkg'),
-      (a) => a.name.toLowerCase().endsWith('.pkg'),
-      (a) => a.name.toLowerCase().includes('finn-setup') && a.name.toLowerCase().endsWith('.exe'),
-      (a) => a.name.toLowerCase().endsWith('.exe'),
-      (a) => a.name.toLowerCase().endsWith('.zip') && /macos|darwin/i.test(a.name),
-      (a) => a.name.toLowerCase().endsWith('.dmg'),
-      (a) => a.name.toLowerCase().endsWith('.deb'),
-      (a) => a.name.toLowerCase().endsWith('.appimage'),
-      (a) => a.name.toLowerCase().endsWith('.msi')
-    ];
-    for (const pred of prefer) {
-      const hit = release.assets.find(pred);
-      if (hit) return hit;
-    }
-    return release.assets[0];
+  function featured(release: GitHubRelease | null): ReleaseAsset | null {
+    return preferredAsset(release, os === 'web' ? 'linux' : os);
   }
 </script>
 
@@ -64,23 +56,18 @@
 </svelte:head>
 
 <main class="releases-page marketing">
-  <nav class="crumb">
-    <a href="/">Finn</a>
-    <span>/</span>
-    <span>Releases</span>
-  </nav>
+  <MarketingNav current="download" />
 
-  <header class="hero liquid-glass">
+  <header class="hero">
     <p class="eyebrow">Desktop builds · {APP_TAG}</p>
     <h1>Download Finn</h1>
     <p class="lede">
-      Native apps for macOS, Windows, and Linux. Double-click
-      <strong>Finn-Setup.pkg</strong> (Mac), <strong>Finn-Setup.exe</strong> (Windows),
-      or <strong>Finn-Setup.deb</strong> (Linux). No Terminal. The API starts with the app.
+      Install era: one double-click. Welcome era: first Space. Workstation: terminal home.
+      Detected <strong>{INSTALL_SYSTEMS[os].name}</strong> — {INSTALL_SYSTEMS[os].requirement}.
     </p>
     <div class="hero-actions">
       {#if latest}
-        {@const asset = primaryAsset(latest)}
+        {@const asset = featured(latest)}
         {#if asset}
           <a class="btn primary" href={asset.url} download>{asset.label} · {latest.tag}</a>
         {/if}
@@ -96,51 +83,77 @@
     </div>
   </header>
 
+  <ol class="eras">
+    {#each INSTALL_ERAS as era, i}
+      <li>
+        <span class="n mono">{i + 1}</span>
+        <div>
+          <strong>{era.title}</strong>
+          <p>{era.body}</p>
+        </div>
+      </li>
+    {/each}
+  </ol>
+
   {#if loading}
-    <section class="panel loading-panel" aria-busy="true">
+    <section class="panel" aria-busy="true">
       <div class="pulse-row"></div>
       <div class="pulse-row short"></div>
     </section>
   {:else if error}
-    <section class="panel error-panel">
-      <p>{error}</p>
-      <button type="button" class="btn secondary" onclick={load}>Retry</button>
-    </section>
-  {:else if latest}
-    <section class="panel latest-panel">
-      <div class="panel-head">
-        <div>
-          <h2>{latest.name}</h2>
-          <p class="meta">
-            Published {formatReleaseDate(latest.publishedAt)}
-            {#if latest.prerelease}
-              <span class="badge warn">Pre-release</span>
-            {/if}
-          </p>
-        </div>
-        <a class="github-link" href={latest.htmlUrl} target="_blank" rel="noopener noreferrer">
-          Release notes →
-        </a>
-      </div>
-
-      <div class="asset-grid">
-        {#each latest.assets as asset (asset.url)}
-          <a class="asset-card" href={asset.url} download>
-            <span class="asset-platform">{asset.platform}</span>
-            <strong>{asset.label}</strong>
-            <span class="asset-name">{asset.name}</span>
-            <span class="asset-size">{formatBytes(asset.size)}</span>
-            <span class="asset-cta">Download</span>
-          </a>
-        {:else}
-          <p class="empty">No binaries attached yet — check back after the next tagged release.</p>
-        {/each}
-      </div>
+    <section class="panel">
+      <p class="err">{error}</p>
+      <button type="button" class="btn secondary" onclick={() => void load()}>Retry</button>
     </section>
   {/if}
 
+  {#each desktopOs as id}
+    {@const spec = INSTALL_SYSTEMS[id]}
+    {@const files = latest ? assetsForOS(latest, id) : []}
+    <section class="panel" id={id} class:here={os === id}>
+      <div class="panel-head">
+        <div>
+          <p class="label-micro">{spec.requirement}</p>
+          <h2>{spec.name}</h2>
+          <p class="meta">{spec.primary.file} · {spec.primary.action}</p>
+        </div>
+        {#if os === id}<span class="badge">This machine</span>{/if}
+      </div>
+      {#if files.length}
+        <div class="asset-grid">
+          {#each files as asset (asset.url)}
+            <a class="asset-card" href={asset.url} download>
+              <span class="asset-platform">{asset.label}</span>
+              <strong>{asset.name}</strong>
+              <span class="asset-size">{formatBytes(asset.size)}</span>
+              <span class="asset-cta">Download</span>
+            </a>
+          {/each}
+        </div>
+      {:else if !loading}
+        <p class="empty">No {spec.name} binary on the latest GitHub release yet. Use the kit zip or build from source.</p>
+      {/if}
+      <ol class="steps">
+        {#each spec.first_launch as step}
+          <li>{step}</li>
+        {/each}
+      </ol>
+      <p class="paths mono">User: {spec.paths.user} · Admin: {spec.paths.admin}</p>
+      <pre><code>{spec.headless}</code></pre>
+    </section>
+  {/each}
+
+  <section class="panel" id="web">
+    <p class="label-micro">{INSTALL_SYSTEMS.web.requirement}</p>
+    <h2>Browser workstation</h2>
+    <p class="lede-sm">{INSTALL_SYSTEMS.web.primary.action}</p>
+    <p class="hint">
+      Terminal UI: <code>finn tui</code>. Marketing at <code>/</code>, docs, and download do not need the API.
+    </p>
+  </section>
+
   {#if history.length > 1}
-    <section class="panel history-panel">
+    <section class="panel">
       <h2>Release history</h2>
       <div class="history-list">
         {#each history as release (release.tag)}
@@ -160,44 +173,13 @@
     </section>
   {/if}
 
-  <section class="panel install-panel">
-    <h2>Variants</h2>
-    <div class="asset-grid">
-      <article class="asset-card">
-        <span class="asset-platform">Default</span>
-        <strong>API with the app</strong>
-        <span class="asset-name">The .app / installer ships the API. Python 3.11+ on PATH is enough; no separate <code>finn api</code> terminal.</span>
-      </article>
-      <article class="asset-card">
-        <span class="asset-platform">macOS</span>
-        <strong>Finn Setup.app</strong>
-        <span class="asset-name">Unzip the macOS kit and double-click Setup. Progress bar, user vs admin, online vs offline. Windows uses the NSIS .exe / MSI the same way.</span>
-      </article>
-      <article class="asset-card">
-        <span class="asset-platform">Optional</span>
-        <strong>Docker sandbox</strong>
-        <span class="asset-name">Uses your computer as the sandbox host. Docker Desktop usually needs admin. Accept terms in the in-app installer or <code>finn setup --sandbox docker --accept-docker-tos</code>.</span>
-      </article>
-    </div>
-  </section>
-
-  <section class="panel install-panel">
-    <h2>From source (API + TUI)</h2>
-    <p>No desktop installer? Run the Python backend and terminal UI directly.</p>
-    <pre><code>{installSnippet}</code></pre>
-    <p class="hint">
-      Terminal UI: <code>finn tui</code> · Browser UI:
-      <code>cd web && npm install && npm run dev</code> then open <a href="/app">/app</a>.
-    </p>
-  </section>
-
-  <section class="panel trigger-panel">
+  <section class="panel">
     <h2>Maintainers: cut a release</h2>
     <p>Tag any commit to build all platforms and publish to GitHub Releases automatically.</p>
-    <pre><code>git tag v0.1
-git push origin v0.1</code></pre>
+    <pre><code>git tag v1.1.1
+git push origin v1.1.1</code></pre>
     <p class="hint">
-      Or run the <strong>Release</strong> workflow manually in
+      Or run the <strong>Release</strong> workflow in
       <a href="{GITHUB_REPO_URL}/actions/workflows/release.yml" target="_blank" rel="noopener noreferrer">GitHub Actions</a>.
     </p>
   </section>
@@ -209,54 +191,35 @@ git push origin v0.1</code></pre>
     margin: 0 auto;
     padding: 1.25rem 1.25rem 4rem;
   }
-
-  .crumb {
-    display: flex;
-    gap: 0.45rem;
-    align-items: center;
-    color: var(--text-tertiary);
-    font-size: 13px;
-    margin-bottom: 1.25rem;
-  }
-
   .hero {
-    position: relative;
-    overflow: hidden;
     border-radius: var(--radius-panel);
-    padding: 1.75rem 1.5rem;
+    padding: 1.75rem 0 0.5rem;
     margin-bottom: 1.25rem;
-    border: 1px solid var(--glass-border);
-    background: linear-gradient(145deg, rgba(0, 217, 146, 0.08), rgba(255, 255, 255, 0.02));
   }
-
   .eyebrow {
     margin: 0 0 0.35rem;
     font-family: var(--font-mono);
     font-size: 11px;
     letter-spacing: 0.08em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--green);
   }
-
   h1 {
     margin: 0 0 0.6rem;
     font-size: clamp(1.8rem, 4vw, 2.4rem);
     letter-spacing: -0.03em;
   }
-
-  .lede {
+  .lede, .lede-sm {
     margin: 0 0 1.1rem;
-    color: var(--text-secondary);
+    color: var(--text-dim);
     line-height: 1.55;
     max-width: 62ch;
   }
-
   .hero-actions {
     display: flex;
     flex-wrap: wrap;
     gap: 0.6rem;
   }
-
   .btn {
     display: inline-flex;
     align-items: center;
@@ -268,27 +231,41 @@ git push origin v0.1</code></pre>
     text-decoration: none;
     border: 1px solid transparent;
     cursor: pointer;
-    transition: transform 150ms var(--spring-control), background 150ms ease;
+    min-height: 40px;
   }
-
-  .btn:hover { transform: translateY(-1px); text-decoration: none; }
-  .btn.primary { background: var(--accent); color: #04140e; }
-  .btn.secondary { background: var(--glass-2); border-color: var(--glass-border); color: var(--text-primary); }
-  .btn.ghost { background: transparent; border-color: var(--glass-border); color: var(--text-secondary); }
-
+  .btn.primary { background: var(--green); color: var(--abyss); }
+  .btn.secondary { background: var(--glass-2); border-color: var(--glass-border); color: var(--text); }
+  .btn.ghost { background: transparent; border-color: var(--glass-border); color: var(--text-dim); }
+  .eras {
+    list-style: none;
+    margin: 0 0 1.25rem;
+    padding: 0;
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+  }
+  .eras li { display: flex; gap: 8px; }
+  .eras p { margin: 4px 0 0; font-size: 12px; color: var(--text-dim); line-height: 1.4; }
+  .n {
+    width: 20px;
+    height: 20px;
+    display: grid;
+    place-items: center;
+    border: 1px solid var(--glass-border);
+    border-radius: 50%;
+    font-size: 10px;
+    color: var(--green);
+    flex-shrink: 0;
+  }
   .panel {
     border: 1px solid var(--glass-border);
     border-radius: var(--radius-panel);
-    background: var(--glass);
+    background: var(--abyss-2);
     padding: 1.25rem 1.35rem;
     margin-bottom: 1rem;
   }
-
-  .panel h2 {
-    margin: 0 0 0.75rem;
-    font-size: 1.1rem;
-  }
-
+  .panel.here { border-color: var(--green); }
+  .panel h2 { margin: 0 0 0.75rem; font-size: 1.1rem; }
   .panel-head {
     display: flex;
     justify-content: space-between;
@@ -296,93 +273,58 @@ git push origin v0.1</code></pre>
     align-items: flex-start;
     margin-bottom: 1rem;
   }
-
   .panel-head h2 { margin: 0; font-size: 1.35rem; }
-
   .meta {
     margin: 0.25rem 0 0;
-    color: var(--text-tertiary);
+    color: var(--text-faint);
     font-size: 12px;
     font-family: var(--font-mono);
   }
-
   .badge {
     display: inline-block;
-    margin-left: 0.4rem;
     padding: 0.1rem 0.4rem;
     border-radius: 4px;
     font-size: 10px;
     text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--green);
+    border: 1px solid var(--green);
   }
-
-  .badge.warn {
-    background: var(--warning-20);
-    color: var(--warning);
-  }
-
-  .github-link {
-    font-size: 13px;
-    white-space: nowrap;
-  }
-
   .asset-grid {
     display: grid;
     grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
     gap: 0.75rem;
   }
-
   .asset-card {
     display: flex;
     flex-direction: column;
     gap: 0.25rem;
     padding: 1rem;
     border-radius: var(--radius-control);
-    border: 1px solid var(--accent-20);
-    background: var(--accent-8);
+    border: 1px solid var(--glass-border);
+    background: var(--green-soft);
     color: inherit;
     text-decoration: none;
-    transition: border-color 150ms ease, transform 150ms var(--spring-control);
   }
-
-  .asset-card:hover {
-    border-color: var(--accent-60);
-    transform: translateY(-2px);
-    text-decoration: none;
-  }
-
+  .asset-card:hover { border-color: var(--green); text-decoration: none; }
   .asset-platform {
     font-family: var(--font-mono);
     font-size: 10px;
     letter-spacing: 0.06em;
     text-transform: uppercase;
-    color: var(--accent);
+    color: var(--green);
   }
-
-  .asset-name {
-    font-family: var(--font-mono);
-    font-size: 11px;
-    color: var(--text-tertiary);
-    word-break: break-all;
+  .asset-size { font-size: 12px; color: var(--text-dim); }
+  .asset-cta { margin-top: 0.35rem; font-size: 12px; font-weight: 600; color: var(--green); }
+  .steps {
+    margin: 1rem 0 0;
+    padding-left: 1.1rem;
+    color: var(--text-dim);
+    font-size: 13px;
+    line-height: 1.5;
   }
-
-  .asset-size {
-    font-size: 12px;
-    color: var(--text-secondary);
-  }
-
-  .asset-cta {
-    margin-top: 0.35rem;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--accent);
-  }
-
-  .history-list {
-    display: flex;
-    flex-direction: column;
-    gap: 0.65rem;
-  }
-
+  .paths { font-size: 11px; color: var(--text-faint); margin: 0.75rem 0 0; }
+  .history-list { display: flex; flex-direction: column; gap: 0.65rem; }
   .history-row {
     display: flex;
     justify-content: space-between;
@@ -391,16 +333,8 @@ git push origin v0.1</code></pre>
     padding: 0.65rem 0;
     border-bottom: 1px solid var(--glass-border);
   }
-
   .history-row:last-child { border-bottom: none; }
-
-  .history-assets {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 0.45rem;
-    font-size: 12px;
-  }
-
+  .history-assets { display: flex; flex-wrap: wrap; gap: 0.45rem; font-size: 12px; }
   pre {
     margin: 0.75rem 0 0;
     padding: 1rem;
@@ -411,34 +345,17 @@ git push origin v0.1</code></pre>
     font-size: 12px;
     line-height: 1.5;
   }
-
-  .hint {
-    margin: 0.75rem 0 0;
-    color: var(--text-secondary);
-    font-size: 13px;
-    line-height: 1.5;
-  }
-
-  .loading-panel .pulse-row {
+  .hint { margin: 0.75rem 0 0; color: var(--text-dim); font-size: 13px; line-height: 1.5; }
+  .pulse-row {
     height: 14px;
     border-radius: 6px;
-    background: linear-gradient(90deg, var(--glass-2), var(--glass), var(--glass-2));
-    animation: shimmer 1.2s infinite;
+    background: var(--abyss-3);
     margin-bottom: 0.6rem;
   }
-
-  .loading-panel .pulse-row.short { width: 55%; }
-
-  .error-panel p { color: var(--danger); margin: 0 0 0.75rem; }
-  .empty { color: var(--text-secondary); margin: 0; }
-
-  @keyframes shimmer {
-    0% { opacity: 0.55; }
-    50% { opacity: 1; }
-    100% { opacity: 0.55; }
-  }
-
+  .pulse-row.short { width: 55%; }
+  .err { color: var(--danger); margin: 0 0 0.75rem; }
+  .empty { color: var(--text-dim); margin: 0; }
   @media (max-width: 640px) {
-    .panel-head, .history-row { flex-direction: column; align-items: flex-start; }
+    .panel-head, .history-row, .eras { flex-direction: column; align-items: flex-start; grid-template-columns: 1fr; }
   }
 </style>

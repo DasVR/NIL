@@ -8,17 +8,21 @@ The desktop app, the site at `/app`, and the TUI share one FastAPI backend on `h
 
 ## Install
 
+Three eras: **Install** → **Welcome** (first Space) → **Workstation**. Per-OS notes: [`docs/WELCOME.md`](docs/WELCOME.md), files in [`install/catalog.json`](install/catalog.json).
+
 Download **Finn-Setup** for your OS from [Releases](https://github.com/DasVR/finn-pentest-harness/releases) and double-click it. No Terminal. The API starts with the app.
 
 | OS | File |
 |---|---|
-| macOS | `Finn-Setup.pkg` or `Finn-Setup.dmg` |
-| Windows | `Finn-Setup.exe` |
-| Linux | `Finn-Setup.deb` or `Finn-Setup.AppImage` |
+| macOS 12+ | `Finn-Setup.pkg` or `Finn-Setup.dmg` |
+| Windows 10+ | `Finn-Setup.exe` |
+| Linux x86_64 | `Finn-Setup.deb` or `Finn-Setup.AppImage` (`chmod +x`) |
 
 Do **not** use the Python wheel zip as a Mac installer.
 
 If macOS says **Finn Pentest Harness cannot be opened** (or is **damaged**), that is Gatekeeper quarantine on a GitHub download — Apple Silicon also refuses unsigned binaries. Double-click `fix-gatekeeper.command` next to the app, or run `xattr -cr` on the `.pkg` / `.app` / `.dmg`, then Right-click → Open.
+
+Windows SmartScreen: More info → Run anyway. Open Finn from the Start Menu or desktop shortcut as a normal user.
 
 Headless from a clone:
 
@@ -36,7 +40,7 @@ powershell -File install/windows/install.ps1 -Cli -User -Offline -HostSandbox
 
 Full installer tree: [`install/README.md`](install/README.md).
 
-Then open Finn. In other terminals:
+Then open Finn. First Space is name + scope; the terminal starts with `scope loaded · N hosts · press ⌘K to scan`. In other terminals:
 
 ```bash
 finn tui
@@ -82,12 +86,13 @@ Prefer `git clone` / `git pull origin master` over a stale GitHub source zip.
 | Path | What |
 |---|---|
 | `finn_pentest/` | FastAPI, sandbox, plugins, AI router, TUI, CLI |
-| `install/` | Setup wizard, engine, OS folders — see `install/README.md` |
+| `install/` | Setup wizard, OS catalog, engine — see `install/README.md` and `docs/WELCOME.md` |
 | `web/` | SvelteKit (marketing + `/app`) |
 | `desktop/` | Tauri 2 wrapper |
 | `prompts/` | Assessment system prompts |
 | `tests/` | pytest |
 | `UX_REDESIGN.md` | Living UI spec |
+| `docs/WELCOME.md` | Install + welcome + per-OS first launch |
 | `cursor-research/` | Bookmarks research (polish input; the living spec wins) |
 
 ## Recon plugins

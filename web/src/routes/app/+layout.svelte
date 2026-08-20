@@ -9,7 +9,7 @@
   import StatusBar from '$lib/components/StatusBar.svelte';
   import SettingsPanel from '$lib/components/SettingsPanel.svelte';
   import NewSpaceSheet from '$lib/components/NewSpaceSheet.svelte';
-  import SetupWizard from '$lib/components/SetupWizard.svelte';
+  import WelcomeSheet from '$lib/components/WelcomeSheet.svelte';
   import WindowEdges from '$lib/components/WindowEdges.svelte';
   import HudToast from '$lib/components/HudToast.svelte';
 
@@ -225,7 +225,7 @@
     <NewSpaceSheet />
   {/if}
   {#if appState.setupOpen}
-    <SetupWizard />
+    <WelcomeSheet />
   {/if}
   <HudToast />
 </div>
