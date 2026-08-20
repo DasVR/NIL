@@ -25,7 +25,7 @@ ditto "$APP" "${STAGE}/root/Applications/$(basename "$APP")"
 SCRIPTS="${ROOT}/install/macos/pkg-scripts"
 chmod +x "${SCRIPTS}/postinstall"
 
-VERSION="$(python3 -c "import json; print(json.load(open('${ROOT}/desktop/src-tauri/tauri.conf.json'))['version'])" 2>/dev/null || echo "0.1.0")"
+VERSION="$(python3 -c "import json; print(json.load(open('${ROOT}/desktop/src-tauri/tauri.conf.json'))['version'])" 2>/dev/null || echo "1.0.0")"
 COMPONENT="${STAGE}/finn-component.pkg"
 OUT="${OUT_DIR}/Finn-Setup.pkg"
 

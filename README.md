@@ -75,8 +75,8 @@ Sandbox tests that need Docker are skipped when the daemon is missing. The defau
 Tagged builds publish automatically to [GitHub Releases](https://github.com/DasVR/finn-pentest-harness/releases) (macOS kit zip of the `.app` + `.dmg` + API, Windows `.exe`, Linux `.AppImage` / `.deb`, plus a Python wheel):
 
 ```bash
-git tag v0.1
-git push origin v0.1
+git tag v1
+git push origin v1
 ```
 
 The **Release** workflow builds all three platforms and uploads installers. Run it with **macos_only** to skip Windows and Linux. The site `/download` page pulls the latest release from the GitHub API. Unzip the macOS kit and either run `install/finn-install.sh` or drag `Finn Pentest Harness.app` to Applications. The API is inside the app.

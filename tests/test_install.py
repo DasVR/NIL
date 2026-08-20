@@ -49,7 +49,7 @@ def test_find_wheel_in_dist(tmp_path):
     inst = artifact / "install"
     dist.mkdir(parents=True)
     inst.mkdir()
-    wheel = dist / "finn_pentest-0.1.0-py3-none-any.whl"
+    wheel = dist / "finn_pentest-1.0.0-py3-none-any.whl"
     wheel.write_bytes(b"PK\x03\x04")
     found = engine.find_wheel(inst)
     assert found == wheel.resolve()

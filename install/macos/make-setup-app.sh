@@ -65,8 +65,8 @@ cat > "${OUT}/Contents/Info.plist" <<'EOF'
   <key>CFBundleName</key><string>Finn Setup</string>
   <key>CFBundleDisplayName</key><string>Finn Setup</string>
   <key>CFBundleIdentifier</key><string>ai.finn.pentest.setup</string>
-  <key>CFBundleVersion</key><string>0.1.0</string>
-  <key>CFBundleShortVersionString</key><string>0.1.0</string>
+  <key>CFBundleVersion</key><string>1.0.0</string>
+  <key>CFBundleShortVersionString</key><string>1.0.0</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleExecutable</key><string>Finn Setup</string>
   <key>CFBundleIconFile</key><string>icon</string>
