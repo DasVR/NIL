@@ -1,6 +1,7 @@
-# FINN WORKSTATION — DESIGN SPEC v4 (Bookmark-Grounded)
+# FINN WORKSTATION — DESIGN SPEC v5 (Bookmark-Grounded)
 
-> **Purpose:** A single reference file for Cursor/opencode containing the ENTIRE design language derived from Arriq's Twitter bookmarks. Use this alongside `MASTER-REDESIGN.md` (IA) and `CURSOR-REDESIGN-PROMPT.md` (the drop-in prompt).
+> **Direction locked:** "like Claude, with the UI design of cursor AGENTS."
+> **Purpose:** Single reference for Cursor/opencode containing the design language. The AI agent (Finn) is the interface; Chrome is Cursor-style; feel is Claude-quiet. Use alongside `MASTER-REDESIGN.md` (IA) + `CURSOR-REDESIGN-PROMPT.md` (drop-in brief).
 
 ---
 
@@ -85,11 +86,11 @@ Gap over margin, 4-8px
 ## 7. THE KEYBOARD MAP (printed in the UI)
 
 ```
-⌘K        palette            ⌘T        terminal view
-⌘,        settings sheet      ⌘E        artifact view
+⌘K        palette            ⌘T        focus conversation
+⌘,        settings sheet      ⌘E        deploy artifact
 ⌘B        toggle sidebar      ⌘\        split view
-⌘⇧B       toggle inspector    ⌘J        toggle AI strip
-⌘⇧J       pin AI strip        ⌘1..9     switch Space
+⌘⇧B       toggle inspector    ⌘J        show/hide Finn
+⌘⇧J       pin Finn panel      ⌘1..9     switch Space
 ↵         approve             esc       reject / peel one layer
 ```
 
