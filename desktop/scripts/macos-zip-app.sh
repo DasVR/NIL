@@ -5,7 +5,7 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 BUNDLE_DIR="${ROOT}/desktop/src-tauri/target/release/bundle/macos"
 DMG_DIR="${ROOT}/desktop/src-tauri/target/release/bundle/dmg"
-APP="$(find "${BUNDLE_DIR}" -maxdepth 1 -name '*.app' -print | head -n 1 || true)"
+APP="$(find "${BUNDLE_DIR}" -maxdepth 1 -name '*.app' ! -name '*Setup*' -print | head -n 1 || true)"
 
 if [[ -z "${APP}" || ! -d "${APP}" ]]; then
   echo "No .app found under ${BUNDLE_DIR}" >&2
@@ -13,7 +13,7 @@ if [[ -z "${APP}" || ! -d "${APP}" ]]; then
 fi
 
 node "${ROOT}/desktop/scripts/stage-api.mjs"
-chmod +x "${ROOT}/install/macos/make-app.sh" "${ROOT}/install/wizard.py" "${ROOT}/install/unix/install.sh"
+chmod +x "${ROOT}/install/macos/make-app.sh" "${ROOT}/install/macos/setup-launcher.sh" "${ROOT}/install/wizard.py" "${ROOT}/install/unix/install.sh"
 chmod +x "${ROOT}/install/macos/adhoc-sign.sh" "${ROOT}/install/macos/strip-adhoc-signature.sh" "${ROOT}/install/macos/fix-gatekeeper.command"
 
 # Apple Silicon rejects unsigned Mach-O ("cannot be opened"). Ad-hoc-sign, then xattr -cr.

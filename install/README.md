@@ -32,6 +32,7 @@ install/
     make-dmg.sh      Finn-Setup.dmg
     fix-gatekeeper.command
     install.txt
+    setup-launcher.sh   Finn Setup.app executable
     adhoc-sign.sh
     strip-adhoc-signature.sh  (wrapper → adhoc-sign.sh)
     pkg-scripts/postinstall

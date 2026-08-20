@@ -24,8 +24,9 @@ Then Right-click → Open.
 Install (no Terminal)
 ---------------------
 1. Double-click Finn-Setup.pkg (Apple Installer, progress bar)
-   or open Finn-Setup.dmg and double-click Finn Setup.app
-2. Open Finn Pentest Harness. The API starts with the app.
+   or open Finn-Setup.dmg / the kit zip and double-click Finn Setup.app
+2. Finn Setup shows who / offline vs download / host vs Docker. Pick options, then Install.
+3. Open Finn Pentest Harness. The API starts with the app.
 
 User-only copy (no admin): double-click Finn Setup.app and choose User.
 The app can live in ~/Applications.

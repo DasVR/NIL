@@ -32,30 +32,7 @@ if [[ -f "${ICNS}" ]]; then
   cp "${ICNS}" "${RES}/icon.icns"
 fi
 
-cat > "${MACOS}/Finn Setup" <<'EOF'
-#!/bin/bash
-set -euo pipefail
-RES="$(cd "$(dirname "$0")/../Resources" && pwd)"
-export FINN_SETUP_PAYLOAD="${RES}/payload"
-export PYTHONPATH="${RES}:${PYTHONPATH:-}"
-cd "${RES}"
-PY=""
-for c in python3.12 python3.13 python3.11 python3; do
-  if command -v "$c" >/dev/null 2>&1; then
-    PY="$c"
-    break
-  fi
-done
-if [[ -z "$PY" ]]; then
-  osascript -e 'display alert "Finn Setup" message "Python 3.11+ is required. Install it from python.org or Homebrew, then open Finn Setup again."'
-  exit 1
-fi
-if ! "$PY" -c "import tkinter" >/dev/null 2>&1; then
-  osascript -e 'display alert "Finn Setup" message "This installer needs Tk. On Homebrew run: brew install python-tk. Or run: python3 install/wizard.py --cli --user --offline --host"'
-  exec "$PY" "${RES}/wizard.py" --cli --user --offline --host
-fi
-exec "$PY" "${RES}/wizard.py"
-EOF
+cp "${ROOT}/install/macos/setup-launcher.sh" "${MACOS}/Finn Setup"
 chmod +x "${MACOS}/Finn Setup"
 
 cat > "${OUT}/Contents/Info.plist" <<'EOF'
