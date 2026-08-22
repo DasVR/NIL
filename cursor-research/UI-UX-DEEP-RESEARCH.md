@@ -514,6 +514,87 @@ export default {
 
 ---
 
+## 🔥 10b. 21st.dev — Component Marketplace Goldmine
+
+**URL:** `https://21st.dev`  
+**What it is:** Community catalog of **12,000+ hand-crafted React + Tailwind CSS components**, templates, shadcn themes, icons, shaders, gradients — built by real design engineers.
+
+### Why It Matters
+
+Unlike a single component library (one aesthetic, one package), 21st is a **registry of many authors and many styles**. Components are **copied into your repo** rather than imported as dependencies — you own the code and can customize it.
+
+Their workflow is literally built for AI agents:
+1. Browse component
+2. Hit **"Copy prompt"**
+3. Paste into **Cursor / Claude Code / v0 / Lovable**
+4. Agent rebuilds it inside your codebase, wired to your stack
+
+### Categories With Massive Value
+
+| Category | Count | What We Can Use |
+|----------|-------|-----------------|
+| **Shader** | 267+ | Fluid gradients, warping meshes, animated noise, dithered color fields |
+| **Background** | 365+ | Aurora, mesh gradients, particles, grid/dot patterns, noise |
+| **Mesh Gradient** | 66+ | Stripe-style gradient-shaders, dreamy washes |
+| **Fluid** | 77+ | Flowing ribbons, liquid motion, warp effects |
+| **AI Chat** | 248+ | Chat UI patterns, message cards, streaming indicators |
+| **Scroll Animation** | 205+ | Scroll reveals, parallax, expansion effects |
+| **Animated** | 16+ | Hero sections, text effects, buttons, cards |
+| **Icons** | — | Custom icon sets, animated icons |
+| **Templates** | — | Full pages and multi-page apps |
+
+### Notable Specific Components (from scrape)
+
+| Component | Author | Use Case |
+|-----------|--------|----------|
+| `siri-wave` | @40973894 | Voice activity indicator for voice bot / AI strip |
+| `comparison-3` | @7ovr | Before/after comparison panels |
+| `home-hero-landing-scroll-animation` | @ajith66310 | Hero scroll expansion |
+| `velaris` | @amanshakya307 | Dashboard shell / layout pattern |
+| `animated-drawer` | @arihantcodes | Sheet/drawer with spring motion |
+| `scroll-expansion-hero` | @arunachalam | Hero expands on scroll |
+| `animated-testimonials` | @bankkroll | Testimonial carousels |
+| `ai-chat` | @beratberkayg | Chat interface pattern |
+| `ia-siri-chat` | @botsnew354 | Siri-style chat bubble UI |
+| `display-cards` | @Codehagen | Feature cards with motion |
+| `pricing` | @Codehagen | Pricing section layout |
+
+### Integration Strategy for SvelteKit
+
+Since 21st components are **React + Tailwind**, we don't import them — we **translate them**:
+
+1. **Find the component** on 21st.dev (e.g., a sick shader background)
+2. **Copy the prompt** or view source
+3. **Translate React → Svelte 5** (hooks → runes, props → $props)
+4. **Keep Tailwind classes** but map to our tokens (`--abyss`, `--green`, glass tiers)
+5. **Replace React-only primitives** with Bits UI equivalents if needed
+
+### 21st.dev Workflow for Our Project
+
+```text
+Phase 1: Shell (sidebar, dock, terminal, ai strip)
+  → Search 21st for "sidebar", "dock", "command-palette", "terminal"
+  → Copy prompts, translate to Svelte 5 + our tokens
+
+Phase 2: Backgrounds + atmosphere
+  → Search 21st for "shader", "background", "mesh-gradient", "fluid"
+  → Pick 2-3 hero effects, adapt to our dark terminal theme
+
+Phase 3: Data + interaction
+  → Search 21st for "chat", "table", "card", "pricing"
+  → Translate to SVAR DataGrid / Bits UI / our GlassCard system
+```
+
+### Why This Beats Generic AI-Generated UI
+
+- **Proven patterns** from real design engineers
+- **Cited, copyable source** — no guessing how it's built
+- **Agent-friendly** — prompt-to-code workflow matches Cursor/Claude
+- **Mix-and-match styles** instead of being locked into one library
+- **Our tokens + our stack** = unique app, not another generic dark SaaS
+
+---
+
 ## 💡 11. "Differentiator" Features (Creative Moats)
 
 | Feature | Description | Tech |
