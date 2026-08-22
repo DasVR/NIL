@@ -38,3 +38,4 @@ web/.vite/
 # Tauri
 desktop/src-tauri/target/
 desktop/src-tauri/resources/api/
+.env.openrouter
