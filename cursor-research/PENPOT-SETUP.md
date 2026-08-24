@@ -1,15 +1,22 @@
 # Penpot Design Setup — NIL Coding Agent Workspace
 
-**Penpot URL:** http://localhost:9001
-**Project:** NIL Workspace Design System
+**Penpot URL:** http://localhost:9001  
+**Project / file:** NIL Workspace Design System  
+**Local stack:** `cursor-research/penpot/` (`./start.sh`)
+
+> **Status (seeded):** Wireframe boards for tokens, components, main window, empty
+> state, command palette, flows, plus NIL logo assets are on page `02 Layouts`.
+> SVG/PNG sources live in `cursor-research/penpot/wireframes/`. Grounding: NIL
+> logo (`cursor-research/logo/`), this doc, and `redesign/MASTER-REDESIGN.md`.
 
 ---
 
 ## 1. CREATE THE FILE
 
-1. Open http://localhost:9001
-2. Click **New File** → name it: `NIL Workspace Design System`
-3. Create these **Pages** (tabs at top):
+1. Open http://localhost:9001 (`./start.sh` if needed)
+2. Create a demo account (or register) → open **Default** team
+3. Open **NIL Workspace Design System** (or New File with that name)
+4. Create these **Pages** (tabs at top) as you flesh out components beyond the seed:
 
 ---
 
