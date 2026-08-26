@@ -1,0 +1,61 @@
+/* Workspace design tokens — generated from design/system/tokens.json */
+:root {
+  /* Color / surfaces */
+  --color-surface-0: #0d1117;
+  --color-surface-1: #161b22;
+  --color-surface-2: #21262d;
+  --color-surface-3: #30363d;
+
+  /* Color / borders */
+  --color-border-subtle: #30363d;
+  --color-border-active: #58a6ff;
+  --color-border-muted: #21262d;
+
+  /* Color / accents */
+  --color-accent-primary: #58a6ff;
+  --color-accent-secondary: #bc8cff;
+  --color-accent-success: #3fb950;
+  --color-accent-warning: #d29922;
+  --color-accent-danger: #f85149;
+
+  /* Color / text */
+  --color-text-primary: #f0f6fc;
+  --color-text-secondary: #8b949e;
+  --color-text-muted: #6e7681;
+  --color-text-code: #79c0ff;
+  --color-text-on-accent: var(--color-surface-0);
+
+  /* Type */
+  --font-sans: Inter, ui-sans-serif, system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+
+  --font-size-display: 24px;
+  --font-size-heading: 18px;
+  --font-size-body: 14px;
+  --font-size-code: 13px;
+  --font-size-small: 12px;
+
+  --font-line-display: 32px;
+  --font-line-heading: 24px;
+  --font-line-body: 20px;
+  --font-line-code: 18px;
+  --font-line-small: 16px;
+
+  --font-weight-regular: 400;
+  --font-weight-semibold: 600;
+  --font-weight-bold: 700;
+
+  /* Space */
+  --space-4: 4px;
+  --space-8: 8px;
+  --space-12: 12px;
+  --space-16: 16px;
+  --space-24: 24px;
+  --space-32: 32px;
+
+  /* Radius */
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: 8px;
+  --radius-full: 9999px;
+}
