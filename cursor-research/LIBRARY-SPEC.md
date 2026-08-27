@@ -5,6 +5,33 @@
 
 ---
 
+## 0. REFERENCE-FIRST WORKFLOW (Pengsonal Method)
+
+> "I'm not a designer, so instead of asking AI to invent the whole UI, I give it good references and let it build with them like Lego."
+
+**Core principle:** Never ask agents to invent UI from scratch. Give them reference resources, let them inspect components, pick what fits.
+
+### Reference Resources (send to your coding agent)
+- **beautifului.dev** — curated beautiful UI
+- **beui.dev** — component patterns
+- **rareui.com** — rare/unique UI patterns
+- **transitions.dev** — motion/transition references
+- **ui.shadcn.com** — shadcn/ui official
+- **ui-skills.com** — skill-based UI components
+- **coss.com/ui** — component gallery
+- **designsystemchecklist.com** — design system audit
+- **reui.io/components** — React UI components
+- **emilkowal.ski/ui/you-dont-need-javascript** — CSS-only patterns
+
+### MCP-Enabled Reference Servers
+- **Mobbin MCP** — `mobbin.com/mcp` — mobile design patterns
+- **Canvas UI** — `canvasui.dev` — design canvas
+- **60fps Design MCP** — `60fps.design/mcp` — 60fps motion patterns
+- **Recent Design** — `recent.design` — latest designs
+- **Collect UI** — `collectui.com` — curated UI
+
+---
+
 ## 1. CORE UI FRAMEWORK & COMPONENTS
 
 ### SvelteKit + Tauri (Already chosen)
@@ -118,6 +145,15 @@ No library needed — just our tokens + CSS.
 ### tabler-icons-svelte
 - Alternative, larger set
 
+### reicon (skills.sh)
+- 2700+ SVG icons, 24×24 grid, outline + filled weights
+- React/Vue/Svelte/CDN/Figma/VS Code/MCP packages
+- https://github.com/dqev/reicon
+
+### tech-logos (200+ tech logos)
+- Every tech logo as clean optimized SVGs
+- React/HTML/JS/Docker components
+
 ---
 
 ## 7. SOUNDS & AUDIO
@@ -138,7 +174,33 @@ No library needed — just our tokens + CSS.
 
 ---
 
-## 8. BORDERS & GLOWS (Jakub Antalik — your core aesthetic)
+## 8. THINKING LOGO SYSTEM (NIL Brand Animation)
+
+### Concept
+The NIL blocky N monogram becomes the **agent state indicator** — 4 states matching the AI strip:
+
+| State | Visual | Tokens |
+|-------|--------|--------|
+| **Idle** | Static N, violet #452a84 on abyss | `--violet` on `--abyss` |
+| **Thinking** | N's notches breathe + 2-3 ThinkingOrbs orbit (coral + lavender) | `--coral` + `--violet-light` orbs, spring physics |
+| **Streaming** | Orbs converge into N, it glows, BorderBeam sweeps edge | `--violet-light` glow, BorderBeam animation |
+| **Done** | N snaps to solid cream, soft pulse | `--cream` fill, snappy spring |
+
+### Implementation
+- `ThinkingLogo.svelte` — wraps `ThinkingOrbs.svelte` + N monogram SVG
+- Lives in top-right of titlebar / sidebar header / AI strip
+- Single shared WebGL context with `LiquidMetalTitlebar` (if we combine)
+- `prefers-reduced-motion` = static N only, no orbs/beam
+
+### Inspiration References
+- **Jakub Antalik Thinking Orbs** — https://orbs.jakubantalik.com/ (already in harness as ThinkingOrbs.svelte)
+- **Jakub Antalik Border Beam** — https://beam.jakubantalik.com/ (already in harness as BorderBeam.svelte)
+- **@pengsonal workflow** — give agent reference, let it inspect, pick what fits
+- **Skills.sh tier list** — HERMES-AGENT at S++, NIL should target that tier
+
+---
+
+## 9. BORDERS & GLOWS (Jakub Antalik — your core aesthetic)
 
 ### Border Beam
 - Animated boundary beam around elements
@@ -309,39 +371,90 @@ No library needed — just our tokens + CSS.
 
 ## 18. LIBRARY SUMMARY — WHAT TO INSTALL
 
+### Anti-Slop / Design Skills (skills.sh)
 ```bash
-# Core
+# Core anti-slop skills — these are non-negotiable
+npx skills@latest add emilkowalski/skills           # design engineering (120k)
+npx skills add https://github.com/Leonxlnx/taste-skill --skill "design-taste-frontend"  # taste-skill (80k)
+npx skills add impeccable.style                      # impeccable (62k)
+npx skills add hallmark                              # hallmark (26k)
+npx skills add stop-slop                             # stop-slop (16k)
+```
+
+### Core UI Primitives
+```bash
 npm i -D bits-ui lucide-svelte svelte-motion
 npm i @monaco-editor/svelte xterm @xterm/addon-fit @xterm/addon-webgl @xterm/addon-search @xterm/addon-web-links
+```
 
-# Command palette
+### Command Palette
+```bash
 npm i cmdk-svelte
+```
 
-# Forms
+### Forms
+```bash
 npm i superforms zod
+```
 
-# Drag & drop
+### Drag & Drop
+```bash
 npm i @dnd-kit/svelte
+```
 
-# State
+### State
+```bash
 npm i @tanstack/svelte-query
+```
 
-# Notifications
+### Notifications
+```bash
 npm i svelte-sonner
+```
 
-# Sounds
+### Sounds
+```bash
 npm i cuelume
+```
 
-# Morphicons (icon transitions)
+### Morphicons (icon transitions)
+```bash
 npm i morphicons
+```
 
-# WebGL/Shaders (if needed)
+### WebGL/Shaders (if needed)
+```bash
 npm i three @threlte/core
+```
 
-# Dev
+### Liquid/Gooey Effects
+```bash
+npm i liquid-gooey
+```
+
+### Reference MCP Servers (for agents to inspect)
+```bash
+# These run as MCP servers that agents can query
+# Mobbin: mobbin.com/mcp
+# 60fps Design: 60fps.design/mcp
+# Canvas UI: canvasui.dev
+```
+
+### Dither/Animation Libraries
+```bash
+# dither-kit — zero-dep canvas dithering
+# tripwire.sh/dither-kit
+# 404.colorion.co — 404 animations
+# circleloaders.dominikakissi.com — SVG loaders
+```
+
+### Dev
+```bash
 npm i -D vitest @playwright/test svelte-check
+```
 
-# Tauri plugins (in Cargo.toml)
+### Tauri plugins (in Cargo.toml)
+```toml
 # tauri-plugin-shell, tauri-plugin-fs, tauri-plugin-dialog,
 # tauri-plugin-clipboard, tauri-plugin-global-shortcut,
 # tauri-plugin-notification, tauri-plugin-updater
@@ -357,6 +470,7 @@ These we build ourselves using the primitives above:
 |-----------|---------|------|
 | `BorderBeam` | Animated gradient border on hover/focus | Canvas/WebGL, bits-ui |
 | `ThinkingOrbs` | AI streaming indicator | Canvas, svelte-motion |
+| `ThinkingLogo` | NIL brand N + orbiting orbs, 4 states | ThinkingOrbs, BorderBeam, SVG |
 | `LiquidMetalTitlebar` | 40px WebGL titlebar | three.js / raw WebGL |
 | `AgentConversation` | Main surface — plan/tool/diff/finding blocks | bits-ui, svelte-motion |
 | `AgentComposer` | Auto-grow, mode chips, drag-drop | bits-ui, superforms |
@@ -392,7 +506,29 @@ These we build ourselves using the primitives above:
 
 ---
 
-## 21. NEXT STEPS
+## 21. ANTI-SLOP SKILLS ECOSYSTEM (skills.sh)
+
+From the skills.sh tier list (HERMES-AGENT at S++) — these are the design/anti-slop skills to install as MCP-enabled skill packs for agents:
+
+| Skill | Stars | Purpose | Install |
+|-------|-------|---------|---------|
+| **ui-ux-pro-max** | 120,460 | Design tokens, palettes, font pairings, UX guidelines | `npx skills@latest add ui-ux-pro-max` |
+| **taste-skill** | 79,935 | Anti-slop frontend framework (13 skills) | `npx skills add taste-skill` |
+| **impeccable** | 62,115 | Design skills for AI agents | `npx skills add impeccable.style` |
+| **humanizer** | 37,537 | Strip AI-isms, add real voice | `npx skills add humanizer` |
+| **hallmark** | 26,835 | Avoid AI slop UI patterns | `npx skills add hallmark` |
+| **stop-slop** | 16,300 | Explicit anti-slop enforcement | `npx skills add stop-slop` |
+| **archify** | 15,280 | Architecture diagrams | `npx skills add archify` |
+| **diagram-design** | 26,212 | Diagram components | `npx skills add diagram-design` |
+| **design.md** | 27,479 | Google's design token spec | `npx skills add design.md` |
+| **answer-first** | mine, free | Answer-first communication pattern | already yours |
+| **voiceprint** | mine, free | Voice/identity system | already yours |
+
+These skills can be loaded by agents at runtime via the skills.sh MCP server — they act as guardrails so agents don't pick wrong easings, borders, shadows, etc.
+
+---
+
+## 22. NEXT STEPS
 
 1. **Design in Penpot** (you + me):
    - Set up tokens page with our exact values
@@ -407,6 +543,8 @@ These we build ourselves using the primitives above:
 4. **Wire agent loop backend** (the "brain" — godmode API + tool executor)
 
 5. **Integrate**: conversation surface + terminal + Monaco + sidebar + inspector
+
+6. **Install anti-slop skills** via skills.sh MCP so every agent gets guardrails automatically
 
 ---
 
