@@ -1,0 +1,11 @@
+{
+  "name": "workspace-design-system",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "dependencies": {
+    "@penpot/library": "1.2.0-RC2"
+  }
+}
