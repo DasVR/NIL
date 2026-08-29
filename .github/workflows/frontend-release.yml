@@ -51,9 +51,11 @@ jobs:
         run: |
           mkdir -p dist
           cp run.sh dist/
+          cp run.bat dist/
+          cp run.ps1 dist/
           chmod +x dist/run.sh
-          zip -r dist/nil-frontend-${RELEASE_TAG}.zip build dist/run.sh
-          tar -czf dist/nil-frontend-${RELEASE_TAG}.tar.gz build dist/run.sh
+          zip -r dist/nil-frontend-${RELEASE_TAG}.zip build dist/run.sh dist/run.bat dist/run.ps1
+          tar -czf dist/nil-frontend-${RELEASE_TAG}.tar.gz build dist/run.sh dist/run.bat dist/run.ps1
           ls -lah dist/
 
       - uses: actions/upload-artifact@v4
