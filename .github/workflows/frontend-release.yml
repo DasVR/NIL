@@ -49,13 +49,16 @@ jobs:
 
       - name: Package frontend
         run: |
-          mkdir -p dist
-          cp run.sh dist/
-          cp run.bat dist/
-          cp run.ps1 dist/
-          chmod +x dist/run.sh
-          zip -r dist/nil-frontend-${RELEASE_TAG}.zip build dist/run.sh dist/run.bat dist/run.ps1
-          tar -czf dist/nil-frontend-${RELEASE_TAG}.tar.gz build dist/run.sh dist/run.bat dist/run.ps1
+          # Stage a flat, obvious release layout: build/ + run scripts at root
+          STAGE="nil-frontend-${RELEASE_TAG}"
+          mkdir -p "${STAGE}" dist
+          cp -r build "${STAGE}/build"
+          cp run.sh run.bat run.ps1 "${STAGE}/"
+          chmod +x "${STAGE}/run.sh"
+          (cd "${STAGE}" && zip -r "../dist/nil-frontend-${RELEASE_TAG}.zip" .)
+          tar -czf "dist/nil-frontend-${RELEASE_TAG}.tar.gz" "${STAGE}"
+          # Also ship a plain web-only zip (just build/) for people who only want the site
+          (cd build && zip -r "../dist/nil-frontend-${RELEASE_TAG}-webonly.zip" .)
           ls -lah dist/
 
       - uses: actions/upload-artifact@v4
@@ -97,8 +100,12 @@ jobs:
             echo "## Run locally"
             echo '```bash'
             echo "unzip nil-frontend-${TAG}.zip"
-            echo "cd nil-frontend-${TAG} || true"
+            echo "cd nil-frontend-${TAG}"
+            echo "# Windows:"
+            echo "./run.bat     (or .\run.ps1 in PowerShell)"
+            echo "# macOS / Linux / Git Bash:"
             echo "./run.sh"
+            echo "then open http://localhost:3000"
             echo '```'
             echo ""
             echo "## Changes since ${PREV:-initial release}"
