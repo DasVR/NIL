@@ -7,19 +7,19 @@
       id: 'local-scan',
       label: 'New local scan',
       desc: 'Run a sandboxed audit against a local target.',
-      icon: 'lucide:shield-check',
+      icon: 'ph:shield-check-bold',
     },
     {
       id: 'web-audit',
       label: 'New web audit',
       desc: 'Crawl, fingerprint, and score a public web app.',
-      icon: 'lucide:globe',
+      icon: 'ph:globe-bold',
     },
     {
       id: 'import',
       label: 'Import engagement',
       desc: 'Load an existing engagement from Obsidian or JSON.',
-      icon: 'lucide:folder-down',
+      icon: 'ph:folder-down-bold',
     },
   ];
 </script>

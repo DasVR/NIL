@@ -14,7 +14,7 @@
 
   <div class="status-section status-actions">
     <button class="status-action" type="button" aria-label="Command palette">
-      <Icon icon="lucide:command" width="0.75rem" height="0.75rem" />
+      <Icon icon="ph:command-bold" width="0.75rem" height="0.75rem" />
       <span class="status-label">K</span>
     </button>
   </div>
