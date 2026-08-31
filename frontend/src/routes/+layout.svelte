@@ -4,7 +4,6 @@
   import StatusBar from '$lib/components/shell/StatusBar.svelte';
   import Dock from '$lib/components/shell/Dock.svelte';
   import Sidebar from '$lib/components/shell/Sidebar.svelte';
-  import Terminal from '$lib/components/shell/Terminal.svelte';
   import RightSidebar from '$lib/components/shell/RightSidebar.svelte';
   import AiStrip from '$lib/components/shell/AiStrip.svelte';
   import CommandPalette from '$lib/components/shell/CommandPalette.svelte';
@@ -18,15 +17,10 @@
     { id: 'about', label: 'About', icon: 'ph:user-bold', href: '/about' },
   ];
 
-  const engagements: {
-    id: string;
-    name: string;
-    status: 'active' | 'paused' | 'done' | 'blocked';
-    targets: number;
-  }[] = [
-    { id: 'dev-local', name: 'dev.local', status: 'active', targets: 3 },
-    { id: 'clearwater-hvac', name: 'clearwater-hvac', status: 'active', targets: 12 },
-    { id: 'stpete-chiro', name: 'stpete-chiro', status: 'paused', targets: 7 },
+  const engagements = [
+    { id: 'dev-local', name: 'dev.local', status: 'active' as const, targets: 3 },
+    { id: 'clearwater-hvac', name: 'clearwater-hvac', status: 'active' as const, targets: 12 },
+    { id: 'stpete-chiro', name: 'stpete-chiro', status: 'paused' as const, targets: 7 },
   ];
 
   const commands = [
@@ -68,7 +62,7 @@
 
     <main class="workspace">
       <div class="workspace__center">
-        <Terminal />
+        {@render children()}
       </div>
       <AiStrip
         open={aiOpen}
@@ -110,11 +104,15 @@
     display: flex;
     flex-direction: column;
     min-height: 0;
+    background: var(--surface-0);
   }
 
   .workspace__center {
     flex: 1;
     min-height: 0;
     display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
   }
 </style>

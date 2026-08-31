@@ -23,7 +23,7 @@
     >
       <span class="tooltip">{item.label}</span>
       <span class="icon-wrap">
-        <Icon icon={item.icon} width="1.5rem" height="1.5rem" />
+        <Icon icon={item.icon} width="1.25rem" height="1.25rem" />
       </span>
       {#if item.active}
         <span class="active-dot" aria-hidden="true"></span>
@@ -34,20 +34,13 @@
 
 <style>
   .dock {
-    position: fixed;
-    bottom: calc(var(--statusbar-h) + var(--space-3));
-    left: 50%;
-    transform: translateX(-50%);
-    z-index: 50;
     display: flex;
-    align-items: flex-end;
+    align-items: center;
+    justify-content: center;
     gap: var(--space-1);
     padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-xl);
-    background: var(--dock-bg);
-    border: 1px solid var(--dock-border);
-    backdrop-filter: blur(26px) saturate(1.4) contrast(1.05);
-    -webkit-backdrop-filter: blur(26px) saturate(1.4) contrast(1.05);
+    background: var(--surface-1);
+    border-top: 1px solid var(--border-subtle);
   }
 
   .dock-item {
@@ -57,7 +50,7 @@
     align-items: center;
     padding: var(--space-2);
     border-radius: var(--radius-md);
-    color: var(--text-secondary);
+    color: var(--text-tertiary);
     text-decoration: none;
     transition:
       transform var(--dur-base) var(--spring-bouncy),
@@ -67,7 +60,7 @@
 
   .dock-item:hover,
   .dock-item:focus-visible {
-    transform: scale(1.2);
+    transform: scale(1.15);
     color: var(--text-primary);
     background: rgba(169, 177, 240, 0.10);
   }
@@ -78,7 +71,7 @@
   }
 
   .dock-item:active {
-    transform: scale(1.1);
+    transform: scale(1.08);
   }
 
   .dock-item.active {
@@ -89,8 +82,8 @@
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 2.5rem;
-    height: 2.5rem;
+    width: 1.75rem;
+    height: 1.75rem;
   }
 
   .tooltip {
@@ -120,7 +113,7 @@
 
   .active-dot {
     position: absolute;
-    bottom: 0.25rem;
+    bottom: 0.125rem;
     width: 0.25rem;
     height: 0.25rem;
     border-radius: var(--radius-full);
