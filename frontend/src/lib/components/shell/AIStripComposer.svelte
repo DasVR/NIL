@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { appState } from '$lib/stores/appState';
   import { agentStore, sendMessage as agentSendMessage, cancel } from '$lib/stores/agentStore';
   import Icon from '@iconify/svelte';
 
@@ -19,7 +20,17 @@
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      agentSendMessage();
+      if (input.trim()) {
+        agentSendMessage(input, appState.activeEngagementId || 'default', mode);
+        input = '';
+      }
+    }
+  }
+
+  function onSend() {
+    if (input.trim()) {
+      agentSendMessage(input, appState.activeEngagementId || 'default', mode);
+      input = '';
     }
   }
 
@@ -64,7 +75,7 @@
     rows={expanded ? 4 : 1}
     aria-label="Agent input"
   ></textarea>
-  <button class="composer-send-btn" onclick={agentSendMessage} disabled={!input.trim()} aria-label="Send">
+  <button class="composer-send-btn" onclick={onSend} disabled={!input.trim()} aria-label="Send">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
         <line x1="22" y1="2" x2="11" y2="13"/>
         <polygon points="22 2 15 22 11 13 2 9 22 2"/>

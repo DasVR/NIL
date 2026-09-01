@@ -1,8 +1,6 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { appState } from '$lib/stores/appState';
   import Icon from '@iconify/svelte';
-  import { createEventDispatcher } from 'svelte';
 
   interface TargetNode {
     id: string;
@@ -15,54 +13,37 @@
     expanded?: boolean;
   }
 
-  let targets = $state<TargetNode[]>([
-    {
-      id: 'acme-corp',
-      name: 'acme-corp',
+  let targets = $derived<TargetNode[]>(
+    appState.engagements.map(eng => ({
+      id: eng.name,
+      name: eng.name,
       type: 'engagement',
       status: 'active',
+      findings: eng.findings_count,
+      expanded: true,
       children: [
         {
-          id: 'api.acme.com',
-          name: 'api.acme.com',
-          type: 'domain',
-          ports: [80, 443, 8080],
-          findings: 3,
-          children: [
-            { id: 'api-findings', name: 'findings', type: 'finding', findings: 3 },
-            { id: 'api-timeline', name: 'timeline', type: 'timeline' },
-          ],
+          id: `${eng.name}-findings`,
+          name: 'findings',
+          type: 'finding',
+          findings: eng.findings_count,
         },
         {
-          id: 'db.acme.com',
-          name: 'db.acme.com',
-          type: 'host',
-          ports: [3306, 5432],
-          findings: 1,
-          children: [
-            { id: 'db-findings', name: 'findings', type: 'finding', findings: 1 },
-          ],
-        },
-        {
-          id: 'internal-net',
-          name: 'internal-net',
-          type: 'network',
-          children: [
-            { id: 'internal-findings', name: 'findings', type: 'finding', findings: 0 },
-          ],
+          id: `${eng.name}-timeline`,
+          name: 'timeline',
+          type: 'timeline',
         },
       ],
-    },
-  ]);
+    }))
+  );
 
   function toggleExpand(node: TargetNode) {
     node.expanded = !node.expanded;
-    // Force reactivity
     targets = targets;
   }
 
-  function handleSelect(node: TargetNode, e: Event) {
-    e.stopPropagation();
+  function handleSelect(node: TargetNode) {
+    appState.activeEngagementId = node.id;
     appState.activeTargetId = node.id;
   }
 
@@ -129,9 +110,36 @@
       </div>
     `;
   }
+
+  function onClickTree(e: MouseEvent) {
+    const row = (e.target as HTMLElement).closest('.tree-node-row') as HTMLElement | null;
+    const expand = (e.target as HTMLElement).closest('.tree-expand') as HTMLElement | null;
+    if (!row) return;
+    const id = row.dataset.id;
+    if (!id) return;
+    const node = findNodeById(targets, id);
+    if (node) {
+      if (expand) {
+        toggleExpand(node);
+      } else {
+        handleSelect(node);
+      }
+    }
+  }
+
+  function findNodeById(nodes: TargetNode[], id: string): TargetNode | null {
+    for (const node of nodes) {
+      if (node.id === id) return node;
+      if (node.children) {
+        const found = findNodeById(node.children, id);
+        if (found) return found;
+      }
+    }
+    return null;
+  }
 </script>
 
-<div class="target-tree" role="tree" aria-label="Targets">
+<div class="target-tree" role="tree" aria-label="Targets" onclick={onClickTree}>
   {#each targets as target}
     {@html renderNode(target)}
   {/each}
@@ -247,22 +255,5 @@
 
   .tree-children {
     overflow: hidden;
-  }
-
-  /* Collapsed sidebar - show only icons */
-  :global(.sidebar.collapsed) .tree-node-name,
-  :global(.sidebar.collapsed) .tree-node-ports,
-  :global(.sidebar.collapsed) .tree-node-badge,
-  :global(.sidebar.collapsed) .tree-expand {
-    display: none;
-  }
-
-  :global(.sidebar.collapsed) .tree-node-row {
-    justify-content: center;
-    padding: 0 8px;
-  }
-
-  :global(.sidebar.collapsed) .tree-node-status {
-    display: none;
   }
 </style>

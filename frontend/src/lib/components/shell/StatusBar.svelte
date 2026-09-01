@@ -5,10 +5,12 @@
   import { tabsStore } from '$lib/stores/tabsStore';
   import Icon from '@iconify/svelte';
 
-  let status = $state<'idle' | 'running' | 'error'>('idle');
   let store = $derived($agentStore);
   let tabs = $derived($tabsStore);
   let activeTab = $derived(tabs.tabs.find(t => t.id === tabs.activeTabId));
+  let status = $derived(store.running ? 'running' : ($agentStore.pendingApproval ? 'idle' : 'idle'));
+  let backendStatus = $derived(appState.backendHealthy ? 'Connected' : 'Offline');
+  let engagementLabel = $derived(appState.activeEngagementId || 'No engagement');
 
   onMount(() => {
     // Subscribe to agent running state
@@ -19,8 +21,14 @@
 <footer class="status-bar" role="status" aria-live="polite">
   <div class="status-left">
     <div class="status-item">
-      <span class="status-dot" style:background={status === 'running' ? 'var(--accent-primary)' : status === 'error' ? 'var(--color-danger)' : 'var(--color-success)'} />
-      <span>{status === 'running' ? 'Agent running' : status === 'error' ? 'Error' : 'Ready'}</span>
+      <span class="status-dot" style:background={status === 'running' ? 'var(--accent-primary)' : status === 'error' ? 'var(--color-danger)' : appState.backendHealthy ? 'var(--color-success)' : 'var(--color-danger)'} />
+      <span>{status === 'running' ? 'Agent running' : status === 'error' ? 'Error' : appState.backendHealthy ? 'Ready' : 'Backend offline'}</span>
+    </div>
+
+    <div class="status-divider" />
+    <div class="status-item">
+      <Icon icon="ph:briefcase-bold" width="14" height="14" />
+      <span>{engagementLabel}</span>
     </div>
 
     {#if activeTab}
@@ -31,7 +39,7 @@
       </div>
     {/if}
 
-    {#if agentStore.pendingApproval}
+    {#if $agentStore.pendingApproval}
       <div class="status-divider" />
       <div class="status-item pending">
         <span class="status-dot blinking" />
@@ -74,7 +82,7 @@
 
     <div class="status-item">
       <Icon icon="ph:network-bold" width="14" height="14" />
-      <span>Connected</span>
+      <span>{backendStatus}</span>
     </div>
   </div>
 </footer>
