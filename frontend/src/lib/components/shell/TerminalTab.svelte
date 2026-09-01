@@ -1,8 +1,6 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
-  import { Terminal } from '@xterm/xterm';
-  import { FitAddon } from '@xterm/addon-fit';
-  import { WebglAddon } from '@xterm/addon-webgl';
+  import { browser } from '$app/environment';
   import { appState } from '$lib/stores/appState';
   import { terminalStore } from '$lib/stores/terminalStore';
   import { tabsStore } from '$lib/stores/tabsStore';
@@ -14,19 +12,25 @@
   let { tab }: Props = $props();
 
   let container: HTMLDivElement;
-  let terminal: Terminal;
-  let fitAddon: FitAddon;
-  let webglAddon: WebglAddon;
+  let terminal: any;
+  let fitAddon: any;
+  let webglAddon: any;
   let ptyConnected = $state(false);
 
   onMount(() => {
+    if (!browser) return;
     initTerminal();
   });
 
   async function initTerminal() {
     if (!container) return;
 
-    // Initialize xterm
+    const [{ Terminal }, { FitAddon }, { WebglAddon }] = await Promise.all([
+      import('@xterm/xterm'),
+      import('@xterm/addon-fit'),
+      import('@xterm/addon-webgl')
+    ]);
+
     terminal = new Terminal({
       fontFamily: 'JetBrains Mono, monospace',
       fontSize: 13,
@@ -70,7 +74,7 @@
     fitAddon.fit();
 
     // Connect to PTY via Tauri
-    if (window.__TAURI__) {
+    if ((window as any).__TAURI__) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         const port = await invoke<number>('pty_connect', { socketPath: '/tmp/nil-pty.sock' });
@@ -97,11 +101,11 @@
           console.error('PTY WebSocket error:', err);
         };
 
-        terminal.onData((data) => {
+        terminal.onData((data: string) => {
           ws.send(data);
         });
 
-        terminal.onResize(({ cols, rows }) => {
+        terminal.onResize(({ cols, rows }: any) => {
           ws.send(JSON.stringify({ type: 'resize', cols, rows }));
         });
 
@@ -109,17 +113,14 @@
         terminalStore.setWebSocket(ws);
       } catch (err) {
         console.error('Failed to connect PTY:', err);
-        // Fallback: show message
         terminal.writeln('\r\n\x1b[33m[!] PTY connection failed. Run "npm run tauri dev" for full terminal.\x1b[0m\r\n');
         terminal.writeln('$ ');
       }
     } else {
-      // Browser fallback
       terminal.writeln('\r\n\x1b[33m[!] Not running in Tauri. Run "npm run tauri dev" for full terminal.\x1b[0m\r\n');
       terminal.writeln('$ ');
     }
 
-    // Handle resize
     const resizeObserver = new ResizeObserver(() => {
       fitAddon.fit();
     });
@@ -132,7 +133,6 @@
     };
   }
 
-  // Focus terminal when tab activates
   $effect(() => {
     if (tabsStore.activeTabId === tab.id && terminal) {
       terminal.focus();

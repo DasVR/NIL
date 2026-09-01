@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import * as monaco from 'monaco-editor';
+  import { browser } from '$app/environment';
 
   interface DiffBlockProps {
     block: {
@@ -15,47 +15,47 @@
   let { block }: DiffBlockProps = $props();
 
   let container: HTMLDivElement;
-  let editor: monaco.editor.IStandaloneDiffEditor;
+  let editor: any;
   let viewMode = $state<'unified' | 'side-by-side'>('unified');
 
   onMount(() => {
-    if (!container) return;
+    if (!browser || !container) return;
 
-    monaco.editor.defineTheme('nil-diff', {
-      base: 'vs-dark',
-      inherit: true,
-      rules: [],
-      colors: {
-        'editor.background': '#050507',
-        'editor.foreground': '#e8e8e6',
-        'diffEditor.insertedTextBackground': 'rgba(92, 255, 138, 0.15)',
-        'diffEditor.removedTextBackground': 'rgba(255, 92, 92, 0.15)',
-        'diffEditor.border': '#16161d',
-      },
+    import('monaco-editor').then((monaco) => {
+      monaco.editor.defineTheme('nil-diff', {
+        base: 'vs-dark',
+        inherit: true,
+        rules: [],
+        colors: {
+          'editor.background': '#050507',
+          'editor.foreground': '#e8e8e6',
+          'diffEditor.insertedTextBackground': 'rgba(92, 255, 138, 0.15)',
+          'diffEditor.removedTextBackground': 'rgba(255, 92, 92, 0.15)',
+          'diffEditor.border': '#16161d',
+        },
+      });
+
+      editor = monaco.editor.createDiffEditor(container, {
+        theme: 'nil-diff',
+        fontFamily: 'JetBrains Mono',
+        fontSize: 13,
+        lineHeight: 1.5,
+        minimap: { enabled: false },
+        automaticLayout: true,
+        readOnly: true,
+        renderSideBySide: viewMode === 'side-by-side',
+        renderOverviewRuler: true,
+        originalEditable: false,
+      } as any);
+
+      const originalModel = monaco.editor.createModel(block.oldContent, block.language || 'typescript');
+      const modifiedModel = monaco.editor.createModel(block.newContent, block.language || 'typescript');
+
+      editor.setModel({ original: originalModel, modified: modifiedModel });
     });
-
-    editor = monaco.editor.createDiffEditor(container, {
-      theme: 'nil-diff',
-      fontFamily: 'JetBrains Mono',
-      fontSize: 13,
-      lineHeight: 1.5,
-      minimap: { enabled: false },
-      automaticLayout: true,
-      readOnly: true,
-      renderSideBySide: viewMode === 'side-by-side',
-      renderOverviewRuler: true,
-      originalEditable: false,
-    } as monaco.editor.IStandaloneDiffEditorConstructionOptions);
-
-    const originalModel = monaco.editor.createModel(block.oldContent, block.language || 'typescript');
-    const modifiedModel = monaco.editor.createModel(block.newContent, block.language || 'typescript');
-
-    editor.setModel({ original: originalModel, modified: modifiedModel });
 
     return () => {
       editor?.dispose();
-      originalModel?.dispose();
-      modifiedModel?.dispose();
     };
   });
 
