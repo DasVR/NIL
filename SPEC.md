@@ -432,6 +432,6 @@ Like Pentest Copilot, we can use existing authenticated CLI tools as inference p
 
 ---
 
-*Last updated: 2026-08-20*
-*Status: Backend, website, desktop, and TUI shipped. Workstation IA is `UX_REDESIGN.md` (v3). Install + welcome + per-OS first launch: `docs/WELCOME.md`. Anti-refusal jailbreak layers are out of scope.*
+*Last updated: 2026-08-13*
+*Status: Phase 1–2 implemented; website + desktop + TUI shipped. Anti-refusal jailbreak layers are out of scope.*
 *Next: PDF/DOCX reports, Kali image option, plugin marketplace*

@@ -1,0 +1,50 @@
+Build the NIL agent loop backend in `/home/das/projects/finn-pentest-harness/backend/agent/` and `/home/das/projects/finn-pentest-harness/backend/api/`.
+
+**Existing code to reuse** (DO NOT MODIFY):
+- `/home/das/projects/finn-pentest-harness/backend/godmode/` — godmod3.ai multi-model router with engines (ultraplinian, autotune, parseltongue, refusal detector) and providers (Ollama Cloud, OpenRouter)
+
+**New files to create** (all must be valid Python, pass `py_compile`):
+
+```
+backend/
+├── api/
+│   ├── __init__.py
+│   ├── routes.py          # FastAPI routes for agent endpoints
+│   ├── middleware.py      # CORS, rate limit
+│   └── dependencies.py
+├── agent/
+│   ├── __init__.py
+│   ├── loop.py            # core agent loop: idle→planning→approval→executing→done
+│   ├── approval.py        # YOLO toggle (per-engagement), approval gate, logging
+│   ├── stream.py          # SSE event stream
+│   ├── memory.py          # conversation history, system prompts per mode
+│   └── tools/
+│       ├── __init__.py
+│       ├── registry.py    # Tool registry with schemas
+│       ├── sandbox.py     # Sandboxed subprocess execution
+│       ├── run_command.py
+│       ├── read_file.py
+│       ├── write_file.py
+│       ├── edit_file.py
+│       └── search_web.py
+├── core/
+│   ├── __init__.py
+│   ├── config.py          # pydantic-settings for config
+│   ├── models.py          # Pydantic v2 models: Engagement, AgentRun, ToolCall, PlanStep, Finding
+│   └── events.py          # asyncio Queue event bus
+├── main.py                # FastAPI entry point, mounts routes
+├── requirements.txt       # fastapi, uvicorn, pydantic, slowapi, httpx
+└── tests/
+    └── test_agent_loop.py
+```
+
+**Requirements**:
+1. Agent loop: event-driven state machine with asyncio. 4 modes: `hunt`, `chat`, `code`, `report`.
+2. Tool executor: sandboxed in `/tmp/nil-sandbox/{run_id}/`, timeout 60s, max output 100KB.
+3. Approval gate: per-engagement YOLO toggle. Non-YOLO = all tools need approval. YOLO = dangerous tools auto-approve after 5s delay. Log all approvals to JSONL.
+4. SSE streaming: `/v1/agent/stream/{run_id}` with events: `plan`, `tool_proposed`, `tool_running`, `tool_done`, `finding`, `message`, `done`, `error`.
+5. Import godmode modules for LLM calls: `from ..godmode.engines.models import all_models`, `from ..godmode.providers.ollama_cloud import chat_completion`
+6. All code must pass `python -m py_compile`.
+7. Include curl test examples in comments at top of routes.py.
+
+Write the FULL implementation for each file. Include all imports, all functions, all type hints. Do not leave stubs or TODOs. Make it production-ready.
