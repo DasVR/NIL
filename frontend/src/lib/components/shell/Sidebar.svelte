@@ -1,187 +1,214 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { appState } from '$lib/stores/appState';
+  import TargetTree from '$lib/components/shell/TargetTree.svelte';
   import Icon from '@iconify/svelte';
 
-  interface Engagement {
-    id: string;
-    name: string;
-    status: 'active' | 'paused' | 'done' | 'blocked';
-    targets: number;
-  }
-
   interface SidebarProps {
-    engagements?: Engagement[];
-    activeId?: string;
-    collapsed?: boolean;
-    onSelect?: (id: string) => void;
-    onToggleCollapse?: () => void;
-    className?: string;
+    open?: boolean;
+    width?: number;
+    onToggle?: () => void;
+    onResize?: (w: number) => void;
   }
 
-  let {
-    engagements = [],
-    activeId = '',
-    collapsed = false,
-    onSelect = () => {},
-    onToggleCollapse = () => {},
-    className = ''
-  }: SidebarProps = $props();
+  let { open = $bindable(true), width = $bindable(280), onToggle, onResize }: SidebarProps = $props();
 
-  const statusIcon: Record<Engagement['status'], string> = {
-    active: 'ph:circle-fill',
-    paused: 'ph:pause-circle-fill',
-    done: 'ph:check-circle-fill',
-    blocked: 'ph:warning-circle-fill'
-  };
+  let collapsed = $derived(!open);
+  let dragStartX = 0;
+  let startWidth = 0;
+  let resizing = $state(false);
+
+  function handleResizeStart(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    resizing = true;
+    dragStartX = e.clientX;
+    startWidth = width;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  function handleResizeMove(e: MouseEvent) {
+    if (!resizing) return;
+    const delta = e.clientX - dragStartX;
+    const newWidth = Math.max(200, Math.min(400, startWidth + delta));
+    width = newWidth;
+    if (onResize) onResize(newWidth);
+  }
+
+  function handleResizeEnd() {
+    resizing = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+
+  function handleResizeKeydown(e: KeyboardEvent) {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      handleResizeStart(e as unknown as MouseEvent);
+    }
+  }
+
+  onMount(() => {
+    window.addEventListener('mousemove', handleResizeMove);
+    window.addEventListener('mouseup', handleResizeEnd);
+    return () => {
+      window.removeEventListener('mousemove', handleResizeMove);
+      window.removeEventListener('mouseup', handleResizeEnd);
+    };
+  });
 </script>
 
-<nav
-  class="sidebar shell-panel {collapsed ? 'sidebar--collapsed' : ''} {className}"
-  aria-label="Engagements"
+<aside 
+  class="sidebar {collapsed ? 'collapsed' : ''} {resizing ? 'resizing' : ''}" 
+  style:width={width}px
+  aria-label="Targets sidebar"
 >
-  <div class="sidebar__header">
-    <span class="sidebar__eyebrow">Engagements</span>
-    <button
-      class="icon-btn"
-      onclick={() => onToggleCollapse()}
-      aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-    >
-      <Icon icon={collapsed ? 'ph:sidebar-simple-bold' : 'ph:sidebar-simple-fill'} />
+  <div class="sidebar-header">
+    <div class="sidebar-title">Targets</div>
+    <div class="sidebar-actions">
+      <button class="icon-btn" aria-label="New target" title="New Target (Cmd+N)">
+        <Icon icon="ph:plus-bold" width="16" height="16" />
+      </button>
+      <button class="icon-btn" aria-label="Import scope" title="Import Scope">
+        <Icon icon="ph:import-bold" width="16" height="16" />
+      </button>
+      <button class="icon-btn" aria-label="Templates" title="Templates">
+        <Icon icon="ph:layout-bold" width="16" height="16" />
+      </button>
+    </div>
+  </div>
+
+  <div class="sidebar-divider"></div>
+
+  <TargetTree />
+
+  <div class="sidebar-divider"></div>
+
+  <div class="sidebar-footer">
+    <button class="sidebar-footer-btn" aria-label="Toggle sidebar" onclick={() => { if (onToggle) onToggle(); }}>
+      <Icon icon={collapsed ? 'ph:caret-right-bold' : 'ph:caret-left-bold'} width="16" height="16" />
     </button>
   </div>
 
-  {#if !collapsed}
-    <ul class="sidebar__list" role="tree">
-      {#each engagements as eng (eng.id)}
-        <li>
-          <button
-            class="sidebar__row {activeId === eng.id ? 'sidebar__row--active' : ''}"
-            class:row-active={activeId === eng.id}
-            role="treeitem"
-            aria-selected={activeId === eng.id}
-            onclick={() => onSelect(eng.id)}
-          >
-            <Icon
-              class="sidebar__status"
-              icon={statusIcon[eng.status]}
-              aria-hidden="true"
-            />
-            <span class="sidebar__name">{eng.name}</span>
-            {#if eng.targets > 0}
-              <span class="sidebar__count">{eng.targets}</span>
-            {/if}
-          </button>
-        </li>
-      {/each}
-    </ul>
-  {/if}
-
-  <div class="sidebar__footer">
-    <button class="sidebar__new" onclick={undefined as any} aria-label="New engagement">
-      <Icon icon="ph:plus-bold" aria-hidden="true" />
-      {#if !collapsed}<span>New engagement</span>{/if}
-    </button>
-  </div>
-</nav>
+  <button
+    class="sidebar-resize-handle"
+    onmousedown={handleResizeStart}
+    onkeydown={handleResizeKeydown}
+    aria-label="Resize sidebar"
+    aria-valuenow={width}
+    aria-valuemin={200}
+    aria-valuemax={400}
+    type="button"
+  ></button>
+</aside>
 
 <style>
   .sidebar {
+    position: fixed;
+    top: var(--titlebar-h);
+    left: 0;
+    bottom: var(--statusbar-h);
+    background: var(--sidebar-bg);
+    border-right: 1px solid var(--sidebar-border);
     display: flex;
     flex-direction: column;
-    background: var(--surface-1);
-    border-right: 1px solid var(--border-subtle);
-    min-width: 236px;
-    width: 236px;
-    transition: width var(--spring-smooth);
+    z-index: var(--z-sticky);
+    transition: width var(--spring-snappy), transform var(--spring-snappy);
     overflow: hidden;
-    flex-shrink: 0;
   }
-  .sidebar--collapsed {
-    width: 52px;
-    min-width: 52px;
+
+  .sidebar.collapsed {
+    width: 48px !important;
   }
-  .sidebar__header {
+
+  .sidebar.resizing {
+    transition: none;
+  }
+
+  .sidebar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: var(--control-height);
-    padding: 0 var(--space-3);
-    border-bottom: 1px solid var(--border-subtle);
-    flex-shrink: 0;
-  }
-  .sidebar__eyebrow {
-    font: var(--type-overline);
-    color: var(--text-tertiary);
-    letter-spacing: var(--tracking-wide);
-  }
-  .sidebar__list {
-    list-style: none;
-    margin: 0;
-    padding: var(--space-1);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-    flex: 1;
-    overflow-y: auto;
-  }
-  .sidebar__row {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    width: 100%;
-    height: var(--row-height);
+    height: var(--row-h);
     padding: 0 var(--space-2);
-    border: 1px solid transparent;
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font: var(--type-ui);
-  }
-  .sidebar__row:hover {
-    background: var(--surface-2);
-    color: var(--text-primary);
-  }
-  .sidebar__status {
-    color: var(--text-tertiary);
+    border-bottom: 1px solid var(--sidebar-border);
     flex-shrink: 0;
   }
-  .sidebar__name {
-    flex: 1;
+
+  .sidebar.collapsed .sidebar-title,
+  .sidebar.collapsed .sidebar-actions {
+    opacity: 0;
+    pointer-events: none;
+    width: 0;
+    overflow: hidden;
+  }
+
+  .sidebar-title {
+    font-size: var(--font-xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-tertiary);
+    white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    white-space: nowrap;
-    text-align: left;
+    transition: opacity var(--spring-snappy), width var(--spring-snappy);
   }
-  .sidebar__count {
-    font: var(--type-mono);
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
-    background: var(--surface-3);
-    border-radius: 999px;
-    padding: 1px var(--space-2);
+
+  .sidebar-actions {
+    display: flex;
+    gap: 4px;
+    transition: opacity var(--spring-snappy), width var(--spring-snappy);
   }
-  .sidebar__footer {
-    padding: var(--space-2);
-    border-top: 1px solid var(--border-subtle);
-    flex-shrink: 0;
+
+  .sidebar-divider {
+    height: 1px;
+    background: var(--sidebar-border);
+    margin: 0 var(--space-2);
   }
-  .sidebar__new {
+
+  .sidebar.collapsed .sidebar-divider {
+    margin: 0;
+  }
+
+  .sidebar-footer {
+    height: var(--row-h);
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    width: 100%;
-    height: var(--control-height);
+    justify-content: center;
     padding: 0 var(--space-2);
-    border: 1px dashed var(--border-strong);
-    border-radius: 6px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    font: var(--type-ui);
+    border-top: 1px solid var(--sidebar-border);
+    flex-shrink: 0;
   }
-  .sidebar__new:hover {
-    border-color: var(--accent);
-    color: var(--accent);
-    background: var(--accent-soft);
+
+  .sidebar-footer-btn {
+    color: var(--text-tertiary);
+  }
+  .sidebar-footer-btn:hover {
+    color: var(--text-primary);
+    background: var(--surface-hover);
+  }
+
+  .sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    right: -4px;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    background: transparent;
+    border: none;
+    padding: 0;
+    z-index: 10;
+    transition: background var(--spring-snappy);
+  }
+
+  .sidebar-resize-handle:hover {
+    background: var(--accent-primary);
+  }
+
+  .sidebar.collapsed .sidebar-resize-handle {
+    right: -4px;
   }
 </style>

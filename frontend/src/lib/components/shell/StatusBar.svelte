@@ -1,22 +1,81 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { appState } from '$lib/stores/appState';
+  import { agentStore } from '$lib/stores/agentStore';
+  import { tabsStore } from '$lib/stores/tabsStore';
   import Icon from '@iconify/svelte';
+
+  let status = $state<'idle' | 'running' | 'error'>('idle');
+  let store = $derived($agentStore);
+  let tabs = $derived($tabsStore);
+  let activeTab = $derived(tabs.tabs.find(t => t.id === tabs.activeTabId));
+
+  onMount(() => {
+    // Subscribe to agent running state
+    // In real app, would use $effect to sync
+  });
 </script>
 
-<footer class="status-bar">
-  <div class="status-section">
-    <span class="status-dot status-dot--safe" aria-hidden="true"></span>
-    <span class="status-label">Approval gate: on</span>
+<footer class="status-bar" role="status" aria-live="polite">
+  <div class="status-left">
+    <div class="status-item">
+      <span class="status-dot" style:background={status === 'running' ? 'var(--accent-primary)' : status === 'error' ? 'var(--color-danger)' : 'var(--color-success)'} />
+      <span>{status === 'running' ? 'Agent running' : status === 'error' ? 'Error' : 'Ready'}</span>
+    </div>
+
+    {#if activeTab}
+      <div class="status-divider" />
+      <div class="status-item">
+        <Icon icon="ph:terminal-bold" width="14" height="14" />
+        <span>{activeTab.label}</span>
+      </div>
+    {/if}
+
+    {#if agentStore.pendingApproval}
+      <div class="status-divider" />
+      <div class="status-item pending">
+        <span class="status-dot blinking" />
+        <span>Approval pending</span>
+        <kbd>Cmd+Enter</kbd>
+      </div>
+    {/if}
   </div>
 
-  <div class="status-section">
-    <span class="status-label mono">No engagement</span>
+  <div class="status-center">
+    <div class="status-item">
+      <span>Ln 1, Col 1</span>
+    </div>
+    <div class="status-item">
+      <span>UTF-8</span>
+    </div>
+    <div class="status-item">
+      <span>LF</span>
+    </div>
+    <div class="status-item">
+      <span>TypeScript</span>
+    </div>
   </div>
 
-  <div class="status-section status-actions">
-    <button class="status-action" type="button" aria-label="Command palette">
-      <Icon icon="ph:command-bold" width="0.75rem" height="0.75rem" />
-      <span class="status-label">K</span>
-    </button>
+  <div class="status-right">
+    {#if appState.yoloMode}
+      <div class="status-item yolo">
+        <Icon icon="ph:rocket-launch-bold" width="14" height="14" />
+        <span>YOLO</span>
+      </div>
+      <div class="status-divider" />
+    {/if}
+
+    <div class="status-item">
+      <Icon icon="ph:memory-bold" width="14" height="14" />
+      <span>~42 MB</span>
+    </div>
+
+    <div class="status-divider" />
+
+    <div class="status-item">
+      <Icon icon="ph:network-bold" width="14" height="14" />
+      <span>Connected</span>
+    </div>
   </div>
 </footer>
 
@@ -25,63 +84,74 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-3);
     height: var(--statusbar-h);
-    min-height: var(--statusbar-h);
-    padding-inline: var(--space-3);
-    background: var(--statusbar-bg);
-    border-top: 1px solid var(--border-subtle);
-    font-size: var(--step--2);
+    padding: 0 var(--space-2);
+    background: var(--surface-card);
+    border-top: 1px solid var(--surface-border);
+    font-size: var(--font-2xs);
+    font-family: var(--font-mono);
     color: var(--text-tertiary);
+    z-index: var(--z-sticky);
     flex-shrink: 0;
   }
 
-  .status-section {
+  .status-left,
+  .status-center,
+  .status-right {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
+    gap: var(--space-3);
+  }
+
+  .status-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--text-tertiary);
+  }
+
+  .status-item:hover {
+    color: var(--text-secondary);
+  }
+
+  .status-item.pending {
+    color: var(--accent-primary);
+    animation: pulse 1.5s var(--spring-bouncy) infinite;
+  }
+
+  .status-item.yolo {
+    color: var(--accent-primary);
+    font-weight: 600;
   }
 
   .status-dot {
-    width: 0.375rem;
-    height: 0.375rem;
-    border-radius: var(--radius-full);
-    background: currentColor;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
   }
 
-  .status-dot--safe {
-    background: var(--status-success);
+  .status-dot.blinking {
+    animation: blink 1s infinite;
   }
 
-  .status-label {
-    line-height: 1;
+  @keyframes blink {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
   }
 
-  .status-actions {
-    gap: var(--space-2);
+  .status-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--surface-border);
   }
 
-  .status-action {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    padding: 0.125rem 0.375rem;
-    border: 1px solid var(--border-subtle);
-    border-radius: var(--radius-sm);
-    background: transparent;
-    color: var(--text-tertiary);
-    font-size: var(--step--2);
-    cursor: pointer;
-    transition: border-color var(--dur-fast) var(--spring-smooth);
-  }
-
-  .status-action:hover {
-    border-color: var(--border-default);
-    color: var(--text-primary);
-  }
-
-  .status-action:focus-visible {
-    outline: 2px solid var(--accent-primary-light);
-    outline-offset: 1px;
+  .status-item kbd {
+    font-family: var(--font-mono);
+    font-size: 10px;
+    padding: 1px 4px;
+    border-radius: 3px;
+    background: var(--surface-hover);
+    border: 1px solid var(--surface-border);
   }
 </style>

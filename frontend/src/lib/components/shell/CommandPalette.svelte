@@ -1,208 +1,293 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { paletteStore } from '$lib/stores/paletteStore';
   import Icon from '@iconify/svelte';
 
-  interface Command {
-    id: string;
-    label: string;
-    icon?: string;
-    hint?: string;
-    category?: string;
-    action: () => void;
-  }
-
-  interface CommandPaletteProps {
+  interface Props {
     open?: boolean;
-    commands?: Command[];
-    onClose?: () => void;
-    className?: string;
+    onToggle?: (open: boolean) => void;
   }
 
-  let {
-    open = false,
-    commands = [],
-    onClose = () => {},
-    className = ''
-  }: CommandPaletteProps = $props();
+  let { open = false, onToggle }: Props = $props();
 
-  let query = $state('');
-  let listEl = $state<HTMLUListElement | undefined>();
-  let activeIndex = $state(0);
+  let inputRef: HTMLInputElement;
+  let selectedIndex = $state(0);
 
-  const filtered = $derived(
-    query
-      ? commands.filter((c) => c.label.toLowerCase().includes(query.toLowerCase()))
-      : commands
-  );
-
-  function run(cmd: Command) {
-    cmd.action();
-    onClose();
-    query = '';
+  function filteredCommands() {
+    if (!paletteStore.query) return paletteStore.commands;
+    const q = paletteStore.query.toLowerCase();
+    return paletteStore.commands.filter(c => 
+      c.label.toLowerCase().includes(q) || 
+      c.shortcut?.toLowerCase().includes(q) ||
+      c.section?.toLowerCase().includes(q)
+    );
   }
 
-  function onKey(e: KeyboardEvent) {
-    if (e.key === 'Escape') {
-      onClose();
-      query = '';
-    } else if (e.key === 'ArrowDown') {
+  let visibleCommands = $derived(filteredCommands());
+
+  function handleKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowDown') {
       e.preventDefault();
-      activeIndex = Math.min(filtered.length - 1, activeIndex + 1);
+      selectedIndex = Math.min(selectedIndex + 1, visibleCommands.length - 1);
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      activeIndex = Math.max(0, activeIndex - 1);
-    } else if (e.key === 'Enter' && filtered[activeIndex]) {
+      selectedIndex = Math.max(selectedIndex - 1, 0);
+    } else if (e.key === 'Enter') {
       e.preventDefault();
-      run(filtered[activeIndex]);
+      if (visibleCommands[selectedIndex]) {
+        paletteStore.executeCommand(visibleCommands[selectedIndex].id);
+      }
+    } else if (e.key === 'Escape') {
+      e.preventDefault();
+      paletteStore.closePalette();
     }
   }
 
-  $effect(() => {
-    if (!listEl) return;
-    const active = listEl.children[activeIndex];
-    active?.scrollIntoView({ block: 'nearest' });
+  function handleInput(e: Event) {
+    const target = e.target as HTMLInputElement;
+    paletteStore.query = target.value;
+    selectedIndex = 0;
+  }
+
+  onMount(() => {
+    inputRef?.focus();
+    selectedIndex = 0;
   });
 </script>
 
 {#if open}
-  <div
-    class="command-palette-overlay {className}"
-    role="dialog"
-    aria-modal="true"
-    aria-label="Command palette"
-    onclick={(e) => {
-      if (e.target === e.currentTarget) onClose();
-    }}
-  >
-    <div class="command-palette" role="presentation" onkeydown={onKey}>
-      <div class="command-palette__search">
-        <Icon icon="ph:magnifying-glass-bold" aria-hidden="true" />
+  <div class="palette-overlay" onclick={() => { if (onToggle) onToggle(false); }} />
+  <div class="palette-window" role="dialog" aria-label="Command Palette">
+    <div class="palette-header">
+      <div class="palette-search">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8"/>
+          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
         <input
+          bind:this={inputRef}
           type="text"
-          placeholder="Type a command…"
-          bind:value={query}
-          aria-label="Filter commands"
+          bind:value={paletteStore.query}
+          oninput={handleInput}
+          onkeydown={handleKeydown}
+          placeholder="Type a command or search..."
+          aria-label="Command palette search"
+          autocomplete="off"
+          spellcheck="false"
         />
-        <kbd class="command-palette__kbd">esc</kbd>
+        <kbd class="palette-hint">Cmd+K</kbd>
       </div>
-      <ul class="command-palette__list" bind:this={listEl} role="listbox">
-        {#each filtered as cmd, i (cmd.id)}
-          <li>
-            <button
-              class="command-palette__item {i === activeIndex ? 'command-palette__item--active' : ''}"
-              role="option"
-              aria-selected={i === activeIndex}
-              onclick={() => run(cmd)}
-            >
-              {#if cmd.icon}
-                <Icon icon={cmd.icon} aria-hidden="true" />
-              {/if}
-              <span class="command-palette__label">{cmd.label}</span>
-              {#if cmd.hint}
-                <span class="command-palette__hint">{cmd.hint}</span>
-              {/if}
-            </button>
-          </li>
-        {/each}
-        {#if filtered.length === 0}
-          <li class="command-palette__empty">No commands match "{query}"</li>
-        {/if}
-      </ul>
+    </div>
+
+    <div class="palette-results" role="listbox" aria-activedescendant={`cmd-${visibleCommands[selectedIndex]?.id}`}>
+      {#each visibleCommands as cmd, i}
+        <div
+          class="palette-item {i === selectedIndex ? 'selected' : ''}"
+          role="option"
+          aria-selected={i === selectedIndex}
+          id={`cmd-${cmd.id}`}
+          onclick={() => paletteStore.executeCommand(cmd.id)}
+        >
+          <div class="palette-item-main">
+            <Icon icon={cmd.icon || 'ph:command-bold'} width="16" height="16" />
+            <span class="palette-item-label">{cmd.label}</span>
+          </div>
+          {#if cmd.shortcut}
+            <kbd class="palette-item-shortcut">{cmd.shortcut}</kbd>
+          {/if}
+          {#if cmd.section}
+            <span class="palette-item-section">{cmd.section}</span>
+          {/if}
+        </div>
+      {/each}
+
+      {#if visibleCommands.length === 0}
+        <div class="palette-empty">
+          <Icon icon="ph:magnifying-glass-bold" width="20" height="20" />
+          <p>No commands found</p>
+          <span>Try a different search</span>
+        </div>
+      {/if}
     </div>
   </div>
 {/if}
 
 <style>
-  .command-palette-overlay {
+  .palette-overlay {
     position: fixed;
     inset: 0;
-    background: var(--overlay);
-    backdrop-filter: blur(6px);
-    display: grid;
-    place-items: start center;
-    padding: var(--space-16) var(--space-4) 0;
-    z-index: var(--z-overlay);
+    background: rgba(5, 5, 7, 0.7);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    z-index: var(--z-modal);
+    animation: fadeIn 0.15s var(--spring-smooth);
   }
-  .command-palette {
-    width: min(640px, 100%);
-    background: var(--surface-2);
-    border: 1px solid var(--border-subtle);
-    border-radius: 12px;
-    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.5);
+
+  .palette-window {
+    position: fixed;
+    top: 12vh;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 640px;
+    max-width: calc(100vw - 32px);
+    background: var(--surface-card);
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-lg);
+    box-shadow: 
+      0 24px 48px rgba(5, 5, 7, 0.6),
+      0 0 0 1px var(--accent-primary);
+    z-index: var(--z-modal);
     overflow: hidden;
-    animation: palette-in var(--spring-calm) 1;
+    animation: slideDown 0.2s var(--spring-snappy);
   }
-  @keyframes palette-in {
-    from {
-      transform: translateY(-6px) scale(0.98);
-      opacity: 0;
-    }
-    to {
-      transform: translateY(0) scale(1);
-      opacity: 1;
-    }
+
+  @keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
   }
-  .command-palette__search {
+
+  @keyframes slideDown {
+    from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
+    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+  }
+
+  .palette-header {
+    padding: var(--space-3) var(--space-4);
+    border-bottom: 1px solid var(--surface-border);
+  }
+
+  .palette-search {
+    position: relative;
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-3);
-    border-bottom: 1px solid var(--border-subtle);
+    gap: 10px;
+  }
+
+  .palette-search svg {
+    position: absolute;
+    left: 14px;
     color: var(--text-tertiary);
+    flex-shrink: 0;
+    z-index: 1;
   }
-  .command-palette__search input {
-    flex: 1;
-    border: none;
-    background: transparent;
-    color: var(--text-primary);
-    font: var(--type-ui);
-    font-size: var(--font-md);
-    outline: none;
-  }
-  .command-palette__kbd {
-    font: var(--type-mono);
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
-    border: 1px solid var(--border-subtle);
-    border-radius: 4px;
-    padding: 2px 6px;
-  }
-  .command-palette__list {
-    list-style: none;
-    margin: 0;
-    padding: var(--space-1);
-    max-height: 320px;
-    overflow-y: auto;
-  }
-  .command-palette__item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
+
+  .palette-search input {
     width: 100%;
-    height: var(--row-height);
-    padding: 0 var(--space-3);
-    border: none;
-    border-radius: 8px;
-    background: transparent;
-    color: var(--text-secondary);
-    cursor: pointer;
-    text-align: left;
+    padding: 10px 14px 10px 42px;
+    border: 1px solid var(--surface-border);
+    border-radius: var(--radius-control);
+    background: var(--surface-input);
+    color: var(--input-text);
+    font-family: var(--font-sans);
+    font-size: var(--step-0);
+    outline: none;
+    transition: border-color var(--spring-snappy), box-shadow var(--spring-snappy);
   }
-  .command-palette__item--active {
-    background: var(--accent-soft);
-    color: var(--accent);
+
+  .palette-search input:focus {
+    border-color: var(--accent-primary);
+    box-shadow: 0 0 0 3px var(--accent-soft);
   }
-  .command-palette__label {
-    flex: 1;
-  }
-  .command-palette__hint {
-    font: var(--type-mono);
+
+  .palette-hint {
+    font-family: var(--font-mono);
     font-size: var(--font-2xs);
     color: var(--text-tertiary);
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--surface-hover);
+    border: 1px solid var(--surface-border);
   }
-  .command-palette__empty {
-    padding: var(--space-4);
-    text-align: center;
+
+  .palette-results {
+    max-height: 480px;
+    overflow-y: auto;
+    padding: var(--space-2);
+  }
+
+  .palette-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-control);
+    cursor: pointer;
+    transition: background var(--spring-snappy);
+  }
+
+  .palette-item:hover,
+  .palette-item.selected {
+    background: var(--surface-hover);
+  }
+
+  .palette-item.selected {
+    outline: 1px solid var(--accent-primary);
+  }
+
+  .palette-item-main {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex: 1;
+    min-width: 0;
+  }
+
+  .palette-item-label {
+    font-size: var(--font-xs);
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .palette-item-shortcut {
+    font-family: var(--font-mono);
+    font-size: var(--font-2xs);
     color: var(--text-tertiary);
-    font: var(--type-ui);
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: var(--surface-hover);
+    border: 1px solid var(--surface-border);
+    white-space: nowrap;
+    flex-shrink: 0;
   }
+
+  .palette-item-section {
+    font-size: var(--font-2xs);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: var(--tracking-wide);
+    color: var(--text-tertiary);
+    flex-shrink: 0;
+  }
+
+  .palette-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+    gap: var(--space-2);
+    color: var(--text-tertiary);
+    text-align: center;
+  }
+
+  .palette-empty p {
+    font-size: var(--font-xs);
+    font-weight: 500;
+    color: var(--text-secondary);
+  }
+
+  .palette-empty span {
+    font-size: var(--font-2xs);
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .palette-overlay, .palette-window { animation: none; }
+  }
+
+  html.reduce-motion .palette-overlay,
+  html.reduce-motion .palette-window { animation: none; }
 </style>

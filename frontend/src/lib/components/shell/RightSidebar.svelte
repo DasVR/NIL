@@ -1,167 +1,367 @@
 <script lang="ts">
+  import { onMount } from 'svelte';
+  import { appState } from '$lib/stores/appState';
+  import FindingCard from '$lib/components/ui/FindingCard.svelte';
   import Icon from '@iconify/svelte';
 
-  type Tab = 'inspector' | 'findings' | 'timeline';
-
   interface RightSidebarProps {
-    activeTab?: Tab;
-    className?: string;
+    open?: boolean;
+    width?: number;
+    onToggle?: () => void;
+    onResize?: (w: number) => void;
   }
 
-  let { activeTab = 'inspector', className = '' }: RightSidebarProps = $props();
+  let { open = $bindable(true), width = $bindable(320), onToggle, onResize }: RightSidebarProps = $props();
 
-  const tabs: { id: Tab; label: string; icon: string }[] = [
-    { id: 'inspector', label: 'Inspector', icon: 'ph:sliders-horizontal-bold' },
-    { id: 'findings', label: 'Findings', icon: 'ph:detective-bold' },
-    { id: 'timeline', label: 'Timeline', icon: 'ph:list-numbers-bold' }
-  ];
+  let activeTab = $state<'findings' | 'timeline' | 'evidence' | 'context'>('findings');
+  let dragStartX = 0;
+  let startWidth = 0;
+  let resizing = $state(false);
 
-  let current = $state<Tab>(activeTab);
+  let findings = $state([
+    {
+      id: 'f1',
+      title: 'SQL Injection in Login Endpoint',
+      severity: 'critical' as const,
+      cvss: '9.1',
+      date: '2026-08-28',
+      description: 'The login endpoint does not properly sanitize user input, allowing SQL injection.',
+      evidence: 'POST /api/login { "username": "admin\'--\" }',
+      remediation: 'Use parameterized queries and input validation.',
+    },
+    {
+      id: 'f2',
+      title: 'Missing Rate Limiting on API',
+      severity: 'medium' as const,
+      cvss: '5.3',
+      date: '2026-08-27',
+      description: 'API endpoints lack rate limiting, allowing brute force attacks.',
+      evidence: '1000 requests/minute to /api/users',
+      remediation: 'Implement rate limiting (e.g., 60 req/min per IP).',
+    },
+    {
+      id: 'f3',
+      title: 'Outdated OpenSSL Version',
+      severity: 'low' as const,
+      cvss: '3.7',
+      date: '2026-08-25',
+      description: 'Server runs OpenSSL 1.1.1 which has known vulnerabilities.',
+      evidence: 'OpenSSL 1.1.1k detected on port 443',
+      remediation: 'Upgrade to OpenSSL 3.0+ or apply vendor patches.',
+    },
+  ]);
 
-  $effect(() => {
-    current = activeTab;
+  function handleResizeStart(e: MouseEvent) {
+    e.preventDefault();
+    e.stopPropagation();
+    resizing = true;
+    dragStartX = e.clientX;
+    startWidth = width;
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+  }
+
+  function handleResizeMove(e: MouseEvent) {
+    if (!resizing) return;
+    const delta = dragStartX - e.clientX; // Right sidebar resizes opposite
+    const newWidth = Math.max(240, Math.min(500, startWidth + delta));
+    width = newWidth;
+    if (onResize) onResize(newWidth);
+  }
+
+  function handleResizeEnd() {
+    resizing = false;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  }
+
+  onMount(() => {
+    window.addEventListener('mousemove', handleResizeMove);
+    window.addEventListener('mouseup', handleResizeEnd);
+    return () => {
+      window.removeEventListener('mousemove', handleResizeMove);
+      window.removeEventListener('mouseup', handleResizeEnd);
+    };
   });
+
+  function getSeverityColor(severity: string) {
+    switch (severity) {
+      case 'critical': return 'var(--color-danger)';
+      case 'high': return 'var(--color-danger)';
+      case 'medium': return 'var(--color-warning)';
+      case 'low': return 'var(--color-info)';
+      case 'info': return 'var(--text-tertiary)';
+      default: return 'var(--surface-border)';
+    }
+  }
+
+  function getSeverityLabel(severity: string) {
+    return severity.charAt(0).toUpperCase() + severity.slice(1);
+  }
 </script>
 
-<aside class="right-sidebar shell-panel {className}" aria-label="Inspector">
-  <div class="right-sidebar__tabs" role="tablist" aria-label="Sidebar sections">
-    {#each tabs as tab (tab.id)}
-      <button
-        class="right-sidebar__tab {current === tab.id ? 'right-sidebar__tab--active' : ''}"
-        role="tab"
-        aria-selected={current === tab.id}
-        aria-label={tab.label}
-        onclick={() => (current = tab.id)}
-        title={tab.label}
+<aside 
+  class="right-sidebar {open ? '' : 'collapsed'} {resizing ? 'resizing' : ''}" 
+  style:width={width}px
+  style:right={open ? '0' : '-' + width + 'px'}
+  aria-label="Inspector"
+>
+  <div class="right-sidebar-header">
+    <div class="right-sidebar-tabs" role="tablist">
+      <button 
+        class="right-sidebar-tab {activeTab === 'findings' ? 'active' : ''}" 
+        role="tab" 
+        aria-selected={activeTab === 'findings'}
+        onclick={() => activeTab = 'findings'}
       >
-        <Icon icon={tab.icon} aria-hidden="true" />
+        <Icon icon="ph:flag-bold" width="14" height="14" />
+        <span>Findings</span>
+        <span class="tab-badge">{findings.length}</span>
       </button>
-    {/each}
+      <button 
+        class="right-sidebar-tab {activeTab === 'timeline' ? 'active' : ''}" 
+        role="tab" 
+        aria-selected={activeTab === 'timeline'}
+        onclick={() => activeTab = 'timeline'}
+      >
+        <Icon icon="ph:clock-bold" width="14" height="14" />
+        <span>Timeline</span>
+      </button>
+      <button 
+        class="right-sidebar-tab {activeTab === 'evidence' ? 'active' : ''}" 
+        role="tab" 
+        aria-selected={activeTab === 'evidence'}
+        onclick={() => activeTab = 'evidence'}
+      >
+        <Icon icon="ph:folder-bold" width="14" height="14" />
+        <span>Evidence</span>
+      </button>
+      <button 
+        class="right-sidebar-tab {activeTab === 'context' ? 'active' : ''}" 
+        role="tab" 
+        aria-selected={activeTab === 'context'}
+        onclick={() => activeTab = 'context'}
+      >
+        <Icon icon="ph:brain-bold" width="14" height="14" />
+        <span>Context</span>
+      </button>
+    </div>
+    <div class="right-sidebar-actions">
+      <button class="icon-btn" aria-label="Refresh" title="Refresh">
+        <Icon icon="ph:arrows-clockwise-bold" width="16" height="16" />
+      </button>
+      <button class="icon-btn" aria-label="Filter" title="Filter">
+        <Icon icon="ph:funnel-bold" width="16" height="16" />
+      </button>
+    </div>
   </div>
 
-  <div class="right-sidebar__content" role="tabpanel">
-    {#if current === 'inspector'}
-      <div class="glass glass-2 right-sidebar__card">
-        <div class="card-row">
-          <span class="card-label">Target</span>
-          <span class="card-value">unassigned</span>
-        </div>
-        <div class="card-row">
-          <span class="card-label">Tool</span>
-          <span class="card-value">none</span>
-        </div>
-        <div class="card-row">
-          <span class="card-label">Approval</span>
-          <span class="card-value card-value--ok">gate on</span>
-        </div>
-      </div>
-    {:else if current === 'findings'}
-      <div class="right-sidebar__empty">
-        <Icon icon="ph:detective-bold" aria-hidden="true" />
-        <span>No findings yet</span>
-      </div>
-    {:else}
-      <div class="right-sidebar__timeline">
-        {#each ['workspace loaded', 'approval gate armed', 'awaiting command'] as entry, i (i)}
-          <div class="timeline-item">
-            <span class="timeline-dot" aria-hidden="true"></span>
-            <span class="timeline-text">{entry}</span>
-          </div>
+  <div class="right-sidebar-divider"></div>
+
+  <div class="right-sidebar-content">
+    {#if activeTab === 'findings'}
+      <div class="findings-list">
+        {#each findings as finding}
+          <FindingCard 
+            {finding}
+            onExplain={() => console.log('Explain:', finding.id)}
+            onDraft={() => console.log('Draft:', finding.id)}
+          />
         {/each}
+        {#if findings.length === 0}
+          <div class="empty-state">
+            <Icon icon="ph:flag-bold" width="32" height="32" />
+            <p>No findings yet</p>
+            <span>Run a scan to discover issues</span>
+          </div>
+        {/if}
+      </div>
+    {:else if activeTab === 'timeline'}
+      <div class="timeline-list">
+        <div class="timeline-empty">
+          <Icon icon="ph:clock-bold" width="32" height="32" />
+          <p>No timeline events</p>
+          <span>Activity will appear here</span>
+        </div>
+      </div>
+    {:else if activeTab === 'evidence'}
+      <div class="evidence-list">
+        <div class="timeline-empty">
+          <Icon icon="ph:folder-bold" width="32" height="32" />
+          <p>No evidence collected</p>
+          <span>Artifacts from tool runs appear here</span>
+        </div>
+      </div>
+    {:else if activeTab === 'context'}
+      <div class="context-view">
+        <div class="timeline-empty">
+          <Icon icon="ph:brain-bold" width="32" height="32" />
+          <p>No context loaded</p>
+          <span>Select a target to load context</span>
+        </div>
       </div>
     {/if}
   </div>
+
+  <div class="right-sidebar-resize-handle" 
+    onmousedown={handleResizeStart}
+    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleResizeStart(e as unknown as MouseEvent); } }}
+    aria-label="Resize inspector"
+    role="separator"
+    tabIndex={0}
+  ></div>
 </aside>
 
 <style>
   .right-sidebar {
+    position: fixed;
+    top: var(--titlebar-h);
+    right: 0;
+    bottom: var(--statusbar-h);
+    background: var(--sidebar-bg);
+    border-left: 1px solid var(--sidebar-border);
     display: flex;
     flex-direction: column;
-    background: var(--surface-1);
-    border-left: 1px solid var(--border-subtle);
-    width: var(--right-sidebar-width, 264px);
+    z-index: var(--z-sticky);
+    transition: width var(--spring-snappy), right var(--spring-snappy);
+    overflow: hidden;
+  }
+
+  .right-sidebar.collapsed {
+    width: 0 !important;
+    right: 0 !important;
+    border-left: none;
+  }
+
+  .right-sidebar.resizing {
+    transition: none;
+  }
+
+  .right-sidebar-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: var(--row-h);
+    padding: 0 var(--space-2);
+    border-bottom: 1px solid var(--sidebar-border);
     flex-shrink: 0;
   }
-  .right-sidebar__tabs {
+
+  .right-sidebar-tabs {
     display: flex;
     gap: 2px;
-    padding: var(--space-1);
-    border-bottom: 1px solid var(--border-subtle);
+    flex: 1;
+    overflow-x: auto;
   }
-  .right-sidebar__tab {
-    display: grid;
-    place-items: center;
-    height: var(--control-height);
-    padding: 0 var(--space-2);
+
+  .right-sidebar-tab {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 10px;
     border: none;
-    border-radius: 6px;
+    border-radius: var(--radius-control);
     background: transparent;
     color: var(--text-tertiary);
+    font-size: var(--font-xs);
+    font-weight: 400;
     cursor: pointer;
+    white-space: nowrap;
+    transition: color var(--spring-snappy), background var(--spring-snappy);
   }
-  .right-sidebar__tab:hover {
-    color: var(--text-secondary);
-    background: var(--surface-2);
+
+  .right-sidebar-tab:hover {
+    color: var(--text-primary);
+    background: var(--surface-hover);
   }
-  .right-sidebar__tab--active {
-    color: var(--accent);
+
+  .right-sidebar-tab.active {
+    color: var(--accent-primary);
     background: var(--accent-soft);
   }
-  .right-sidebar__content {
+
+  .tab-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: var(--radius-badge);
+    background: var(--accent-primary);
+    color: var(--color-abyss-0);
+    font-size: var(--font-2xs);
+    font-weight: 600;
+  }
+
+  .right-sidebar-tab.active .tab-badge {
+    background: var(--color-cream);
+  }
+
+  .right-sidebar-actions {
+    display: flex;
+    gap: 2px;
+  }
+
+  .right-sidebar-divider {
+    height: 1px;
+    background: var(--sidebar-border);
+    margin: 0 var(--space-2);
+  }
+
+  .right-sidebar-content {
     flex: 1;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: var(--space-2);
   }
-  .right-sidebar__card {
-    padding: var(--space-3);
-    border-radius: 12px;
-  }
-  .card-row {
+
+  .findings-list {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    min-height: var(--row-height);
+    flex-direction: column;
+    gap: var(--space-2);
   }
-  .card-label {
-    font: var(--type-overline);
-    color: var(--text-tertiary);
-  }
-  .card-value {
-    font: var(--type-mono);
-    font-size: var(--font-xs);
-    color: var(--text-secondary);
-  }
-  .card-value--ok {
-    color: var(--success);
-  }
-  .right-sidebar__empty {
+
+  .timeline-empty,
+  .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    gap: var(--space-2);
     height: 100%;
+    min-height: 200px;
+    gap: var(--space-2);
     color: var(--text-tertiary);
-    font: var(--type-ui);
+    text-align: center;
+    padding: var(--space-6);
   }
-  .right-sidebar__timeline {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-1);
-  }
-  .timeline-item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font: var(--type-ui);
+
+  .timeline-empty p,
+  .empty-state p {
+    font-size: var(--font-xs);
+    font-weight: 500;
     color: var(--text-secondary);
   }
-  .timeline-dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--accent);
-    flex-shrink: 0;
+
+  .timeline-empty span,
+  .empty-state span {
+    font-size: var(--font-2xs);
+    color: var(--text-tertiary);
+  }
+
+  .right-sidebar-resize-handle {
+    position: absolute;
+    top: 0;
+    left: -4px;
+    bottom: 0;
+    width: 8px;
+    cursor: col-resize;
+    background: transparent;
+    z-index: 10;
+    transition: background var(--spring-snappy);
+  }
+
+  .right-sidebar-resize-handle:hover {
+    background: var(--accent-primary);
   }
 </style>

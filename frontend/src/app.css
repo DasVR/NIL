@@ -9,33 +9,31 @@
 /* 1. Primitive tokens                                                        */
 /* -------------------------------------------------------------------------- */
 :root {
-  /* Backgrounds */
-  --color-abyss-0: #050507;
-  --color-abyss-1: #0a0a0c;
-  --color-abyss-2: #0a0a0e;
-  --color-abyss-3: #101016;
-  --color-abyss-4: #16161d;
-  --color-abyss-5: #1c1c24;
+  /* Backgrounds — Abyss Scale */
+  --color-abyss-0: #050507;   /* deepest — main bg */
+  --color-abyss-1: #0a0a0c;   /* surface — panels */
+  --color-abyss-2: #0a0a0e;   /* elevated — cards */
+  --color-abyss-3: #101016;   /* hover — interactive */
+  --color-abyss-4: #16161d;   /* border — subtle */
+  --color-abyss-5: #1c1c24;   /* input — text fields */
 
-  /* Accents */
-  --color-violet: #452a84;
-  --color-violet-light: #a9b1f0;
-  --color-violet-dark: #321e60;
-  --color-coral: #fe6f69;
-  --color-coral-dark: #c94a45;
-  --color-cream: #f5f2ec;
+  /* Accents — NIL Identity */
+  --color-violet: #452a84;        /* primary brand */
+  --color-violet-light: #a9b1f0;  /* secondary brand */
+  --color-coral: #fe6f69;         /* danger/attention */
+  --color-cream: #f5f2ec;         /* done/success state */
 
   /* Text */
-  --color-text: #e8e8e6;
-  --color-text-dim: #9a9a94;
-  --color-text-faint: #6a6a62;
-  --color-text-muted: #55554f;
+  --color-text: #e8e8e6;        /* primary — headings, prose */
+  --color-text-dim: #9a9a94;    /* secondary — labels, meta */
+  --color-text-faint: #55554f;  /* tertiary — timestamps, disabled */
+  --color-text-muted: #3a3a36;  /* placeholder, ghost */
 
-  /* Status */
+  /* Status (semantic — used directly in components) */
   --color-danger: #ff5c5c;
   --color-warning: #ffb454;
   --color-info: #5cb8ff;
-  --color-success: #00d992;
+  --color-success: #5cff8a;     /* use sparingly */
 
   /* Spacing ladder (4px base) */
   --space-1: 0.25rem;   /*  4px */
@@ -47,93 +45,167 @@
   --space-7: 3rem;      /* 48px */
   --space-8: 4rem;      /* 64px */
   --space-9: 6rem;      /* 96px */
-  --space-section: clamp(3rem, 2rem + 4vw, 6rem);
 
-  /* Radius */
-  --radius-sm: 0.375rem;  /*  6px */
-  --radius-md: 0.5rem;    /*  8px */
-  --radius-lg: 0.75rem;   /* 12px */
-  --radius-xl: 1rem;     /* 16px */
-  --radius-window: 0.75rem;
+  /* Radius Hierarchy */
+  --radius-badge: 6px;     /* badges, pills */
+  --radius-control: 8px;   /* buttons, inputs, small cards */
+  --radius-panel: 12px;    /* panels, sheets, popovers */
+  --radius-window: 10px;   /* window chrome */
   --radius-full: 9999px;
 
   /* Typography scale (rem, zoom-safe) */
   --step--2: clamp(0.69rem, 0.67rem + 0.11vw, 0.75rem);   /* 11px */
   --step--1: clamp(0.83rem, 0.80rem + 0.17vw, 0.94rem);   /* 12px */
-  --step-0:  clamp(1.00rem, 0.95rem + 0.25vw, 1.13rem);  /* 14-16px */
-  --step-1:  clamp(1.20rem, 1.13rem + 0.37vw, 1.41rem);   /* 18-20px */
-  --step-2:  clamp(1.44rem, 1.34rem + 0.53vw, 1.76rem);   /* 24px */
-  --step-3:  clamp(1.73rem, 1.58rem + 0.75vw, 2.20rem);   /* 30px */
-  --step-4:  clamp(2.07rem, 1.87rem + 1.04vw, 2.75rem);   /* 38px */
-  --step-5:  clamp(2.49rem, 2.20rem + 1.43vw, 3.43rem);   /* 48px */
+  --step-0:  clamp(1.00rem, 0.95rem + 0.25vw, 1.13rem);  /* 16px base */
+  --step-1:  clamp(1.20rem, 1.13rem + 0.37vw, 1.41rem);   /* 19px */
+  --step-2:  clamp(1.44rem, 1.34rem + 0.53vw, 1.76rem);   /* 23px */
+  --step-3:  clamp(1.73rem, 1.58rem + 0.75vw, 2.20rem);   /* 28px */
+  --step-4:  clamp(2.07rem, 1.87rem + 1.04vw, 2.75rem);   /* 33px */
+  --step-5:  clamp(2.49rem, 2.20rem + 1.43vw, 3.43rem);   /* 40px */
 
-  /* Motion */
-  --dur-fast: 150ms;
-  --dur-base: 220ms;
-  --dur-slow: 320ms;
-  --spring-bouncy: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --spring-smooth: cubic-bezier(0.22, 1, 0.36, 1);
-  --spring-window: cubic-bezier(0.32, 0.72, 0, 1);
-  --spring-snappy: cubic-bezier(0.25, 0.9, 0.25, 1);
-  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
-  --ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  /* Spring Curves — macOS native feel */
+  --spring-bouncy:  cubic-bezier(0.34, 1.56, 0.64, 1);    /* playful: hover, badges, toasts */
+  --spring-smooth:  cubic-bezier(0.22, 1, 0.36, 1);      /* UI: panels, layout shifts */
+  --spring-window:  cubic-bezier(0.32, 0.72, 0, 1);      /* windows, sheets, modals */
+  --spring-snappy:  cubic-bezier(0.25, 0.9, 0.25, 1);    /* quick: buttons, toggles */
 
-  /* Density */
-  --row-h: 1.75rem;       /* 28px */
-  --statusbar-h: 1.625rem; /* 26px */
-  --titlebar-h: 2.5rem;    /* 40px */
+  /* Density Metrics */
+  --row-h: 28px;           /* sidebar/list rows */
+  --statusbar-h: 26px;     /* bottom status bar */
+  --titlebar-h: 40px;      /* liquid metal titlebar */
+  --sidebar-w: 280px;      /* left sidebar */
+  --rightbar-w: 320px;     /* right inspector */
+  --ai-strip-h: 200px;     /* AI strip expanded */
+
+  /* Glass Tiers — True iOS-style */
+  --glass-1-blur: 32px;   --glass-1-opacity: 0.45;  /* heaviest — modal, palette */
+  --glass-2-blur: 24px;   --glass-2-opacity: 0.55;  /* sheets, AI strip */
+  --glass-3-blur: 16px;   --glass-3-opacity: 0.65;  /* cards, popovers */
+  --glass-4-blur: 12px;   --glass-4-opacity: 0.72;  /* light overlays */
+
+  /* Edge Refraction Highlight (apply to all glass via ::before) */
+  --glass-edge-angle: 45deg;
+  --glass-edge-stops: 0%, 50%, 100%;
+  --glass-edge-colors: rgba(255,255,255,0.08), rgba(255,255,255,0.02), transparent;
+
+  /* Z-Index Scale */
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-modal: 300;
+  --z-toast: 400;
+  --z-tooltip: 500;
+  --z-cursor: 600;
+
+  /* Fonts */
+  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
+  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
+  --font-display: "Inter", system-ui, -apple-system, sans-serif;
 }
 
 /* -------------------------------------------------------------------------- */
 /* 2. Semantic tokens                                                         */
 /* -------------------------------------------------------------------------- */
 :root {
+  /* Surface */
   --surface-base: var(--color-abyss-0);
-  --surface-raised: var(--color-abyss-1);
-  --surface-elevated: var(--color-abyss-2);
-  --surface-overlay: var(--color-abyss-3);
-  --surface-float: var(--color-abyss-4);
+  --surface-panel: var(--color-abyss-1);
+  --surface-card: var(--color-abyss-2);
+  --surface-hover: var(--color-abyss-3);
+  --surface-border: var(--color-abyss-4);
+  --surface-input: var(--color-abyss-5);
 
-  --border-subtle: rgba(245, 242, 236, 0.06);
-  --border-default: rgba(245, 242, 236, 0.10);
-  --border-strong: rgba(245, 242, 236, 0.16);
+  /* Glass Composites */
+  --glass-1: var(--glass-1-blur) var(--glass-1-opacity);
+  --glass-2: var(--glass-2-blur) var(--glass-2-opacity);
+  --glass-3: var(--glass-3-blur) var(--glass-3-opacity);
+  --glass-4: var(--glass-4-blur) var(--glass-4-opacity);
 
+  /* Glass Edge Highlight — all glass elements get this */
+  --glass-edge: linear-gradient(
+    var(--glass-edge-angle),
+    var(--glass-edge-colors)
+  );
+
+  /* Accent Aliases */
+  --accent-primary: var(--color-violet);
+  --accent-secondary: var(--color-violet-light);
+  --accent-danger: var(--color-coral);
+  --accent-done: var(--color-cream);
+
+  /* Text Aliases */
   --text-primary: var(--color-text);
   --text-secondary: var(--color-text-dim);
   --text-tertiary: var(--color-text-faint);
-  --text-disabled: var(--color-text-muted);
-
-  --accent-primary: var(--color-violet);
-  --accent-primary-light: var(--color-violet-light);
-  --accent-warm: var(--color-coral);
-  --accent-cream: var(--color-cream);
-
-  --status-danger: var(--color-danger);
-  --status-warning: var(--color-warning);
-  --status-info: var(--color-info);
-  --status-success: var(--color-success);
+  --text-muted: var(--color-text-muted);
 }
 
 /* -------------------------------------------------------------------------- */
 /* 3. Component tokens                                                          */
 /* -------------------------------------------------------------------------- */
 :root {
-  --window-bg: var(--surface-raised);
-  --window-border: var(--border-default);
+  /* Button */
+  --btn-primary-bg: var(--accent-primary);
+  --btn-primary-text: var(--color-abyss-0);
+  --btn-secondary-bg: var(--surface-card);
+  --btn-secondary-text: var(--text-primary);
+  --btn-secondary-border: var(--surface-border);
+  --btn-ghost-bg: transparent;
+  --btn-ghost-hover: var(--surface-hover);
+  --btn-danger-bg: var(--accent-danger);
+  --btn-danger-text: var(--color-abyss-0);
+
+  /* Input */
+  --input-bg: var(--surface-input);
+  --input-border: var(--surface-border);
+  --input-border-focus: var(--accent-primary);
+  --input-text: var(--text-primary);
+  --input-placeholder: var(--text-muted);
+
+  /* Card */
+  --card-bg: var(--surface-card);
+  --card-border: var(--surface-border);
+  --card-glass: var(--glass-2);
+
+  /* Sidebar */
+  --sidebar-bg: var(--surface-panel);
+  --sidebar-border: var(--surface-border);
+  --sidebar-item-hover: var(--surface-hover);
+  --sidebar-item-active: var(--accent-primary);
+  --sidebar-item-active-text: var(--color-abyss-0);
+
+  /* Status Bar */
+  --statusbar-bg: var(--surface-panel);
+  --statusbar-border: var(--surface-border);
+  --statusbar-text: var(--text-secondary);
+
+  /* AI Strip */
+  --ai-strip-bg: var(--surface-panel);
+  --ai-strip-border: var(--surface-border);
+  --ai-strip-glass: var(--glass-2);
+
+  /* Window / Titlebar */
+  --window-bg: var(--surface-panel);
+  --window-border: var(--surface-border);
   --window-radius: var(--radius-window);
   --window-titlebar-bg: rgba(10, 10, 14, 0.48);
 
-  --dock-bg: rgba(69, 42, 132, 0.18);
-  --dock-border: rgba(169, 177, 240, 0.14);
-  --dock-radius: var(--radius-xl);
+  /* Density aliases */
+  --row-height: var(--row-h);
+  --control-height: 2rem;
+  --right-sidebar-width: var(--rightbar-w);
 
-  --sidebar-bg: var(--surface-raised);
-  --sidebar-width: 15rem;
+  /* Motion aliases */
+  --spring-calm: var(--spring-smooth);
 
-  --ai-strip-bg: rgba(10, 10, 14, 0.72);
-  --ai-strip-collapsed-h: 2.25rem;
-
-  --statusbar-bg: var(--surface-elevated);
+  /* Type */
+  --type-overline: 600 var(--step--2) / 1 var(--font-sans);
+  --type-ui: 400 var(--step-0) / 1.3 var(--font-sans);
+  --type-mono: 400 var(--step-0) / 1.4 var(--font-mono);
+  --font-2xs: var(--step--2);
+  --font-xs: var(--step--1);
+  --font-md: var(--step-0);
+  --tracking-wide: 0.08em;
 }
 
 /* -------------------------------------------------------------------------- */
@@ -143,9 +215,11 @@
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  backdrop-filter: blur(20px) saturate(1.4) contrast(1.05);
-  -webkit-backdrop-filter: blur(20px) saturate(1.4) contrast(1.05);
-  border: 1px solid var(--border-default);
+  backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
+  -webkit-backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
+  background: rgba(10, 10, 14, var(--glass-2-opacity));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-panel);
 }
 
 .glass::before {
@@ -155,12 +229,8 @@
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 30% 0%, rgba(255, 255, 255, 0.10), transparent 35%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 40%);
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+  background: var(--glass-edge);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   padding: 1px;
 }
@@ -170,8 +240,8 @@
   .glass-1, .glass-2, .glass-3, .glass-4 {
     backdrop-filter: none;
     -webkit-backdrop-filter: none;
-    background: var(--surface-elevated);
-    border-color: var(--border-strong);
+    background: var(--surface-card);
+    border-color: var(--surface-border);
   }
   .glass::before,
   .glass-1::before, .glass-2::before, .glass-3::before, .glass-4::before {
@@ -180,38 +250,41 @@
 }
 
 .glass-1 {
-  background: rgba(69, 42, 132, 0.18);
-  backdrop-filter: blur(36px) saturate(1.45) contrast(1.05);
-  -webkit-backdrop-filter: blur(36px) saturate(1.45) contrast(1.05);
-  border: 1px solid rgba(169, 177, 240, 0.18);
+  backdrop-filter: blur(var(--glass-1-blur)) saturate(1.55);
+  -webkit-backdrop-filter: blur(var(--glass-1-blur)) saturate(1.55);
+  background: rgba(10, 10, 12, var(--glass-1-opacity));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-panel);
 }
 
 .glass-2 {
-  background: rgba(169, 177, 240, 0.12);
-  backdrop-filter: blur(26px) saturate(1.4) contrast(1.05);
-  -webkit-backdrop-filter: blur(26px) saturate(1.4) contrast(1.05);
-  border: 1px solid rgba(245, 242, 236, 0.10);
+  backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
+  -webkit-backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
+  background: rgba(10, 10, 14, var(--glass-2-opacity));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-panel);
 }
 
 .glass-3 {
-  background: rgba(254, 111, 105, 0.08);
-  backdrop-filter: blur(18px) saturate(1.35) contrast(1.05);
-  -webkit-backdrop-filter: blur(18px) saturate(1.35) contrast(1.05);
-  border: 1px solid rgba(254, 111, 105, 0.14);
+  backdrop-filter: blur(var(--glass-3-blur)) saturate(1.55);
+  -webkit-backdrop-filter: blur(var(--glass-3-blur)) saturate(1.55);
+  background: rgba(16, 16, 22, var(--glass-3-opacity));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-panel);
 }
 
 .glass-4 {
-  background: rgba(245, 242, 236, 0.06);
-  backdrop-filter: blur(12px) saturate(1.3) contrast(1.05);
-  -webkit-backdrop-filter: blur(12px) saturate(1.3) contrast(1.05);
-  border: 1px solid rgba(245, 242, 236, 0.16);
+  backdrop-filter: blur(var(--glass-4-blur)) saturate(1.55);
+  -webkit-backdrop-filter: blur(var(--glass-4-blur)) saturate(1.55);
+  background: rgba(22, 22, 30, var(--glass-4-opacity));
+  border: 1px solid var(--surface-border);
+  border-radius: var(--radius-panel);
 }
 
 .glass-1, .glass-2, .glass-3, .glass-4 {
   position: relative;
   isolation: isolate;
   overflow: hidden;
-  border-radius: var(--radius-lg);
 }
 
 .glass-1::before, .glass-2::before, .glass-3::before, .glass-4::before {
@@ -221,12 +294,8 @@
   z-index: -1;
   border-radius: inherit;
   pointer-events: none;
-  background:
-    radial-gradient(circle at 25% 0%, rgba(255, 255, 255, 0.12), transparent 30%),
-    linear-gradient(180deg, rgba(255, 255, 255, 0.06), transparent 45%);
-  mask:
-    linear-gradient(#fff 0 0) content-box,
-    linear-gradient(#fff 0 0);
+  background: var(--glass-edge);
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   padding: 1px;
 }
@@ -316,7 +385,26 @@ body {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
+  
+  /* Specific component freezes */
+  .thinking-orbs { animation: none; }
+  .border-beam { animation: none; }
+  .liquid-metal { animation: none; }
+  .spring-transition { transition: none; }
 }
+
+/* In-app override (Settings → Accessibility → Reduce Motion) */
+html.reduce-motion *,
+html.reduce-motion *::before,
+html.reduce-motion *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+}
+html.reduce-motion .thinking-orbs { animation: none; }
+html.reduce-motion .border-beam { animation: none; }
+html.reduce-motion .liquid-metal { animation: none; }
+html.reduce-motion .spring-transition { transition: none; }
 
 /* -------------------------------------------------------------------------- */
 /* 7. Utility helpers                                                           */
@@ -356,72 +444,25 @@ body {
   align-items: center;
 }
 
-/* -------------------------------------------------------------------------- */
-/* 7b. Component alias tokens (used by workstation shell components)            */
-/* -------------------------------------------------------------------------- */
-:root {
-  /* Surfaces */
-  --surface-0: var(--surface-raised);
-  --surface-1: var(--surface-elevated);
-  --surface-2: var(--surface-raised);
-  --surface-3: var(--surface-overlay);
-
-  /* Text */
-  --text-primary: var(--color-text);
-  --text-secondary: var(--color-text-dim);
-  --text-tertiary: var(--color-text-faint);
-
-  /* Accent + status */
-  --accent: var(--accent-primary-light);
-  --accent-soft: rgba(169, 177, 240, 0.12);
-  --success: var(--color-success);
-  --danger: var(--color-danger);
-  --warning: var(--color-warning);
-  --info: var(--color-info);
-
-  /* Overlay + z-index */
-  --overlay: rgba(5, 5, 7, 0.6);
-  --z-overlay: 900;
-
-  /* Density */
-  --row-height: var(--row-h);
-  --control-height: 2rem;
-  --right-sidebar-width: 16.5rem;
-
-  /* Motion aliases */
-  --spring-calm: var(--spring-smooth);
-
-  /* Type */
-  --type-overline: 600 var(--font-2xs) / 1 var(--font-sans);
-  --type-ui: 400 var(--step-0) / 1.3 var(--font-sans);
-  --type-mono: 400 var(--step-0) / 1.4 var(--font-mono);
-  --font-2xs: var(--step--2);
-  --font-xs: var(--step--1);
-  --font-md: var(--step-0);
-  --tracking-wide: 0.08em;
-  --font-sans: ui-sans-serif, 'Inter', system-ui, -apple-system, sans-serif;
-  --font-mono: ui-monospace, 'JetBrains Mono', 'SFMono-Regular', monospace;
-}
-
 .icon-btn {
   display: grid;
   place-items: center;
   width: var(--control-height);
   height: var(--control-height);
   border: none;
-  border-radius: 6px;
+  border-radius: var(--radius-control);
   background: transparent;
   color: var(--text-tertiary);
   cursor: pointer;
-  transition: color var(--dur-fast) var(--spring-snappy),
-    background var(--dur-fast) var(--spring-snappy);
+  transition: color var(--spring-snappy),
+    background var(--spring-snappy);
 }
 .icon-btn:hover {
   color: var(--text-primary);
-  background: var(--surface-overlay);
+  background: var(--surface-hover);
 }
 .icon-btn:focus-visible {
-  outline: 2px solid var(--accent-primary-light);
+  outline: 2px solid var(--accent-primary);
   outline-offset: 2px;
 }
 
@@ -439,7 +480,7 @@ body {
   inset: 0;
   z-index: 9999;
   pointer-events: none;
-  opacity: 0.035;
+  opacity: 0.03;
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
