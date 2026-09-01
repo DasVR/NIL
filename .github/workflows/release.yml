@@ -15,11 +15,6 @@ on:
         required: false
         default: false
         type: boolean
-      macos_only:
-        description: "Build only macOS (.app zip + DMG). Skip Windows and Linux."
-        required: false
-        default: false
-        type: boolean
 
 concurrency:
   group: release-${{ github.workflow }}-${{ github.ref }}
@@ -30,118 +25,12 @@ permissions:
 
 env:
   RELEASE_TAG: ${{ github.event_name == 'workflow_dispatch' && inputs.tag || github.ref_name }}
+
 jobs:
-  build-macos:
-    name: macOS (.app zip + .dmg)
-    runs-on: macos-latest
-    timeout-minutes: 50
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            web/package-lock.json
-            desktop/package-lock.json
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: desktop/src-tauri
-
-      - name: Install JS dependencies
-        run: |
-          npm ci --prefix web
-          npm ci --prefix desktop
-
-      - name: Build macOS packages
-        working-directory: desktop
-        env:
-          CI: true
-        run: npm run tauri -- build --bundles app,dmg
-
-      - name: Launch smoke test
-        run: bash desktop/scripts/macos-launch-smoke.sh
-
-      - name: Zip kit, Finn Setup.app, .pkg, Setup DMG
-        run: bash desktop/scripts/macos-zip-app.sh
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: finn-macos-release
-          path: |
-            desktop/src-tauri/target/release/bundle/macos/Finn-Setup.pkg
-            desktop/src-tauri/target/release/bundle/macos/Finn-Setup.dmg
-            desktop/src-tauri/target/release/bundle/macos/*.zip
-            desktop/src-tauri/target/release/bundle/dmg/*.dmg
-          if-no-files-found: error
-          retention-days: 7
-
-  build-windows:
-    name: Windows (.exe + .msi)
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.macos_only) }}
-    runs-on: windows-latest
-    timeout-minutes: 50
-    steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 22
-          cache: npm
-          cache-dependency-path: |
-            web/package-lock.json
-            desktop/package-lock.json
-
-      - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: x86_64-pc-windows-msvc
-
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: desktop/src-tauri
-
-      - name: Install JS dependencies
-        run: |
-          npm ci --prefix web
-          npm ci --prefix desktop
-        shell: bash
-
-      - name: Build Windows packages
-        working-directory: desktop
-        env:
-          CI: true
-        run: npm run tauri -- build --bundles nsis,msi
-        shell: bash
-
-      - name: Name the NSIS file Finn-Setup.exe
-        shell: bash
-        run: |
-          mkdir -p dist-installers
-          exe="$(ls desktop/src-tauri/target/release/bundle/nsis/*.exe | head -1)"
-          cp "$exe" dist-installers/Finn-Setup.exe
-          msi="$(ls desktop/src-tauri/target/release/bundle/msi/*.msi | head -1 || true)"
-          if [[ -n "$msi" ]]; then cp "$msi" dist-installers/Finn-Setup.msi; fi
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: finn-windows-release
-          path: |
-            dist-installers/Finn-Setup.exe
-            dist-installers/Finn-Setup.msi
-            desktop/src-tauri/target/release/bundle/nsis/*.exe
-            desktop/src-tauri/target/release/bundle/msi/*.msi
-          if-no-files-found: error
-          retention-days: 7
-
-  build-linux:
-    name: Linux (AppImage + .deb)
-    if: ${{ !(github.event_name == 'workflow_dispatch' && inputs.macos_only) }}
+  build-python-wheel:
+    name: Python wheel + frontend bundle
     runs-on: ubuntu-latest
-    timeout-minutes: 50
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v4
 
@@ -149,117 +38,48 @@ jobs:
         with:
           node-version: 22
           cache: npm
-          cache-dependency-path: |
-            web/package-lock.json
-            desktop/package-lock.json
-
-      - uses: dtolnay/rust-toolchain@stable
-
-      - name: Install Linux system deps
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y \
-            libwebkit2gtk-4.1-dev \
-            build-essential \
-            curl \
-            wget \
-            file \
-            libxdo-dev \
-            libssl-dev \
-            libayatana-appindicator3-dev \
-            librsvg2-dev
-
-      - uses: swatinem/rust-cache@v2
-        with:
-          workspaces: desktop/src-tauri
-
-      - name: Install JS dependencies
-        run: |
-          npm ci --prefix web
-          npm ci --prefix desktop
-
-      - name: Build Linux packages
-        working-directory: desktop
-        env:
-          CI: true
-        run: |
-          for i in 1 2 3; do
-            echo "Build attempt $i..."
-            if npm run tauri -- build --bundles appimage,deb; then
-              echo "Build succeeded on attempt $i"
-              break
-            fi
-            echo "Build attempt $i failed; waiting 60s before retry..."
-            sleep 60
-          done
-
-      - name: Name Linux installers
-        run: |
-          mkdir -p dist-installers
-          img="$(ls desktop/src-tauri/target/release/bundle/appimage/*.AppImage | head -1 || true)"
-          if [[ -n "$img" ]]; then cp "$img" dist-installers/Finn-Setup.AppImage && chmod +x dist-installers/Finn-Setup.AppImage; fi
-          deb="$(ls desktop/src-tauri/target/release/bundle/deb/*.deb | head -1 || true)"
-          if [[ -n "$deb" ]]; then cp "$deb" dist-installers/Finn-Setup.deb; fi
-
-      - uses: actions/upload-artifact@v4
-        with:
-          name: finn-linux-release
-          path: |
-            dist-installers/Finn-Setup.AppImage
-            dist-installers/Finn-Setup.deb
-            desktop/src-tauri/target/release/bundle/appimage/*.AppImage
-            desktop/src-tauri/target/release/bundle/deb/*.deb
-          if-no-files-found: error
-          retention-days: 7
-
-  python-package:
-    name: Python wheel + one-file installers
-    runs-on: ubuntu-latest
-    timeout-minutes: 15
-    steps:
-      - uses: actions/checkout@v4
+          cache-dependency-path: frontend/package-lock.json
 
       - uses: actions/setup-python@v5
         with:
           python-version: "3.12"
 
-      - name: Build wheel
+      - name: Build frontend
+        run: |
+          npm ci --prefix frontend
+          npm run build --prefix frontend
+
+      - name: Build Python wheel
         run: |
           python -m pip install --upgrade pip build
           python -m pip install -e ".[dev]"
-          python -m pytest tests -q
           python -m build --wheel
-          bash -n install/unix/install.sh
-          bash -n install/macos/make-pkg.sh
-          bash -n install/macos/make-app.sh
-          bash -n install/macos/pkg-scripts/postinstall
+
+      - name: Prepare release assets
+        run: |
+          mkdir -p dist
+          cp dist/*.whl dist/ || true
+          cp -r frontend/build dist/web-ui || true
+          cp install/unix/install.sh dist/ || true
+          cp install/windows/install.ps1 dist/ || true
+          cp install/windows/setup.cmd dist/ || true
+          cp install/run-api.py dist/ || true
+          ls -lah dist/
 
       - uses: actions/upload-artifact@v4
         with:
-          name: finn-python-release
-          path: |
-            dist/*.whl
-            install/unix/install.sh
-            install/windows/install.ps1
-            install/windows/setup.cmd
-            install/wizard.py
-            install/engine.py
-            install/palette.py
-            install/run-api.py
-            install/macos/**
+          name: nil-release
+          path: dist/*
           if-no-files-found: error
           retention-days: 7
 
   publish:
     name: Publish GitHub Release
-    needs: [build-macos, build-windows, build-linux, python-package]
+    needs: build-python-wheel
     if: >-
       always()
       && !cancelled()
-      && needs.build-macos.result == 'success'
-      && needs.python-package.result == 'success'
-      && (needs.build-windows.result == 'success' || needs.build-windows.result == 'skipped')
-      && (needs.build-linux.result == 'success' || needs.build-linux.result == 'skipped')
+      && needs.build-python-wheel.result == 'success'
       && (github.ref_type == 'tag' || (github.event_name == 'workflow_dispatch' && inputs.tag != ''))
       && (github.event_name != 'workflow_dispatch' || inputs.build_only != true)
     runs-on: ubuntu-latest
@@ -271,52 +91,35 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          path: release-assets
-          merge-multiple: true
-
-      - name: Prepare release files
-        run: |
-          mkdir -p dist
-          find release-assets -type f -name 'Finn-Setup.pkg' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-macOS.pkg" || true
-          find release-assets -type f -name 'Finn-Setup.dmg' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-macOS.dmg" || true
-          find release-assets -type f -iname '*macos*.zip' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-macOS.zip" || true
-          find release-assets -type f -name '*.dmg' ! -name 'Finn-Setup*' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-macOS.dmg" || true
-          find release-assets -type f -name 'Finn-Setup.exe' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-Windows.exe" || true
-          find release-assets -type f -name '*.exe' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64-setup.exe" || true
-          find release-assets -type f -name 'Finn-Setup.msi' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-Windows.msi" || true
-          find release-assets -type f -name '*.msi' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Windows-x64.msi" || true
-          find release-assets -type f -name 'Finn-Setup.AppImage' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-Linux.AppImage" || true
-          find release-assets -type f -name '*.AppImage' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Linux-x86_64.AppImage" || true
-          find release-assets -type f -name 'Finn-Setup.deb' | head -1 | xargs -I{} cp "{}" "dist/Finn-Setup-${RELEASE_TAG}-Linux.deb" || true
-          find release-assets -type f -name '*.deb' | head -1 | xargs -I{} cp "{}" "dist/Finn-Pentest-Harness-${RELEASE_TAG}-Linux-x86_64.deb" || true
-          find release-assets -type f -name '*.whl' | head -1 | xargs -I{} cp "{}" "dist/finn_pentest-${RELEASE_TAG}-py3-none-any.whl" || true
-          chmod +x dist/*.AppImage 2>/dev/null || true
-          ls -lah dist/
-          test "$(ls -1 dist | wc -l)" -gt 0
+          name: nil-release
+          path: dist
 
       - name: Write release notes
         run: |
           TAG="${RELEASE_TAG}"
           PREV=$(git tag --sort=-v:refname | grep -E '^v[0-9]' | grep -v "^${TAG}$" | head -1 || true)
           {
-            echo "# Finn Pentest Harness ${TAG}"
+            echo "# NIL ${TAG}"
             echo ""
-            echo "> Dual-interface, AI-driven pentest workstation — terminal TUI, native desktop, and browser UI on one FastAPI backend."
+            echo "> Web-first AI coding/pentest workstation. Python API + SvelteKit frontend."
             echo ""
             echo "## Download"
             echo ""
-            echo "| Platform | File | Notes |"
-            echo "| --- | --- | --- |"
-            echo "| **macOS (installer)** | \`Finn-Setup-${TAG}-macOS.pkg\` | Double-click. If macOS says it cannot be opened, run \`xattr -cr\` then Right-click → Open. |"
-            echo "| **macOS (Setup DMG)** | \`Finn-Setup-${TAG}-macOS.dmg\` | Open the disk image. If macOS blocks Finn Setup.app, double-click fix-gatekeeper.command. |"
-            echo "| **Windows** | \`Finn-Setup-${TAG}-Windows.exe\` | Double-click. Start Menu + desktop shortcut. API starts with the app. |"
-            echo "| **Linux** | \`Finn-Setup-${TAG}-Linux.deb\` | Double-click in Ubuntu Software, or \`dpkg -i\`. |"
-            echo "| **Linux (AppImage)** | \`Finn-Setup-${TAG}-Linux.AppImage\` | Mark executable in file properties, then double-click. |"
+            echo "| File | Purpose |"
+            echo "| --- | --- |"
+            echo "| \`*.whl\` | Python package — install with pip |"
+            echo "| \`web-ui/\` | Static SvelteKit build |"
+            echo "| \`install.sh\` | Unix install script |"
+            echo "| \`install.ps1\` | Windows install script |"
+            echo "| \`setup.cmd\` | Windows quick launcher |"
             echo ""
             echo "## Quick start"
             echo ""
-            echo "Download the **Finn-Setup** file for your OS and double-click it. Do not use the python wheel zip as a Mac installer."
-            echo "Open Finn afterward — the API starts with the app."
+            echo "\`\`\`bash"
+            echo "pip install finn_pentest-*.whl"
+            echo "python -m finn_pentest.cli.main run-api"
+            echo "# open http://localhost:8000"
+            echo "\`\`\`"
             echo ""
             echo "## Changes since ${PREV:-initial release}"
             echo ""
@@ -336,7 +139,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ env.RELEASE_TAG }}
-          name: Finn Pentest Harness ${{ env.RELEASE_TAG }}
+          name: NIL ${{ env.RELEASE_TAG }}
           body_path: release-notes.md
           draft: false
           prerelease: ${{ contains(env.RELEASE_TAG, '-') }}
