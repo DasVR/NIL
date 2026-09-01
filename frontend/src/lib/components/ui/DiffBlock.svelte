@@ -18,7 +18,7 @@
   let editor: monaco.editor.IStandaloneDiffEditor;
   let viewMode = $state<'unified' | 'side-by-side'>('unified');
 
-  onMount(async () => {
+  onMount(() => {
     if (!container) return;
 
     monaco.editor.defineTheme('nil-diff', {
@@ -45,13 +45,12 @@
       renderSideBySide: viewMode === 'side-by-side',
       renderOverviewRuler: true,
       originalEditable: false,
-      modifiedEditable: false,
-    });
+    } as monaco.editor.IStandaloneDiffEditorConstructionOptions);
 
     const originalModel = monaco.editor.createModel(block.oldContent, block.language || 'typescript');
     const modifiedModel = monaco.editor.createModel(block.newContent, block.language || 'typescript');
 
-    editor.setModel(originalModel, modifiedModel);
+    editor.setModel({ original: originalModel, modified: modifiedModel });
 
     return () => {
       editor?.dispose();

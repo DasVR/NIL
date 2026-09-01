@@ -70,7 +70,8 @@ function handleKeydown(e: KeyboardEvent) {
   // Cmd+T — New terminal tab
   if (mod && e.key === 't') {
     e.preventDefault();
-    tabsStore.addTab('terminal');
+    const id = `terminal-${Date.now()}`;
+    tabsStore.addTab({ id, type: 'terminal', label: 'Terminal', dirty: false });
     return;
   }
 
@@ -89,7 +90,7 @@ function handleKeydown(e: KeyboardEvent) {
     const tab = tabsStore.tabs[idx];
     if (tab) {
       e.preventDefault();
-      tabsStore.setActiveTab(tab.id);
+      tabsStore.switchTab(tab.id);
     }
     return;
   }

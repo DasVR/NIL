@@ -25,7 +25,7 @@
 
   function handleMouseMove(e: MouseEvent) {
     if (!dragging) return;
-    if (window.__TAURI__) {
+    if (window.__TAURI__?.window) {
       window.__TAURI__.window.current().dragMove?.();
     }
   }

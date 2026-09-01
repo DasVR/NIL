@@ -1,10 +1,7 @@
 <script lang="ts">
-  export let plan: Array<{
-    id: string;
-    label: string;
-    status: 'done' | 'running' | 'pending';
-    detail?: string;
-  }> = [];
+  import type { AgentPlanStep } from '$lib/stores/agentStore';
+
+  let { plan = [] }: { plan: AgentPlanStep[] } = $props();
 
   function getStatusIcon(status: string) {
     switch (status) {

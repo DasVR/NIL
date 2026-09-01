@@ -5,22 +5,23 @@
   let maximizeBtn: HTMLButtonElement;
   let closeBtn: HTMLButtonElement;
 
-  onMount(() => {
-    if (!window.__TAURI__) return;
+  const tauri = (window as any).__TAURI__;
 
-    const { appWindow } = window.__TAURI__;
+  onMount(() => {
+    if (!tauri?.appWindow) return;
+
+    const appWindow = tauri.appWindow;
 
     minimizeBtn?.addEventListener('click', () => appWindow.minimize());
     maximizeBtn?.addEventListener('click', () => appWindow.toggleMaximize());
     closeBtn?.addEventListener('click', () => appWindow.close());
 
-    // Update maximize button icon based on state
-    appWindow.isMaximized().then((maximized) => {
+    appWindow.isMaximized().then((maximized: boolean) => {
       updateMaximizeIcon(maximized);
     });
 
-    appWindow.onMaximizedChanged(({ payload }) => {
-      updateMaximizeIcon(payload);
+    appWindow.onMaximizedChanged((event: { payload: boolean }) => {
+      updateMaximizeIcon(event.payload);
     });
   });
 
@@ -32,6 +33,7 @@
   }
 
   function handleCloseHover(entering: boolean) {
+    if (!closeBtn) return;
     if (entering) {
       closeBtn.style.background = 'var(--color-danger)';
       closeBtn.style.color = 'var(--color-abyss-0)';
@@ -119,7 +121,6 @@
     outline-color: var(--color-danger);
   }
 
-  /* macOS native traffic lights (when titleBarStyle: overlay) */
   @media (min-width: 0) {
     :global(.tauri-titlebar-overlay) .window-controls {
       display: none;

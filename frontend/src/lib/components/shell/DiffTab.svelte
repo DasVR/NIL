@@ -2,10 +2,14 @@
   import { onMount } from 'svelte';
   import * as monaco from 'monaco-editor';
 
-  let container: HTMLDivElement;
-  let editor: monaco.editor.IStandaloneCodeEditor;
+  import type { Tab } from '$lib/stores/tabsStore';
 
-  onMount(async () => {
+  let { tab }: { tab: Tab } = $props();
+
+  let container: HTMLDivElement;
+  let editor: monaco.editor.IStandaloneDiffEditor;
+
+  onMount(() => {
     if (!container) return;
 
     monaco.editor.defineTheme('nil-diff', {
@@ -30,7 +34,7 @@
       automaticLayout: true,
       readOnly: true,
       renderSideBySide: window.innerWidth > 1000,
-    });
+    } as monaco.editor.IStandaloneDiffEditorConstructionOptions);
 
     // Example diff
     const original = `function hello() {

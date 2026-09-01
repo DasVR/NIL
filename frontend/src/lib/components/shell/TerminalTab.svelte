@@ -19,7 +19,11 @@
   let webglAddon: WebglAddon;
   let ptyConnected = $state(false);
 
-  onMount(async () => {
+  onMount(() => {
+    initTerminal();
+  });
+
+  async function initTerminal() {
     if (!container) return;
 
     // Initialize xterm
@@ -33,7 +37,7 @@
         background: '#050507',
         foreground: '#e8e8e6',
         cursor: '#452a84',
-        selection: 'rgba(169, 177, 240, 0.3)',
+        selectionBackground: 'rgba(169, 177, 240, 0.3)',
         black: '#0a0a0c',
         red: '#ff5c5c',
         green: '#5cff8a',
@@ -126,7 +130,7 @@
       terminal?.dispose();
       terminalStore.setTerminal(null);
     };
-  });
+  }
 
   // Focus terminal when tab activates
   $effect(() => {

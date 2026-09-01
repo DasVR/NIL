@@ -1,6 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
 
+  import type { Tab } from '$lib/stores/tabsStore';
+
+  let { tab }: { tab: Tab } = $props();
+
   let container: HTMLDivElement;
   let messagesEnd: HTMLDivElement;
 

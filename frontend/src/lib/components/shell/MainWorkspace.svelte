@@ -5,22 +5,24 @@
   import PreviewTab from '$lib/components/shell/PreviewTab.svelte';
   import DiffTab from '$lib/components/shell/DiffTab.svelte';
   import ChatTab from '$lib/components/shell/ChatTab.svelte';
-  import { tabsStore } from '$lib/stores/tabsStore';
+  import { tabsStore, type Tab } from '$lib/stores/tabsStore';
 
   let store = $derived($tabsStore);
   let activeTab = $derived(store.activeTabId);
   let tabs = $derived(store.tabs);
 
   function setActiveTab(id: string) {
-    tabsStore.setActiveTab(id);
+    tabsStore.switchTab(id);
+  }
+
+  function newTab(type: 'terminal' | 'editor' | 'preview' | 'diff' | 'chat' = 'terminal') {
+    const id = `${type}-${Date.now()}`;
+    const label = type[0].toUpperCase() + type.slice(1);
+    tabsStore.addTab({ id, type, label, dirty: false });
   }
 
   function closeTab(id: string) {
     tabsStore.closeTab(id);
-  }
-
-  function newTab(type: 'terminal' | 'editor' | 'preview' | 'diff' | 'chat' = 'terminal') {
-    tabsStore.addTab(type);
   }
 
   function handleTabKeydown(e: KeyboardEvent, tabId: string) {

@@ -2,22 +2,13 @@
   import { spring } from 'svelte/motion';
   import Icon from '@iconify/svelte';
   import BorderBeam from '$lib/components/ui/BorderBeam.svelte';
+  import type { AgentBlock } from '$lib/stores/agentStore';
 
-  export let block: {
-    id: string;
-    type: 'tool';
-    tool: string;
-    args: Record<string, any>;
-    status: 'proposed' | 'running' | 'done' | 'failed';
-    output?: string;
-    cost?: { inputTokens: number; outputTokens: number; estCostUSD: number };
-    startTime?: number;
-    endTime?: number;
-  };
+  let { block }: { block: AgentBlock } = $props();
 
   const pulse = spring(1, { stiffness: 0.2, damping: 0.2 });
 
-  function getToolIcon(tool: string) {
+  function getToolIcon(tool?: string) {
     switch (tool) {
       case 'edit_file': return 'ph:file-bold';
       case 'run_command': return 'ph:terminal-bold';
@@ -31,8 +22,8 @@
     }
   }
 
-  function getToolLabel(tool: string) {
-    return tool.replace('_', ' ');
+  function getToolLabel(tool?: string) {
+    return tool ? tool.replace('_', ' ') : 'tool';
   }
 
   function formatCost(cost?: { inputTokens: number; outputTokens: number; estCostUSD: number }) {

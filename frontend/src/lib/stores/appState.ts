@@ -34,8 +34,8 @@ let settingsOpen = $state(defaultState.settingsOpen);
 let theme = $state(defaultState.theme);
 let activeTargetId = $state(defaultState.activeTargetId);
 let activeEngagementId = $state(defaultState.activeEngagementId);
+let yoloMode = $state(false);
 
-// API-loaded state
 let engagements = $state<Engagement[]>([]);
 let backendHealthy = $state(false);
 let backendVersion = $state('');
@@ -59,6 +59,7 @@ async function init() {
     engagements = list.engagements;
     if (engagements.length > 0 && !activeEngagementId) {
       activeEngagementId = engagements[0].name;
+      activeTargetId = engagements[0].name;
     }
   } catch (e: any) {
     console.error('Failed to init app state:', e.message);
@@ -70,12 +71,20 @@ async function createEngagement(name: string, scope = '', mode: 'hunt' | 'chat' 
   const eng = await api.createEngagement({ name, scope, mode });
   engagements = [...engagements, eng];
   activeEngagementId = eng.name;
+  activeTargetId = eng.name;
   return eng;
 }
 
 async function refreshEngagements() {
   const list = await api.listEngagements();
   engagements = list.engagements;
+}
+
+async function toggleYolo(engagement?: string) {
+  const id = engagement || activeEngagementId || 'default';
+  const status = await api.yoloStatus(id);
+  const res = await api.yoloToggle({ engagement: id, enabled: !status.yolo_enabled });
+  yoloMode = res.yolo_enabled;
 }
 
 export const appState = {
@@ -97,6 +106,8 @@ export const appState = {
   set activeTargetId(v: string | null) { activeTargetId = v; },
   get activeEngagementId() { return activeEngagementId; },
   set activeEngagementId(v: string | null) { activeEngagementId = v; },
+  get yoloMode() { return yoloMode; },
+  set yoloMode(v: boolean) { yoloMode = v; },
 
   get engagements() { return engagements; },
   get backendHealthy() { return backendHealthy; },
@@ -112,13 +123,13 @@ export const appState = {
     aiStripState = states[(idx + 1) % states.length];
   },
   toggleSettings: () => { settingsOpen = !settingsOpen; },
+  toggleYolo,
 
   init,
   createEngagement,
   refreshEngagements,
 };
 
-// Auto-init when running in browser
 if (typeof window !== 'undefined') {
   init();
 }

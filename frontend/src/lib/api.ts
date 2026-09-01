@@ -25,7 +25,6 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
   return res.json() as Promise<T>;
 }
 
-// Types
 export interface Engagement {
   name: string;
   path: string;
@@ -43,16 +42,20 @@ export interface EngagementCreate {
   mode?: 'hunt' | 'chat' | 'code' | 'report';
 }
 
-export interface ChatMessage {
-  role: 'user' | 'assistant' | 'system';
-  content: string;
-}
-
 export interface ChatRequest {
   engagement: string;
-  messages: ChatMessage[];
+  message: string;
   mode?: 'hunt' | 'chat' | 'code' | 'report';
   stream?: boolean;
+  session_id?: string;
+  hunt?: boolean;
+}
+
+export interface ChatResponse {
+  session_id: string;
+  response: string;
+  mode: string;
+  tool_call?: any;
 }
 
 export interface ToolRun {
@@ -84,18 +87,15 @@ export interface YoloToggle {
   enabled: boolean;
 }
 
-// Endpoints
 export const api = {
   health: () => apiFetch<{ status: string; version: string }>('/health'),
   info: () => apiFetch<{ modes: string[]; endpoints: Record<string, string> }>('/info'),
 
-  // Engagements
   listEngagements: () => apiFetch<{ engagements: Engagement[] }>('/engagements'),
   createEngagement: (body: EngagementCreate) => apiFetch<Engagement>('/engagements', { method: 'POST', body }),
   getEngagement: (name: string) => apiFetch<Engagement>(`/engagements/${encodeURIComponent(name)}`),
   deleteEngagement: (name: string) => apiFetch<void>(`/engagements/${encodeURIComponent(name)}`, { method: 'DELETE' }),
 
-  // Scope / notes
   getScope: (name: string) => apiFetch<{ scope: string }>(`/engagements/${encodeURIComponent(name)}/scope`),
   putScope: (name: string, scope: string) => apiFetch<void>(`/engagements/${encodeURIComponent(name)}/scope`, {
     method: 'PUT',
@@ -107,10 +107,8 @@ export const api = {
     body: { notes }
   }),
 
-  // Chat / agent
-  chat: (body: ChatRequest) => apiFetch<{ session_id: string; response: string }>('/chat', { method: 'POST', body }),
+  chat: (body: ChatRequest) => apiFetch<ChatResponse>('/chat', { method: 'POST', body }),
 
-  // Tools
   proposeTool: (body: ToolPropose) => apiFetch<ToolRun>('/tools/propose', { method: 'POST', body }),
   approveTool: (body: ToolApprove) => apiFetch<ToolRun>('/tools/approve', { method: 'POST', body }),
   rejectTool: (run_id: string, reason?: string) => apiFetch<ToolRun>('/tools/reject', {
@@ -124,14 +122,10 @@ export const api = {
     `/tools/history?${engagement ? `engagement=${encodeURIComponent(engagement)}&` : ''}limit=${limit}`
   ),
 
-  // YOLO
   yoloStatus: (engagement: string) => apiFetch<{ yolo_enabled: boolean }>(`/yolo/${encodeURIComponent(engagement)}`),
   yoloToggle: (body: YoloToggle) => apiFetch<{ yolo_enabled: boolean }>('/yolo/toggle', { method: 'POST', body }),
 
-  // Findings
   listFindings: () => apiFetch<{ findings: any[] }>('/findings'),
-
-  // Timeline
   getTimeline: (engagement: string) => apiFetch<{ timeline: string }>(`/timeline/${encodeURIComponent(engagement)}`),
 };
 

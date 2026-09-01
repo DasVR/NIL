@@ -38,7 +38,13 @@
 
     {#each blocks as block}
       {#if block.type === 'diff'}
-        <DiffBlock {block} />
+        <DiffBlock block={{
+          id: block.id,
+          file: block.file || 'untitled',
+          oldContent: block.oldContent || '',
+          newContent: block.newContent || '',
+          language: block.language
+        }} />
       {:else if block.type === 'finding'}
         <FindingCard 
           finding={{

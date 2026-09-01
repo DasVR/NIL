@@ -1,5 +1,5 @@
-// Tabs store — Svelte writable store
-import { writable } from 'svelte/store';
+// Tabs store — custom Svelte store with derived accessors
+import { writable, get } from 'svelte/store';
 
 export interface Tab {
   id: string;
@@ -19,6 +19,8 @@ function createTabsStore() {
 
   return {
     subscribe,
+    get tabs() { return get({ subscribe }).tabs; },
+    get activeTabId() { return get({ subscribe }).activeTabId; },
     addTab: (tab: Tab) => update(s => {
       const exists = s.tabs.find(t => t.id === tab.id);
       if (exists) return { ...s, activeTabId: tab.id };

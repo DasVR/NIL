@@ -1,15 +1,11 @@
 <script lang="ts">
   import BorderBeam from '$lib/components/ui/BorderBeam.svelte';
+  import type { AgentBlock } from '$lib/stores/agentStore';
 
-  export let pendingApproval: {
-    id: string;
-    tool: string;
-    args: Record<string, any>;
-    cost?: { inputTokens: number; outputTokens: number; estCostUSD: number };
-  };
+  let { pendingApproval }: { pendingApproval: AgentBlock } = $props();
 
-  function getToolLabel(tool: string) {
-    return tool.replace('_', ' ');
+  function getToolLabel(tool?: string) {
+    return tool ? tool.replace('_', ' ') : 'tool';
   }
 
   function formatCost(cost?: { inputTokens: number; outputTokens: number; estCostUSD: number }) {

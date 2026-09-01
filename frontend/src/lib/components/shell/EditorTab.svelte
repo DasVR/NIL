@@ -1,11 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import * as monaco from 'monaco-editor';
+  import type { Tab } from '$lib/stores/tabsStore';
+
+  let { tab }: { tab: Tab } = $props();
 
   let container: HTMLDivElement;
   let editor: monaco.editor.IStandaloneCodeEditor;
 
-  onMount(async () => {
+  onMount(() => {
     if (!container) return;
 
     // Configure monaco
