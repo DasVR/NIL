@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { appState } from '$lib/stores/appState';
+  import { appState } from '$lib/stores/appState.svelte.ts';
   import LiquidMetal from '$lib/components/ui/LiquidMetal.svelte';
   import ThinkingLogo from '$lib/components/ui/ThinkingLogo.svelte';
   import WindowControls from '$lib/components/ui/WindowControls.svelte';

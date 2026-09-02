@@ -1,7 +1,7 @@
 // Keyboard shortcuts (Svelte 5 runes)
 
-import { appState } from '$lib/stores/appState';
-import { paletteStore } from '$lib/stores/paletteStore';
+import { appState } from '$lib/stores/appState.svelte.ts';
+import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
 import { agentStore } from '$lib/stores/agentStore';
 import { tabsStore } from '$lib/stores/tabsStore';
 

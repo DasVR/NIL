@@ -1,5 +1,6 @@
 // App-level state store (Svelte 5 runes) — backed by NIL API
 import api, { type Engagement } from '$lib/api';
+import { browser } from '$app/environment';
 
 interface AppState {
   sidebarOpen: boolean;
@@ -41,6 +42,7 @@ let backendHealthy = $state(false);
 let backendVersion = $state('');
 
 function applyTheme() {
+  if (!browser) return;
   if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
     document.documentElement.classList.add('dark');
   } else {
@@ -48,9 +50,8 @@ function applyTheme() {
   }
 }
 
-$effect(() => { theme; applyTheme(); });
-
 async function init() {
+  if (!browser) return;
   try {
     const health = await api.health();
     backendHealthy = health.status === 'ok';
@@ -130,6 +131,6 @@ export const appState = {
   refreshEngagements,
 };
 
-if (typeof window !== 'undefined') {
+if (browser) {
   init();
 }

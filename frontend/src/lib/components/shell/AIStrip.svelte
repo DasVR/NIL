@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { appState } from '$lib/stores/appState';
+  import { appState } from '$lib/stores/appState.svelte.ts';
   import * as agentStore from '$lib/stores/agentStore';
   import AIStripComposer from '$lib/components/shell/AIStripComposer.svelte';
   import AIStripRunning from '$lib/components/shell/AIStripRunning.svelte';

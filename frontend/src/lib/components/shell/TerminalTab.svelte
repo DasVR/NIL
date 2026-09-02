@@ -1,8 +1,8 @@
 <script lang="ts">
   import { onMount, onDestroy } from 'svelte';
   import { browser } from '$app/environment';
-  import { appState } from '$lib/stores/appState';
-  import { terminalStore } from '$lib/stores/terminalStore';
+  import { appState } from '$lib/stores/appState.svelte.ts';
+  import { terminalStore } from '$lib/stores/terminalStore.svelte.ts';
   import { tabsStore } from '$lib/stores/tabsStore';
 
   interface Props {

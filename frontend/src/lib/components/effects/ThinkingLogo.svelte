@@ -16,9 +16,9 @@
   <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
     <!-- Blocky N monogram -->
     <g class="n-shape">
-      <rect x="4" y="4" width="7" height="24" rx="1" />
-      <rect x="21" y="4" width="7" height="24" rx="1" />
-      <rect x="11" y="12" width="10" height="7" rx="1" />
+      <rect x="4" y="4" width="6" height="24" rx="1" />
+      <rect x="22" y="4" width="6" height="24" rx="1" />
+      <path d="M10 4 L16 4 L22 28 L16 28 Z" />
     </g>
     {#if state === 'thinking' || state === 'streaming'}
       <g class="orbs">
@@ -43,7 +43,7 @@
     overflow: visible;
   }
 
-  .n-shape rect {
+  .n-shape > * {
     fill: var(--accent-primary);
     transition:
       fill var(--dur-base) var(--spring-smooth),

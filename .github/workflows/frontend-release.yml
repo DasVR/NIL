@@ -53,8 +53,8 @@ jobs:
           STAGE="nil-frontend-${RELEASE_TAG}"
           mkdir -p "${STAGE}" dist
           cp -r build "${STAGE}/build"
-          cp run.sh run.bat run.ps1 "${STAGE}/"
-          chmod +x "${STAGE}/run.sh"
+          cp run.sh run.bat run.ps1 "NIL Frontend.command" "${STAGE}/"
+          chmod +x "${STAGE}/run.sh" "${STAGE}/NIL Frontend.command"
           (cd "${STAGE}" && zip -r "../dist/nil-frontend-${RELEASE_TAG}.zip" .)
           tar -czf "dist/nil-frontend-${RELEASE_TAG}.tar.gz" "${STAGE}"
           # Also ship a plain web-only zip (just build/) for people who only want the site

@@ -1,7 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { appState } from '$lib/stores/appState';
-  import { paletteStore } from '$lib/stores/paletteStore';
+  import { appState } from '$lib/stores/appState.svelte.ts';
+  import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
   import Icon from '@iconify/svelte';
   import SettingsGeneral from '$lib/components/shell/SettingsGeneral.svelte';
   import SettingsAppearance from '$lib/components/shell/SettingsAppearance.svelte';

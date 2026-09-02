@@ -1,67 +1,81 @@
-# Finn Pentest Harness
+# NIL Frontend
 
-Dual-interface, AI-driven pentest workstation. Terminal TUI, local website, and Tauri desktop app share one FastAPI backend on `http://127.0.0.1:8766`.
+A terminal-first, native-macOS-inspired coding agent workstation shell for the NIL project.
 
-Use this only against systems you are authorized to test.
+Built with **Svelte 5**, **TypeScript**, and **SvelteKit static adapter**. The UI is designed to feel like a macOS app: glass panels, spring physics, the NIL thinking-logo system, and a keyboard-first command palette.
+
+![Empty state](./frontend/screenshots/empty-state.png)
+
+## Screenshots
+
+| Empty state | AI strip (Cmd+J) | Command palette (Cmd+K) |
+|---|---|---|
+| ![Empty state](./frontend/screenshots/empty-state.png) | ![AI strip](./frontend/screenshots/ai-strip.png) | ![Command palette](./frontend/screenshots/command-palette.png) |
 
 ## Quick start
 
-```bash
-python3 -m pip install -e ".[dev]"
-cp .env.example .env
-finn api
-```
+Download the latest release zip and run the appropriate script for your OS.
 
-In other terminals:
+### macOS / Linux / Git Bash
 
 ```bash
-finn tui
-# or
-cd web && npm install && npm run dev   # http://127.0.0.1:5173
+./run.sh
 ```
 
-Open `/app` for the workstation. Landing, docs, and download pages are public and do not need the API.
+### Windows PowerShell
 
-### Desktop
+```powershell
+.\run.ps1
+```
+
+### Windows CMD
+
+```cmd
+run.bat
+```
+
+Then open `http://localhost:3000` in your browser.
+
+## macOS one-click runner
+
+On macOS you can double-click `NIL Frontend.command` in Finder. If Gatekeeper warns about an unsigned app, right-click the file and choose **Open** once.
+
+## GitHub Pages
+
+The site is also auto-deployed to GitHub Pages on every release tag:
+
+**https://dasvr.github.io/NIL/**
+
+## Development
 
 ```bash
-cd web && npm install && npm run build
-cd ../desktop && npm install
-npm run tauri dev    # requires Rust + Tauri system deps
+cd frontend
+npm install
+npm run dev      # Vite dev server
+npm run check    # svelte-check + tsc
+npm run build    # static build to build/
 ```
 
-The desktop app wraps the same Svelte UI, launches into `/app`, and adds a tray icon plus `Ctrl+Shift+F` to focus. Linux builds need GTK/WebKit (`libgtk-3-dev`, `libwebkit2gtk-4.1-dev`) and Rust 1.85+.
+## What's inside
 
-## Layout
+- `frontend/` — SvelteKit app
+  - `src/lib/components/shell/` — workstation shell (sidebar, workspace, AI strip, status bar, command palette, settings)
+  - `src/lib/components/effects/` — ThinkingLogo, grain overlay, border beam, orbs
+  - `src/lib/components/ui/` — shared UI primitives
+  - `src/lib/stores/*.svelte.ts` — Svelte 5 rune-based stores
+  - `run.sh`, `run.bat`, `run.ps1`, `NIL Frontend.command` — local runners
+  - `screenshots/` — README screenshots
 
-- `finn_pentest/` — FastAPI, sandbox, plugins, AI router, TUI, CLI
-- `web/` — SvelteKit website (marketing + `/app`)
-- `desktop/` — Tauri 2 wrapper
-- `prompts/` — professional assessment system prompts
-- `tests/` — pytest
+## Keyboard shortcuts
 
-## Providers
+| Shortcut | Action |
+|---|---|
+| `Cmd/Ctrl + K` | Open command palette |
+| `Cmd/Ctrl + J` | Toggle AI strip |
+| `Cmd/Ctrl + B` | Toggle left sidebar |
+| `Cmd/Ctrl + Shift + B` | Toggle right sidebar |
+| `Cmd/Ctrl + ,` | Open settings |
 
-Copy `~/.finn-pentest/providers.json` (created on first `finn api`) and set:
+## License
 
-- `DEEPSEEK_API_KEY`
-- `XAI_API_KEY`
-- `MOONSHOT_API_KEY`
-- `OLLAMA_API_KEY`
-
-Empty keys are skipped. Failover is silent on 429 / 5xx / timeout.
-
-## Tests
-
-```bash
-python3 -m pytest tests -q
-```
-
-Sandbox tests that need Docker are skipped when the daemon is missing. Tool execution always targets the engagement container, never the host.
-
-## Safety
-
-- Approval gate is on by default
-- YOLO is per-engagement, still sandboxed and logged
-- Code mode writes assessment scripts and parsers, not exploit kits
-- Recon plugins ship: nmap, nuclei, ffuf, gobuster
+MIT

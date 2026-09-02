@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { appState } from '$lib/stores/appState';
+  import { appState } from '$lib/stores/appState.svelte.ts';
   import FindingCard from '$lib/components/ui/FindingCard.svelte';
   import Icon from '@iconify/svelte';
 

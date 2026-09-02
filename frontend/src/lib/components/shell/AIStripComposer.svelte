@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { appState } from '$lib/stores/appState';
+  import { appState } from '$lib/stores/appState.svelte.ts';
   import { agentStore, sendMessage as agentSendMessage, cancel } from '$lib/stores/agentStore';
   import Icon from '@iconify/svelte';
 

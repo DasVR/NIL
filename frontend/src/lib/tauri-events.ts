@@ -1,9 +1,9 @@
 // Tauri event listeners
 
 import { listen, emit } from '@tauri-apps/api/event';
-import { appState } from '$lib/stores/appState';
+import { appState } from '$lib/stores/appState.svelte.ts';
 import { agentStore } from '$lib/stores/agentStore';
-import { paletteStore } from '$lib/stores/paletteStore';
+import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
 
 let unlisteners: (() => void)[] = [];
 

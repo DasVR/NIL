@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { paletteStore } from '$lib/stores/paletteStore';
+  import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
   import Icon from '@iconify/svelte';
 
   interface Props {

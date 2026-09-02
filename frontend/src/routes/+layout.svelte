@@ -9,16 +9,27 @@
   import StatusBar from '$lib/components/shell/StatusBar.svelte';
   import CommandPalette from '$lib/components/shell/CommandPalette.svelte';
   import SettingsSheet from '$lib/components/shell/SettingsSheet.svelte';
-  import { appState } from '$lib/stores/appState';
-  import { paletteStore } from '$lib/stores/paletteStore';
+  import { appState } from '$lib/stores/appState.svelte.ts';
+  import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
   import { setupTauriEvents } from '$lib/tauri-events';
-  import { keymap } from '$lib/keymap';
+  import { keymap } from '$lib/keymap.svelte.ts';
+  import { browser } from '$app/environment';
 
   let { children }: { children: () => any } = $props();
 
   onMount(() => {
     setupTauriEvents();
     keymap.init();
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    const t = appState.theme;
+    if (t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
   });
 </script>
 
