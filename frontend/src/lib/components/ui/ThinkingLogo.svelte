@@ -14,8 +14,10 @@
   const notchRotation = spring(0, { stiffness: 0.18, damping: 0.22 });
 
   let reducedMotion = $state(false);
-  let currentState = $state(logoState);
+  let currentState = $state<typeof logoState>('idle');
   let orbsVisible = $derived(logoState === 'thinking' || logoState === 'streaming');
+
+  $effect(() => { currentState = logoState; });
 
   onMount(() => {
     const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');

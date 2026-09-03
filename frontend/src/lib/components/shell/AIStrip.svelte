@@ -102,8 +102,7 @@
     -webkit-backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
     z-index: var(--z-sticky);
     overflow: hidden;
-    transition: transform var(--spring-smooth), box-shadow var(--spring-smooth);
-    box-shadow: 0 -4px 24px rgba(5, 5, 7, 0.4);
+    transition: transform var(--spring-smooth);
   }
 
   .ai-strip-handle {
@@ -151,6 +150,6 @@
     .ai-strip-content { transition: none; }
   }
 
-  html.reduce-motion .ai-strip { transition: none; }
-  html.reduce-motion .ai-strip-content { transition: none; }
+  :global(html.reduce-motion) .ai-strip { transition: none; }
+  :global(html.reduce-motion) .ai-strip-content { transition: none; }
 </style>

@@ -103,5 +103,5 @@
     .thinking-orbs { display: none; }
   }
 
-  html.reduce-motion .thinking-orbs { display: none; }
+  :global(html.reduce-motion) .thinking-orbs { display: none; }
 </style>

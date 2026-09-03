@@ -165,5 +165,5 @@
     .border-beam { display: none; }
   }
 
-  html.reduce-motion .border-beam { display: none; }
+  :global(html.reduce-motion) .border-beam { display: none; }
 </style>

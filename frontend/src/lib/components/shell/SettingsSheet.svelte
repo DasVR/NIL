@@ -131,9 +131,7 @@
     background: var(--surface-card);
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-lg);
-    box-shadow: 
-      0 24px 48px rgba(5, 5, 7, 0.6),
-      0 0 0 1px var(--accent-primary);
+    border: 1px solid var(--accent-primary);
     z-index: var(--z-modal);
     display: flex;
     flex-direction: column;
@@ -323,6 +321,6 @@
     .settings-overlay, .settings-sheet { animation: none; }
   }
 
-  html.reduce-motion .settings-overlay,
-  html.reduce-motion .settings-sheet { animation: none; }
+  :global(html.reduce-motion) .settings-overlay,
+  :global(html.reduce-motion) .settings-sheet { animation: none; }
 </style>
