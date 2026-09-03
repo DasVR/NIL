@@ -20,68 +20,60 @@
 
 <footer class="status-bar" role="status" aria-live="polite">
   <div class="status-left">
-    <div class="status-item">
-      <span class="status-dot" style:background={status === 'running' ? 'var(--accent-primary)' : status === 'error' ? 'var(--color-danger)' : appState.backendHealthy ? 'var(--color-success)' : 'var(--color-danger)'} />
-      <span>{status === 'running' ? 'Agent running' : status === 'error' ? 'Error' : appState.backendHealthy ? 'Ready' : 'Backend offline'}</span>
-    </div>
+    <button class="status-item status-btn backend" title="Backend connection status" aria-label="Backend status: {backendStatus}">
+      <span class="status-dot" class:online={appState.backendHealthy} class:offline={!appState.backendHealthy} />
+      <span>{appState.backendHealthy ? 'Ready' : 'Offline'}</span>
+    </button>
 
-    <div class="status-divider" />
-    <div class="status-item">
-      <Icon icon="ph:briefcase-bold" width="14" height="14" />
-      <span>{engagementLabel}</span>
-    </div>
+    <div class="status-divider" aria-hidden="true" />
 
-    {#if activeTab}
-      <div class="status-divider" />
-      <div class="status-item">
-        <Icon icon="ph:terminal-bold" width="14" height="14" />
-        <span>{activeTab.label}</span>
-      </div>
-    {/if}
+    <button class="status-item status-btn" title="Active engagement" aria-label="Engagement: {engagementLabel}">
+      <Icon icon="ph:folder-simple-bold" width="12" height="12" />
+      <span class="status-truncate">{engagementLabel}</span>
+    </button>
 
     {#if $agentStore.pendingApproval}
-      <div class="status-divider" />
-      <div class="status-item pending">
+      <div class="status-divider" aria-hidden="true" />
+      <button class="status-item status-btn pending" aria-label="Approval pending — press Cmd+Enter to approve">
         <span class="status-dot blinking" />
-        <span>Approval pending</span>
-        <kbd>Cmd+Enter</kbd>
+        <span>Awaiting approval</span>
+        <kbd>⌘↵</kbd>
+      </button>
+    {/if}
+
+    {#if store.running}
+      <div class="status-divider" aria-hidden="true" />
+      <div class="status-item running">
+        <span class="status-spinner" aria-hidden="true"></span>
+        <span>Agent running</span>
       </div>
     {/if}
   </div>
 
   <div class="status-center">
-    <div class="status-item">
-      <span>Ln 1, Col 1</span>
-    </div>
-    <div class="status-item">
-      <span>UTF-8</span>
-    </div>
-    <div class="status-item">
-      <span>LF</span>
-    </div>
-    <div class="status-item">
-      <span>TypeScript</span>
-    </div>
+    {#if activeTab}
+      <div class="status-item mono">
+        <span>{activeTab.label}</span>
+      </div>
+    {/if}
   </div>
 
   <div class="status-right">
     {#if appState.yoloMode}
-      <div class="status-item yolo">
-        <Icon icon="ph:rocket-launch-bold" width="14" height="14" />
+      <button class="status-item status-btn yolo" onclick={() => appState.toggleYolo()} title="YOLO mode active — click to disable" aria-label="YOLO mode active">
+        <Icon icon="ph:rocket-launch-bold" width="12" height="12" />
         <span>YOLO</span>
-      </div>
-      <div class="status-divider" />
+      </button>
+      <div class="status-divider" aria-hidden="true" />
     {/if}
 
-    <div class="status-item">
-      <Icon icon="ph:memory-bold" width="14" height="14" />
-      <span>~42 MB</span>
-    </div>
+    <button class="status-item status-btn" onclick={() => appState.toggleSettings()} title="Open settings (Cmd+,)" aria-label="Open settings">
+      <Icon icon="ph:gear-bold" width="12" height="12" />
+    </button>
 
-    <div class="status-divider" />
+    <div class="status-divider" aria-hidden="true" />
 
-    <div class="status-item">
-      <Icon icon="ph:network-bold" width="14" height="14" />
+    <div class="status-item mono" title="Backend: {backendStatus}">
       <span>{backendStatus}</span>
     </div>
   </div>
@@ -114,44 +106,103 @@
   .status-item {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 5px;
     color: var(--text-tertiary);
+    white-space: nowrap;
   }
 
-  .status-item:hover {
+  .status-item.mono {
+    font-family: var(--font-mono);
+  }
+
+  .status-btn {
+    background: transparent;
+    border: none;
+    cursor: pointer;
+    border-radius: 3px;
+    padding: 1px 4px;
+    margin: 0 -4px;
+    transition: background var(--dur-fast) var(--spring-snappy),
+      color var(--dur-fast) var(--spring-snappy);
+  }
+
+  .status-btn:hover {
+    background: var(--surface-hover);
     color: var(--text-secondary);
   }
 
+  .status-btn:active {
+    background: var(--surface-card);
+  }
+
+  .status-btn:focus-visible {
+    outline: 1px solid var(--accent-primary);
+    outline-offset: 1px;
+  }
+
   .status-item.pending {
-    color: var(--accent-primary);
-    animation: pulse 1.5s var(--spring-bouncy) infinite;
+    color: var(--color-violet-light);
+  }
+
+  .status-item.running {
+    color: var(--color-violet-light);
   }
 
   .status-item.yolo {
-    color: var(--accent-primary);
+    color: var(--color-coral);
     font-weight: 600;
   }
+
+  .status-item.backend { gap: 5px; }
+  .status-item.backend.online { color: var(--color-success); }
+  .status-item.backend.offline { color: var(--color-danger); }
 
   .status-dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
     flex-shrink: 0;
+    background: currentColor;
   }
 
+  .status-dot.online { background: var(--color-success); }
+  .status-dot.offline { background: var(--color-danger); }
+
   .status-dot.blinking {
-    animation: blink 1s infinite;
+    animation: blink 1.2s var(--spring-bouncy) infinite;
+  }
+
+  .status-spinner {
+    width: 8px;
+    height: 8px;
+    border: 1.5px solid var(--color-violet-light);
+    border-top-color: transparent;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    flex-shrink: 0;
+  }
+
+  @keyframes spin {
+    to { transform: rotate(360deg); }
   }
 
   @keyframes blink {
     0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
+    50% { opacity: 0.25; }
   }
 
   .status-divider {
     width: 1px;
-    height: 16px;
+    height: 12px;
     background: var(--surface-border);
+    flex-shrink: 0;
+  }
+
+  .status-truncate {
+    max-width: 140px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
   .status-item kbd {

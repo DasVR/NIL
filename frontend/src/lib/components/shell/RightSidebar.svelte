@@ -241,33 +241,38 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: var(--row-h);
-    padding: 0 var(--space-2);
+    height: 36px;
+    padding: 0 6px 0 var(--space-2);
     border-bottom: 1px solid var(--sidebar-border);
     flex-shrink: 0;
+    gap: 4px;
   }
 
   .right-sidebar-tabs {
     display: flex;
-    gap: 2px;
+    gap: 1px;
     flex: 1;
     overflow-x: auto;
+    scrollbar-width: none;
   }
+  .right-sidebar-tabs::-webkit-scrollbar { display: none; }
 
   .right-sidebar-tab {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
+    gap: 5px;
+    padding: 4px 8px;
     border: none;
     border-radius: var(--radius-control);
     background: transparent;
     color: var(--text-tertiary);
-    font-size: var(--font-xs);
+    font-size: 11px;
     font-weight: 400;
     cursor: pointer;
     white-space: nowrap;
-    transition: color var(--spring-snappy), background var(--spring-snappy);
+    transition: color var(--dur-fast) var(--spring-snappy),
+      background var(--dur-fast) var(--spring-snappy),
+      transform var(--dur-fast) var(--spring-snappy);
   }
 
   .right-sidebar-tab:hover {
@@ -275,9 +280,19 @@
     background: var(--surface-hover);
   }
 
+  .right-sidebar-tab:active {
+    transform: scale(0.95);
+  }
+
   .right-sidebar-tab.active {
-    color: var(--accent-primary);
+    color: var(--color-violet-light);
     background: var(--accent-soft);
+    font-weight: 500;
+  }
+
+  .right-sidebar-tab:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
   }
 
   .tab-badge {
