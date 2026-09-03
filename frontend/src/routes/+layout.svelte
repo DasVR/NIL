@@ -47,8 +47,11 @@
     />
 
     <main class="workspace">
-      {@render children()}
-      <MainWorkspace />
+      <MainWorkspace>
+        {#snippet emptyState()}
+          {@render children()}
+        {/snippet}
+      </MainWorkspace>
 
       <AIStrip state={appState.aiStripState} onStateChange={(s) => appState.aiStripState = s} />
     </main>

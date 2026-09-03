@@ -28,8 +28,19 @@ function handleKeydown(e: KeyboardEvent) {
     return;
   }
 
-  // Cmd+J — Toggle AI strip
-  if (mod && e.key === 'j') {
+  // Cmd+J — Toggle AI strip (collapsed <-> composer)
+  if (mod && !shift && e.key === 'j') {
+    e.preventDefault();
+    if (appState.aiStripState === 'collapsed') {
+      appState.aiStripState = 'composer';
+    } else {
+      appState.aiStripState = 'collapsed';
+    }
+    return;
+  }
+
+  // Cmd+Shift+J — Cycle AI strip states
+  if (mod && shift && e.key === 'j') {
     e.preventDefault();
     appState.cycleAIStrip();
     return;
@@ -92,6 +103,20 @@ function handleKeydown(e: KeyboardEvent) {
       e.preventDefault();
       tabsStore.switchTab(tab.id);
     }
+    return;
+  }
+
+  // Cmd+B — Toggle left sidebar
+  if (mod && e.key === 'b' && !shift) {
+    e.preventDefault();
+    appState.toggleSidebar();
+    return;
+  }
+
+  // Cmd+\ — Toggle right sidebar
+  if (mod && e.key === '\\') {
+    e.preventDefault();
+    appState.toggleRightSidebar();
     return;
   }
 
