@@ -53,7 +53,7 @@
     border-radius: var(--radius-panel);
     overflow: hidden;
     position: relative;
-    box-shadow: 0 0 0 1px var(--accent-primary), 0 8px 32px rgba(5, 5, 7, 0.5);
+    border-color: var(--accent-primary);
   }
 
   .approval-header {

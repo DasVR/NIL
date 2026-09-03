@@ -44,7 +44,7 @@
   });
 </script>
 
-<header class="titlebar" onmousedown={handleMouseDown} role="banner" aria-label="Window title bar">
+<div class="titlebar" onmousedown={handleMouseDown} role="banner" aria-label="Window title bar">
   <LiquidMetal />
   
   <div class="titlebar-left titlebar-drag" title="Drag to move window">
@@ -67,7 +67,7 @@
     <ThinkingLogo state={agentState} />
     <WindowControls />
   </div>
-</header>
+</div>
 
 <style>
   .titlebar {

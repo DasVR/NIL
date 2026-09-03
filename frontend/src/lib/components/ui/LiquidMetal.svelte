@@ -129,7 +129,7 @@
   }
 </script>
 
-<canvas class="liquid-metal-canvas" bind:this={canvas} aria-hidden="true" />
+<canvas class="liquid-metal-canvas" bind:this={canvas} aria-hidden="true"></canvas>
 
 <style>
   .liquid-metal-canvas {

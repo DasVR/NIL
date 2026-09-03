@@ -7,6 +7,10 @@
   import ChatTab from '$lib/components/shell/ChatTab.svelte';
   import { tabsStore, type Tab } from '$lib/stores/tabsStore';
 
+  import type { Snippet } from 'svelte';
+
+  let { emptyState }: { emptyState?: Snippet } = $props();
+
   let store = $derived($tabsStore);
   let activeTab = $derived(store.activeTabId);
   let tabs = $derived(store.tabs);
@@ -99,10 +103,23 @@
         {/if}
       </div>
     {/each}
+    {#if tabs.length === 0 && emptyState}
+      <div class="workspace-empty">
+        {@render emptyState()}
+      </div>
+    {/if}
   </div>
 </div>
 
 <style>
+  .workspace-empty {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
   .main-workspace {
     flex: 1;
     min-height: 0;

@@ -126,12 +126,11 @@
     border-radius: var(--radius-panel);
     overflow: hidden;
     position: relative;
-    transition: border-color var(--spring-snappy), box-shadow var(--spring-snappy);
+    transition: border-color var(--spring-snappy);
   }
 
   .tool-block.proposed {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 1px var(--accent-primary);
   }
 
   .tool-block.running {

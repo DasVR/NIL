@@ -158,8 +158,8 @@
 
   .composer-input-area textarea {
     flex: 1;
-    min-height: 44px;
-    max-height: 160px;
+    min-height: 32px;
+    max-height: 120px;
     padding: 10px 14px;
     border: 1px solid var(--surface-border);
     border-radius: var(--radius-panel);
@@ -184,8 +184,8 @@
   .composer-send-btn {
     display: grid;
     place-items: center;
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
     border: none;
     border-radius: var(--radius-control);
     background: var(--accent-primary);

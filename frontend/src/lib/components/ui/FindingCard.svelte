@@ -89,11 +89,11 @@
     border-radius: var(--radius-panel);
     border-left: 3px solid var(--severity-color);
     overflow: hidden;
-    transition: border-color var(--spring-snappy), box-shadow var(--spring-snappy);
+    transition: border-color var(--spring-snappy);
   }
 
   .finding-card:hover {
-    box-shadow: 0 0 0 1px var(--severity-color);
+    border-color: var(--severity-color);
   }
 
   .finding-header {

@@ -25,6 +25,18 @@
 
   let visibleCommands = $derived(filteredCommands());
 
+  function groupCommands(cmds: typeof visibleCommands) {
+    const map = new Map<string, typeof visibleCommands>();
+    for (const cmd of cmds) {
+      const section = cmd.section ?? 'General';
+      if (!map.has(section)) map.set(section, []);
+      map.get(section)!.push(cmd);
+    }
+    return Array.from(map.entries()).map(([section, commands]) => ({ section, commands }));
+  }
+
+  let groupedCommands = $derived(groupCommands(visibleCommands));
+
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
@@ -80,33 +92,34 @@
     </div>
 
     <div class="palette-results" role="listbox" aria-activedescendant={`cmd-${visibleCommands[selectedIndex]?.id}`}>
-      {#each visibleCommands as cmd, i}
-        <div
-          class="palette-item {i === selectedIndex ? 'selected' : ''}"
-          role="option"
-          aria-selected={i === selectedIndex}
-          id={`cmd-${cmd.id}`}
-          onclick={() => paletteStore.executeCommand(cmd.id)}
-        >
-          <div class="palette-item-main">
-            <Icon icon={cmd.icon || 'ph:command-bold'} width="16" height="16" />
-            <span class="palette-item-label">{cmd.label}</span>
-          </div>
-          {#if cmd.shortcut}
-            <kbd class="palette-item-shortcut">{cmd.shortcut}</kbd>
-          {/if}
-          {#if cmd.section}
-            <span class="palette-item-section">{cmd.section}</span>
-          {/if}
-        </div>
-      {/each}
-
       {#if visibleCommands.length === 0}
         <div class="palette-empty">
           <Icon icon="ph:magnifying-glass-bold" width="20" height="20" />
           <p>No commands found</p>
           <span>Try a different search</span>
         </div>
+      {:else}
+        {#each groupedCommands as group}
+          <div class="palette-section-header">{group.section}</div>
+          {#each group.commands as cmd}
+            {@const globalIdx = visibleCommands.indexOf(cmd)}
+            <div
+              class="palette-item {globalIdx === selectedIndex ? 'selected' : ''}"
+              role="option"
+              aria-selected={globalIdx === selectedIndex}
+              id={`cmd-${cmd.id}`}
+              onclick={() => paletteStore.executeCommand(cmd.id)}
+            >
+              <div class="palette-item-main">
+                <Icon icon={cmd.icon || 'ph:command-bold'} width="14" height="14" />
+                <span class="palette-item-label">{cmd.label}</span>
+              </div>
+              {#if cmd.shortcut}
+                <kbd class="palette-item-shortcut">{cmd.shortcut}</kbd>
+              {/if}
+            </div>
+          {/each}
+        {/each}
       {/if}
     </div>
   </div>
@@ -131,11 +144,8 @@
     width: 640px;
     max-width: calc(100vw - 32px);
     background: var(--surface-card);
-    border: 1px solid var(--surface-border);
     border-radius: var(--radius-lg);
-    box-shadow: 
-      0 24px 48px rgba(5, 5, 7, 0.6),
-      0 0 0 1px var(--accent-primary);
+    border: 1px solid var(--accent-primary);
     z-index: var(--z-modal);
     overflow: hidden;
     animation: slideDown 0.2s var(--spring-snappy);
@@ -181,12 +191,11 @@
     font-family: var(--font-sans);
     font-size: var(--step-0);
     outline: none;
-    transition: border-color var(--spring-snappy), box-shadow var(--spring-snappy);
+    transition: border-color var(--spring-snappy);
   }
 
   .palette-search input:focus {
     border-color: var(--accent-primary);
-    box-shadow: 0 0 0 3px var(--accent-soft);
   }
 
   .palette-hint {
@@ -254,13 +263,21 @@
     flex-shrink: 0;
   }
 
-  .palette-item-section {
-    font-size: var(--font-2xs);
+  .palette-section-header {
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: var(--tracking-wide);
+    letter-spacing: 0.08em;
     color: var(--text-tertiary);
-    flex-shrink: 0;
+    padding: var(--space-2) var(--space-3) var(--space-1);
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .palette-section-header:not(:first-child) {
+    margin-top: var(--space-2);
+    border-top: 1px solid var(--surface-border);
+    padding-top: var(--space-3);
   }
 
   .palette-empty {
@@ -288,6 +305,6 @@
     .palette-overlay, .palette-window { animation: none; }
   }
 
-  html.reduce-motion .palette-overlay,
-  html.reduce-motion .palette-window { animation: none; }
+  :global(html.reduce-motion) .palette-overlay,
+  :global(html.reduce-motion) .palette-window { animation: none; }
 </style>
