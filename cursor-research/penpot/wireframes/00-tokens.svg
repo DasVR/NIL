@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="900" viewBox="0 0 1280 900" role="img">
+  <title>NIL Tokens Board</title>
+  <defs>
+    <style>
+      .sans { font-family: Inter, "SF Pro Text", system-ui, sans-serif; }
+      .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+      .micro { font-family: Inter, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; fill: #55554f; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="1280" height="900" rx="0" fill="#050507" fill-opacity="1" />
+  <text x="40" y="48" class="sans" font-size="20" font-weight="600" fill="#e8e8e6" text-anchor="start">00 Tokens  ·  NIL Design System</text>
+  <rect x="40" y="80" width="140" height="72" rx="6" fill="#050507" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="40" y="172" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">abyss</text>
+  <text x="40" y="188" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#050507</text>
+  <rect x="196" y="80" width="140" height="72" rx="6" fill="#0a0a0c" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="196" y="172" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">abyss-1</text>
+  <text x="196" y="188" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#0a0a0c</text>
+  <rect x="352" y="80" width="140" height="72" rx="6" fill="#0a0a0e" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="352" y="172" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">abyss-2</text>
+  <text x="352" y="188" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#0a0a0e</text>
+  <rect x="508" y="80" width="140" height="72" rx="6" fill="#101016" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="508" y="172" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">abyss-3</text>
+  <text x="508" y="188" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#101016</text>
+  <rect x="664" y="80" width="140" height="72" rx="6" fill="#16161d" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="664" y="172" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">abyss-4</text>
+  <text x="664" y="188" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#16161d</text>
+  <rect x="820" y="80" width="140" height="72" rx="6" fill="#452a84" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="820" y="172" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">violet</text>
+  <text x="820" y="188" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#452a84</text>
+  <rect x="976" y="80" width="140" height="72" rx="6" fill="#a9b1f0" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="976" y="172" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">violet-light</text>
+  <text x="976" y="188" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#a9b1f0</text>
+  <rect x="1132" y="80" width="140" height="72" rx="6" fill="#fe6f69" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="1132" y="172" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">coral</text>
+  <text x="1132" y="188" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#fe6f69</text>
+  <rect x="40" y="200" width="140" height="72" rx="6" fill="#f5f2ec" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="40" y="292" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">cream</text>
+  <text x="40" y="308" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#f5f2ec</text>
+  <rect x="196" y="200" width="140" height="72" rx="6" fill="#e8e8e6" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="196" y="292" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">text</text>
+  <text x="196" y="308" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#e8e8e6</text>
+  <rect x="352" y="200" width="140" height="72" rx="6" fill="#9a9a94" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="352" y="292" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">text-dim</text>
+  <text x="352" y="308" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#9a9a94</text>
+  <rect x="508" y="200" width="140" height="72" rx="6" fill="#55554f" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="508" y="292" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">text-faint</text>
+  <text x="508" y="308" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#55554f</text>
+  <rect x="664" y="200" width="140" height="72" rx="6" fill="#00d992" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="664" y="292" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">green</text>
+  <text x="664" y="308" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#00d992</text>
+  <rect x="820" y="200" width="140" height="72" rx="6" fill="#ff5c5c" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="820" y="292" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">danger</text>
+  <text x="820" y="308" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#ff5c5c</text>
+  <rect x="976" y="200" width="140" height="72" rx="6" fill="#ffb454" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="976" y="292" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">warning</text>
+  <text x="976" y="308" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#ffb454</text>
+  <rect x="1132" y="200" width="140" height="72" rx="6" fill="#5cb8ff" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="1132" y="292" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">info</text>
+  <text x="1132" y="308" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">#5cb8ff</text>
+  <text x="40" y="360" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">TYPE</text>
+  <text x="40" y="392" class="sans" font-size="13" font-weight="600" fill="#e8e8e6" text-anchor="start">title/space — Inter 13 / 600</text>
+  <text x="40" y="420" class="sans" font-size="12" font-weight="400" fill="#e8e8e6" text-anchor="start">nav/row — Inter 12 / 400</text>
+  <text x="40" y="446" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">MICRO / LABEL — INTER 11 / 500 / 0.08EM</text>
+  <text x="40" y="474" class="mono" font-size="12" font-weight="400" fill="#e8e8e6" text-anchor="start">mono/data — JetBrains Mono 12</text>
+  <text x="40" y="498" class="mono" font-size="10" font-weight="400" fill="#55554f" text-anchor="start">mono/meta — JetBrains Mono 10</text>
+  <text x="40" y="560" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">DENSITY</text>
+  <text x="40" y="588" class="mono" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">sidebar-row 28px · status-bar 26px · toolbar 28px · gap 4/8/16 · border 1px @ 8% white</text>
+  <text x="40" y="640" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">SPRINGS</text>
+  <text x="40" y="668" class="mono" font-size="11" font-weight="400" fill="#9a9a94" text-anchor="start">bouncy (0.34,1.56,0.64,1) · smooth (0.22,1,0.36,1) · window (0.32,0.72,0,1) · snappy (0.25,0.9,0.25,1)</text>
+  <text x="40" y="720" class="sans" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">Brand mark: NIL + coral cursor dash. Accent is violet; coral is the single hot attention accent.</text>
+</svg>

@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="720" viewBox="0 0 1280 720" role="img">
+  <title>NIL Components Strip</title>
+  <defs>
+    <style>
+      .sans { font-family: Inter, "SF Pro Text", system-ui, sans-serif; }
+      .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+      .micro { font-family: Inter, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; fill: #55554f; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="1280" height="720" rx="0" fill="#050507" fill-opacity="1" />
+  <text x="40" y="48" class="sans" font-size="20" font-weight="600" fill="#e8e8e6" text-anchor="start">01 Components  ·  Buttons / Blocks / Chrome</text>
+  <text x="40" y="88" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">BUTTONS</text>
+  <rect x="40" y="104" width="120" height="32" rx="4" fill="#452a84" fill-opacity="1" />
+  <text x="100" y="124" class="sans" font-size="12" font-weight="600" fill="#f5f2ec" text-anchor="middle">Primary</text>
+  <rect x="176" y="104" width="120" height="32" rx="4" fill="#101016" fill-opacity="1" stroke="#452a84" stroke-width="1"/>
+  <text x="236" y="124" class="sans" font-size="12" font-weight="400" fill="#f5f2ec" text-anchor="middle">Secondary</text>
+  <rect x="312" y="104" width="100" height="32" rx="4" fill="transparent" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="362" y="124" class="sans" font-size="12" font-weight="400" fill="#a9b1f0" text-anchor="middle">Ghost</text>
+  <rect x="428" y="104" width="100" height="32" rx="4" fill="#ff5c5c" fill-opacity="1" />
+  <text x="478" y="124" class="sans" font-size="12" font-weight="600" fill="#f5f2ec" text-anchor="middle">Danger</text>
+  <rect x="544" y="104" width="32" height="32" rx="4" fill="#101016" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="560" y="124" class="sans" font-size="12" font-weight="400" fill="#e8e8e6" text-anchor="middle">⌘</text>
+  <text x="40" y="180" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">AGENT BLOCKS</text>
+  <rect x="40" y="196" width="360" height="88" rx="6" fill="#0a0a0e" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <rect x="40" y="196" width="3" height="88" fill="#452a84"/>
+  <text x="56" y="220" class="sans" font-size="12" font-weight="600" fill="#a9b1f0" text-anchor="start">block/plan</text>
+  <text x="56" y="244" class="sans" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">Numbered steps · violet accent bar</text>
+  <rect x="420" y="196" width="360" height="88" rx="6" fill="#0a0a0e" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="436" y="220" class="sans" font-size="12" font-weight="600" fill="#00d992" text-anchor="start">block/tool</text>
+  <text x="436" y="244" class="mono" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">$ command · status · collapsible out</text>
+  <rect x="800" y="196" width="400" height="88" rx="6" fill="#0a0a0e" fill-opacity="1" stroke="#fe6f69" stroke-width="2"/>
+  <text x="816" y="220" class="sans" font-size="12" font-weight="600" fill="#fe6f69" text-anchor="start">block/approval</text>
+  <text x="816" y="244" class="sans" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">Approve / Edit / Reject — only pulse</text>
+  <text x="40" y="320" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">CHROME</text>
+  <rect x="40" y="336" width="600" height="26" rx="0" fill="#101016" fill-opacity="1" />
+  <text x="52" y="354" class="mono" font-size="11" font-weight="400" fill="#55554f" text-anchor="start">status-bar 26px  ·  mode · target · tool · sandbox · YOLO</text>
+  <rect x="40" y="380" width="600" height="40" rx="0" fill="#101016" fill-opacity="1" />
+  <rect x="40" y="380" width="600" height="40" rx="0" fill="#452a84" fill-opacity="0.2" />
+  <text x="52" y="404" class="sans" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">titlebar 40px  ·  liquid metal reference  ·  NIL · space  ·  chips</text>
+  <text x="40" y="460" class="sans" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">Anti-slop: no decorative shadows · no fake metrics · no emoji · keyboard-first · 28px rows</text>
+</svg>
