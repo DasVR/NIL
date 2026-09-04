@@ -1,0 +1,91 @@
+/* ============================================================
+   NIL — token layer
+   Rule of the system: COLOR MEANS RISK.
+   Chrome is greyscale. Saturation is reserved for severity.
+   If something is colored and it isn't a severity, it's a bug.
+   ============================================================ */
+
+:root {
+  /* -- surfaces: a "well" with panels floating in it (macOS inset sidebar) -- */
+  --nil-void:      #08090a;  /* app background / the well */
+  --nil-panel:     #0e1011;  /* floating panel */
+  --nil-raised:    #151819;  /* input, hovered row, tool card */
+  --nil-line:      #1c2022;  /* hairline border */
+  --nil-line-hot:  #2b3134;  /* hairline on hover/focus-within */
+
+  /* -- ink: warm off-white, never #fff (pure white on near-black rings) -- */
+  --nil-ink:       #e8e6e3;
+  --nil-ink-2:     #9aa0a4;  /* secondary label */
+  --nil-ink-3:     #6b7175;  /* dim / metadata / disabled */
+  --nil-ink-4:     #3a4043;  /* placeholder, inactive tick */
+
+  /* -- severity ramp: chroma falls with severity, so the eye is pulled
+        to Critical without a single decorative accent in the app -- */
+  --sev-critical:  #e5484d;
+  --sev-high:      #e8833a;
+  --sev-medium:    #d9b341;
+  --sev-low:       #5c9ead;
+  --sev-info:      var(--nil-ink-3);
+
+  /* tinted backfills for severity chips — never a solid block */
+  --sev-critical-bg: color-mix(in oklab, var(--sev-critical) 14%, transparent);
+  --sev-high-bg:     color-mix(in oklab, var(--sev-high)     12%, transparent);
+  --sev-medium-bg:   color-mix(in oklab, var(--sev-medium)   12%, transparent);
+  --sev-low-bg:      color-mix(in oklab, var(--sev-low)      12%, transparent);
+  --sev-info-bg:     color-mix(in oklab, var(--nil-ink-3)    10%, transparent);
+
+  /* -- agent state is MOTION, not hue. These are the only exceptions,
+        and both are ink-derived, not a brand accent. -- */
+  --nil-live:      var(--nil-ink);                 /* agent working: full ink + scanline */
+  --nil-halo:      color-mix(in oklab, var(--nil-ink) 55%, transparent);
+
+  /* -- type: the typeface encodes WHO IS SPEAKING --
+     mono  = the machine (output, targets, hashes, CVEs, paths, CVSS)
+     sans  = the application (labels, prose, buttons, findings copy)
+     Never mix roles. This is the one typographic law. */
+  --font-machine: "JetBrains Mono", "SF Mono", ui-monospace, Menlo, monospace;
+  --font-ui:      "Inter", ui-sans-serif, -apple-system, system-ui, sans-serif;
+
+  --t-micro:  0.6875rem;  /* 11px — tick labels, gutter indices */
+  --t-meta:   0.75rem;    /* 12px — metadata, timestamps */
+  --t-body:   0.8125rem;  /* 13px — the workstation default (macOS-dense) */
+  --t-lead:   0.9375rem;  /* 15px — finding titles */
+  --t-head:   1.375rem;   /* 22px — panel headline */
+  --t-display:2.25rem;    /* 36px — session/report title only */
+
+  --track-tight: -0.011em;  /* sans display */
+  --track-mono:  -0.005em;
+  --track-tick:   0.08em;   /* the /Work(01) gutter indices only */
+
+  --lh-tight: 1.15;
+  --lh-body:  1.55;
+
+  /* -- geometry: radius encodes elevation, not decoration -- */
+  --r-chip:   4px;
+  --r-field:  6px;
+  --r-card:   10px;
+  --r-panel:  14px;   /* floating panel in the well */
+  --r-window: 18px;   /* app shell */
+
+  /* -- space: 4px base, dense workstation rhythm -- */
+  --s-1: 4px;  --s-2: 8px;  --s-3: 12px; --s-4: 16px;
+  --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
+
+  /* -- depth: macOS does elevation with LIGHT (border) + a long soft shadow,
+        not a grey box-shadow under everything -- */
+  --lift-1: 0 1px 0 color-mix(in oklab, #fff 6%, transparent) inset;
+  --lift-2: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -8px rgb(0 0 0 / 0.6),
+            0 1px 0 color-mix(in oklab, #fff 6%, transparent) inset;
+  --lift-3: 0 2px 4px rgb(0 0 0 / 0.5), 0 24px 64px -16px rgb(0 0 0 / 0.75),
+            0 1px 0 color-mix(in oklab, #fff 8%, transparent) inset;
+
+  /* -- grain: the A24 atmosphere from the lab, dialed down for long sessions.
+        Applied once on the shell, never per-panel. -- */
+  --grain-opacity: 0.022;
+
+  --z-panel: 10; --z-rail: 20; --z-overlay: 100; --z-cursor: 9999;
+}
+
+/* Light mode is a deliberate non-goal: NIL is a long-session, low-light
+   analysis tool. If it ships, it ships as a separate token file — do not
+   fork these values with a media query. */

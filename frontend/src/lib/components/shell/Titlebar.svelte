@@ -2,28 +2,17 @@
   import { onMount } from 'svelte';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import LiquidMetal from '$lib/components/ui/LiquidMetal.svelte';
-  import ThinkingLogo from '$lib/components/ui/ThinkingLogo.svelte';
   import WindowControls from '$lib/components/ui/WindowControls.svelte';
-
-  interface TitlebarProps {
-    agentState?: 'idle' | 'thinking' | 'streaming' | 'done';
-  }
-
-  let { agentState = 'idle' }: TitlebarProps = $props();
+  import { agentRun } from '$lib/agent/run.svelte.ts';
 
   let dragging = $state(false);
-  let dragStartX = 0;
-  let dragStartY = 0;
 
   function handleMouseDown(e: MouseEvent) {
     if (e.target instanceof HTMLButtonElement) return;
-    if (e.target instanceof HTMLDivElement && e.target.classList.contains('titlebar-drag')) return;
     dragging = true;
-    dragStartX = e.clientX;
-    dragStartY = e.clientY;
   }
 
-  function handleMouseMove(e: MouseEvent) {
+  function handleMouseMove() {
     if (!dragging) return;
     if (window.__TAURI__?.window) {
       window.__TAURI__.window.current().dragMove?.();
@@ -42,103 +31,95 @@
       window.removeEventListener('mouseup', handleMouseUp);
     };
   });
+
+  const engagement = $derived(appState.activeEngagementId || 'no-engagement');
+  const modeChips = ['hunt', 'chat', 'code', 'report'] as const;
 </script>
 
 <div class="titlebar" onmousedown={handleMouseDown} role="banner" aria-label="Window title bar">
-  <LiquidMetal />
-  
-  <div class="titlebar-left titlebar-drag" title="Drag to move window">
-    <span class="titlebar-brand">
-      <svg class="titlebar-logo" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect x="4" y="4" width="24" height="24" rx="6" fill="currentColor"/>
-        <path d="M10 12h12M10 16h8M10 20h12" stroke="var(--color-cream)" stroke-width="2.5" stroke-linecap="round"/>
-      </svg>
-      <span class="titlebar-title">NIL</span>
-    </span>
-    <span class="titlebar-divider" aria-hidden="true"></span>
-    <span class="titlebar-context">Workspace</span>
+  <div class="metal" class:paused={agentRun.running}>
+    <LiquidMetal paused={agentRun.running} />
   </div>
 
-  <div class="titlebar-center titlebar-drag" title="Drag to move window">
-    <!-- Empty center for drag -->
+  <div class="titlebar-left titlebar-drag">
+    <span class="brand">nil</span>
+    <span class="sep" aria-hidden="true">──</span>
+    <span class="path">{engagement}</span>
+  </div>
+
+  <div class="titlebar-center">
+    {#each modeChips as m}
+      <span class="mode">{m}</span>
+    {/each}
   </div>
 
   <div class="titlebar-right">
-    <ThinkingLogo state={agentState} />
     <WindowControls />
   </div>
 </div>
 
 <style>
   .titlebar {
-    position: fixed;
-    top: 0;
-    left: 0;
-    right: 0;
+    position: relative;
     height: var(--titlebar-h);
     display: flex;
     align-items: center;
     justify-content: space-between;
     padding: 0 12px;
-    background: var(--window-titlebar-bg);
-    border-bottom: 1px solid var(--window-border);
-    z-index: var(--z-sticky);
+    background: var(--nil-panel);
+    border-bottom: 1px solid var(--nil-line);
+    z-index: var(--z-rail);
     -webkit-app-region: drag;
+    flex-shrink: 0;
+    overflow: hidden;
   }
+
+  .metal {
+    position: absolute;
+    inset: 0;
+    opacity: 0.18;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .metal.paused { opacity: 0.08; }
 
   .titlebar-left,
   .titlebar-center,
   .titlebar-right {
+    position: relative;
+    z-index: 1;
     display: flex;
     align-items: center;
     height: 100%;
+    gap: var(--s-2);
+    -webkit-app-region: no-drag;
   }
 
-  .titlebar-left {
-    gap: 10px;
-    min-width: 200px;
+  .titlebar-left { -webkit-app-region: drag; min-width: 0; }
+  .titlebar-center { flex: 1; justify-content: flex-end; gap: var(--s-3); }
+
+  .brand {
+    font: 600 var(--t-meta)/1 var(--font-machine);
+    letter-spacing: var(--track-tick);
+    text-transform: lowercase;
+    color: var(--nil-ink);
   }
 
-  .titlebar-center {
-    flex: 1;
-    justify-content: center;
+  .sep { color: var(--nil-ink-4); font: var(--t-micro)/1 var(--font-machine); }
+
+  .path {
+    font: var(--t-meta)/1 var(--font-machine);
+    color: var(--nil-ink-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
 
-  .titlebar-right {
-    gap: 8px;
-  }
-
-  .titlebar-brand {
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .titlebar-logo {
-    width: 20px;
-    height: 20px;
-    color: var(--accent-primary);
-    flex-shrink: 0;
-  }
-
-  .titlebar-title {
-    font-family: var(--font-display);
-    font-weight: 600;
-    font-size: var(--step-1);
-    color: var(--text-primary);
-    letter-spacing: -0.02em;
-  }
-
-  .titlebar-divider {
-    width: 1px;
-    height: 16px;
-    background: var(--surface-border);
-    margin: 0 8px;
-  }
-
-  .titlebar-context {
-    font-size: var(--step--1);
-    color: var(--text-tertiary);
-    font-weight: 400;
+  .mode {
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
+    text-transform: uppercase;
+    color: var(--nil-ink-3);
   }
 </style>

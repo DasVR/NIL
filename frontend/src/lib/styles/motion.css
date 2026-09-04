@@ -1,0 +1,184 @@
+/* ============================================================
+   NIL — motion layer
+   Scope: the app chrome and the workstation (GPU Zones B and C).
+   Here it is TRANSFORM AND OPACITY ONLY -- plus block-size via
+   calc-size() -- because this layer runs while someone is reading
+   a live stream for hours.
+
+   The cold open, lock screen, and idle field are WebGL2 and live
+   in src/lib/gl/. See .cursor/rules/40-nil-gpu.mdc for that policy.
+
+   Ten primitives. Every micro-interaction in NIL is one of these
+   or a composition of two. If you need an eleventh, it goes in
+   this file with a name — it does not get inlined in a component.
+   ============================================================ */
+
+:root {
+  /* durations — named by JOB, not by number */
+  --dur-flip:   90ms;   /* state flip: hover, press, check, toggle */
+  --dur-enter:  160ms;  /* one element in or out */
+  --dur-panel:  260ms;  /* a region resizing, a rail sliding */
+  --dur-stage:  420ms;  /* orchestrated view change — one per interaction, max */
+  --dur-decode: 520ms;  /* scramble settle */
+
+  /* easing */
+  --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);       /* macOS decel — the default */
+  --ease-in:    cubic-bezier(0.7, 0, 0.84, 0);       /* exits only */
+  --ease-mono:  cubic-bezier(0.4, 0, 0.2, 1);        /* symmetric, for reversible toggles */
+  --ease-spring: linear(
+    0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%,
+    0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%,
+    1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001
+  ); /* overshoots ~1.7% — magnetic return and popover settle only */
+
+  /* required for REVEAL (see primitive 07) */
+  interpolate-size: allow-keywords;
+}
+
+/* ------------------------------------------------------------
+   01 · LIFT — hover on any interactive surface
+   Border brightens, surface rises 1px. Never a drop shadow swap.
+   ------------------------------------------------------------ */
+.nil-lift {
+  transition: transform var(--dur-flip) var(--ease-out),
+              border-color var(--dur-flip) var(--ease-out),
+              background-color var(--dur-flip) var(--ease-out);
+  will-change: transform;
+}
+.nil-lift:hover { transform: translateY(-1px); border-color: var(--nil-line-hot); }
+
+/* ------------------------------------------------------------
+   02 · PRESS — always paired with LIFT, never used alone
+   ------------------------------------------------------------ */
+.nil-lift:active { transform: scale(0.985) translateY(0); transition-duration: 40ms; }
+
+/* ------------------------------------------------------------
+   03 · HALO — keyboard focus. :focus-visible only, never :focus.
+   Two-ring so it reads on both panel and void backgrounds.
+   ------------------------------------------------------------ */
+.nil-halo:focus-visible {
+  outline: 2px solid var(--nil-halo);
+  outline-offset: 2px;
+  border-radius: inherit;
+}
+
+/* ------------------------------------------------------------
+   04 · MAGNETIC — pointer pull on primary CTAs ONLY.
+   Max 3 per screen. Never on list rows, never on destructive
+   actions (a Delete button must not move toward the cursor).
+   Drive --mx/--my from pointermove; see nil-magnetic.svelte.ts.
+   ------------------------------------------------------------ */
+.nil-magnetic {
+  --mx: 0px; --my: 0px;
+  transform: translate3d(var(--mx), var(--my), 0);
+  transition: transform var(--dur-panel) var(--ease-spring);
+}
+.nil-magnetic[data-engaged="true"] { transition-duration: 0ms; }
+
+/* ------------------------------------------------------------
+   05 · SCANLINE — the "agent is working" state.
+   This replaces a colored spinner. A hairline sweeps the panel
+   edge. It is the ONLY looping animation allowed in the app.
+   ------------------------------------------------------------ */
+@keyframes nil-scan { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+.nil-scan { position: relative; overflow: clip; }
+.nil-scan[data-state="working"]::after {
+  content: ""; position: absolute; inset-block-start: 0; inset-inline: 0;
+  block-size: 1px; background: linear-gradient(90deg, transparent, var(--nil-live), transparent);
+  animation: nil-scan 1.4s var(--ease-mono) infinite;
+}
+
+/* ------------------------------------------------------------
+   06 · TICK — the dotted divider from dasdev.net, given a job.
+   In NIL it is a PROGRESS SPINE: dots fill as scan phases clear.
+   Decorative use is forbidden — an idle tick row means idle work.
+   ------------------------------------------------------------ */
+.nil-tick { display: flex; gap: var(--s-1); font: var(--t-micro)/1 var(--font-machine); }
+.nil-tick > i { color: var(--nil-ink-4); transition: color var(--dur-enter) var(--ease-out); }
+.nil-tick > i[data-done="true"] { color: var(--nil-ink-2); }
+
+/* ------------------------------------------------------------
+   07 · REVEAL — expand to intrinsic height. Tool results,
+   evidence blocks, stack traces. Uses calc-size(), not max-height.
+   ------------------------------------------------------------ */
+.nil-reveal {
+  block-size: 0; overflow: hidden;
+  transition: block-size var(--dur-panel) var(--ease-out),
+              opacity var(--dur-enter) var(--ease-out);
+  opacity: 0;
+}
+.nil-reveal[data-open="true"] { block-size: auto; opacity: 1; }
+@supports not (interpolate-size: allow-keywords) {
+  .nil-reveal { transition: opacity var(--dur-enter) var(--ease-out); }
+  .nil-reveal[data-open="true"] { block-size: max-content; }
+}
+
+/* ------------------------------------------------------------
+   08 · SETTLE — top-layer entry for command palette, inspector
+   popovers, confirm dialogs. `overlay` and `allow-discrete` are
+   MANDATORY or the exit animation is clipped.
+   ------------------------------------------------------------ */
+[popover], dialog {
+  opacity: 0; transform: scale(0.97) translateY(4px);
+  transition-property: opacity, transform, display, overlay;
+  transition-duration: var(--dur-enter);
+  transition-timing-function: var(--ease-out);
+  transition-behavior: allow-discrete;
+}
+[popover]:popover-open, dialog[open] {
+  opacity: 1; transform: none;
+  @starting-style { opacity: 0; transform: scale(0.97) translateY(4px); }
+}
+dialog::backdrop {
+  background: rgb(4 5 6 / 0);
+  backdrop-filter: blur(0px);
+  transition: display var(--dur-enter) allow-discrete,
+              overlay var(--dur-enter) allow-discrete,
+              background-color var(--dur-enter) var(--ease-out),
+              backdrop-filter var(--dur-enter) var(--ease-out);
+}
+dialog[open]::backdrop {
+  background: rgb(4 5 6 / 0.55); backdrop-filter: blur(6px);
+  @starting-style { background: rgb(4 5 6 / 0); backdrop-filter: blur(0px); }
+}
+
+/* ------------------------------------------------------------
+   09 · TRACE — the scroll-drawn SVG connector from your /services
+   page, repurposed as the AGENT SPINE: a hairline running down
+   the left gutter of the stream, drawing as each step commits.
+   ------------------------------------------------------------ */
+.nil-trace path { stroke: var(--nil-line-hot); stroke-width: 1; fill: none;
+  stroke-dasharray: 1; stroke-dashoffset: 1;
+  animation: nil-draw linear both;
+  animation-timeline: view(); animation-range: entry 10% cover 55%;
+}
+@keyframes nil-draw { to { stroke-dashoffset: 0; } }
+
+/* ------------------------------------------------------------
+   10 · SCRAMBLE — glyph cycling before a value settles.
+   SEMANTIC RULE: only for values the machine RESOLVED —
+   hostnames, IPs, CVE IDs, hashes, CVSS scores. Never on UI labels,
+   never on prose. It signals "this was discovered," nothing else.
+   Driven by nil-scramble.svelte.ts; this is the resting style.
+   ------------------------------------------------------------ */
+.nil-scramble { font-family: var(--font-machine); font-variant-numeric: tabular-nums; }
+.nil-scramble[data-settling="true"] { color: var(--nil-ink-2); }
+
+/* ============================================================
+   REDUCED MOTION — non-negotiable.
+   Kill loops and travel. Keep opacity and color so state changes
+   are still legible. Never blanket `animation: none` on .nil-scan,
+   or "agent working" becomes invisible — swap it for a static rule.
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 80ms !important;
+    scroll-behavior: auto !important;
+  }
+  .nil-lift:hover, .nil-lift:active, .nil-magnetic { transform: none; }
+  .nil-scan[data-state="working"]::after { animation: none; background: var(--nil-ink-3); }
+  [popover], dialog { transform: none; }
+  .nil-trace path { stroke-dashoffset: 0; animation: none; }
+}

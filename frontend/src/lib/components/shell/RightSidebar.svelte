@@ -1,6 +1,7 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { appState } from '$lib/stores/appState.svelte.ts';
+  import { agentRun } from '$lib/agent/run.svelte.ts';
   import FindingCard from '$lib/components/ui/FindingCard.svelte';
   import Icon from '@iconify/svelte';
 
@@ -18,38 +19,7 @@
   let startWidth = 0;
   let resizing = $state(false);
 
-  let findings = $state([
-    {
-      id: 'f1',
-      title: 'SQL Injection in Login Endpoint',
-      severity: 'critical' as const,
-      cvss: '9.1',
-      date: '2026-08-28',
-      description: 'The login endpoint does not properly sanitize user input, allowing SQL injection.',
-      evidence: 'POST /api/login { "username": "admin\'--\" }',
-      remediation: 'Use parameterized queries and input validation.',
-    },
-    {
-      id: 'f2',
-      title: 'Missing Rate Limiting on API',
-      severity: 'medium' as const,
-      cvss: '5.3',
-      date: '2026-08-27',
-      description: 'API endpoints lack rate limiting, allowing brute force attacks.',
-      evidence: '1000 requests/minute to /api/users',
-      remediation: 'Implement rate limiting (e.g., 60 req/min per IP).',
-    },
-    {
-      id: 'f3',
-      title: 'Outdated OpenSSL Version',
-      severity: 'low' as const,
-      cvss: '3.7',
-      date: '2026-08-25',
-      description: 'Server runs OpenSSL 1.1.1 which has known vulnerabilities.',
-      evidence: 'OpenSSL 1.1.1k detected on port 443',
-      remediation: 'Upgrade to OpenSSL 3.0+ or apply vendor patches.',
-    },
-  ]);
+  let findings = $derived(agentRun.findings);
 
   function handleResizeStart(e: MouseEvent) {
     e.preventDefault();
@@ -102,8 +72,7 @@
 
 <aside 
   class="right-sidebar {open ? '' : 'collapsed'} {resizing ? 'resizing' : ''}" 
-  style:width={width}px
-  style:right={open ? '0' : '-' + width + 'px'}
+  style:width={open ? `${width}px` : '0px'}
   aria-label="Inspector"
 >
   <div class="right-sidebar-header">
@@ -172,7 +141,7 @@
           <div class="empty-state">
             <Icon icon="ph:flag-bold" width="32" height="32" />
             <p>No findings yet</p>
-            <span>Run a scan to discover issues</span>
+            <span>Run a hunt to start collecting evidence.</span>
           </div>
         {/if}
       </div>
@@ -214,17 +183,21 @@
 
 <style>
   .right-sidebar {
-    position: fixed;
-    top: var(--titlebar-h);
-    right: 0;
-    bottom: var(--statusbar-h);
-    background: var(--sidebar-bg);
-    border-left: 1px solid var(--sidebar-border);
+    position: relative;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    height: 100%;
+    background: var(--nil-panel);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-panel);
+    box-shadow: var(--lift-2);
     display: flex;
     flex-direction: column;
-    z-index: var(--z-sticky);
-    transition: width var(--spring-snappy), right var(--spring-snappy);
+    z-index: var(--z-rail);
+    transition: width var(--dur-panel) var(--ease-out);
     overflow: hidden;
+    flex-shrink: 0;
   }
 
   .right-sidebar.collapsed {
@@ -241,33 +214,38 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: var(--row-h);
-    padding: 0 var(--space-2);
+    height: 36px;
+    padding: 0 6px 0 var(--space-2);
     border-bottom: 1px solid var(--sidebar-border);
     flex-shrink: 0;
+    gap: 4px;
   }
 
   .right-sidebar-tabs {
     display: flex;
-    gap: 2px;
+    gap: 1px;
     flex: 1;
     overflow-x: auto;
+    scrollbar-width: none;
   }
+  .right-sidebar-tabs::-webkit-scrollbar { display: none; }
 
   .right-sidebar-tab {
     display: flex;
     align-items: center;
-    gap: 6px;
-    padding: 6px 10px;
+    gap: 5px;
+    padding: 4px 8px;
     border: none;
     border-radius: var(--radius-control);
     background: transparent;
     color: var(--text-tertiary);
-    font-size: var(--font-xs);
+    font-size: 11px;
     font-weight: 400;
     cursor: pointer;
     white-space: nowrap;
-    transition: color var(--spring-snappy), background var(--spring-snappy);
+    transition: color var(--dur-fast) var(--spring-snappy),
+      background var(--dur-fast) var(--spring-snappy),
+      transform var(--dur-fast) var(--spring-snappy);
   }
 
   .right-sidebar-tab:hover {
@@ -275,9 +253,19 @@
     background: var(--surface-hover);
   }
 
+  .right-sidebar-tab:active {
+    transform: scale(0.95);
+  }
+
   .right-sidebar-tab.active {
-    color: var(--accent-primary);
+    color: var(--color-violet-light);
     background: var(--accent-soft);
+    font-weight: 500;
+  }
+
+  .right-sidebar-tab:focus-visible {
+    outline: 2px solid var(--accent-primary);
+    outline-offset: 1px;
   }
 
   .tab-badge {

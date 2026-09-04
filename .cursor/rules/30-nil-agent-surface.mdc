@@ -1,0 +1,56 @@
+---
+description: Rules for the agent stream, tool-call cards, and findings inspector — NIL's showcase surface.
+globs: ["**/agent/**", "**/stream/**", "**/findings/**", "**/*Tool*.svelte", "**/*Step*.svelte"]
+alwaysApply: false
+---
+
+# Agent surface
+
+This is where NIL spends its boldness. Everything else in the app is quiet chrome; the
+stream is the one place craft is visible. Reference point: the way a modern agent client
+shows its work — a tool call is a first-class, inspectable object, not a log line.
+
+## The tool card
+
+Every tool invocation renders as a card with four zones, in this order:
+
+1. **Header** — tool name in `--font-ui`, primary argument in `--font-machine`
+   (`nmap · 10.0.4.0/24`). Header alone is enough to understand what happened.
+2. **State** — `pending` → `running` → `ok | error`. `running` drives SCANLINE on the
+   card edge. State is never communicated by color alone; it carries a glyph and a label.
+3. **Result** — collapsed by default, expands via REVEAL to intrinsic height. Long output
+   gets its own scroll container with a scroll affordance, never an unbounded page.
+4. **Gutter** — index and TRACE spine segment connecting to the next step.
+
+Rules: never hide a failed call behind a collapsed card — errors expand by default and
+state the exit code and stderr head. Never truncate output silently; show a byte count
+and a "Show all" affordance. Never render a tool result as prose the agent wrote about
+it — show the actual output.
+
+## Streaming
+
+Text streams token-by-token with the caret visible. Values the machine resolved
+(hostnames, IPs, CVEs, hashes, CVSS) arrive via SCRAMBLE and settle. The stream
+autoscrolls **only while pinned to the bottom**; the moment the user scrolls up, pinning
+releases and a "Jump to latest" affordance appears. Silently yanking a reading user back
+to the bottom is the single worst bug this surface can ship.
+
+Interruptibility is a feature: a visible Stop control at all times during a run, and
+stopping leaves the partial stream intact and labeled as interrupted.
+
+## Findings inspector
+
+A finding is evidence-first. Order: severity chip and CVSS vector, the observed evidence
+(machine font, verbatim), then the assessment and remediation (UI font, NIL's voice).
+Never lead with prose. Never show a severity without the vector that produced it — an
+unsourced score is not a finding.
+
+Severity uses the `--sev-*` ramp plus a shape/label, so it survives greyscale printing
+and color-vision differences. Confidence and severity are separate fields and are never
+collapsed into one number.
+
+## Density and restraint
+
+The stream is long and read for hours. No per-step entrance animation beyond opacity, no
+hover lift on stream rows (only on the interactive controls inside them), no decorative
+icons. TRACE plus the gutter index is the only structural ornament, and it is load-bearing.

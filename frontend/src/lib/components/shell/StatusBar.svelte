@@ -1,89 +1,39 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
+  import { agentRun } from '$lib/agent/run.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
-  import { agentStore } from '$lib/stores/agentStore';
   import { tabsStore } from '$lib/stores/tabsStore';
-  import Icon from '@iconify/svelte';
 
-  let store = $derived($agentStore);
   let tabs = $derived($tabsStore);
   let activeTab = $derived(tabs.tabs.find(t => t.id === tabs.activeTabId));
-  let status = $derived(store.running ? 'running' : ($agentStore.pendingApproval ? 'idle' : 'idle'));
-  let backendStatus = $derived(appState.backendHealthy ? 'Connected' : 'Offline');
-  let engagementLabel = $derived(appState.activeEngagementId || 'No engagement');
-
-  onMount(() => {
-    // Subscribe to agent running state
-    // In real app, would use $effect to sync
-  });
+  let backendStatus = $derived(appState.backendHealthy ? 'connected' : 'offline');
+  let engagementLabel = $derived(appState.activeEngagementId || 'no engagement');
 </script>
 
 <footer class="status-bar" role="status" aria-live="polite">
-  <div class="status-left">
-    <div class="status-item">
-      <span class="status-dot" style:background={status === 'running' ? 'var(--accent-primary)' : status === 'error' ? 'var(--color-danger)' : appState.backendHealthy ? 'var(--color-success)' : 'var(--color-danger)'} />
-      <span>{status === 'running' ? 'Agent running' : status === 'error' ? 'Error' : appState.backendHealthy ? 'Ready' : 'Backend offline'}</span>
-    </div>
+  <div class="cluster">
+    <span class="dot" class:ok={appState.backendHealthy}></span>
+    <span>{backendStatus}</span>
+    <span class="div" aria-hidden="true"></span>
+    <span class="mono">{engagementLabel}</span>
+    {#if agentRun.pendingApproval}
+      <span class="div" aria-hidden="true"></span>
+      <span>awaiting approval</span>
+      <kbd>⌘↵</kbd>
+    {/if}
+    {#if agentRun.running}
+      <span class="div" aria-hidden="true"></span>
+      <span class="nil-scan" data-state="working">running</span>
+    {/if}
+  </div>
 
-    <div class="status-divider" />
-    <div class="status-item">
-      <Icon icon="ph:briefcase-bold" width="14" height="14" />
-      <span>{engagementLabel}</span>
-    </div>
-
+  <div class="cluster">
     {#if activeTab}
-      <div class="status-divider" />
-      <div class="status-item">
-        <Icon icon="ph:terminal-bold" width="14" height="14" />
-        <span>{activeTab.label}</span>
-      </div>
+      <span class="mono">{activeTab.label}</span>
     {/if}
-
-    {#if $agentStore.pendingApproval}
-      <div class="status-divider" />
-      <div class="status-item pending">
-        <span class="status-dot blinking" />
-        <span>Approval pending</span>
-        <kbd>Cmd+Enter</kbd>
-      </div>
-    {/if}
-  </div>
-
-  <div class="status-center">
-    <div class="status-item">
-      <span>Ln 1, Col 1</span>
-    </div>
-    <div class="status-item">
-      <span>UTF-8</span>
-    </div>
-    <div class="status-item">
-      <span>LF</span>
-    </div>
-    <div class="status-item">
-      <span>TypeScript</span>
-    </div>
-  </div>
-
-  <div class="status-right">
     {#if appState.yoloMode}
-      <div class="status-item yolo">
-        <Icon icon="ph:rocket-launch-bold" width="14" height="14" />
-        <span>YOLO</span>
-      </div>
-      <div class="status-divider" />
+      <button class="ghost nil-halo" type="button" onclick={() => appState.toggleYolo()}>yolo</button>
     {/if}
-
-    <div class="status-item">
-      <Icon icon="ph:memory-bold" width="14" height="14" />
-      <span>~42 MB</span>
-    </div>
-
-    <div class="status-divider" />
-
-    <div class="status-item">
-      <Icon icon="ph:network-bold" width="14" height="14" />
-      <span>{backendStatus}</span>
-    </div>
+    <button class="ghost nil-halo" type="button" onclick={() => appState.toggleSettings()} aria-label="Open settings">set</button>
   </div>
 </footer>
 
@@ -93,73 +43,55 @@
     align-items: center;
     justify-content: space-between;
     height: var(--statusbar-h);
-    padding: 0 var(--space-2);
-    background: var(--surface-card);
-    border-top: 1px solid var(--surface-border);
-    font-size: var(--font-2xs);
-    font-family: var(--font-mono);
-    color: var(--text-tertiary);
-    z-index: var(--z-sticky);
+    padding: 0 var(--s-3);
+    background: var(--nil-panel);
+    border-top: 1px solid var(--nil-line);
+    font: var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
+    text-transform: uppercase;
+    color: var(--nil-ink-3);
     flex-shrink: 0;
   }
 
-  .status-left,
-  .status-center,
-  .status-right {
+  .cluster {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--s-2);
   }
 
-  .status-item {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    color: var(--text-tertiary);
-  }
-
-  .status-item:hover {
-    color: var(--text-secondary);
-  }
-
-  .status-item.pending {
-    color: var(--accent-primary);
-    animation: pulse 1.5s var(--spring-bouncy) infinite;
-  }
-
-  .status-item.yolo {
-    color: var(--accent-primary);
-    font-weight: 600;
-  }
-
-  .status-dot {
+  .dot {
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    flex-shrink: 0;
+    background: var(--nil-ink-4);
   }
+  .dot.ok { background: var(--nil-ink-2); }
 
-  .status-dot.blinking {
-    animation: blink 1s infinite;
-  }
-
-  @keyframes blink {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-  }
-
-  .status-divider {
+  .div {
     width: 1px;
-    height: 16px;
-    background: var(--surface-border);
+    height: 10px;
+    background: var(--nil-line);
   }
 
-  .status-item kbd {
-    font-family: var(--font-mono);
-    font-size: 10px;
-    padding: 1px 4px;
-    border-radius: 3px;
-    background: var(--surface-hover);
-    border: 1px solid var(--surface-border);
+  .mono {
+    font-family: var(--font-machine);
+    text-transform: none;
+    letter-spacing: var(--track-mono);
+  }
+
+  .ghost {
+    border: 0;
+    background: none;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+    text-transform: inherit;
+    cursor: pointer;
+    padding: 0 4px;
+  }
+
+  kbd {
+    font: var(--t-micro)/1 var(--font-machine);
+    text-transform: none;
   }
 </style>

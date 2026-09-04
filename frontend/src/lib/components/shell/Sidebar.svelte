@@ -105,17 +105,21 @@
 
 <style>
   .sidebar {
-    position: fixed;
-    top: var(--titlebar-h);
-    left: 0;
-    bottom: var(--statusbar-h);
-    background: var(--sidebar-bg);
-    border-right: 1px solid var(--sidebar-border);
+    position: relative;
+    top: auto;
+    left: auto;
+    bottom: auto;
+    height: 100%;
+    background: var(--nil-panel);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-panel);
+    box-shadow: var(--lift-2);
     display: flex;
     flex-direction: column;
-    z-index: var(--z-sticky);
-    transition: width var(--spring-snappy), transform var(--spring-snappy);
+    z-index: var(--z-rail);
+    transition: width var(--dur-panel) var(--ease-out);
     overflow: hidden;
+    flex-shrink: 0;
   }
 
   .sidebar.collapsed {
@@ -130,10 +134,11 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: var(--row-h);
-    padding: 0 var(--space-2);
+    height: 36px;
+    padding: 0 var(--space-2) 0 var(--space-3);
     border-bottom: 1px solid var(--sidebar-border);
     flex-shrink: 0;
+    gap: var(--space-2);
   }
 
   .sidebar.collapsed .sidebar-title,
@@ -145,14 +150,15 @@
   }
 
   .sidebar-title {
-    font-size: var(--font-xs);
+    font-size: 10px;
     font-weight: 600;
     text-transform: uppercase;
-    letter-spacing: var(--tracking-wide);
-    color: var(--text-tertiary);
+    letter-spacing: 0.1em;
+    color: var(--text-faint, var(--text-tertiary));
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    flex: 1;
     transition: opacity var(--spring-snappy), width var(--spring-snappy);
   }
 
@@ -184,10 +190,17 @@
 
   .sidebar-footer-btn {
     color: var(--text-tertiary);
+    border-radius: var(--radius-control);
+    transition: color var(--dur-fast) var(--spring-snappy),
+      background var(--dur-fast) var(--spring-snappy),
+      transform var(--dur-fast) var(--spring-snappy);
   }
   .sidebar-footer-btn:hover {
     color: var(--text-primary);
     background: var(--surface-hover);
+  }
+  .sidebar-footer-btn:active {
+    transform: scale(0.9);
   }
 
   .sidebar-resize-handle {

@@ -1,13 +1,14 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { browser } from '$app/environment';
 
   let minimizeBtn: HTMLButtonElement;
   let maximizeBtn: HTMLButtonElement;
   let closeBtn: HTMLButtonElement;
 
-  const tauri = (window as any).__TAURI__;
-
   onMount(() => {
+    if (!browser) return;
+    const tauri = (window as any).__TAURI__;
     if (!tauri?.appWindow) return;
 
     const appWindow = tauri.appWindow;

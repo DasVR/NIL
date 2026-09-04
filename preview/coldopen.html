@@ -1,0 +1,352 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>NIL — cold open</title>
+<style>
+  :root {
+    --nil-void: #08090a; --nil-panel: #0e1011; --nil-line: #1c2022;
+    --nil-ink: #e8e6e3; --nil-ink-2: #9aa0a4; --nil-ink-3: #6b7175;
+    --font-machine: ui-monospace, "SF Mono", Menlo, monospace;
+    --font-ui: "Inter Tight", Inter, ui-sans-serif, -apple-system, system-ui, sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { height: 100%; margin: 0; background: var(--nil-void); color: var(--nil-ink); }
+  body { font: 13px/1.55 var(--font-ui); overflow: hidden; }
+
+  /* The app shell loads and lays out immediately, underneath. The cold open
+     never blocks boot — it just covers it. */
+  #shell {
+    position: fixed; inset: 0; display: grid; place-items: center;
+    padding: 24px;
+  }
+  #panel {
+    inline-size: min(760px, 92vw); block-size: min(430px, 62vh);
+    background: var(--nil-panel); border: 1px solid var(--nil-line);
+    border-radius: 14px; padding: 20px;
+    box-shadow: 0 2px 4px rgb(0 0 0 / .5), 0 24px 64px -16px rgb(0 0 0 / .75),
+                0 1px 0 rgb(255 255 255 / .06) inset;
+    opacity: 0; transform: scale(.985);
+    transition: opacity 420ms cubic-bezier(.16,1,.3,1), transform 420ms cubic-bezier(.16,1,.3,1);
+  }
+  body[data-booted="true"] #panel { opacity: 1; transform: none; }
+  .eyebrow { font: 11px/1 var(--font-machine); letter-spacing: .08em;
+             color: var(--nil-ink-3); text-transform: uppercase; }
+  h1 { font-size: 22px; letter-spacing: -.011em; margin: 12px 0 6px; font-weight: 500; }
+  p  { color: var(--nil-ink-2); margin: 0 0 20px; max-width: 52ch; }
+  .row { display: flex; gap: 8px; font: 12px/1 var(--font-machine); color: var(--nil-ink-3);
+         padding: 8px 0; border-top: 1px solid var(--nil-line); }
+  .row b { color: var(--nil-ink-2); font-weight: 400; }
+
+  #gl {
+    position: fixed; inset: 0; inline-size: 100%; block-size: 100%;
+    display: block; z-index: 100; pointer-events: none;
+  }
+  #gl[hidden] { display: none; }
+  #skip {
+    position: fixed; inset-block-end: 20px; inset-inline-end: 20px; z-index: 101;
+    font: 11px/1 var(--font-machine); letter-spacing: .08em; text-transform: uppercase;
+    color: var(--nil-ink-3); background: none; border: 0; cursor: pointer;
+    padding: 8px; transition: color 90ms;
+  }
+  #skip:hover { color: var(--nil-ink-2); }
+  body[data-booted="true"] #skip { display: none; }
+
+  /* Fallback when WebGL is unavailable or the GPU can't hold frame: a plain
+     dark hold. Never a degraded shader — a stuttering boot screen is worse
+     than none. */
+  body[data-fallback="true"] #gl { display: none; }
+
+  @media (prefers-reduced-motion: reduce) {
+    #panel { transition-duration: 80ms; transform: none; }
+  }
+</style>
+</head>
+<body>
+
+<div id="shell">
+  <div id="panel">
+    <div class="eyebrow">/Session(01)</div>
+    <h1>engagement / acme-q3</h1>
+    <p>Scope loaded. 14 hosts in range, 3 credential sets available. Run a hunt to start collecting evidence.</p>
+    <div class="row"><b>mode</b> hunt · chat · code · report</div>
+    <div class="row"><b>scope</b> 10.0.4.0/24</div>
+    <div class="row"><b>findings</b> none yet</div>
+  </div>
+</div>
+
+<canvas id="gl"></canvas>
+<button id="skip" type="button">Skip</button>
+
+<script type="x-shader/x-vertex" id="vs">#version 300 es
+void main() {
+  vec2 p = vec2(float((gl_VertexID << 1) & 2), float(gl_VertexID & 2));
+  gl_Position = vec4(p * 2.0 - 1.0, 0.0, 1.0);
+}
+</script>
+
+<script type="x-shader/x-fragment" id="fs">#version 300 es
+precision highp float;
+
+uniform vec2      uRes;
+uniform float     uTime;
+uniform float     uDpr;
+uniform float     uReduced;
+uniform float     uDots;
+uniform sampler2D uMark;
+
+out vec4 frag;
+
+float hash21(vec2 p) {
+  p = fract(p * vec2(123.34, 456.21));
+  p += dot(p, p + 45.32);
+  return fract(p.x * p.y);
+}
+float vnoise(vec2 p) {
+  vec2 i = floor(p), f = fract(p);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(mix(hash21(i),                 hash21(i + vec2(1.0, 0.0)), f.x),
+             mix(hash21(i + vec2(0.0, 1.0)), hash21(i + vec2(1.0, 1.0)), f.x), f.y);
+}
+float fbm(vec2 p) {
+  float s = 0.0, a = 0.5;
+  for (int i = 0; i < 5; i++) { s += a * vnoise(p); p *= 2.02; a *= 0.5; }
+  return s;
+}
+
+float bayer2(vec2 a) { a = floor(a); return fract(a.x / 2.0 + a.y * a.y * 0.75); }
+float bayer4(vec2 a) { return bayer2(0.5 * a) * 0.25 + bayer2(a); }
+float bayer8(vec2 a) { return bayer4(0.5 * a) * 0.25 + bayer2(a); }
+
+float sdRoundBox(vec2 p, vec2 b, float r) {
+  vec2 q = abs(p) - b + r;
+  return min(max(q.x, q.y), 0.0) + length(max(q, 0.0)) - r;
+}
+
+float brushHeight(vec2 uv) {
+  vec2 q = vec2(uv.x * 6.0, uv.y * 520.0);
+  return fbm(q) * 0.6 + fbm(q * 3.1) * 0.4;
+}
+
+vec3 metal(vec2 uv, float t) {
+  float e  = 1.0 / uRes.y;
+  float h  = brushHeight(uv);
+  float hx = brushHeight(uv + vec2(e, 0.0));
+  float hy = brushHeight(uv + vec2(0.0, e));
+  vec3  n  = normalize(vec3((h - hx) * 40.0, (h - hy) * 6.0, 1.0));
+
+  float sweep = mix(-1.4, 1.6, smoothstep(0.0, 1.0, t));
+  vec3  L = normalize(vec3(sweep - uv.x * 2.0 + 1.0, 0.35, 0.55));
+  vec3  H = normalize(L + vec3(0.0, 0.0, 1.0));
+
+  float spec = pow(max(dot(n, H), 0.0), 90.0);
+  float diff = max(dot(n, L), 0.0);
+  float fres = pow(1.0 - max(n.z, 0.0), 3.0);
+
+  vec3 col = vec3(0.055, 0.062, 0.068) + diff * 0.10 + spec * 0.85 + fres * 0.06;
+  float streak = pow(max(0.0, 1.0 - abs(uv.x - (sweep * 0.5 + 0.5)) * 2.2), 6.0);
+  return col + streak * (0.10 + h * 0.22);
+}
+
+vec3 scene(vec2 uv, vec2 px, float tMetal, float tDither) {
+  vec3 col = metal(uv, tMetal);
+  float mark = texture(uMark, vec2(uv.x, 1.0 - uv.y)).a;
+
+  if (uDots > 0.5) {
+    vec2 g = fract(px / (6.0 * uDpr)) - 0.5;
+    mark *= 1.0 - smoothstep(0.30, 0.42, length(g));
+  }
+
+  float rise = smoothstep(0.0, 1.0, tDither);
+  float lit  = step(bayer8(px / uDpr), clamp(mark * rise * 1.35 - (1.0 - rise) * 0.2, 0.0, 1.0));
+  return mix(col, col + vec3(0.62, 0.60, 0.58) * mark, lit * 0.9);
+}
+
+void main() {
+  vec2  px = gl_FragCoord.xy;
+  vec2  uv = px / uRes;
+  float t  = uReduced > 0.5 ? 5.0 : uTime;
+
+  float tMetal  = smoothstep(0.5, 2.4, t);
+  float tDither = smoothstep(1.7, 3.1, t);
+  float tGlass  = smoothstep(2.5, 4.1, t);
+  float tOut    = smoothstep(4.0, 4.8, t);
+
+  vec3 col = scene(uv, px, tMetal, tDither);
+
+  vec2  ar   = vec2(uRes.x / uRes.y, 1.0);
+  vec2  p    = (uv - 0.5) * ar;
+  float ease = tGlass * tGlass * (3.0 - 2.0 * tGlass);
+
+  vec2  halfSize = mix(vec2(0.62, 0.02), vec2(0.42, 0.30), ease);
+  float d = sdRoundBox(p - vec2(0.0, mix(-0.55, 0.0, ease)), halfSize, 0.035);
+
+  float inside = smoothstep(0.004, -0.004, d);
+  float edge   = smoothstep(0.030, 0.0, abs(d));
+
+  vec2  grad = normalize(vec2(dFdx(d), dFdy(d)) + vec2(1e-6));
+  float bend = inside * (1.0 - smoothstep(0.0, 0.14, -d)) * 0.055;
+
+  vec3 refr;
+  refr.r = scene(uv - grad * bend * 1.00, px, tMetal, tDither).r;
+  refr.g = scene(uv - grad * bend * 1.12, px, tMetal, tDither).g;
+  refr.b = scene(uv - grad * bend * 1.26, px, tMetal, tDither).b;
+
+  refr += (fbm(uv * 3.0 + vec2(0.0, t * 0.28)) - 0.5) * 0.05 * inside;
+
+  vec3 glassCol = mix(refr, refr * 0.82 + vec3(0.10, 0.11, 0.12), 0.45);
+  glassCol += edge * 0.28;
+  glassCol += pow(max(0.0, 1.0 - abs(uv.y - 0.68) * 6.0), 3.0) * inside * 0.05;
+
+  col = mix(col, glassCol, inside * tGlass);
+
+  col += (hash21(px + fract(t) * 91.7) - 0.5) * 0.028;
+  col *= 1.0 - 0.42 * pow(length((uv - 0.5) * vec2(1.1, 1.0)), 2.2);
+  col += (bayer8(px) - 0.5) / 255.0;
+
+  float a = 1.0 - tOut;
+  frag = vec4(col * a, a);
+}
+</script>
+
+<script>
+(() => {
+  const canvas  = document.getElementById('gl');
+  const skipBtn = document.getElementById('skip');
+  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  let raf = 0, gl = null, done = false;
+
+  function boot(fallback) {
+    if (done) return;
+    done = true;
+    cancelAnimationFrame(raf);
+    document.body.dataset.booted = 'true';
+    if (fallback) document.body.dataset.fallback = 'true';
+    canvas.hidden = true;
+    // Release the GPU context. A boot screen must not hold one for the
+    // lifetime of a six-hour session.
+    gl?.getExtension('WEBGL_lose_context')?.loseContext();
+    gl = null;
+  }
+
+  skipBtn.addEventListener('click', () => boot(false));
+  addEventListener('keydown', e => { if (e.key === 'Escape' || e.key === ' ') boot(false); });
+
+  gl = canvas.getContext('webgl2', {
+    alpha: true, premultipliedAlpha: true, antialias: false,
+    powerPreference: 'high-performance', desynchronized: true
+  });
+  if (!gl) return boot(true);
+
+  const compile = (type, src) => {
+    const s = gl.createShader(type);
+    gl.shaderSource(s, src.trim());
+    gl.compileShader(s);
+    if (!gl.getShaderParameter(s, gl.COMPILE_STATUS)) {
+      console.error(gl.getShaderInfoLog(s));
+      return null;
+    }
+    return s;
+  };
+
+  const vs = compile(gl.VERTEX_SHADER,   document.getElementById('vs').textContent);
+  const fs = compile(gl.FRAGMENT_SHADER, document.getElementById('fs').textContent);
+  if (!vs || !fs) return boot(true);
+
+  const prog = gl.createProgram();
+  gl.attachShader(prog, vs); gl.attachShader(prog, fs); gl.linkProgram(prog);
+  if (!gl.getProgramParameter(prog, gl.LINK_STATUS)) {
+    console.error(gl.getProgramInfoLog(prog));
+    return boot(true);
+  }
+  gl.useProgram(prog);
+
+  const U = n => gl.getUniformLocation(prog, n);
+  const uRes = U('uRes'), uTime = U('uTime'), uDpr = U('uDpr'),
+        uReduced = U('uReduced'), uDots = U('uDots');
+
+  // ---- wordmark mask: canvas2D text → alpha texture ----
+  // Swap this for your real dot-matrix SVG wordmark rasterized at DPR.
+  const mark = document.createElement('canvas');
+  const tex  = gl.createTexture();
+
+  function buildMark(w, h) {
+    mark.width = w; mark.height = h;
+    const c = mark.getContext('2d');
+    c.clearRect(0, 0, w, h);
+    c.fillStyle = '#fff';
+    c.textAlign = 'center';
+    c.textBaseline = 'middle';
+    const size = Math.min(w * 0.26, h * 0.42);
+    c.font = `500 ${size}px "Inter Tight", Inter, system-ui, sans-serif`;
+    c.letterSpacing = `${size * 0.06}px`;
+    c.fillText('NIL', w / 2, h * 0.46);
+    c.font = `400 ${size * 0.11}px ui-monospace, monospace`;
+    c.letterSpacing = `${size * 0.03}px`;
+    c.fillText('SECURITY ASSESSMENT WORKSTATION', w / 2, h * 0.46 + size * 0.55);
+
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, false);
+    gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, mark);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_S, gl.CLAMP_TO_EDGE);
+    gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_WRAP_T, gl.CLAMP_TO_EDGE);
+    gl.uniform1i(U('uMark'), 0);
+  }
+
+  // DPR is capped at 2. A 3x retina fullscreen shader costs 2.25x more
+  // fragments for a difference nobody can see on a boot screen.
+  let dpr = 1;
+  function resize() {
+    dpr = Math.min(devicePixelRatio || 1, 2);
+    const w = Math.floor(innerWidth * dpr), h = Math.floor(innerHeight * dpr);
+    if (canvas.width === w && canvas.height === h) return;
+    canvas.width = w; canvas.height = h;
+    gl.viewport(0, 0, w, h);
+    buildMark(w, h);
+  }
+  addEventListener('resize', resize, { passive: true });
+
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); boot(true); });
+
+  gl.enable(gl.BLEND);
+  gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA); // premultiplied
+  resize();
+
+  // Perf gate: if the first second can't hold ~45fps, this machine should not
+  // be running a fullscreen shader. Bail cleanly rather than stutter.
+  let t0 = 0, frames = 0, slow = 0;
+
+  function frame(now) {
+    if (done) return;
+    if (!t0) t0 = now;
+    const t = (now - t0) / 1000;
+
+    frames++;
+    if (frames > 6 && frames < 60 && t / frames > 0.022) slow++;
+    if (slow > 20) return boot(true);
+
+    gl.uniform2f(uRes, canvas.width, canvas.height);
+    gl.uniform1f(uTime, t);
+    gl.uniform1f(uDpr, dpr);
+    gl.uniform1f(uReduced, reduced ? 1 : 0);
+    gl.uniform1f(uDots, 1);
+    gl.activeTexture(gl.TEXTURE0);
+    gl.bindTexture(gl.TEXTURE_2D, tex);
+    gl.drawArrays(gl.TRIANGLES, 0, 3);
+
+    // Reveal the shell just before the shader finishes fading out, so the
+    // handoff is a cross-dissolve rather than a cut.
+    if (t > 3.9 && !document.body.dataset.booted) document.body.dataset.booted = 'true';
+    if (t > 4.9) return boot(false);
+
+    raf = requestAnimationFrame(frame);
+  }
+  raf = requestAnimationFrame(frame);
+})();
+</script>
+</body>
+</html>

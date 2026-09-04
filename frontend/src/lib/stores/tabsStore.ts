@@ -36,6 +36,7 @@ function createTabsStore() {
       return { tabs: newTabs, activeTabId: newActive };
     }),
     switchTab: (id: string) => update(s => ({ ...s, activeTabId: id })),
+    showStream: () => update(s => ({ ...s, activeTabId: null })),
     markDirty: (id: string, dirty: boolean) => update(s => ({
       ...s,
       tabs: s.tabs.map(t => t.id === id ? { ...t, dirty } : t)

@@ -1,16 +1,6 @@
 <script lang="ts">
-  import Icon from '@iconify/svelte';
-
-  interface Finding {
-    id: string;
-    title: string;
-    severity: 'critical' | 'high' | 'medium' | 'low' | 'info';
-    cvss: string;
-    date: string;
-    description: string;
-    evidence: string;
-    remediation: string;
-  }
+  import type { Finding, FindingSeverity } from '$lib/agent/types';
+  import { scramble } from '$lib/motion/scramble.svelte.ts';
 
   interface Props {
     finding: Finding;
@@ -20,222 +10,176 @@
 
   let { finding, onExplain, onDraft }: Props = $props();
 
-  function getSeverityColor(severity: string) {
-    switch (severity) {
-      case 'critical': return 'var(--color-danger)';
-      case 'high': return 'var(--color-danger)';
-      case 'medium': return 'var(--color-warning)';
-      case 'low': return 'var(--color-info)';
-      case 'info': return 'var(--text-tertiary)';
-      default: return 'var(--surface-border)';
+  function sevToken(s: FindingSeverity): string {
+    switch (s) {
+      case 'critical': return 'var(--sev-critical)';
+      case 'high': return 'var(--sev-high)';
+      case 'medium': return 'var(--sev-medium)';
+      case 'low': return 'var(--sev-low)';
+      case 'info': return 'var(--sev-info)';
+      default: {
+        const _n: never = s;
+        return _n;
+      }
     }
   }
 
-  function getSeverityLabel(severity: string) {
-    return severity.charAt(0).toUpperCase() + severity.slice(1);
+  function sevShape(s: FindingSeverity): string {
+    switch (s) {
+      case 'critical': return '■';
+      case 'high': return '▲';
+      case 'medium': return '●';
+      case 'low': return '◆';
+      case 'info': return '○';
+      default: {
+        const _n: never = s;
+        return _n;
+      }
+    }
   }
+
+  const cvssLabel = $derived(finding.cvss.toFixed(1));
 </script>
 
-<article class="finding-card" style="--severity-color: {getSeverityColor(finding.severity)}">
-  <div class="finding-header">
-    <div class="finding-title-row">
-      <span class="finding-severity-dot"></span>
-      <h3 class="finding-title">{finding.title}</h3>
-    </div>
-    <div class="finding-meta">
-      <span class="finding-severity">{getSeverityLabel(finding.severity)}</span>
-      <span class="finding-cvss">CVSS: {finding.cvss}</span>
-      <span class="finding-date">{finding.date}</span>
-    </div>
-  </div>
+<article class="finding" style:--sev={sevToken(finding.severity)}>
+  <header class="lead">
+    <span class="chip" title={finding.severity}>
+      <span class="shape" aria-hidden="true">{sevShape(finding.severity)}</span>
+      <span class="sev-label">{finding.severity}</span>
+    </span>
+    <span class="cvss nil-scramble" {@attach scramble(() => cvssLabel)}>
+      {cvssLabel}
+    </span>
+    {#if finding.vector}
+      <span class="vector">{finding.vector}</span>
+    {/if}
+  </header>
 
-  <div class="finding-divider"></div>
+  <h3 class="title">{finding.title}</h3>
 
-  <div class="finding-body">
-    <section class="finding-section">
-      <h4 class="finding-section-title">Description</h4>
-      <p class="finding-text">{finding.description}</p>
+  <section class="block">
+    <h4 class="eyebrow">Evidence</h4>
+    <pre class="evidence"><code>{finding.evidence}</code></pre>
+  </section>
+
+  {#if finding.assessment}
+    <section class="block">
+      <h4 class="eyebrow">Assessment</h4>
+      <p class="prose">{finding.assessment}</p>
     </section>
+  {/if}
 
-    <section class="finding-section">
-      <h4 class="finding-section-title">Evidence</h4>
-      <pre class="finding-code"><code>{finding.evidence}</code></pre>
+  {#if finding.remediation}
+    <section class="block">
+      <h4 class="eyebrow">Remediation</h4>
+      <p class="prose">{finding.remediation}</p>
     </section>
+  {/if}
 
-    <section class="finding-section">
-      <h4 class="finding-section-title">Remediation</h4>
-      <p class="finding-text">{finding.remediation}</p>
-    </section>
-  </div>
-
-  <div class="finding-divider"></div>
-
-  <div class="finding-actions">
-    <button class="finding-btn explain" onclick={() => onExplain?.()} disabled={!onExplain}>
-      <Icon icon="ph:lightbulb-bold" width="14" height="14" />
-      <span>Explain</span>
+  <div class="actions">
+    <button class="nil-lift nil-halo btn" type="button" onclick={() => onExplain?.()} disabled={!onExplain}>
+      Explain
     </button>
-    <button class="finding-btn draft" onclick={() => onDraft?.()} disabled={!onDraft}>
-      <Icon icon="ph:pencil-bold" width="14" height="14" />
-      <span>Draft</span>
+    <button class="nil-lift nil-halo btn" type="button" onclick={() => onDraft?.()} disabled={!onDraft}>
+      Draft
     </button>
   </div>
 </article>
 
 <style>
-  .finding-card {
-    background: var(--surface-card);
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-panel);
-    border-left: 3px solid var(--severity-color);
-    overflow: hidden;
-    transition: border-color var(--spring-snappy);
-  }
-
-  .finding-card:hover {
-    border-color: var(--severity-color);
-  }
-
-  .finding-header {
+  .finding {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
-    background: var(--surface-hover);
-    border-bottom: 1px solid var(--surface-border);
+    gap: var(--s-3);
+    padding: var(--s-3);
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-card);
   }
 
-  .finding-title-row {
-    display: flex;
-    align-items: flex-start;
-    gap: 8px;
-  }
-
-  .finding-severity-dot {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--severity-color);
-    flex-shrink: 0;
-    margin-top: 3px;
-  }
-
-  .finding-title {
-    flex: 1;
-    font-size: var(--font-xs);
-    font-weight: 600;
-    color: var(--text-primary);
-    line-height: 1.4;
-  }
-
-  .finding-meta {
+  .lead {
     display: flex;
     flex-wrap: wrap;
-    gap: 12px;
-    font-family: var(--font-mono);
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
+    align-items: center;
+    gap: var(--s-2);
   }
 
-  .finding-severity {
-    text-transform: uppercase;
-    font-weight: 600;
-    color: var(--severity-color);
-  }
-
-  .finding-cvss {
-    color: var(--text-secondary);
-  }
-
-  .finding-date {
-    color: var(--text-tertiary);
-  }
-
-  .finding-divider {
-    height: 1px;
-    background: var(--surface-border);
-    margin: 0 var(--space-3);
-  }
-
-  .finding-body {
-    padding: var(--space-3) var(--space-4);
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-3);
-  }
-
-  .finding-section-title {
-    font-size: var(--font-2xs);
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: var(--tracking-wide);
-    color: var(--text-tertiary);
-    margin-bottom: var(--space-1);
-  }
-
-  .finding-text {
-    font-size: var(--font-xs);
-    color: var(--text-secondary);
-    line-height: 1.5;
-  }
-
-  .finding-code {
-    margin: 0;
-    padding: var(--space-2);
-    background: var(--surface-input);
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-control);
-    overflow: auto;
-  }
-
-  .finding-code code {
-    font-family: var(--font-mono);
-    font-size: var(--font-2xs);
-    line-height: 1.5;
-    color: var(--text-secondary);
-    background: none;
-    padding: 0;
-  }
-
-  .finding-actions {
-    display: flex;
-    gap: 8px;
-    padding: var(--space-2) var(--space-4) var(--space-3);
-    border-top: 1px solid var(--surface-border);
-  }
-
-  .finding-btn {
-    display: flex;
+  .chip {
+    display: inline-flex;
     align-items: center;
     gap: 6px;
-    flex: 1;
-    padding: 8px 12px;
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-control);
-    background: var(--surface-card);
-    color: var(--text-secondary);
-    font-size: var(--font-xs);
-    font-weight: 500;
+    height: 22px;
+    padding: 0 8px;
+    border-radius: var(--r-chip);
+    background: color-mix(in oklab, var(--sev) 14%, transparent);
+    color: var(--sev);
+    font: 600 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
+    text-transform: uppercase;
+  }
+
+  .cvss {
+    font: 600 var(--t-lead)/1 var(--font-machine);
+    color: var(--sev);
+    font-variant-numeric: tabular-nums;
+  }
+
+  .vector {
+    font: var(--t-micro)/1.4 var(--font-machine);
+    color: var(--nil-ink-2);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .title {
+    font: 500 var(--t-lead)/var(--lh-tight) var(--font-ui);
+    color: var(--nil-ink);
+  }
+
+  .eyebrow {
+    font: 600 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
+    text-transform: uppercase;
+    color: var(--nil-ink-3);
+    margin-block-end: var(--s-1);
+  }
+
+  .evidence {
+    margin: 0;
+    padding: var(--s-2);
+    background: var(--nil-void);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-field);
+    overflow: auto;
+    max-block-size: 160px;
+  }
+
+  .evidence code {
+    font: var(--t-meta)/var(--lh-body) var(--font-machine);
+    color: var(--nil-ink-2);
+  }
+
+  .prose {
+    font: var(--t-body)/var(--lh-body) var(--font-ui);
+    color: var(--nil-ink-2);
+  }
+
+  .actions {
+    display: flex;
+    gap: var(--s-2);
+  }
+
+  .btn {
+    height: 28px;
+    padding: 0 var(--s-3);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-field);
+    background: transparent;
+    color: var(--nil-ink-2);
+    font: 500 var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
-    transition: all var(--spring-snappy);
   }
 
-  .finding-btn:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-    border-color: var(--accent-primary);
-  }
-
-  .finding-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
-  }
-
-  .finding-btn.explain:hover {
-    border-color: var(--accent-primary);
-  }
-
-  .finding-btn.draft:hover {
-    border-color: var(--accent-secondary);
-  }
+  .btn:disabled { opacity: 0.4; cursor: not-allowed; }
 </style>

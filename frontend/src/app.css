@@ -1,308 +1,140 @@
 /* ============================================================================
-   NIL Design System — v0.2.0
-   Three-layer tokens: primitive → semantic → component.
-   Locked palette: abyss #050507, violet #452a84, lavender #a9b1f0,
-   coral #fe6f69, cream #f5f2ec.
+   NIL leftovers + compatibility aliases
+   Source of truth: $lib/styles/tokens.css + motion.css
+   COLOR MEANS RISK. Chrome is greyscale. Saturation is --sev-* only.
    ========================================================================== */
 
-/* -------------------------------------------------------------------------- */
-/* 1. Primitive tokens                                                        */
-/* -------------------------------------------------------------------------- */
 :root {
-  /* Backgrounds — Abyss Scale */
-  --color-abyss-0: #050507;   /* deepest — main bg */
-  --color-abyss-1: #0a0a0c;   /* surface — panels */
-  --color-abyss-2: #0a0a0e;   /* elevated — cards */
-  --color-abyss-3: #101016;   /* hover — interactive */
-  --color-abyss-4: #16161d;   /* border — subtle */
-  --color-abyss-5: #1c1c24;   /* input — text fields */
+  /* Density (not in tokens.css; workstation chrome) */
+  --row-h: 28px;
+  --statusbar-h: 26px;
+  --titlebar-h: 40px;
+  --sidebar-w: 260px;
+  --rightbar-w: 280px;
 
-  /* Accents — NIL Identity */
-  --color-violet: #452a84;        /* primary brand */
-  --color-violet-light: #a9b1f0;  /* secondary brand */
-  --color-coral: #fe6f69;         /* danger/attention */
-  --color-cream: #f5f2ec;         /* done/success state */
+  /* Compatibility aliases — delete as components migrate to --nil-* / --sev-* */
+  --color-abyss-0: var(--nil-void);
+  --color-abyss-1: var(--nil-panel);
+  --color-abyss-2: var(--nil-raised);
+  --color-abyss-3: var(--nil-raised);
+  --color-abyss-4: var(--nil-line);
+  --color-abyss-5: var(--nil-raised);
 
-  /* Text */
-  --color-text: #e8e8e6;        /* primary — headings, prose */
-  --color-text-dim: #9a9a94;    /* secondary — labels, meta */
-  --color-text-faint: #55554f;  /* tertiary — timestamps, disabled */
-  --color-text-muted: #3a3a36;  /* placeholder, ghost */
+  --color-text: var(--nil-ink);
+  --color-text-dim: var(--nil-ink-2);
+  --color-text-faint: var(--nil-ink-3);
+  --color-text-muted: var(--nil-ink-4);
 
-  /* Status (semantic — used directly in components) */
-  --color-danger: #ff5c5c;
-  --color-warning: #ffb454;
-  --color-info: #5cb8ff;
-  --color-success: #5cff8a;     /* use sparingly */
+  --color-danger: var(--sev-critical);
+  --color-warning: var(--sev-high);
+  --color-info: var(--sev-low);
+  --color-success: var(--nil-ink-2);
 
-  /* Spacing ladder (4px base) */
-  --space-1: 0.25rem;   /*  4px */
-  --space-2: 0.5rem;    /*  8px */
-  --space-3: 0.75rem;   /* 12px */
-  --space-4: 1rem;      /* 16px */
-  --space-5: 1.5rem;    /* 24px */
-  --space-6: 2rem;      /* 32px */
-  --space-7: 3rem;      /* 48px */
-  --space-8: 4rem;      /* 64px */
-  --space-9: 6rem;      /* 96px */
+  --space-1: var(--s-1);
+  --space-2: var(--s-2);
+  --space-3: var(--s-3);
+  --space-4: var(--s-4);
+  --space-5: var(--s-5);
+  --space-6: var(--s-6);
+  --space-7: var(--s-7);
+  --space-8: var(--s-8);
 
-  /* Radius Hierarchy */
-  --radius-badge: 6px;     /* badges, pills */
-  --radius-control: 8px;   /* buttons, inputs, small cards */
-  --radius-panel: 12px;    /* panels, sheets, popovers */
-  --radius-window: 10px;   /* window chrome */
+  --radius-badge: var(--r-chip);
+  --radius-control: var(--r-field);
+  --radius-panel: var(--r-panel);
+  --radius-window: var(--r-window);
   --radius-full: 9999px;
+  --radius-sm: var(--r-chip);
+  --radius-md: var(--r-field);
+  --radius-lg: var(--r-card);
 
-  /* Typography scale (rem, zoom-safe) */
-  --step--2: clamp(0.69rem, 0.67rem + 0.11vw, 0.75rem);   /* 11px */
-  --step--1: clamp(0.83rem, 0.80rem + 0.17vw, 0.94rem);   /* 12px */
-  --step-0:  clamp(1.00rem, 0.95rem + 0.25vw, 1.13rem);  /* 16px base */
-  --step-1:  clamp(1.20rem, 1.13rem + 0.37vw, 1.41rem);   /* 19px */
-  --step-2:  clamp(1.44rem, 1.34rem + 0.53vw, 1.76rem);   /* 23px */
-  --step-3:  clamp(1.73rem, 1.58rem + 0.75vw, 2.20rem);   /* 28px */
-  --step-4:  clamp(2.07rem, 1.87rem + 1.04vw, 2.75rem);   /* 33px */
-  --step-5:  clamp(2.49rem, 2.20rem + 1.43vw, 3.43rem);   /* 40px */
+  --font-sans: var(--font-ui);
+  --font-mono: var(--font-machine);
+  --font-display: var(--font-ui);
 
-  /* Spring Curves — macOS native feel */
-  --spring-bouncy:  cubic-bezier(0.34, 1.56, 0.64, 1);    /* playful: hover, badges, toasts */
-  --spring-smooth:  cubic-bezier(0.22, 1, 0.36, 1);      /* UI: panels, layout shifts */
-  --spring-window:  cubic-bezier(0.32, 0.72, 0, 1);      /* windows, sheets, modals */
-  --spring-snappy:  cubic-bezier(0.25, 0.9, 0.25, 1);    /* quick: buttons, toggles */
+  --step--2: var(--t-micro);
+  --step--1: var(--t-meta);
+  --step-0: var(--t-body);
+  --step-1: var(--t-lead);
+  --step-2: var(--t-head);
+  --step-3: var(--t-head);
+  --step-4: var(--t-display);
+  --step-5: var(--t-display);
+  --font-2xs: var(--t-micro);
+  --font-xs: var(--t-meta);
+  --font-md: var(--t-body);
+  --tracking-wide: var(--track-tick);
 
-  /* Density Metrics */
-  --row-h: 28px;           /* sidebar/list rows */
-  --statusbar-h: 26px;     /* bottom status bar */
-  --titlebar-h: 40px;      /* liquid metal titlebar */
-  --sidebar-w: 280px;      /* left sidebar */
-  --rightbar-w: 320px;     /* right inspector */
-  --ai-strip-h: 200px;     /* AI strip expanded */
+  --surface-base: var(--nil-void);
+  --surface-panel: var(--nil-panel);
+  --surface-card: var(--nil-raised);
+  --surface-hover: var(--nil-raised);
+  --surface-border: var(--nil-line);
+  --surface-input: var(--nil-raised);
+  --surface-0: var(--nil-void);
+  --surface-1: var(--nil-panel);
+  --surface-overlay: color-mix(in oklab, var(--nil-void) 72%, transparent);
+  --border-subtle: var(--nil-line);
 
-  /* Glass Tiers — True iOS-style */
-  --glass-1-blur: 32px;   --glass-1-opacity: 0.45;  /* heaviest — modal, palette */
-  --glass-2-blur: 24px;   --glass-2-opacity: 0.55;  /* sheets, AI strip */
-  --glass-3-blur: 16px;   --glass-3-opacity: 0.65;  /* cards, popovers */
-  --glass-4-blur: 12px;   --glass-4-opacity: 0.72;  /* light overlays */
+  --text-primary: var(--nil-ink);
+  --text-secondary: var(--nil-ink-2);
+  --text-tertiary: var(--nil-ink-3);
+  --text-muted: var(--nil-ink-4);
 
-  /* Edge Refraction Highlight (apply to all glass via ::before) */
-  --glass-edge-angle: 45deg;
-  --glass-edge-stops: 0%, 50%, 100%;
-  --glass-edge-colors: rgba(255,255,255,0.08), rgba(255,255,255,0.02), transparent;
+  /* Ink-derived, not a brand accent */
+  --accent-primary: var(--nil-ink);
+  --accent-secondary: var(--nil-ink-2);
+  --accent-primary-light: var(--nil-ink-2);
+  --accent-danger: var(--sev-critical);
+  --accent-done: var(--nil-ink);
+  --accent-cream: var(--nil-ink);
+  --accent-coral: var(--nil-ink-2);
+  --accent-warm: var(--nil-ink);
+  --accent-soft: color-mix(in oklab, var(--nil-ink) 10%, transparent);
 
-  /* Z-Index Scale */
+  --input-bg: var(--nil-raised);
+  --input-border: var(--nil-line);
+  --input-border-focus: var(--nil-line-hot);
+  --input-text: var(--nil-ink);
+  --input-placeholder: var(--nil-ink-4);
+
+  --sidebar-bg: var(--nil-panel);
+  --sidebar-border: var(--nil-line);
+  --sidebar-item-hover: var(--nil-raised);
+  --sidebar-item-active: var(--nil-raised);
+  --sidebar-item-active-text: var(--nil-ink);
+
+  --statusbar-bg: var(--nil-panel);
+  --statusbar-border: var(--nil-line);
+  --statusbar-text: var(--nil-ink-2);
+
+  --ai-strip-bg: var(--nil-panel);
+  --ai-strip-border: var(--nil-line);
+
+  --window-bg: var(--nil-panel);
+  --window-border: var(--nil-line);
+  --window-radius: var(--r-window);
+  --window-titlebar-bg: color-mix(in oklab, var(--nil-panel) 72%, transparent);
+
   --z-base: 0;
-  --z-dropdown: 100;
-  --z-sticky: 200;
-  --z-modal: 300;
+  --z-dropdown: var(--z-rail);
+  --z-sticky: var(--z-rail);
+  --z-modal: var(--z-overlay);
   --z-toast: 400;
   --z-tooltip: 500;
-  --z-cursor: 600;
 
-  /* Fonts */
-  --font-sans: "Inter", system-ui, -apple-system, sans-serif;
-  --font-mono: "JetBrains Mono", "SF Mono", "Fira Code", monospace;
-  --font-display: "Inter", system-ui, -apple-system, sans-serif;
+  --spring-snappy: var(--ease-out);
+  --spring-smooth: var(--ease-out);
+  --spring-window: var(--ease-out);
+  --spring-bouncy: var(--ease-spring);
+  --spring-calm: var(--ease-out);
+  --dur-fast: var(--dur-flip);
+  --dur-base: var(--dur-enter);
+  --dur-slow: var(--dur-panel);
+
+  --glass-2-blur: 24px;
 }
 
-/* -------------------------------------------------------------------------- */
-/* 2. Semantic tokens                                                         */
-/* -------------------------------------------------------------------------- */
-:root {
-  /* Surface */
-  --surface-base: var(--color-abyss-0);
-  --surface-panel: var(--color-abyss-1);
-  --surface-card: var(--color-abyss-2);
-  --surface-hover: var(--color-abyss-3);
-  --surface-border: var(--color-abyss-4);
-  --surface-input: var(--color-abyss-5);
-
-  /* Glass Composites */
-  --glass-1: var(--glass-1-blur) var(--glass-1-opacity);
-  --glass-2: var(--glass-2-blur) var(--glass-2-opacity);
-  --glass-3: var(--glass-3-blur) var(--glass-3-opacity);
-  --glass-4: var(--glass-4-blur) var(--glass-4-opacity);
-
-  /* Glass Edge Highlight — all glass elements get this */
-  --glass-edge: linear-gradient(
-    var(--glass-edge-angle),
-    var(--glass-edge-colors)
-  );
-
-  /* Accent Aliases */
-  --accent-primary: var(--color-violet);
-  --accent-secondary: var(--color-violet-light);
-  --accent-danger: var(--color-coral);
-  --accent-done: var(--color-cream);
-
-  /* Text Aliases */
-  --text-primary: var(--color-text);
-  --text-secondary: var(--color-text-dim);
-  --text-tertiary: var(--color-text-faint);
-  --text-muted: var(--color-text-muted);
-}
-
-/* -------------------------------------------------------------------------- */
-/* 3. Component tokens                                                          */
-/* -------------------------------------------------------------------------- */
-:root {
-  /* Button */
-  --btn-primary-bg: var(--accent-primary);
-  --btn-primary-text: var(--color-abyss-0);
-  --btn-secondary-bg: var(--surface-card);
-  --btn-secondary-text: var(--text-primary);
-  --btn-secondary-border: var(--surface-border);
-  --btn-ghost-bg: transparent;
-  --btn-ghost-hover: var(--surface-hover);
-  --btn-danger-bg: var(--accent-danger);
-  --btn-danger-text: var(--color-abyss-0);
-
-  /* Input */
-  --input-bg: var(--surface-input);
-  --input-border: var(--surface-border);
-  --input-border-focus: var(--accent-primary);
-  --input-text: var(--text-primary);
-  --input-placeholder: var(--text-muted);
-
-  /* Card */
-  --card-bg: var(--surface-card);
-  --card-border: var(--surface-border);
-  --card-glass: var(--glass-2);
-
-  /* Sidebar */
-  --sidebar-bg: var(--surface-panel);
-  --sidebar-border: var(--surface-border);
-  --sidebar-item-hover: var(--surface-hover);
-  --sidebar-item-active: var(--accent-primary);
-  --sidebar-item-active-text: var(--color-abyss-0);
-
-  /* Status Bar */
-  --statusbar-bg: var(--surface-panel);
-  --statusbar-border: var(--surface-border);
-  --statusbar-text: var(--text-secondary);
-
-  /* AI Strip */
-  --ai-strip-bg: var(--surface-panel);
-  --ai-strip-border: var(--surface-border);
-  --ai-strip-glass: var(--glass-2);
-
-  /* Window / Titlebar */
-  --window-bg: var(--surface-panel);
-  --window-border: var(--surface-border);
-  --window-radius: var(--radius-window);
-  --window-titlebar-bg: rgba(10, 10, 14, 0.48);
-
-  /* Density aliases */
-  --row-height: var(--row-h);
-  --control-height: 2rem;
-  --right-sidebar-width: var(--rightbar-w);
-
-  /* Motion aliases */
-  --spring-calm: var(--spring-smooth);
-
-  /* Type */
-  --type-overline: 600 var(--step--2) / 1 var(--font-sans);
-  --type-ui: 400 var(--step-0) / 1.3 var(--font-sans);
-  --type-mono: 400 var(--step-0) / 1.4 var(--font-mono);
-  --font-2xs: var(--step--2);
-  --font-xs: var(--step--1);
-  --font-md: var(--step-0);
-  --tracking-wide: 0.08em;
-}
-
-/* -------------------------------------------------------------------------- */
-/* 4. Liquid glass utilities                                                  */
-/* -------------------------------------------------------------------------- */
-.glass {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-  backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
-  -webkit-backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
-  background: rgba(10, 10, 14, var(--glass-2-opacity));
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-panel);
-}
-
-.glass::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  pointer-events: none;
-  background: var(--glass-edge);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  padding: 1px;
-}
-
-@media (prefers-reduced-transparency: reduce) {
-  .glass,
-  .glass-1, .glass-2, .glass-3, .glass-4 {
-    backdrop-filter: none;
-    -webkit-backdrop-filter: none;
-    background: var(--surface-card);
-    border-color: var(--surface-border);
-  }
-  .glass::before,
-  .glass-1::before, .glass-2::before, .glass-3::before, .glass-4::before {
-    display: none;
-  }
-}
-
-.glass-1 {
-  backdrop-filter: blur(var(--glass-1-blur)) saturate(1.55);
-  -webkit-backdrop-filter: blur(var(--glass-1-blur)) saturate(1.55);
-  background: rgba(10, 10, 12, var(--glass-1-opacity));
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-panel);
-}
-
-.glass-2 {
-  backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
-  -webkit-backdrop-filter: blur(var(--glass-2-blur)) saturate(1.55);
-  background: rgba(10, 10, 14, var(--glass-2-opacity));
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-panel);
-}
-
-.glass-3 {
-  backdrop-filter: blur(var(--glass-3-blur)) saturate(1.55);
-  -webkit-backdrop-filter: blur(var(--glass-3-blur)) saturate(1.55);
-  background: rgba(16, 16, 22, var(--glass-3-opacity));
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-panel);
-}
-
-.glass-4 {
-  backdrop-filter: blur(var(--glass-4-blur)) saturate(1.55);
-  -webkit-backdrop-filter: blur(var(--glass-4-blur)) saturate(1.55);
-  background: rgba(22, 22, 30, var(--glass-4-opacity));
-  border: 1px solid var(--surface-border);
-  border-radius: var(--radius-panel);
-}
-
-.glass-1, .glass-2, .glass-3, .glass-4 {
-  position: relative;
-  isolation: isolate;
-  overflow: hidden;
-}
-
-.glass-1::before, .glass-2::before, .glass-3::before, .glass-4::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  border-radius: inherit;
-  pointer-events: none;
-  background: var(--glass-edge);
-  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
-  mask-composite: exclude;
-  padding: 1px;
-}
-
-/* -------------------------------------------------------------------------- */
-/* 5. Global base                                                               */
-/* -------------------------------------------------------------------------- */
 * {
   box-sizing: border-box;
   margin: 0;
@@ -321,25 +153,24 @@ html, body {
 }
 
 body {
-  background: var(--surface-base);
-  color: var(--text-primary);
-  font-family: var(--font-sans);
-  font-size: var(--step-0);
-  line-height: 1.3;
+  background: var(--nil-void);
+  color: var(--nil-ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-body);
+  line-height: var(--lh-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   text-rendering: optimizeLegibility;
 }
 
 .mono, code, kbd, pre, samp {
-  font-family: var(--font-mono);
+  font-family: var(--font-machine);
 }
 
 ::selection {
-  background: rgba(169, 177, 240, 0.25);
+  background: color-mix(in oklab, var(--nil-ink) 18%, transparent);
 }
 
-/* Scrollbars */
 ::-webkit-scrollbar {
   width: 0.5rem;
   height: 0.5rem;
@@ -348,67 +179,20 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background: var(--color-abyss-4);
-  border-radius: var(--radius-sm);
+  background: var(--nil-line);
+  border-radius: var(--r-chip);
   border: 1px solid transparent;
   background-clip: padding-box;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: rgba(169, 177, 240, 0.35);
+  background: var(--nil-line-hot);
 }
 
-/* Focus */
 :focus-visible {
-  outline: 2px solid var(--accent-primary-light);
+  outline: 2px solid var(--nil-halo);
   outline-offset: 2px;
 }
 
-@media (prefers-contrast: more) {
-  :focus-visible {
-    outline-width: 3px;
-    outline-offset: 3px;
-  }
-}
-
-/* -------------------------------------------------------------------------- */
-/* 6. Reduced motion (per-component equivalent states)                          */
-/* -------------------------------------------------------------------------- */
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
-  *,
-  *::before,
-  *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
-    scroll-behavior: auto !important;
-  }
-  
-  /* Specific component freezes */
-  .thinking-orbs { animation: none; }
-  .border-beam { animation: none; }
-  .liquid-metal { animation: none; }
-  .spring-transition { transition: none; }
-}
-
-/* In-app override (Settings → Accessibility → Reduce Motion) */
-html.reduce-motion *,
-html.reduce-motion *::before,
-html.reduce-motion *::after {
-  animation-duration: 0.01ms !important;
-  animation-iteration-count: 1 !important;
-  transition-duration: 0.01ms !important;
-}
-html.reduce-motion .thinking-orbs { animation: none; }
-html.reduce-motion .border-beam { animation: none; }
-html.reduce-motion .liquid-metal { animation: none; }
-html.reduce-motion .spring-transition { transition: none; }
-
-/* -------------------------------------------------------------------------- */
-/* 7. Utility helpers                                                           */
-/* -------------------------------------------------------------------------- */
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -427,44 +211,70 @@ html.reduce-motion .spring-transition { transition: none; }
   white-space: nowrap;
 }
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-4);
-}
-.stack-tight {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-2);
-}
-.cluster {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-3);
-  align-items: center;
-}
-
 .icon-btn {
   display: grid;
   place-items: center;
-  width: var(--control-height);
-  height: var(--control-height);
+  width: 28px;
+  height: 28px;
   border: none;
-  border-radius: var(--radius-control);
+  border-radius: var(--r-field);
   background: transparent;
-  color: var(--text-tertiary);
+  color: var(--nil-ink-3);
   cursor: pointer;
-  transition: color var(--spring-snappy),
-    background var(--spring-snappy);
+  transition: color var(--dur-flip) var(--ease-out),
+    background var(--dur-flip) var(--ease-out),
+    transform 40ms var(--ease-out);
+  flex-shrink: 0;
 }
 .icon-btn:hover {
-  color: var(--text-primary);
-  background: var(--surface-hover);
+  color: var(--nil-ink);
+  background: var(--nil-raised);
 }
-.icon-btn:focus-visible {
-  outline: 2px solid var(--accent-primary);
-  outline-offset: 2px;
+.icon-btn:active {
+  transform: scale(0.985);
 }
+
+.btn-primary {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 32px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--nil-line-hot);
+  border-radius: var(--r-field);
+  background: var(--nil-raised);
+  color: var(--nil-ink);
+  font-family: var(--font-ui);
+  font-size: var(--t-meta);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--dur-flip) var(--ease-out),
+    background var(--dur-flip) var(--ease-out),
+    transform 40ms var(--ease-out);
+}
+.btn-primary:hover { border-color: var(--nil-ink-3); background: var(--nil-panel); }
+.btn-primary:active { transform: scale(0.985); }
+.btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.btn-ghost {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s-2);
+  height: 28px;
+  padding: 0 var(--s-3);
+  border: 1px solid var(--nil-line);
+  border-radius: var(--r-field);
+  background: transparent;
+  color: var(--nil-ink-2);
+  font-family: var(--font-ui);
+  font-size: var(--t-meta);
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color var(--dur-flip) var(--ease-out),
+    background var(--dur-flip) var(--ease-out),
+    color var(--dur-flip) var(--ease-out);
+}
+.btn-ghost:hover { border-color: var(--nil-line-hot); color: var(--nil-ink); background: var(--nil-raised); }
 
 .shell-panel {
   display: flex;
@@ -472,21 +282,16 @@ html.reduce-motion .spring-transition { transition: none; }
   min-height: 0;
 }
 
-/* -------------------------------------------------------------------------- */
-/* 8. Grain overlay (fixed, pointer-events none)                                */
-/* -------------------------------------------------------------------------- */
 .grain-overlay {
   position: fixed;
   inset: 0;
-  z-index: 9999;
+  z-index: var(--z-cursor);
   pointer-events: none;
-  opacity: 0.03;
+  opacity: var(--grain-opacity);
   mix-blend-mode: overlay;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
 }
 
 @media (prefers-reduced-transparency: reduce) {
-  .grain-overlay {
-    display: none;
-  }
+  .grain-overlay { display: none; }
 }

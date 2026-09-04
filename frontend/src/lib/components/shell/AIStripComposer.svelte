@@ -1,10 +1,9 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { appState } from '$lib/stores/appState.svelte.ts';
-  import { agentStore, sendMessage as agentSendMessage, cancel } from '$lib/stores/agentStore';
+  import { agentRun } from '$lib/agent/run.svelte.ts';
   import Icon from '@iconify/svelte';
 
-  let store = $derived($agentStore);
   let input = $state('');
   let mode = $state<'hunt' | 'chat' | 'code' | 'report'>('hunt');
   let expanded = $state(false);
@@ -21,7 +20,7 @@
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
       if (input.trim()) {
-        agentSendMessage(input, appState.activeEngagementId || 'default', mode);
+        agentRun.sendMessage(input, appState.activeEngagementId || 'default', mode);
         input = '';
       }
     }
@@ -29,7 +28,7 @@
 
   function onSend() {
     if (input.trim()) {
-      agentSendMessage(input, appState.activeEngagementId || 'default', mode);
+        agentRun.sendMessage(input, appState.activeEngagementId || 'default', mode);
       input = '';
     }
   }

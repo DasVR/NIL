@@ -13,29 +13,31 @@ description: Anti-slop rules from hallmark + bookmarks research. Non-negotiable 
 
 | ❌ FORBIDDEN | ✅ REQUIRED |
 |-------------|-------------|
-| Box shadows on idle cards/buttons | 1px borders + glass tiers only |
-| Generic gradients (blue-purple, cyan-magenta) | Locked token palette only |
-| Decorative drop-shadows | Edge refraction on glass only |
+| Box shadows on idle cards/buttons | `--lift-*` (inset highlight + long soft shadow) + hairline `--nil-line` only |
+| Generic gradients (blue-purple, cyan-magenta) | Greyscale chrome; `--sev-*` for risk |
+| Decorative drop-shadows | `--lift-*` on floating panels, never per-card grey blobs |
+| Brand accent / colored primary button | Ink-derived chrome. Color means risk. |
 | Fake terminal chrome ($ prompts, green-tinted blocks) | Real PTY only, structured cards |
 | Chat bubbles for tool output | Structured blocks (plan/tool/diff/finding/artifact) |
 | Rounded chat bubbles with avatars | Clean cards, subtle meta headers |
 | Emoji in product UI | Text labels, lucide icons only |
 | Generic "sparkle/magic/star/lightning/diamond/orb/robot" icons | Specific semantic icons |
-| Linear easing (ease, ease-in-out) | Spring curves ONLY (`--spring-*`) |
+| Linear easing (ease, ease-in-out) | Named durations in `motion.css` (`--ease-out`, `--ease-spring`) |
 | 44px touch targets | 28px rows, Linear/Cursor density |
-| "Message AI..." / "Ask anything..." hero copy | Terminal-first: left=targets, center=work, right=inspector, bottom=AI strip |
-| Permanent large chat area as default | AI strip summoned (Cmd+J), collapsed by default |
-| Glass on every surface | Max 2 glass elements visible at once |
-| Second WebGL context | Single liquid metal titlebar canvas |
+| "Message AI..." / "Ask anything..." hero copy | Stream-first: left=targets, center=stream, right=inspector |
+| Permanent large chat area as default | Agent stream is the center; composer at the bottom |
+| Glass on every surface | Max 2 glass elements visible at once (Zone C: backdrop-filter only on top-layer) |
+| Second WebGL context | Zone A cold open (torn down) then one Zone B context |
 | CSS traffic lights (red/yellow/green dots) | Native macOS only via `titleBarStyle: overlay` |
 | Two settings surfaces | One settings sheet, left sidebar categories |
-| Blue focus rings | 2px `--accent-primary` ring, 2px offset |
+| Blue focus rings | 2px `--nil-halo` ring, 2px offset |
 | Findings duplicated in two sidebars | Single source of truth |
 | Navigating to new page to run plugin | Inline plugin run in sidebar/palette |
-| Fake metrics, placeholder counts, lorem | Real data only |
-| New hex values in components | Locked tokens from `app.css` only |
+| Fake metrics, placeholder counts, lorem | Real data only. Never invent CVSS. |
+| New hex values in components | Locked tokens from `tokens.css` only |
 | Italic headings | Upright only |
-| All-caps body text | Micro labels only (11px, 0.08em tracking) |
+| All-caps body text | Micro labels only (`--t-micro`, `--track-tick`) |
+| Colored spinner | SCANLINE |
 
 ---
 
