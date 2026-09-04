@@ -3,6 +3,8 @@
 **Penpot URL:** http://localhost:9001
 **Project:** NIL Workspace Design System
 
+A first wireframe already exists — import [`design/penpot/NIL-Desktop-App.penpot`](../design/penpot/NIL-Desktop-App.penpot) (tokens, hunt window, empty Space, palette). Rebuild with `node design/penpot/build.mjs`. See [`design/penpot/README.md`](../design/penpot/README.md).
+
 ---
 
 ## 1. CREATE THE FILE
