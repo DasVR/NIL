@@ -1,24 +1,14 @@
 ---
-description: NIL Workspace — build rules for the entire frontend. Auto-applies to all frontend files.
+description: NIL Workspace — build rules. Defers visual law to 00-nil-design-language.mdc and tokens.css.
 globs: ["frontend/**/*.svelte", "frontend/**/*.css", "frontend/**/*.ts", "frontend/**/*.js"]
 alwaysApply: true
 ---
 
 # NIL Workspace — Build Rules
 
-## Before Every Build
-
-Read and internalize these skills (in `.cursor/skills/`):
-- `nil-design-system/SKILL.md` — tokens, glass, springs, density
-- `nil-anti-slop/SKILL.md` — forbidden patterns, verification
-- `nil-components/SKILL.md` — component primitives (bits-ui)
-- `nil-motion/SKILL.md` — spring curves, reduced-motion
-- `nil-typography/SKILL.md` — Inter + JetBrains Mono rules
-- `nil-terminal-ui/SKILL.md` — terminal-first IA, AI strip states
-- `nil-agent-patterns/SKILL.md` — agent loop UI blocks
-- `nil-reference-workflow/SKILL.md` — reference-first methodology
-- `nil-plugins/SKILL.md` — plugin system types
-- `nil-tauri/SKILL.md` — Tauri 2 integration
+Visual law lives in `.cursor/rules/00-nil-design-language.mdc`.
+Tokens: `frontend/src/lib/styles/tokens.css`. Motion: `frontend/src/lib/styles/motion.css`.
+IA: `FRAMEWORK.md`.
 
 ## Mandatory Checks Before Commit
 
@@ -31,168 +21,36 @@ Both MUST pass. No exceptions.
 ## Token Audit
 
 ```bash
-# No inline hex colors anywhere except app.css
-grep -r "#[0-9a-fA-F]\{3,8\}" frontend/src --include="*.svelte" --include="*.css" | grep -v "app.css"
-# Should return NOTHING
+# No inline hex except tokens.css / app.css / shaders
+grep -r "#[0-9a-fA-F]\{3,8\}" frontend/src --include="*.svelte" --include="*.css" \
+  | grep -v "app.css" | grep -v "tokens.css" | grep -v "motion.css"
 ```
 
-## Shadow Audit
+## Color law
 
-```bash
-grep -r "box-shadow" frontend/src --include="*.svelte" --include="*.css" | grep -v "app.css"
-# Should return NOTHING
-```
+Chrome is greyscale (`--nil-*`). The only saturated color is `--sev-*`.
+If something is colored and it is not a severity, it is a bug.
 
-## Easing Audit
+## Motion
 
-```bash
-grep -r "ease\|linear\|cubic-bezier" frontend/src --include="*.svelte" --include="*.css" | grep -v "spring\|app.css"
-# Should return NOTHING
-```
+Use the ten primitives in `motion.css`. Do not write bespoke `@keyframes` in components.
+SCANLINE is the only infinite animation. MAGNETIC max 3 per screen.
 
-## Reduced Motion Test
+## GPU
 
-1. Enable "Reduce Motion" in OS settings
-2. Reload app
-3. Verify ALL animations stop instantly
-4. Information still readable (pending blocks visible, etc.)
+See `40-nil-gpu.mdc`. Zone C (stream, findings, terminal) is transform/opacity only.
 
-## Mobile Test
+## Focus
 
-Test at: 320px, 375px, 414px, 768px width
-- No horizontal overflow
-- Touch targets ≥28px (not 44px)
-- Text readable at 16px base
+`:focus-visible` uses `--nil-halo`, 2px, 2px offset. Never the browser default blue.
 
-## Contrast Audit
+## Anti-slop
 
-Chrome DevTools → Elements → Accessibility → Contrast
-- All text ≥4.5:1 on abyss surfaces
-- Large text (18px+) ≥3:1
-
-## Focus Visibility
-
-Tab through entire UI — every interactive element must show:
-- 2px `--accent-primary` ring
-- 2px offset
-- Never blue browser default
-
-## Anti-Slop Quick Check
-
-- [ ] No chat bubbles
-- [ ] No fake terminal chrome ($ prompts)
-- [ ] No emoji in product UI
-- [ ] No generic "Message AI..." hero copy
-- [ ] No glass on every surface (max 2)
-- [ ] No second WebGL context
-- [ ] No CSS traffic lights
-- [ ] No two settings surfaces
-- [ ] No findings duplicated
-- [ ] No inline hex values
-- [ ] No box-shadow
-- [ ] No linear easing
-- [ ] No margin stacks (use gap)
-
-## File Structure
-
-```
-frontend/
-├── src/
-│   ├── app.css              # ALL tokens here
-│   ├── app.html
-│   ├── routes/
-│   │   ├── +layout.svelte   # Shell: titlebar, sidebar, main, rightbar, AI strip, statusbar
-│   │   ├── +page.svelte     # Empty state / engagement view
-│   │   ├── app/             # Workspace routes (protected)
-│   │   │   ├── +layout.svelte
-│   │   │   ├── engagement/
-│   │   │   │   ├── [id]/
-│   │   │   │   │   ├── +page.svelte
-│   │   │   │   │   ├── terminal/
-│   │   │   │   │   ├── findings/
-│   │   │   │   │   ├── timeline/
-│   │   │   │   │   └── settings/
-│   │   │   └── new/
-│   │   └── auth/
-│   ├── lib/
-│   │   ├── components/      # Reusable UI (Button, Input, Card, etc.)
-│   │   ├── stores/          # Svelte 5 runes stores
-│   │   ├── pty.ts           # PTY connection
-│   │   ├── tauri-events.ts  # Tauri event listeners
-│   │   ├── keymap.ts        # Keyboard shortcuts
-│   │   └── utils/
-│   └── styles/
-│       ├── glass.css        # Glass utilities
-│       ├── motion.css       # Spring transitions
-│       └── density.css      # Density utilities
-├── static/
-│   ├── fonts/
-│   │   ├── InterVariable.woff2
-│   │   └── JetBrainsMono-Variable.woff2
-│   └── icons/
-└── package.json
-```
-
-## Component Rules
-
-1. **Import from bits-ui** for all primitives
-2. **Use only CSS custom properties** from `app.css`
-3. **No Tailwind** in components (Tailwind only in `app.css` if needed)
-4. **Every component** exports TypeScript types
-5. **Every component** has `prefers-reduced-motion` fallback
-6. **Every component** has visible focus state
-
-## Store Rules (Svelte 5 Runes)
-
-```typescript
-// Use $state, $derived, $effect — not writable/readable
-export const sidebarStore = {
-  open: $state(true),
-  width: $state(280),
-  activeItem: $state<string | null>(null),
-  
-  toggle() { this.open = !this.open; },
-  setWidth(w: number) { this.width = Math.max(200, Math.min(400, w)); },
-};
-```
-
-## Keyboard Shortcuts (in keymap.ts)
-
-| Shortcut | Action | Handler |
-|----------|--------|---------|
-| `Cmd+J` | Toggle AI strip | aiStripStore.cycle() |
-| `Cmd+K` | Command palette | paletteStore.open() |
-| `Cmd+Shift+P` | Command palette (alt) | paletteStore.open() |
-| `Cmd+Enter` | Approve pending | approvalStore.approve() |
-| `Cmd+Shift+Enter` | Reject pending | approvalStore.reject() |
-| `Cmd+Y` | Toggle YOLO | yoloStore.toggle() |
-| `Esc` | Peel layer | layerStore.peel() |
-| `Cmd+T` | New terminal tab | terminalStore.newTab() |
-| `Cmd+W` | Close tab | terminalStore.closeTab() |
-
-## AI Strip States (exactly 4)
-
-```typescript
-type AIStripState = 'collapsed' | 'composer' | 'running' | 'review';
-```
-
-- `collapsed` — 0px, hidden
-- `composer` — 120px, input + mode chips
-- `running` — 200px, live tool blocks
-- `review` — 300px, diffs + approvals
-
-## Glass Usage (max 2 visible)
-
-| Tier | Blur | Opacity | Use For |
-|------|------|---------|---------|
-| 1 | 32-40px | 0.45 | Modal, command palette |
-| 2 | 24-28px | 0.55 | Settings sheet, AI strip, popovers |
-| 3 | 16-20px | 0.65 | Cards, tooltips |
-| 4 | 12px | 0.72 | Light overlays |
-
-## Liquid Metal
-
-- **One instance only** — titlebar
-- **One WebGL context** — shared
-- 40px height, full width
-- `prefers-reduced-motion` = static gradient
+- No brand accent, no colored primary button, no gradient washes
+- No fake metrics or fabricated CVSS
+- No emoji in product UI
+- No chat bubbles — tool cards with meta headers
+- No fake terminal chrome
+- No CSS traffic lights (native Tauri overlay only)
+- Elevation via `--lift-*` + hairline, not a grey drop-shadow under every card
+- No per-section entrance stagger

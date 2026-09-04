@@ -1,0 +1,54 @@
+---
+description: Svelte 5 + SvelteKit discipline for NIL — runes, streaming state, and component boundaries.
+globs: ["**/*.svelte", "**/*.svelte.ts", "**/*.ts"]
+alwaysApply: false
+---
+
+# Svelte 5 in NIL
+
+Runes only. No `export let`, no `$:` reactive labels, no legacy stores in new code.
+
+- Props: `let { target, severity = 'info' }: Props = $props();` with an explicit
+  `interface Props` above it.
+- Local state: `$state`. Derived: `$derived` / `$derived.by`. Effects: `$effect`, used
+  sparingly and only for genuine outside-world sync (subscriptions, DOM measurement,
+  animation frames). **Never use `$effect` to derive state from state.**
+- Shared state lives in `.svelte.ts` modules exporting a `$state` object or a factory —
+  not in `writable()`.
+- Events are attributes (`onclick`), not `on:click`. Children use snippets
+  (`{#snippet}` / `{@render}`), not slots.
+- Reusable behaviors (magnetic pull, scramble, autoscroll pinning) are **attachments**
+  (`{@attach fn}`) or plain functions in `.svelte.ts`, not wrapper components.
+
+## Streaming agent state
+
+Agent output arrives incrementally. Model a run as an append-only array of typed steps:
+
+```ts
+type Step =
+  | { kind: 'thought';  text: string }
+  | { kind: 'tool';     name: string; args: unknown; state: 'pending'|'running'|'ok'|'error'; result?: unknown }
+  | { kind: 'message';  text: string }
+  | { kind: 'finding';  id: string; cvss: number };
+```
+
+Push and mutate in place; let `$state` deep reactivity handle the update. Do not rebuild
+the array on every token — that re-keys every rendered step and kills the enter animation.
+Always key `{#each steps as step (step.id)}`.
+
+## Boundaries
+
+- `routes/` holds layout and data loading only. No agent logic, no styling beyond grid.
+- `lib/components/` is presentational and takes data as props. A component never reaches
+  into agent state directly.
+- `lib/agent/` owns transport, step reduction, and the hunt/chat/code/report mode
+  contracts from `prompts/`. UI imports types from here, never the reverse.
+- `lib/styles/` is tokens and motion only. Component styles are scoped `<style>` blocks
+  that consume tokens — no raw hex, no raw ms, anywhere else in the codebase.
+
+## Non-negotiables
+
+Accessibility is part of done: `:focus-visible` rings on every interactive element,
+`aria-live="polite"` on the agent stream (not `assertive` — it fires constantly),
+keyboard path to every action, and no `tabindex` above 0. Any panel that can scroll gets
+a visible scroll affordance.

@@ -1,0 +1,62 @@
+---
+description: NIL motion system — the ten primitives, duration tokens, and reduced-motion contract.
+globs: ["**/*.svelte", "**/*.css", "**/*.svelte.ts"]
+alwaysApply: false
+---
+
+# NIL motion
+
+Import `$lib/styles/motion.css` once in the root layout. Every micro-interaction in NIL
+is one of ten named primitives or a composition of two.
+
+> **Scope:** these primitives govern Zone B and Zone C — the app chrome and the
+> workstation. The cold open, lock screen, and idle field are WebGL and are governed by
+> `40-nil-gpu.mdc` instead. "Transform and opacity only" is a Zone C rule, not a
+> product-wide one. **Do not write a bespoke
+`@keyframes` or inline transition inside a component.** If a genuinely new behavior is
+needed, add it to `motion.css` with a number and a name, then use it.
+
+| # | Primitive | Trigger | Token |
+|---|-----------|---------|-------|
+| 01 | LIFT | hover on any interactive surface | `--dur-flip` |
+| 02 | PRESS | active; always paired with LIFT | 40ms |
+| 03 | HALO | `:focus-visible` only | `--dur-flip` |
+| 04 | MAGNETIC | pointer near a primary CTA | `--dur-panel` / `--ease-spring` |
+| 05 | SCANLINE | agent or scan is working | 1.4s loop |
+| 06 | TICK | scan phase completes | `--dur-enter` |
+| 07 | REVEAL | expanding tool result / evidence | `--dur-panel` |
+| 08 | SETTLE | popover, dialog, command palette | `--dur-enter` |
+| 09 | TRACE | agent step commits to the stream | scroll-driven |
+| 10 | SCRAMBLE | a machine-resolved value arrives | `--dur-decode` |
+
+## Budgets
+
+- **One orchestrated moment per interaction.** A view change may run `--dur-stage` once.
+  It may not also stagger twelve child rows in.
+- **MAGNETIC: max three per screen**, primary CTAs only. Never on list rows, table cells,
+  or destructive actions — a Delete button that moves toward the cursor is a hazard.
+- **SCANLINE is the only infinite animation in the app.** If a second loop appears,
+  the first one has stopped meaning "working".
+- **SCRAMBLE is semantic.** It fires only on values the machine discovered — hostname,
+  IP, port, CVE ID, hash, CVSS score. Applying it to a UI label makes the interface
+  look unreliable and slows reading with no information gained.
+- Non-user-triggered motion is otherwise banned. Motion answers an action or reports
+  live system state; it does not decorate arrival.
+
+## Top-layer elements
+
+Command palette, inspector popovers, and confirm dialogs use the Popover API or
+`<dialog>`. `overlay` and `transition-behavior: allow-discrete` are mandatory in the
+transition list, or the exit animation is clipped. Entry state goes in `@starting-style`
+placed inside the open-state selector. Feature-detect and lazily load
+`@oddbird/popover-polyfill` only when `"popover" in HTMLElement.prototype` is false; when
+combining with the polyfill class, write `:is(:popover-open, .\:popover-open)` so the
+whole rule is not discarded.
+
+## Reduced motion
+
+`prefers-reduced-motion: reduce` kills travel and loops but **keeps opacity and color
+changes**, so state remains legible. Specifically: SCANLINE becomes a static hairline
+(never `animation: none` alone — that erases the working indicator), SCRAMBLE resolves
+instantly to the final value, MAGNETIC and TRACE are disabled. This is tested, not
+assumed.

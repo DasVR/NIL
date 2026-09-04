@@ -6,6 +6,7 @@ import { agentStore } from '$lib/stores/agentStore';
 import { tabsStore } from '$lib/stores/tabsStore';
 
 let shortcutsEnabled = $state(true);
+let composerFocus: () => void = () => {};
 
 function handleKeydown(e: KeyboardEvent) {
   if (!shortcutsEnabled) return;
@@ -28,14 +29,10 @@ function handleKeydown(e: KeyboardEvent) {
     return;
   }
 
-  // Cmd+J — Toggle AI strip (collapsed <-> composer)
+  // Cmd+J — Focus composer
   if (mod && !shift && e.key === 'j') {
     e.preventDefault();
-    if (appState.aiStripState === 'collapsed') {
-      appState.aiStripState = 'composer';
-    } else {
-      appState.aiStripState = 'collapsed';
-    }
+    composerFocus();
     return;
   }
 
@@ -134,12 +131,9 @@ function handleKeydown(e: KeyboardEvent) {
       appState.toggleSettings();
       return;
     }
-    // Collapse AI strip
-    if (appState.aiStripState !== 'collapsed') {
-      e.preventDefault();
-      appState.aiStripState = 'collapsed';
-      return;
-    }
+    // Focus composer
+    composerFocus();
+    return;
   }
 }
 
@@ -156,4 +150,5 @@ export const keymap = {
   init,
   destroy,
   setEnabled: (enabled: boolean) => { shortcutsEnabled = enabled; },
+  setComposerFocus: (fn: () => void) => { composerFocus = fn; },
 };

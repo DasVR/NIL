@@ -1,0 +1,70 @@
+---
+description: NIL core design language — surfaces, type roles, the color law, and the tells to avoid. Applies to all UI work.
+alwaysApply: true
+---
+
+# NIL design language
+
+NIL is a terminal-first security assessment workstation. Practitioners live in it for
+hours at a time under low light. Every choice below serves legibility under fatigue,
+not novelty.
+
+## The three laws
+
+1. **Color means risk.** The only saturated color in the app is a CVSS severity value.
+   Chrome, nav, buttons, focus, and "agent working" are all greyscale or ink-derived.
+   If you are about to add a brand accent, a gradient, or a colored primary button —
+   stop. That is the bug this law exists to prevent.
+2. **The typeface says who is speaking.** `--font-machine` (mono) for anything the
+   target, scanner, or agent produced: hosts, IPs, ports, paths, CVEs, hashes, CVSS,
+   raw output. `--font-ui` (sans) for anything NIL says: labels, buttons, prose,
+   remediation copy. Never mix the roles for visual variety.
+3. **Transform and opacity only.** Carried from dasdev.net/lab. The one exception is
+   `block-size` via `calc-size()`/`interpolate-size`. No WebGL, no canvas atmosphere,
+   no animating `top`/`left`/`width`/`filter` in a loop.
+
+## Surfaces
+
+Panels float in a well (`--nil-void`), macOS inset-sidebar style. Elevation is
+communicated with a hairline border plus `--lift-*` (a 1px inset highlight and a long
+soft shadow) — never a flat grey `box-shadow` under every card. Radius encodes
+elevation: `--r-chip` < `--r-field` < `--r-card` < `--r-panel` < `--r-window`. Do not
+apply one radius to everything.
+
+Grain is applied **once** on the app shell at `--grain-opacity`. Never per panel.
+
+## Structure is information
+
+Borrowed from dasdev.net, but each device must earn its place:
+
+- Gutter indices (`/Findings(03)`) are allowed **only** where content is genuinely a
+  sequence or a stable enumerated set — kill-chain phases, scan stages, ranked findings.
+  Never on an unordered list of settings.
+- The dotted tick row (`· · · + · · ·`) is a **progress spine** here, not a divider.
+  Rendering it idle is a lie about the system state.
+- Uppercase tracked labels are permitted for gutter indices and section eyebrows only,
+  at `--t-micro` with `--track-tick`. Not for buttons, not for table headers.
+
+## Density
+
+This is a workstation, not a marketing page. Default body is `--t-body` (13px). Rows are
+28–32px. Use `--s-2`/`--s-3` inside components and `--s-5` between regions. Generous
+landing-page whitespace reads as unfinished here.
+
+## Writing
+
+Active voice, sentence case, no filler. A button names its outcome ("Confirm finding",
+not "Submit") and the resulting toast uses the same verb ("Finding confirmed"). Errors
+state what happened and what to do; they do not apologize. Empty states name the next
+action — an empty findings panel says "No findings yet. Run a hunt to start collecting
+evidence.", not "Nothing here."
+
+Never invent severity, confidence, or metrics in placeholder content. Fabricated CVSS
+scores in a security tool are worse than a blank state.
+
+## Known tells to avoid
+
+Do not produce: identical rounded cards for every content type; a single acid-green or
+vermilion accent on near-black (the hacker-terminal cliché this design deliberately
+rejects); gradient washes as decoration; `→` appended to link text; fade-and-slide-up
+entrances on every section; a colored spinner (use SCANLINE).

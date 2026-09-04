@@ -5,8 +5,8 @@
   import PreviewTab from '$lib/components/shell/PreviewTab.svelte';
   import DiffTab from '$lib/components/shell/DiffTab.svelte';
   import ChatTab from '$lib/components/shell/ChatTab.svelte';
-  import { tabsStore, type Tab } from '$lib/stores/tabsStore';
-
+  import AgentStream from '$lib/components/shell/AgentStream.svelte';
+  import { tabsStore } from '$lib/stores/tabsStore';
   import type { Snippet } from 'svelte';
 
   let { emptyState }: { emptyState?: Snippet } = $props();
@@ -42,7 +42,16 @@
 
 <div class="main-workspace" role="main">
   <div class="workspace-tabs" role="tablist" aria-label="Workspace tabs">
-    {#each tabs as tab, i}
+    <button
+      type="button"
+      class="workspace-tab {!activeTab ? 'active' : ''}"
+      role="tab"
+      aria-selected={!activeTab}
+      onclick={() => tabsStore.showStream()}
+    >
+      <span class="workspace-tab-label">Stream</span>
+    </button>
+    {#each tabs as tab}
       <div
         class="workspace-tab {tab.id === activeTab ? 'active' : ''}"
         role="tab"
@@ -103,21 +112,19 @@
         {/if}
       </div>
     {/each}
-    {#if tabs.length === 0 && emptyState}
-      <div class="workspace-empty">
-        {@render emptyState()}
+    {#if !activeTab}
+      <div class="workspace-panel active stream-host">
+        <AgentStream {emptyState} />
       </div>
     {/if}
   </div>
 </div>
 
 <style>
-  .workspace-empty {
-    position: absolute;
-    inset: 0;
+  .stream-host {
     display: flex;
-    align-items: center;
-    justify-content: center;
+    flex-direction: column;
+    padding: var(--s-2);
   }
 
   .main-workspace {
@@ -125,7 +132,7 @@
     min-height: 0;
     display: flex;
     flex-direction: column;
-    background: var(--surface-base);
+    background: transparent;
     overflow: hidden;
   }
 
@@ -133,8 +140,8 @@
     display: flex;
     align-items: stretch;
     height: 32px;
-    background: var(--surface-panel);
-    border-bottom: 1px solid var(--surface-border);
+    background: transparent;
+    border-bottom: 1px solid var(--nil-line);
     padding: 0 8px;
     gap: 2px;
     flex-shrink: 0;
@@ -153,7 +160,7 @@
     border: none;
     border-radius: var(--radius-control) var(--radius-control) 0 0;
     background: transparent;
-    color: var(--text-secondary);
+    color: var(--nil-ink-2);
     font-size: var(--font-xs);
     font-weight: 400;
     cursor: pointer;
@@ -169,9 +176,9 @@
   }
 
   .workspace-tab.active {
-    background: var(--surface-base);
-    color: var(--text-primary);
-    border-bottom: 2px solid var(--accent-primary);
+    background: var(--nil-panel);
+    color: var(--nil-ink);
+    border-bottom: 1px solid var(--nil-ink-2);
     margin-top: 1px;
     height: 28px;
   }

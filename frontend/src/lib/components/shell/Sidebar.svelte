@@ -105,17 +105,21 @@
 
 <style>
   .sidebar {
-    position: fixed;
-    top: var(--titlebar-h);
-    left: 0;
-    bottom: var(--statusbar-h);
-    background: var(--sidebar-bg);
-    border-right: 1px solid var(--sidebar-border);
+    position: relative;
+    top: auto;
+    left: auto;
+    bottom: auto;
+    height: 100%;
+    background: var(--nil-panel);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-panel);
+    box-shadow: var(--lift-2);
     display: flex;
     flex-direction: column;
-    z-index: var(--z-sticky);
-    transition: width var(--spring-snappy), transform var(--spring-snappy);
+    z-index: var(--z-rail);
+    transition: width var(--dur-panel) var(--ease-out);
     overflow: hidden;
+    flex-shrink: 0;
   }
 
   .sidebar.collapsed {

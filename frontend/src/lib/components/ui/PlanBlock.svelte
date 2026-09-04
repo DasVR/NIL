@@ -5,9 +5,10 @@
 
   function getStatusIcon(status: string) {
     switch (status) {
-      case 'done': return '✅';
-      case 'running': return '🔄';
-      case 'pending': return '⏳';
+      case 'done': return 'ok';
+      case 'running': return 'run';
+      case 'pending': return '…';
+      default: return '';
     }
   }
 

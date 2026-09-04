@@ -1,0 +1,72 @@
+---
+description: WebGL / shader policy for NIL — where GPU spend is allowed, where it is banned, and the required lifecycle.
+globs: ["**/gl/**", "**/*.frag", "**/*.vert", "**/*.glsl", "**/ColdOpen*", "**/Shell*.svelte"]
+alwaysApply: false
+---
+
+# GPU policy
+
+NIL uses WebGL2 deliberately, in **zones**. The rule is not "avoid shaders" — it is
+"never run a shader loop while the practitioner is reading."
+
+## Zone A — full spend (WebGL2, fullscreen, uncapped)
+
+Cold open, lock screen, session handoff, report export cover.
+
+These are transient, nothing else is competing for frames, and the cold open is the
+identity moment of the product. Spend here. Anisotropic brushed metal, ordered dithering,
+screen-space refraction, chromatic dispersion — all in scope.
+
+## Zone B — metered (one shared context, ≤30fps, pauses on blur)
+
+App-shell chrome: title bar material, sidebar backdrop, the idle-state field behind an
+empty stream.
+
+Constraints: **one** WebGL context for the whole app, at ≤0.75× resolution scale,
+`requestAnimationFrame` cancelled on `visibilitychange` and on window blur, and paused
+whenever an agent run is streaming. If the shell shader is still ticking while tokens are
+arriving, it is stealing compositor time from the thing the user actually came for.
+
+## Zone C — banned
+
+The agent stream, tool cards, findings inspector, terminal, tables, any scrolling region.
+
+Here the original law still holds: **transform and opacity only** (plus `block-size` via
+`calc-size()`). Not for taste — a shader loop behind a six-hour streaming log costs
+battery, raises fan noise on a laptop in someone's lap during an engagement, and competes
+with text rasterization. Glass effects in Zone C are DOM `backdrop-filter`, which the
+compositor already optimizes, and only on top-layer surfaces that are transient.
+
+## Required lifecycle — every context, no exceptions
+
+1. **Never block boot.** The app shell mounts, lays out, and loads data *underneath* the
+   cold open. The canvas is a cover, not a gate. If the shader never starts, the app is
+   already usable.
+2. **Skippable.** Click, Esc, or Space ends it immediately. Any user input is a signal
+   they have seen it before.
+3. **Feature gate.** No WebGL2 context, failed compile, or failed link → boot instantly to
+   the plain shell. Never fall back to a degraded shader.
+4. **Perf gate.** Sample the first ~60 frames; if the machine can't hold ~45fps, bail to
+   the plain shell. A stuttering boot screen is worse than none.
+5. **Context loss.** Handle `webglcontextlost`, `preventDefault()`, and boot through.
+6. **Teardown releases the GPU.** `gl.getExtension('WEBGL_lose_context')?.loseContext()`
+   on unmount. A boot animation that holds a context for the session is a leak.
+7. **DPR capped at 2.** A 3× fullscreen fragment shader costs 2.25× for a difference
+   nobody perceives.
+8. **`prefers-reduced-motion`** jumps to the final frame and holds it — the composition is
+   still shown, the motion is not. Do not skip the visual entirely; it carries brand.
+
+## Shader authoring
+
+- One fullscreen triangle via `gl_VertexID`. No vertex buffers, no geometry, no loaders.
+- Prefer a single fragment shader with time-phased movements over a multi-pass pipeline.
+  Refraction is implemented by resampling the scene *function* at an offset UV — that is
+  what makes a one-pass glass material possible.
+- Compute `dFdx`/`dFdy` in **uniform control flow only**. Derivatives inside an `if` are
+  undefined exactly where you need them: at the edge.
+- Dither in device-*independent* pixel space (`gl_FragCoord.xy / uDpr`), or the pattern
+  dissolves into flat grey on retina.
+- Always add `(bayer8(gl_FragCoord.xy) - 0.5) / 255.0` to the final color. Dark gradients
+  band badly at 8-bit and this costs nothing.
+- Output premultiplied alpha and hand off to the DOM by falling out on **alpha**, not by
+  fading to black. The shell cross-dissolves in underneath.
