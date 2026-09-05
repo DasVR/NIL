@@ -42,7 +42,7 @@ That is the opposite of NIL today: NIL is **plugin-first** (structured nmap/http
 | Search / fetch | Perplexity, Jina, max 3 same-intent queries | **P1:** self-hosted SearXNG, parallel multi-query, safesearch off. See §18. |
 | Desktop | Tauri WebView wrapping hackerai.co + local cmd/PTY/files | NIL already wants Tauri-native. Do not wrap a website. |
 
-**Personal-use filter:** ignore billing, entitlements, extra-usage, referrals, team seats, PostHog flags, OpenAI moderation, WorkOS. Those encode *cost control*, not pentest quality.
+**Personal-use filter:** ignore billing, entitlements, extra-usage, referrals, team seats, PostHog flags, OpenAI moderation, WorkOS. Those encode *their* cost control. Local streaming, working-set budgets, episodic memory, and durable checkpoints *are* our optimization problem — see Part 3.
 
 ---
 
@@ -919,7 +919,7 @@ Overrides Part 1 §12.
 |------|------|
 | **0** | Toolset profiles (`slim`/`web`/`recon`/`full`/`stealth`/`custom`). Shared tool schema. NIL pentest API alias over Godmode. |
 | **1** | Local native hunt loop through that API (any model). Approval execute-await. Authz + finding_quality + behavioral_policy in `prompts/`. Doom-loop. Engagement notes tools (`create_note`…). |
-| **2** | SearXNG in Compose + parallel `web_search`/`open_url` (safesearch off, 12 queries). Stealth profile (TUN + proxychains + VPN config). Slim vs Kali images. |
+| **2** | SearXNG + 4get in Compose + parallel `web_search`/`open_url` (safesearch off, 12 queries). Stealth profile. Slim overlay images (see §30). Spill-to-loot instead of dropping output. |
 | **3** | Right-rail notes + Computer inspector. PlanBlock ← `todo_write`. Finding cards from `notes/findings`. |
 | **4** | Skill catalog: Strix vulns + ACS web/API/pentest/cloud subset + defending-code skills. `search_skills` / `load_skill`. |
 | **5** | Parallel small-task workers. Depth-1 subagents. Optional auto-review. Token *display* only. |
