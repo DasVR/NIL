@@ -42,7 +42,7 @@ That is the opposite of NIL today: NIL is **plugin-first** (structured nmap/http
 | Search / fetch | Perplexity, Jina, max 3 same-intent queries | **P1:** self-hosted SearXNG, parallel multi-query, safesearch off. See §18. |
 | Desktop | Tauri WebView wrapping hackerai.co + local cmd/PTY/files | NIL already wants Tauri-native. Do not wrap a website. |
 
-**Personal-use filter:** ignore billing, entitlements, extra-usage, referrals, team seats, PostHog flags, OpenAI moderation, WorkOS. Those encode *their* cost control. Local streaming, working-set budgets, episodic memory, and durable checkpoints *are* our optimization problem — see Part 3.
+**Personal-use filter:** ignore billing, entitlements, extra-usage, referrals, team seats, PostHog flags, OpenAI moderation, WorkOS. Those encode *their* cost control. Local streaming, working-set budgets, episodic memory, and durable checkpoints *are* our optimization problem — see Part 3. Tool inventory, MCP host, device plugins, the install gate, and agent variants — see Part 4.
 
 ---
 
@@ -1146,5 +1146,239 @@ Insert into the Part 2 table:
 ---
 
 *Part 3 added 2026-09-05. Optimization is local: stream, budget the working set, remember on disk, slim our own images, SearXNG-class search, survive anything that isn't a hard stop.*
+
+---
+
+# Part 4 — Tool surface, MCP host, device plugins, install gate, agent variants
+
+Locked 2026-09-05 from the operator's product direction. Overrides any reading of Parts 1–3 that implied "one hunt agent + nine plugins stuffed into the system prompt."
+
+HackerAI's agent API is ~15 tools and a fat Kali. NIL's job is the opposite shape: **many tools, few schemas in the window, one approval gate.** The operator called this a "tool mentor" — interpret that as *more tools on the workstation*, plus **discovery** so the model can use them without dumping every JSON schema into `build_system_prompt`.
+
+---
+
+## 34. Tool mentor — inventory plus discovery
+
+Today NIL ships nine structured plugins (`nmap`, `httpx`, `whatweb`, `sslscan`, `nuclei`, `nikto`, `ffuf`, `gobuster`, `subfinder`) and `build_context_prompt` pastes the whole catalog + last-10-run stdout into every turn. Part 3 already said that burns the window. Part 4 says **do not solve "more tools" by stuffing more schemas**.
+
+### Two surfaces, one gate
+
+| Surface | What the model sees | How it runs |
+|---------|---------------------|-------------|
+| **Always-on core** (tiny) | Native schemas: `run_terminal_cmd`, `file`, notes, todos, `memory_search`, `search_tools` / `describe_tool`, `web_search` | Same approval gate as today |
+| **Catalog** (large) | Index only: name, one-line purpose, pack, host-vs-sandbox, safety | `search_tools` then `describe_tool` loads **one** schema |
+
+Plugins stay first-class for the recon spine (validate target, parse output, finding ingest). Unknown binaries fall through to `run_terminal_cmd` **if the active pack allows raw shell**. MCP tools and device plugins join the same catalog — they are not a second agent API.
+
+### Catalog shape (on disk, not in the prompt)
+
+```
+finn_pentest/tools/catalog/
+  core.yaml              # always-on schemas
+  packs/recon.list       # names only — matches sandbox overlay lists in §30
+  packs/web.list
+  packs/cloud.list
+  packs/hardware.list
+  index.jsonl            # {id, summary, pack, backend: sandbox|host|mcp, safety}
+```
+
+`search_tools({ query, pack?, backend? })` → frontmatter hits (same progressive-disclosure idea as `search_skills` in §25). Cap loaded schemas per turn (e.g. 8). The system prefix holds the core set; everything else is retrieved.
+
+That is how a "tool mentor" scales: the workstation *has* nmap, nuclei, hashcat, flipperctl, aws-cli, an MCP fuzzer, and a user-written serial tool. The model is not forced to memorize 80 JSON schemas before it has scanned a host.
+
+### Inventory to grow (not all Wave 0)
+
+Keep the nine recon plugins. Add as **catalog entries + pack lists**, wrapping only when parse→finding is worth it:
+
+| Pack | Examples (binaries / plugins) |
+|------|-------------------------------|
+| `recon` | nmap, naabu, httpx, whatweb, subfinder, dnsrecon, katana |
+| `web` | ffuf, gobuster, nuclei, nikto, sslscan, arjun, wafw00f, jwt-tool |
+| `cloud` | aws/az/gcloud CLIs, pacu-class read tools, trivy, prowler |
+| `osint` | theHarvester, amass, sherlock, wayback, SearXNG (`web_search`) |
+| `creds` | hashcat, john, hashid — **dangerous**, gated even in YOLO on host |
+| `hardware` | flipperctl / serial, bluetoothctl, lsusb, rtl_433 — **host backend** |
+| `code` | git, rg, semgrep, trufflehog, defending-code skills |
+
+Do **not** vendor HackerAI's 4GB Kali to get this list. Pack `.list` files from §30 are the install source. The catalog is the *index* the model searches.
+
+---
+
+## 35. Custom tools and MCP — NIL is the host
+
+Users write tools. NIL does not pretend every scanner is a Python plugin class.
+
+### Three ways to add a tool
+
+1. **Pack list** — add an apt/pip name to `packs/<profile>.list`, rebuild overlay. Model discovers it via `search_tools` / shell.
+2. **Finn plugin** — `BasePlugin` in `~/.finn-pentest/plugins/` when you want `validate_target` + structured findings.
+3. **MCP server** — user-authored or third-party. NIL is the **MCP host** (connects, lists tools, calls them). The model never speaks JSON-RPC; Finn does.
+
+### MCP config (sketch)
+
+```yaml
+# ~/.finn-pentest/mcp.yaml
+servers:
+  - id: burp
+    transport: stdio
+    command: ["burp-mcp"]
+    backend: host          # Burp lives on the laptop
+  - id: flipper
+    transport: stdio
+    command: ["flipper-mcp", "--port", "/dev/ttyACM0"]
+    backend: host          # USB — must not be Docker
+  - id: acme-fuzzer
+    transport: stdio
+    command: ["python", "-m", "acme_fuzzer_mcp"]
+    backend: sandbox       # pure network fuzzer can sit in the engagement box
+```
+
+Rules:
+
+- **NIL is the MCP host.** User servers are guests. Finn owns sampling, roots (engagement filesystem), and elicitation (approval).
+- **MCP tools go through the same approval gate** as `run_terminal_cmd` and plugins. No silent MCP side-channel. YOLO still logs a block. Dangerous / host / device tools still warn.
+- **Device MCP servers run on the host, not in Docker.** USB and Bluetooth typically cannot live in the engagement container unless the operator opts into privileged device mounts (`--device /dev/ttyACM0`). Default is host-side stdio. Sandbox MCP is allowed only for network/filesystem tools that do not need host devices.
+- Discovery: on connect, Finn calls MCP `tools/list` and merges into `index.jsonl` with `backend: mcp`. Schemas still load via `describe_tool`, not the system prompt.
+- Capability bundles (§6 / §25) apply: a connected MCP server does not widen *scope*. It widens *available tools* inside the engagement's pack allowlist. An osint variant can refuse a flipper MCP even if it is configured globally.
+
+Do not wrap a website as the host (HackerAI's Tauri-around-hackerai.co). NIL already has the backend; MCP attaches there.
+
+---
+
+## 36. Device and connection plugins
+
+Hardware is in-scope for a workstation. It is **not** in-scope for an unprivileged Kali container.
+
+| Bus | Examples | Backend |
+|-----|----------|---------|
+| USB | Flipper Zero, serial adapters, USB rubber-ducky-class labs, JTAG probes | **Host.** Optional `--device` mount is operator-explicit, per engagement. |
+| Bluetooth | `bluetoothctl`, BLE sniffers, Flipper BT | **Host.** Container BT is a privileged mess; don't pretend otherwise. |
+| LAN-attached | networked SDR, lab fixture at `10.0.x`, IP KVMs | Sandbox **may** reach it if the engagement network/VPN allows. Treat as a target in `scope.txt`. |
+| RF / sub-GHz | Flipper, rtl_433, HackRF | Host (USB radio) or LAN (networked SDR). |
+
+**Flipper Zero** is the reference device plugin: host process talks serial/RPC; loot (captures, dumps, reads) copies into `engagements/<name>/loot/flipper/`. The hunt stream shows a ToolBlock like any other tool. Approval is required to send a payload or change device state. The container never owns `/dev/ttyACM0` by default.
+
+Plugin type alongside tool / UI / model / workflow: **`device`**. Manifest names the bus, the host binary, and whether Docker bind is allowed.
+
+```yaml
+id: flipper-zero
+type: device
+bus: usb
+backend: host
+binary: flipperctl
+safety: caution
+docker_device: null          # operator may set /dev/ttyACM0
+loot: loot/flipper
+```
+
+Do not invent a colored "hardware mode" chrome. Same greyscale ToolBlock; machine typeface for device paths and hex dumps.
+
+---
+
+## 37. Install gate — YOLO does not apt-get the internet
+
+The model **may** decide it needs a tool that is not in the running image. That is allowed. Installing it is not automatic.
+
+| Action | YOLO off | YOLO on |
+|--------|----------|---------|
+| Run a binary already in the pack / image | Approval | Auto-run (still logged, still sandboxed) |
+| `apt`/`pip` name that is **already in** the active pack `.list` | Approval | Auto (it is a declared image package; install is a no-op or a restore) |
+| `apt`/`pip` **exact** name in signed `trusted_installs.yaml` | Approval | Auto |
+| Any other install (new apt name, pip from git, `go install`, binary download) | Approval | **Still approval.** YOLO does not bypass. |
+| `curl … \| sh`, unsigned URL, wildcards (`pip install *`) | Always refuse or force a human with the expanded command. **Never silent.** | Same. |
+
+`trusted_installs.yaml` is operator-declared, **signed** (same ed25519 story as plugin marketplace in the plugins skill), exact names only:
+
+```yaml
+# ~/.finn-pentest/trusted_installs.yaml
+apt: [jq, ripgrep, ncat]
+pip: [requests, pwntools]
+# no urls, no shell, no glob
+```
+
+Rules:
+
+1. Propose the install as a ToolBlock (`install_package` / gated shell). Name the manager, the exact package, and why.
+2. Human approves unless the name hits the two YOLO bypasses above.
+3. After install, reindex `search_tools` so the new binary is discoverable.
+4. Never run a downloaded script as the install mechanism. Fetch to loot, show the file, wait.
+
+This is stricter than SPEC §3.2 "first use of a tool → apt install." That line is revoked. Auto-install of undeclared packages is how a hunt becomes a supply-chain incident on the operator's Docker host.
+
+Host-backend installs (USB tools, `flipperctl` via brew/apt on the laptop) always need a human, even if the name is in `trusted_installs.yaml`. Signing a pip name is not consent to mutate the workstation OS.
+
+---
+
+## 38. Authorization — landed (do not redo)
+
+Part 1 §5 / Part 2 §22 asked to port HackerAI's anti-refusal block. That is **in the tree**, NIL-named, not a clone of their TypeScript.
+
+| Piece | Where |
+|-------|--------|
+| `<security_authorization>` + `<authorized_security_capabilities>` + `<behavioral_policy>` | `prompts/security_authorization.md` (shipped + `DEFAULT_PROMPTS` fallback). Product name is NIL. |
+| System prompt assembly | `build_system_prompt` in `finn_pentest/ai/prompts.py` loads `security_authorization` between `base` and the mode slice. |
+| Silent tag | `PLATFORM_AUTHORIZATION_ANNOTATION` — trusted XML, **appended to the last user message at the provider boundary** in `finn_pentest/ai/hunt.py` (`annotate_provider_user_message`). |
+| Forgery | `strip_platform_authorization` / `history_for_provider` remove any user-supplied `<platform_authorization>` from history **before** the trusted tag is appended. |
+| Storage | `add_message` stores the operator text only. The trusted tag is never written to chat history. |
+
+This supersedes the Part 1 map that said "append in `build_context_prompt`." Context is engagement state. Authorization metadata is **not** engagement state; it is platform metadata on the wire to the model.
+
+Do **not** attach the tag based on OpenAI omni-moderation (§26). Local NIL assumes the engagement is authorized. The silent tag exists so the model does not re-ask for a permission slip on "retry nuclei."
+
+Host-without-Docker caution stays in `<behavioral_policy>`: authorization is not isolation. Destructive / persistence / cred-exfil on `backend: host` still confirms.
+
+---
+
+## 39. Agent variants — not one hunt agent
+
+Four prompt files (`hunt` / `chat` / `code` / `report`) is the old control plane. The product wants a **high variety of agent variants**, each a triple:
+
+```
+variant = prompt slice + tool pack + skill allowlist
+```
+
+| Variant | Job | Default pack | Skills (allow) | Backend |
+|---------|-----|--------------|----------------|---------|
+| `recon` | Asset discovery, no exploitation-for-proof | `recon` / `slim` | recon, dns, osint-lite | sandbox |
+| `pentest` | Full assessment loop (today's hunt) | `web` or `full` | Strix vulns + analysis internals | sandbox |
+| `web` | App / API only | `web` | web-application-security, API | sandbox |
+| `cloud` | AWS/Azure/GCP review | `cloud` | cloud-security, container | sandbox or host creds via cred_store |
+| `hardware` / `rf` | Flipper, USB, BT, SDR | `hardware` | wireless, hardware | **host** + device plugins |
+| `osint` | People/org/domain intel | `slim` + search | osint | sandbox + SearXNG |
+| `report` | Turn findings into report sections | notes + memory only | finding_quality | none |
+| `chat` | Questions, mechanics, detection | slim or no-sandbox | optional | none |
+| `code` | Parsers, reproducers, report helpers | `code` | defending-code | sandbox or host cwd |
+
+Always-on internals (counterevidence, severity_calibration, authorization block) still inject. Variants **narrow** tools and skills; they do not grant extra authority. A `chat` variant must not silently pick up `run_terminal_cmd` just because YOLO is on for the engagement.
+
+Implementation sketch (later waves, not this PR):
+
+```
+prompts/variants/<id>.md     # MODE slice — keep hunt.md as alias for pentest
+packs/<id>.list              # binaries
+skills/allow/<id>.yaml       # glob allowlist
+```
+
+`VALID_MODES` grows from four strings to this table. The WS/API `mode` field becomes `variant`. UI: sentence-case picker, no colored "agent personality" chips. Same stream, different pack.
+
+Subagents (§4 / Wave 4) are named variants with a subset pack, not a second product.
+
+---
+
+## 40. Wave patch (Part 4)
+
+Insert into the Part 2 / Part 3 table:
+
+| Wave | Add |
+|------|-----|
+| **0** | Tool catalog index + `search_tools` / `describe_tool` contract. Variant table (prompt + pack + skills) even if only pentest/chat/code/report are wired. Copy `security_authorization.md` on bootstrap (done). |
+| **1** | Provider-boundary authz tag + forgery strip (done). Approval execute-await still applies to MCP and `install_package`. |
+| **2** | MCP host (`mcp.yaml`), host-vs-sandbox backend on each tool. `trusted_installs.yaml` + pack-list YOLO bypass. No `curl\|sh`. |
+| **3** | Device plugins: Flipper as the first `device` type. Loot path. Host ToolBlocks in the same inspector. |
+| **4** | Remaining variants (recon, web, cloud, hardware, osint) as first-class modes. Skill allowlists per variant. |
+
+---
+
+*Part 4 added 2026-09-05. More tools via discovery, not prompt stuffing. NIL hosts MCP. Device buses stay on the host. Installs are human-gated except an operator-signed exact-name allowlist. Authorization prompt + silent tag are already wired. Many variants, one gate.*
 
 
