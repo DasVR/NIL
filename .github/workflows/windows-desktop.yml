@@ -21,7 +21,19 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      - name: Detect Tauri packaging tree
+        id: tauri
+        shell: bash
+        run: |
+          if [ -d desktop ] && [ -d web ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No web/desktop trees in this repo; skipping Tauri packaging."
+          fi
+
       - name: Install Node.js
+        if: steps.tauri.outputs.present == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
@@ -31,22 +43,26 @@ jobs:
             desktop/package-lock.json
 
       - name: Install Rust
+        if: steps.tauri.outputs.present == 'true'
         uses: dtolnay/rust-toolchain@stable
         with:
           targets: x86_64-pc-windows-msvc
 
       - name: Cache Rust
+        if: steps.tauri.outputs.present == 'true'
         uses: swatinem/rust-cache@v2
         with:
           workspaces: desktop/src-tauri
 
       - name: Install JS dependencies
+        if: steps.tauri.outputs.present == 'true'
         run: |
           npm ci --prefix web
           npm ci --prefix desktop
         shell: bash
 
       - name: Build Windows installer
+        if: steps.tauri.outputs.present == 'true'
         working-directory: desktop
         env:
           CI: true
@@ -54,6 +70,7 @@ jobs:
         shell: bash
 
       - name: Name the NSIS file Finn-Setup.exe
+        if: steps.tauri.outputs.present == 'true'
         shell: bash
         run: |
           mkdir -p dist-installers
@@ -63,7 +80,7 @@ jobs:
           if [[ -n "$msi" ]]; then cp "$msi" dist-installers/Finn-Setup.msi; fi
 
       - name: Upload Windows packages
-        if: always()
+        if: steps.tauri.outputs.present == 'true'
         uses: actions/upload-artifact@v4
         with:
           name: Finn-Setup-Windows-${{ github.sha }}

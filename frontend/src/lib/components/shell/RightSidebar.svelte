@@ -258,7 +258,7 @@
   }
 
   .right-sidebar-tab.active {
-    color: var(--color-violet-light);
+    color: var(--text-primary);
     background: var(--accent-soft);
     font-weight: 500;
   }

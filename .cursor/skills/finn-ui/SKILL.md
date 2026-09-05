@@ -9,17 +9,18 @@ The living spec is `FRAMEWORK.md`. Tokens live in `frontend/src/lib/styles/token
 Motion primitives live in `frontend/src/lib/styles/motion.css`.
 Design law: `.cursor/rules/00-nil-design-language.mdc`.
 
-The product is a **terminal-first security assessment workstation**. Center stage is the agent stream. Terminal/editor remain tabs. Color means risk.
+The product is a **terminal-first security assessment workstation**. Center stage is the agent stream. Terminal/editor remain tabs. Color means risk. `--brand-ember-*` is Zone A identity only.
 
 ## Tokens
 
-Use `--nil-*` for chrome, `--sev-*` for severity. No new hex in components.
+Use `--nil-*` for chrome, `--sev-*` for severity. `--brand-ember-*` only in Zone A (cold open, lock screen, session handoff, report cover). No new hex in components.
 
 | Group | Tokens |
 |---|---|
 | Surface | `--nil-void`, `--nil-panel`, `--nil-raised`, `--nil-line`, `--nil-line-hot` |
 | Ink | `--nil-ink` … `--nil-ink-4` |
 | Severity | `--sev-critical` … `--sev-info` |
+| Ember (Zone A) | `--brand-ember-900` … `--brand-ember-300` |
 | Type | `--font-ui`, `--font-machine`, `--t-micro` … `--t-display` |
 | Motion | `--dur-flip` / `--dur-enter` / `--dur-panel` / `--ease-out` |
 | Density | `--row-h` 28px, `--statusbar-h` 26px, `--titlebar-h` 40px |

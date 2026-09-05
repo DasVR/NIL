@@ -1,5 +1,10 @@
 # NIL — Master Redesign Document
 
+> **Superseded 2026-09-04** by `.cursor/rules/00-nil-design-language.mdc` +
+> `frontend/src/lib/styles/tokens.css` (color-means-risk law, ten-primitive motion
+> system). Kept for historical context; do not use the violet/coral/cream palette or
+> `--spring-*` values below for new work.
+>
 > **Status:** AUTHORITATIVE SOURCE OF TRUTH  
 > **Scope:** Full IA + visual redesign of NIL from "AI web app" → native macOS coding workspace  
 > **Methodology:** Bookmark-grounded (Twitter bookmarks = design language), anti-slop enforced, Cursor-ready  

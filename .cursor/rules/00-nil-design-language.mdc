@@ -11,10 +11,17 @@ not novelty.
 
 ## The three laws
 
-1. **Color means risk.** The only saturated color in the app is a CVSS severity value.
+1. **Color means risk — with one named exception.** In the workstation (Zone B chrome,
+   Zone C stream/findings/terminal), the only saturated color is a CVSS severity value.
    Chrome, nav, buttons, focus, and "agent working" are all greyscale or ink-derived.
-   If you are about to add a brand accent, a gradient, or a colored primary button —
-   stop. That is the bug this law exists to prevent.
+   If you are about to add a brand accent, a gradient, or a colored primary button
+   anywhere in the workstation — stop. That is the bug this law exists to prevent.
+
+   The one exception is `--brand-ember-*` (see `tokens.css`), reserved for the Zone A
+   identity moments only: cold open, lock screen, session handoff, report export cover
+   (`40-nil-gpu.mdc`). It never appears in Zone B or Zone C, and it is a single warm
+   hue used sparingly as a highlight, not a wash — if you're reaching for ember outside
+   those four moments, you want ink or a `--sev-*` value instead.
 2. **The typeface says who is speaking.** `--font-machine` (mono) for anything the
    target, scanner, or agent produced: hosts, IPs, ports, paths, CVEs, hashes, CVSS,
    raw output. `--font-ui` (sans) for anything NIL says: labels, buttons, prose,
@@ -66,5 +73,7 @@ scores in a security tool are worse than a blank state.
 
 Do not produce: identical rounded cards for every content type; a single acid-green or
 vermilion accent on near-black (the hacker-terminal cliché this design deliberately
-rejects); gradient washes as decoration; `→` appended to link text; fade-and-slide-up
-entrances on every section; a colored spinner (use SCANLINE).
+rejects — the Zone A ember exception above is a warm, desaturated highlight confined to
+four identity moments, not a workstation-wide accent wash); gradient washes as
+decoration; `→` appended to link text; fade-and-slide-up entrances on every section; a
+colored spinner (use SCANLINE).

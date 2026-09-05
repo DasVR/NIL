@@ -17,14 +17,14 @@
         inherit: true,
         rules: [],
         colors: {
-          'editor.background': '#050507',
-          'editor.foreground': '#e8e8e6',
-          'editor.lineHighlightBackground': '#0a0a0c',
-          'editorCursor.foreground': '#452a84',
-          'editor.selectionBackground': 'rgba(169, 177, 240, 0.3)',
-          'editor.lineNumbers': '#55554f',
-          'editorIndentGuide.background': '#16161d',
-          'editorIndentGuide.activeBackground': '#452a84',
+          'editor.background': '#08090a',
+          'editor.foreground': '#e8e6e3',
+          'editor.lineHighlightBackground': '#151819',
+          'editorCursor.foreground': '#e8e6e3',
+          'editor.selectionBackground': 'rgba(232, 230, 227, 0.18)',
+          'editor.lineNumbers': '#6b7175',
+          'editorIndentGuide.background': '#1c2022',
+          'editorIndentGuide.activeBackground': '#2b3134',
         },
       });
 
