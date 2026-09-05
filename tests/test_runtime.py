@@ -1,24 +1,16 @@
 from finn_pentest.core.bootstrap import bootstrap
 from finn_pentest.core.runtime import apply_setup, load_runtime, sandbox_mode
-from finn_pentest.tools.executor import (
-    ApprovalStatus,
-    ExecutionStatus,
-    approve_command,
-    execute_command,
-    propose_command,
-)
+from finn_pentest.sandbox.dispatch import run_command
 
 
 def test_host_execute_without_docker(finn_home, monkeypatch):
     monkeypatch.setenv("FINN_SANDBOX", "host")
     bootstrap()
     apply_setup(variant="bundled", sandbox="host")
-    run = propose_command("acme", "echo", "echo finn-host-ok")
-    approve_command(run.id)
-    done = execute_command(run.id)
-    assert done.status == ExecutionStatus.COMPLETED
-    assert "finn-host-ok" in done.stdout
-    assert done.exit_code == 0
+    done = run_command("acme", "echo finn-host-ok")
+    assert done["exit_code"] == 0
+    assert "finn-host-ok" in done["stdout"]
+    assert done["backend"] == "host"
 
 
 def test_docker_requires_tos(finn_home, monkeypatch):
