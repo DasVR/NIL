@@ -928,3 +928,223 @@ Overrides Part 1 §12.
 
 *Part 2 added 2026-09-05. HackerAI remains a mechanism reference; NIL stays local, profile-sandboxed, BYOM, notes-as-memory, search-uncensored, stealth-capable.*
 
+---
+
+# Part 3 — Local optimization, episodic memory, slim Kali, durable agents
+
+Cloud optimization (E2B autopause, Trigger maxDuration, $5 spend caps) is **not** our problem. Local hunts die for different reasons: stuffing the system prompt, buffering whole nmap dumps in RAM, `stream: false` in the Svelte client, no checkpoint, and a Kali image that is either empty or a 4GB clone of someone else's. This part is the efficiency plane.
+
+---
+
+## 28. Local optimization (streaming + efficiency)
+
+NIL today: `frontend/src/lib/agent/run.svelte.ts` posts `{ stream: false }` and waits for a full `chat.result`. `finn_pentest/api/ws.py` only understands `type: chat` and returns the whole turn. That is the opposite of a six-hour workstation.
+
+HackerAI's useful *local* tricks (steal the idea, not Trigger):
+
+| Mechanism | What they do | NIL equivalent |
+|-----------|--------------|----------------|
+| Chunked terminal handler | 5MB cap, token budget, yield on each `onOutput` so the UI streams | Stream stdout over WS as it lands; spill to `loot/*.log` past the cap; **never drop** (they drop past 5MB — we don't) |
+| Tool-output prune | Keep ~40k tokens of *recent* tool output; older → one-line placeholders. Notes/todos **never** pruned | Same. Protected: notes, todos, last finding |
+| Compaction in `prepareStep` | Summarize when context − 20k/10% headroom is exceeded. Max 8/stream | Disk-first: write episode, then shrink the *model window*, not the engagement |
+| Resume sections | Different continue prompts for tool-interrupt / output-limit / context-limit / timeout | Same, minus spend-cap reasons |
+| Transcript file on sandbox | After summarize, dump full history to a file the model can `rg` | `engagements/<name>/memory/transcript.md` + FTS (`rag.py` already exists) |
+
+### Streaming contract (P0)
+
+```
+sandbox stdout  →  WS event tool.delta     (transform/opacity Zone C)
+model tokens    →  WS event assistant.delta
+tool card       →  pending → running → ok/error  (SCANLINE while running)
+disconnect      →  worker keeps running; client resumes from last seq
+```
+
+Pinned autoscroll already exists in NIL motion. Wire it to real deltas.
+
+Efficiency rules that are **not** cloud:
+
+1. **Do not put plugin catalogs, skill bodies, or raw tool dumps in the system prompt.** Discover on demand (`search_skills`, `list_plugins` as a tiny index).
+2. **Tool schemas are the pack, not the universe.** `slim` should send 4 tool defs, not 20.
+3. **Truncate what the *model* sees, not what we store.** Nuclei JSON lives in loot; the model gets a 2k-token preview + path.
+4. **Chunk arrays, not string concat** (their terminal handler already does this).
+5. **One compaction model, cheap, local-ok** (Ollama). Do not spend Opus on summaries.
+6. **Prompt cache stability:** identity + authz + finding_quality are static. Notes, scope, and plugin lists go in a *message reminder* that can change without busting the prefix.
+
+Current `build_context_prompt` dumps plugins + last 10 runs with 400 chars of stdout + 50 note lines + 40 timeline lines **every turn**. That is how you burn a 128k window before the model has scanned a host. Kill it. Replace with the memory stack in §29.
+
+---
+
+## 29. Episodic memory — do not strip, do not stuff
+
+Two failure modes:
+
+- **Stuff:** system prompt + full history every call → tokens gone immediately.
+- **Strip:** summarize and throw away → agent forgets the CVE it already confirmed.
+
+HackerAI protects notes/todos from prune and dumps a transcript file after compaction. That is the right *direction*. NIL already has the better substrate: engagement markdown + SQLite FTS5 (`finn_pentest/ai/rag.py`). Use it as **episodic memory**, not as “paste 50 note lines into the prompt.”
+
+### Four layers (working set vs archive)
+
+```
+┌─────────────────────────────────────────────────────────┐
+│  Working set  (always in the model window, tiny)        │
+│  identity + authz + finding_quality   ← static prefix   │
+│  active pack tool schemas             ← profile         │
+│  scope (short) + current todo         ← reminder        │
+│  last episode + last N tool previews  ← retained tail   │
+└─────────────────────────────────────────────────────────┘
+         ▲ retrieve on demand
+┌─────────────────────────────────────────────────────────┐
+│  Episodic store  (disk, never deleted by compaction)    │
+│  notes/general|findings|methodology|questions|plan      │
+│  memory/episodes/NNN.md     one closed hunt-phase       │
+│  memory/transcript.jsonl    append-only tool/assistant  │
+│  loot/*.log  findings/*.md  timeline.md                 │
+│  FTS5 index over all of the above                       │
+└─────────────────────────────────────────────────────────┘
+```
+
+**Episode** = a closed unit of work (e.g. “nmap of 10.0.4.0/24 → 14 hosts”). When a phase finishes, the worker writes `memory/episodes/012-nmap-c-block.md` with: intent, commands, distilled facts, finding IDs, loot paths. The model window then holds a *pointer* (“episode 012: 14 hosts, see notes”) instead of 80k tokens of nmap XML.
+
+**Retrieve, don't replay.** Tools:
+
+```
+memory_search({ query, kind?: note|episode|loot|finding })  → FTS hits
+memory_read({ path or note_id })                            → body
+```
+
+Compaction **must not delete** episodes/notes/loot. It only shrinks the working set. If the model needs the nmap table again, it `memory_search`s. That is how we avoid “stripping everything out of context.”
+
+**Retained tail** (steal their 2k–8k token budget, ~25% of remaining): keep the last few *useful* parts (tool results, user, assistant). Drop reasoning/data parts. Notes and todos stay.
+
+**Working-set budget** (local, not SaaS):
+
+| Slice | Budget |
+|-------|--------|
+| Static system prefix | ≤ 2k tokens |
+| Tool schemas | pack-sized (slim ~800, full ~3k) |
+| Reminder (scope + todos + 3 general notes) | ≤ 1.5k |
+| Retained tail | 2–8k |
+| Headroom for output + next tools | ≥ 20% of the model window |
+
+If the model window is 32k (small local), working set is ~8–12k, not 30k of plugins+timeline. If it is 200k (Opus), still don't dump; retrieval stays the same so local and cloud behave identically.
+
+**Write path:** every tool result → transcript.jsonl (full) + loot if large + optional note. Episode close is explicit (`todo_write` completing a phase, or the worker after a sequential recon step).
+
+NIL `rag.py` is the index. Hook it to `memory_search`. Reindex on note/loot write, not on a cron.
+
+---
+
+## 30. Our Kali template — slim, ours, easy to change
+
+Do **not** vendor HackerAI's `docker/Dockerfile` (fat Kali rolling, 4GB, Chromium, hydra, sqlmap, seclists, ZAP…). That image is their cloud product. We already have two thin files (`Dockerfile.sandbox`, `Dockerfile.sandbox.kali`) — keep that idea and make it a **layered, user-editable template**.
+
+### Layout
+
+```
+finn_pentest/sandbox/images/
+  base.Dockerfile          # debian:bookworm-slim + curl/jq/python/git  (~80MB)
+  overlay-recon.Dockerfile # FROM nil-base + nmap httpx whatweb subfinder
+  overlay-web.Dockerfile   # FROM recon + ffuf gobuster nuclei nikto sslscan
+  overlay-full.Dockerfile  # FROM web + kali metapackage subset (optional)
+  overlay-stealth.Dockerfile # FROM web + proxychains openvpn wireguard
+  packs/*.list             # apt package lists, one per overlay — this is the shim
+```
+
+Operator “shimmies” a pack by editing a **list**, not a 400-line Dockerfile:
+
+```
+# packs/web.list
+nmap
+httpx
+whatweb
+ffuf
+gobuster
+nuclei
+nikto
+sslscan
+```
+
+Build: `finn sandbox build web` → reads the list, generates a tiny Dockerfile FROM the previous overlay, `apt-get install --no-install-recommends`. No Kali rolling unless the pack says `from: kali-rolling`.
+
+Default hunt uses `overlay-web` (or `slim`). `full` is opt-in. Chromium/agent-browser is a separate overlay so people who don't want a browser don't pay for it.
+
+Caps the container: `cpus: 2`, `memory: 1g` on slim/web; operator can raise. `NET_RAW`/`NET_ADMIN` only on packs that need them (recon/stealth), not on slim.
+
+This is the opposite of “copy their cloud Kali and hope.” It is **our** template, diffable, and profile-bound (§16).
+
+---
+
+## 31. Search: SearXNG first, other slim self-host as fallback
+
+“CXNG” = **SearXNG**. Default in Compose. JSON API, safesearch off, no key, no quota.
+
+Also ship adapters for anything equally slim, uncensored, and locally infinite:
+
+| Backend | Why | Weight |
+|---------|-----|--------|
+| **SearXNG** | 70+ engines, JSON, dorks, our default | Primary |
+| **4get** | ~100–400MB RAM, no JS, rotating proxies, AGPL, very slim | First fallback |
+| **Whoogle** | Google-only, tiny — use only if you accept Google | Optional |
+| Direct no-key | GitHub search, NVD/CVE JSON, OSV, Exploit-DB mirror, `searchsploit` in the pack | Always available, no metasearch |
+
+`web_search` tries SearXNG → 4get → direct CVE/GitHub. Failures are per-query, not fatal. No Perplexity required. No monthly cap.
+
+Uncensored: `safesearch: off` on SearXNG; 4get has no safe layer. Exploit writeups and payload pages are in-scope for an authorized hunt.
+
+Keep parallel 1–12 independent queries (§18). Each query can pin `backend: searxng|4get|cve|github`.
+
+---
+
+## 32. Durable agents — they should not die
+
+HackerAI durability is Trigger.dev (4h, retry 1, approval sessions, partial-save, resume routes). We are not buying Trigger. Durability has to be **on disk in the engagement**.
+
+### What “should not suffer” means
+
+| Failure | Agent does |
+|---------|------------|
+| UI refresh / WS drop | Worker continues; client asks `GET /v1/hunt/{id}/since?seq=` |
+| Model 429 / timeout | Rotate provider (already SPEC); retry same step with backoff |
+| Context overflow | Compact working set; episodes stay; auto-continue **once** then wait for operator if still huge |
+| Docker restart | Sandbox named `nil-<engagement>` with a volume; reconnect, don't recreate |
+| Process crash | Checkpoint after every tool result; on boot, resume from last `running` step |
+| Nuclei 10k findings | Spill to loot; model sees count + top N + path |
+| Compaction mid-turn | Resume section: don't restart, don't narrate the compact |
+| Doom-loop | Halt that *tool*, keep the engagement, ask the operator |
+
+### Checkpoint (append-only)
+
+```
+engagements/<name>/run/
+  current.json          # hunt id, profile, seq, permission mode, pid
+  events.jsonl          # every WS event with seq
+  steps/<id>.json       # tool input/output/state
+```
+
+The worker is a sidecar (`finn hunt-worker`) or in-process asyncio task with a heartbeat file. `restart: unless-stopped` in Compose. Killing the browser does nothing.
+
+Partial output is sacred: interrupted streams stay labeled interrupted, files already in loot stay. Never rewind the engagement because the model window compacted.
+
+Provider retries: already in Godmode/NIL API. Cap retries per *step* (e.g. 3), not per hunt, so a dead model doesn't spin forever — but the hunt remains resumable.
+
+This is local durability. Cloud “optimization” is irrelevant.
+
+---
+
+## 33. Wave patch (optimization is not Wave 5)
+
+Insert into the Part 2 table:
+
+| Wave | Add |
+|------|-----|
+| **0** | Slim overlay Kali/Debian templates + pack `.list` files. Working-set token budget in the context builder (stop dumping plugins/timeline). |
+| **1** | WS token/tool streaming. transcript.jsonl + episode files. `memory_search`/`memory_read`. Checkpoint/resume. Protected notes/todos. |
+| **2** | SearXNG **and** 4get. Spill large tool output to loot instead of dropping. |
+| **3** | Inspector reads episodes/notes; compaction UI is a quiet divider, not a chat message. |
+
+---
+
+*Part 3 added 2026-09-05. Optimization is local: stream, budget the working set, remember on disk, slim our own images, SearXNG-class search, survive anything that isn't a hard stop.*
+
+
