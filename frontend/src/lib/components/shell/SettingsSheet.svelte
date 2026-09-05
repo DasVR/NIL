@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { appState } from '$lib/stores/appState.svelte.ts';
-  import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
   import Icon from '@iconify/svelte';
   import SettingsGeneral from '$lib/components/shell/SettingsGeneral.svelte';
   import SettingsAppearance from '$lib/components/shell/SettingsAppearance.svelte';
@@ -25,7 +23,7 @@
     { id: 'appearance', label: 'Appearance', icon: 'ph:paint-brush-broad-bold' },
     { id: 'editor', label: 'Editor', icon: 'ph:code-bold' },
     { id: 'terminal', label: 'Terminal', icon: 'ph:terminal-bold' },
-    { id: 'ai', label: 'AI Agent', icon: 'ph:robot-bold' },
+    { id: 'ai', label: 'Agent', icon: 'ph:cpu-bold' },
     { id: 'plugins', label: 'Plugins', icon: 'ph:puzzle-piece-bold' },
     { id: 'shortcuts', label: 'Shortcuts', icon: 'ph:keyboard-bold' },
     { id: 'advanced', label: 'Advanced', icon: 'ph:wrench-bold' },
@@ -67,14 +65,6 @@
       </nav>
 
       <div class="settings-content">
-        <div class="settings-search">
-          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <circle cx="11" cy="11" r="8"/>
-            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-          </svg>
-          <input type="text" placeholder="Search settings..." aria-label="Search settings" />
-        </div>
-
         {#if activeCategory === 'general'}
           <SettingsGeneral />
         {:else if activeCategory === 'appearance'}
@@ -100,10 +90,6 @@
         <Icon icon="ph:x-bold" width="14" height="14" />
         <span>Close</span>
       </button>
-      <button class="settings-btn primary" onclick={() => console.log('save')}>
-        <Icon icon="ph:floppy-disk-bold" width="14" height="14" />
-        <span>Save</span>
-      </button>
     </div>
   </div>
 {/if}
@@ -112,11 +98,8 @@
   .settings-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(5, 5, 7, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: color-mix(in oklab, var(--nil-void) 72%, transparent);
     z-index: var(--z-modal);
-    animation: fadeIn 0.15s var(--spring-smooth);
   }
 
   .settings-sheet {
@@ -128,25 +111,14 @@
     max-width: calc(100vw - 32px);
     height: 72vh;
     max-height: 800px;
-    background: var(--surface-card);
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--accent-primary);
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    border-radius: var(--r-panel);
+    box-shadow: var(--lift-3);
     z-index: var(--z-modal);
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    animation: slideIn 0.2s var(--spring-snappy);
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes slideIn {
-    from { opacity: 0; transform: translate(-50%, -50%) scale(0.96); }
-    to { opacity: 1; transform: translate(-50%, -50%) scale(1); }
   }
 
   .settings-header {
@@ -231,7 +203,7 @@
 
   .settings-category.active {
     background: var(--accent-soft);
-    color: var(--accent-primary);
+    color: var(--nil-ink);
   }
 
   .settings-content {
@@ -240,38 +212,6 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-  }
-
-  .settings-search {
-    position: relative;
-    padding: var(--space-4);
-    border-bottom: 1px solid var(--surface-border);
-    flex-shrink: 0;
-  }
-
-  .settings-search svg {
-    position: absolute;
-    left: 28px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-tertiary);
-    flex-shrink: 0;
-  }
-
-  .settings-search input {
-    width: 100%;
-    padding: 8px 12px 8px 44px;
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-control);
-    background: var(--surface-input);
-    color: var(--input-text);
-    font-family: var(--font-sans);
-    font-size: var(--font-xs);
-    outline: none;
-  }
-
-  .settings-search input:focus {
-    border-color: var(--accent-primary);
   }
 
   .settings-footer {
@@ -293,34 +233,19 @@
     font-size: var(--font-xs);
     font-weight: 500;
     cursor: pointer;
-    transition: all var(--spring-snappy);
+    transition: border-color var(--dur-flip) var(--ease-out),
+      background var(--dur-flip) var(--ease-out),
+      color var(--dur-flip) var(--ease-out);
   }
 
   .settings-btn.secondary {
-    background: var(--surface-hover);
-    border: 1px solid var(--surface-border);
-    color: var(--text-secondary);
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line);
+    color: var(--nil-ink-2);
   }
 
   .settings-btn.secondary:hover {
-    background: var(--surface-card);
-    color: var(--text-primary);
+    background: var(--nil-panel);
+    color: var(--nil-ink);
   }
-
-  .settings-btn.primary {
-    background: var(--accent-primary);
-    border: none;
-    color: var(--color-abyss-0);
-  }
-
-  .settings-btn.primary:hover {
-    filter: brightness(1.1);
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .settings-overlay, .settings-sheet { animation: none; }
-  }
-
-  :global(html.reduce-motion) .settings-overlay,
-  :global(html.reduce-motion) .settings-sheet { animation: none; }
 </style>

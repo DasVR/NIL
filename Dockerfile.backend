@@ -20,8 +20,6 @@ COPY . .
 
 RUN mkdir -p /root/.finn-pentest/engagements /root/.finn-pentest/sandboxes /root/.finn-pentest/plugins /root/.finn-pentest/prompts /root/.finn-pentest/wordlists
 
-RUN pip install --no-cache-dir -e ./backend/godmode 2>/dev/null || true
-
 EXPOSE 8766
 
 CMD ["python", "main.py"]

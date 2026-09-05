@@ -36,6 +36,7 @@ jobs:
 
   package:
     name: Package Linux AppImage + deb
+    if: hashFiles('desktop/src-tauri/tauri.conf.json') != ''
     runs-on: ubuntu-latest
     timeout-minutes: 50
     permissions:

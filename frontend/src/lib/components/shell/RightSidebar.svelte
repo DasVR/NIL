@@ -1,6 +1,5 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { appState } from '$lib/stores/appState.svelte.ts';
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import FindingCard from '$lib/components/ui/FindingCard.svelte';
   import Icon from '@iconify/svelte';
@@ -53,21 +52,6 @@
       window.removeEventListener('mouseup', handleResizeEnd);
     };
   });
-
-  function getSeverityColor(severity: string) {
-    switch (severity) {
-      case 'critical': return 'var(--color-danger)';
-      case 'high': return 'var(--color-danger)';
-      case 'medium': return 'var(--color-warning)';
-      case 'low': return 'var(--color-info)';
-      case 'info': return 'var(--text-tertiary)';
-      default: return 'var(--surface-border)';
-    }
-  }
-
-  function getSeverityLabel(severity: string) {
-    return severity.charAt(0).toUpperCase() + severity.slice(1);
-  }
 </script>
 
 <aside 
@@ -131,11 +115,7 @@
     {#if activeTab === 'findings'}
       <div class="findings-list">
         {#each findings as finding}
-          <FindingCard 
-            {finding}
-            onExplain={() => console.log('Explain:', finding.id)}
-            onDraft={() => console.log('Draft:', finding.id)}
-          />
+          <FindingCard {finding} />
         {/each}
         {#if findings.length === 0}
           <div class="empty-state">
@@ -264,8 +244,8 @@
   }
 
   .right-sidebar-tab:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 1px;
+    outline: 2px solid var(--nil-halo);
+    outline-offset: 2px;
   }
 
   .tab-badge {
@@ -276,14 +256,14 @@
     height: 16px;
     padding: 0 4px;
     border-radius: var(--radius-badge);
-    background: var(--accent-primary);
-    color: var(--color-abyss-0);
+    background: var(--nil-ink);
+    color: var(--nil-void);
     font-size: var(--font-2xs);
     font-weight: 600;
   }
 
   .right-sidebar-tab.active .tab-badge {
-    background: var(--color-cream);
+    background: var(--nil-ink-2);
   }
 
   .right-sidebar-actions {
@@ -350,6 +330,6 @@
   }
 
   .right-sidebar-resize-handle:hover {
-    background: var(--accent-primary);
+    background: var(--nil-line-hot);
   }
 </style>

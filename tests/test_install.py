@@ -96,13 +96,20 @@ def test_macos_setup_app_bundles_launcher(tmp_path):
 
 
 def test_palette_matches_web_tokens():
+    sys.path.insert(0, str(INSTALL))
+    import palette
+
     css = (ROOT / "frontend" / "src" / "lib" / "styles" / "tokens.css").read_text(encoding="utf-8")
     assert "--nil-void:" in css
-    assert "#08090a" in css
+    assert palette.COLOR["abyss"] == "#08090a"
+    assert palette.COLOR["abyss"] in css
+    assert palette.COLOR["text"] in css
+    assert palette.COLOR["danger"] in css
     assert "--brand-ember-500:" in css
-    assert "#bd572d" in css
     assert "--sev-critical:" in css
     assert "--color-violet:" not in css
+    assert "#00d992" not in css
+    assert "#00d992" not in (INSTALL / "palette.py").read_text(encoding="utf-8")
 
 
 def test_find_wheel_in_dist(tmp_path):
@@ -233,10 +240,6 @@ def test_windows_user_paths_use_localappdata(tmp_path, monkeypatch):
 
 
 def test_catalog_matches_web_copy():
-    native = (INSTALL / "catalog.json").read_text(encoding="utf-8")
-    web_copy = ROOT / "web" / "src" / "lib" / "install-catalog.json"
-    if web_copy.is_file():
-        assert native == web_copy.read_text(encoding="utf-8")
     sys.path.insert(0, str(INSTALL))
     import catalog
 
@@ -266,17 +269,8 @@ def test_welcome_docs_exist():
     assert "Welcome era" in welcome
     assert "Workstation era" in welcome
     assert "catalog.json" in welcome
-    ux = ROOT / "UX_REDESIGN.md"
-    web_layout = ROOT / "web" / "src" / "routes" / "app" / "+layout.svelte"
-    if not ux.is_file() or not web_layout.is_file():
-        return
-    assert "docs/WELCOME.md" in ux.read_text(encoding="utf-8")
-    assert "SetupWizard" not in web_layout.read_text(encoding="utf-8")
-    layout = (ROOT / "web" / "src" / "routes" / "app" / "+layout.svelte").read_text(encoding="utf-8")
-    assert "WelcomeSheet" in layout
-    empty = (ROOT / "web" / "src" / "lib" / "components" / "EmptyState.svelte").read_text(encoding="utf-8")
-    assert "welcomeLine" in empty
-    stores = (ROOT / "web" / "src" / "lib" / "stores.svelte.ts").read_text(encoding="utf-8")
-    assert "seedWelcomeBlock" in stores
-    assert "scope loaded" in stores
+    framework = (ROOT / "FRAMEWORK.md").read_text(encoding="utf-8")
+    assert "Color means risk" in framework
+    page = (ROOT / "frontend" / "src" / "routes" / "+page.svelte").read_text(encoding="utf-8")
+    assert "No findings yet" in page
 

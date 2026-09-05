@@ -28,7 +28,7 @@
   onMount(() => {
     setupTauriEvents();
     keymap.init();
-    keymap.setComposerFocus(() => composerInput?.focus());
+    appState.setComposerFocus(() => composerInput?.focus());
   });
 </script>
 
