@@ -27,11 +27,11 @@
         inherit: true,
         rules: [],
         colors: {
-          'editor.background': '#050507',
-          'editor.foreground': '#e8e8e6',
-          'diffEditor.insertedTextBackground': 'rgba(92, 255, 138, 0.15)',
-          'diffEditor.removedTextBackground': 'rgba(255, 92, 92, 0.15)',
-          'diffEditor.border': '#16161d',
+          'editor.background': '#08090a',
+          'editor.foreground': '#e8e6e3',
+          'diffEditor.insertedTextBackground': 'rgba(92, 158, 173, 0.15)',
+          'diffEditor.removedTextBackground': 'rgba(229, 72, 77, 0.15)',
+          'diffEditor.border': '#1c2022',
         },
       });
 

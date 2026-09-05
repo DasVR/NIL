@@ -1,5 +1,14 @@
 # NIL P0 Build Prompt — IA Shell (Cursor Agent)
 
+> **Superseded 2026-09-04** by `.cursor/rules/00-nil-design-language.mdc` +
+> `frontend/src/lib/styles/tokens.css` (color-means-risk law, ten-primitive motion
+> system). Do not drop this file into Cursor as-is — it will rebuild ThinkingLogo
+> and the retired violet/coral/cream palette. Kept for historical context only.
+>
+> **Usage:** historical only. Canonical laws and tokens are the files named above.
+
+---
+
 ## Context
 You are building **NIL**, an open-source AI coding agent workspace (Tauri 2 + SvelteKit 5). This is **P0: IA Shell** — the complete workspace layout with titlebar, sidebar, main workspace, right sidebar, AI strip, and status bar.
 

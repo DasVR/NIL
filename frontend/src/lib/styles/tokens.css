@@ -1,8 +1,11 @@
 /* ============================================================
    NIL — token layer
    Rule of the system: COLOR MEANS RISK.
-   Chrome is greyscale. Saturation is reserved for severity.
-   If something is colored and it isn't a severity, it's a bug.
+   Chrome is greyscale. Saturation in Zone B/C is reserved for severity.
+   --brand-ember-* is the one named exception, Zone A identity only
+   (cold open, lock screen, session handoff, report cover).
+   If something in the workstation is colored and it isn't a severity,
+   it's a bug.
    ============================================================ */
 
 :root {

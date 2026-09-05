@@ -60,8 +60,9 @@ npm run build    # static build to build/
 
 - `frontend/` — SvelteKit app
   - `src/lib/components/shell/` — workstation shell (sidebar, workspace, AI strip, status bar, command palette, settings)
-  - `src/lib/components/effects/` — ThinkingLogo, grain overlay, border beam, orbs
-  - `src/lib/components/ui/` — shared UI primitives
+  - `src/lib/components/ui/NilMonogram.svelte` — Zone A identity mark (cold open, lock, handoff, report cover)
+  - `src/lib/components/ui/` — shared UI primitives (BorderBeam, cards, blocks)
+  - `src/lib/components/shell/GrainOverlay.svelte` — shell grain, applied once
   - `src/lib/stores/*.svelte.ts` — Svelte 5 rune-based stores
   - `run.sh`, `run.bat`, `run.ps1`, `NIL Frontend.command` — local runners
   - `screenshots/` — README screenshots
