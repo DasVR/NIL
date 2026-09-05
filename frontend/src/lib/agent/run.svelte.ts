@@ -176,11 +176,3 @@ export const agentRun = {
     }];
   },
 };
-
-export const sendMessage = agentRun.sendMessage.bind(agentRun);
-export const proposeTool = agentRun.proposeTool.bind(agentRun);
-export const approve = agentRun.approve.bind(agentRun);
-export const reject = agentRun.reject.bind(agentRun);
-export const cancel = agentRun.stop.bind(agentRun);
-export const clear = agentRun.clear.bind(agentRun);
-export const addFinding = agentRun.addFinding.bind(agentRun);

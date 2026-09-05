@@ -4,7 +4,6 @@
   import EditorTab from '$lib/components/shell/EditorTab.svelte';
   import PreviewTab from '$lib/components/shell/PreviewTab.svelte';
   import DiffTab from '$lib/components/shell/DiffTab.svelte';
-  import ChatTab from '$lib/components/shell/ChatTab.svelte';
   import AgentStream from '$lib/components/shell/AgentStream.svelte';
   import { tabsStore } from '$lib/stores/tabsStore';
   import type { Snippet } from 'svelte';
@@ -19,7 +18,7 @@
     tabsStore.switchTab(id);
   }
 
-  function newTab(type: 'terminal' | 'editor' | 'preview' | 'diff' | 'chat' = 'terminal') {
+  function newTab(type: 'terminal' | 'editor' | 'preview' | 'diff' = 'terminal') {
     const id = `${type}-${Date.now()}`;
     const label = type[0].toUpperCase() + type.slice(1);
     tabsStore.addTab({ id, type, label, dirty: false });
@@ -107,8 +106,6 @@
           <PreviewTab {tab} />
         {:else if tab.type === 'diff'}
           <DiffTab {tab} />
-        {:else if tab.type === 'chat'}
-          <ChatTab {tab} />
         {/if}
       </div>
     {/each}
@@ -191,14 +188,13 @@
   }
 
   .workspace-tab.active .workspace-tab-icon {
-    color: var(--accent-primary);
+    color: var(--nil-ink);
   }
 
   .workspace-tab-icon[data-type="terminal"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M8 9h8'/%3E%3Cpath d='M8 15h6'/%3E%3C/svg%3E") center/contain no-repeat; }
   .workspace-tab-icon[data-type="editor"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E") center/contain no-repeat; }
   .workspace-tab-icon[data-type="preview"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Crect x='2' y='3' width='20' height='14' rx='2'/%3E%3Cpath d='M8 21h8'/%3E%3Cpath d='M12 17v4'/%3E%3C/svg%3E") center/contain no-repeat; }
   .workspace-tab-icon[data-type="diff"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M12 3v18'/%3E%3Cpath d='M3 12h18'/%3E%3C/svg%3E") center/contain no-repeat; }
-  .workspace-tab-icon[data-type="chat"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3C/svg%3E") center/contain no-repeat; }
 
   .workspace-tab-dirty {
     width: 6px;
@@ -249,8 +245,8 @@
   }
 
   .workspace-tab-new:hover {
-    color: var(--accent-primary);
-    background: var(--surface-hover);
+    color: var(--nil-ink);
+    background: var(--nil-raised);
   }
 
   .workspace-panels {

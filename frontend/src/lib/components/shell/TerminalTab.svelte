@@ -1,7 +1,6 @@
 <script lang="ts">
-  import { onMount, onDestroy } from 'svelte';
+  import { onMount } from 'svelte';
   import { browser } from '$app/environment';
-  import { appState } from '$lib/stores/appState.svelte.ts';
   import { terminalStore } from '$lib/stores/terminalStore.svelte.ts';
   import { tabsStore } from '$lib/stores/tabsStore';
 
@@ -12,10 +11,14 @@
   let { tab }: Props = $props();
 
   let container: HTMLDivElement;
-  let terminal: any;
-  let fitAddon: any;
-  let webglAddon: any;
+  let terminal: { write: (d: string) => void; writeln: (d: string) => void; open: (el: HTMLElement) => void; loadAddon: (a: unknown) => void; focus: () => void; dispose: () => void; onData: (cb: (d: string) => void) => void; onResize: (cb: (s: { cols: number; rows: number }) => void) => void } | undefined;
+  let fitAddon: { fit: () => void } | undefined;
   let ptyConnected = $state(false);
+
+  function token(name: string, fallback: string): string {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
 
   onMount(() => {
     if (!browser) return;
@@ -31,43 +34,51 @@
       import('@xterm/addon-webgl')
     ]);
 
+    const voidC = token('--nil-void', '#08090a');
+    const panel = token('--nil-panel', '#0e1011');
+    const ink = token('--nil-ink', '#e8e6e3');
+    const ink2 = token('--nil-ink-2', '#9aa0a4');
+    const ink3 = token('--nil-ink-3', '#6b7175');
+    const ink4 = token('--nil-ink-4', '#3a4043');
+    const critical = token('--sev-critical', '#e5484d');
+    const high = token('--sev-high', '#e8833a');
+    const medium = token('--sev-medium', '#d9b341');
+    const low = token('--sev-low', '#5c9ead');
+
     terminal = new Terminal({
       fontFamily: 'JetBrains Mono, monospace',
       fontSize: 13,
       lineHeight: 1.45,
       cursorBlink: true,
       cursorStyle: 'block',
-      // Ink-derived, reusing the workstation severity ramp for ANSI semantics
-      // instead of a brand palette — see 00-nil-design-language.mdc Law 1.
       theme: {
-        background: '#08090a',
-        foreground: '#e8e6e3',
-        cursor: '#e8e6e3',
-        selectionBackground: 'rgba(232, 230, 227, 0.18)',
-        black: '#0e1011',
-        red: '#e5484d',
-        green: '#9aa0a4',
-        yellow: '#d9b341',
-        blue: '#5c9ead',
-        magenta: '#6b7175',
-        cyan: '#9aa0a4',
-        white: '#e8e6e3',
-        brightBlack: '#3a4043',
-        brightRed: '#f2666b',
-        brightGreen: '#b5bcc1',
-        brightYellow: '#e6c169',
-        brightBlue: '#7fb8cf',
-        brightMagenta: '#9aa0a4',
-        brightCyan: '#b5bcc1',
-        brightWhite: '#f5f4f1',
+        background: voidC,
+        foreground: ink,
+        cursor: ink,
+        selectionBackground: ink4,
+        black: panel,
+        red: critical,
+        green: ink2,
+        yellow: medium,
+        blue: low,
+        magenta: ink3,
+        cyan: ink2,
+        white: ink,
+        brightBlack: ink4,
+        brightRed: critical,
+        brightGreen: ink2,
+        brightYellow: high,
+        brightBlue: low,
+        brightMagenta: ink2,
+        brightCyan: ink2,
+        brightWhite: ink,
       },
-      allowTransparency: true,
       convertEol: true,
       scrollback: 10000,
     });
 
     fitAddon = new FitAddon();
-    webglAddon = new WebglAddon();
+    const webglAddon = new WebglAddon();
 
     terminal.loadAddon(fitAddon);
     terminal.loadAddon(webglAddon);
@@ -76,7 +87,7 @@
     fitAddon.fit();
 
     // Connect to PTY via Tauri
-    if ((window as any).__TAURI__) {
+    if (window.__TAURI__) {
       try {
         const { invoke } = await import('@tauri-apps/api/core');
         const port = await invoke<number>('pty_connect', { socketPath: '/tmp/nil-pty.sock' });
@@ -107,7 +118,7 @@
           ws.send(data);
         });
 
-        terminal.onResize(({ cols, rows }: any) => {
+        terminal.onResize(({ cols, rows }: { cols: number; rows: number }) => {
           ws.send(JSON.stringify({ type: 'resize', cols, rows }));
         });
 
@@ -115,12 +126,10 @@
         terminalStore.setWebSocket(ws);
       } catch (err) {
         console.error('Failed to connect PTY:', err);
-        terminal.writeln('\r\n\x1b[33m[!] PTY connection failed. Run "npm run tauri dev" for full terminal.\x1b[0m\r\n');
-        terminal.writeln('$ ');
+        terminal.writeln('PTY connection failed. Run npm run tauri dev for a live terminal.');
       }
     } else {
-      terminal.writeln('\r\n\x1b[33m[!] Not running in Tauri. Run "npm run tauri dev" for full terminal.\x1b[0m\r\n');
-      terminal.writeln('$ ');
+      terminal.writeln('Not running in Tauri. Run npm run tauri dev for a live terminal.');
     }
 
     const resizeObserver = new ResizeObserver(() => {
@@ -148,36 +157,13 @@
   .terminal-tab {
     width: 100%;
     height: 100%;
-    background: var(--color-abyss-0);
+    background: var(--nil-void);
     overflow: hidden;
   }
 
-  .terminal-tab :global(.xterm) {
-    background: var(--color-abyss-0) !important;
-  }
-
-  .terminal-tab :global(.xterm-viewport) {
-    background: var(--color-abyss-0) !important;
-  }
-
+  .terminal-tab :global(.xterm),
+  .terminal-tab :global(.xterm-viewport),
   .terminal-tab :global(.xterm-screen) {
-    background: var(--color-abyss-0) !important;
-  }
-
-  .terminal-tab :global(.xterm-helpers) {
-    background: var(--color-abyss-0) !important;
-  }
-
-  .terminal-tab :global(.xterm-cursor) {
-    background: var(--accent-primary) !important;
-  }
-
-  .terminal-tab :global(.xterm-cursor.blink) {
-    animation: xterm-cursor-blink 1s step-end infinite;
-  }
-
-  @keyframes xterm-cursor-blink {
-    0%, 50% { opacity: 1; }
-    51%, 100% { opacity: 0; }
+    background: var(--nil-void) !important;
   }
 </style>

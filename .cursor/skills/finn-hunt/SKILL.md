@@ -58,7 +58,7 @@ skill.
 ## Findings
 
 A finding is an answer card, not a markdown dump. The card in
-`web/src/lib/components/FindingCard.svelte` and the parser in `web/src/lib/findings.ts`
+`frontend/src/lib/components/ui/FindingCard.svelte` and the parser in `frontend/src/lib/agent/types.ts`
 expect this shape:
 
 ```markdown

@@ -15,17 +15,13 @@
     iframe.style.width = '100%';
     iframe.style.height = '100%';
     iframe.style.border = 'none';
-    iframe.style.background = 'var(--color-abyss-0)';
+    iframe.style.background = 'var(--nil-void)';
     container.appendChild(iframe);
 
     return () => {
       iframe?.remove();
     };
   });
-
-  function loadPreview(url: string) {
-    if (iframe) iframe.src = url;
-  }
 </script>
 
 <div class="preview-tab" bind:this={container} />
@@ -34,7 +30,7 @@
   .preview-tab {
     width: 100%;
     height: 100%;
-    background: var(--color-abyss-0);
+    background: var(--nil-void);
     overflow: hidden;
   }
 </style>

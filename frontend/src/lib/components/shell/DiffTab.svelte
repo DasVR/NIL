@@ -6,22 +6,33 @@
   let { tab }: { tab: Tab } = $props();
 
   let container: HTMLDivElement;
-  let editor: any;
+  let editor: { dispose: () => void; setModel: (m: unknown) => void } | undefined;
+
+  function token(name: string, fallback: string): string {
+    const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+    return v || fallback;
+  }
 
   onMount(() => {
     if (!browser || !container) return;
 
     import('monaco-editor').then((monaco) => {
+      const voidC = token('--nil-void', '#08090a');
+      const ink = token('--nil-ink', '#e8e6e3');
+      const line = token('--nil-line', '#1c2022');
+      const criticalBg = 'rgba(229, 72, 77, 0.15)';
+      const lowBg = 'rgba(92, 158, 173, 0.15)';
+
       monaco.editor.defineTheme('nil-diff', {
         base: 'vs-dark',
         inherit: true,
         rules: [],
         colors: {
-          'editor.background': '#08090a',
-          'editor.foreground': '#e8e6e3',
-          'diffEditor.insertedTextBackground': 'rgba(92, 158, 173, 0.15)',
-          'diffEditor.removedTextBackground': 'rgba(229, 72, 77, 0.15)',
-          'diffEditor.border': '#1c2022',
+          'editor.background': voidC,
+          'editor.foreground': ink,
+          'diffEditor.insertedTextBackground': lowBg,
+          'diffEditor.removedTextBackground': criticalBg,
+          'diffEditor.border': line,
         },
       });
 
@@ -29,26 +40,16 @@
         theme: 'nil-diff',
         fontFamily: 'JetBrains Mono',
         fontSize: 13,
-        lineHeight: 1.5,
+        lineHeight: 20,
         minimap: { enabled: false },
         automaticLayout: true,
         readOnly: true,
         renderSideBySide: window.innerWidth > 1000,
-      } as any);
-
-      // Example diff
-      const original = `function hello() {
-  console.log("Hello, World!");
-  return true;
-}`;
-      const modified = `function hello() {
-  console.log("Hello, NIL!");
-  return false;
-}`;
+      });
 
       editor.setModel({
-        original: monaco.editor.createModel(original, 'typescript'),
-        modified: monaco.editor.createModel(modified, 'typescript'),
+        original: monaco.editor.createModel('', 'plaintext'),
+        modified: monaco.editor.createModel('', 'plaintext'),
       });
     });
 
@@ -58,13 +59,13 @@
   });
 </script>
 
-<div class="diff-tab" bind:this={container} />
+<div class="diff-tab" bind:this={container} data-tab={tab.id} />
 
 <style>
   .diff-tab {
     width: 100%;
     height: 100%;
-    background: var(--color-abyss-0);
+    background: var(--nil-void);
     overflow: hidden;
   }
 </style>

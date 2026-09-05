@@ -3,24 +3,25 @@
 
 <div class="settings-pane">
   <h3>Terminal</h3>
-  <p class="settings-description">Shell, PTY, and terminal emulator preferences</p>
+  <p class="settings-description">Live PTY is Tauri-only. Browser sessions show a notice instead of a fake prompt.</p>
   <div class="settings-group">
-    <h4>Shell</h4>
+    <h4>Defaults</h4>
     <div class="settings-row">
-      <label>Default shell</label>
-      <select>
-        <option>/bin/bash</option>
-        <option>/bin/zsh</option>
-        <option>/bin/fish</option>
-      </select>
+      <label>Font</label>
+      <span class="mono">JetBrains Mono 13</span>
+    </div>
+    <div class="settings-row">
+      <label>PTY</label>
+      <span>Tauri sidecar</span>
     </div>
   </div>
 </div>
 
 <style>
-  .settings-pane { padding: var(--space-4); }
-  .settings-description { font-size: var(--font-xs); color: var(--text-tertiary); margin-bottom: var(--space-4); }
-  .settings-group { margin-bottom: var(--space-4); }
-  .settings-group h4 { font-size: var(--font-xs); text-transform: uppercase; letter-spacing: var(--tracking-wide); color: var(--text-tertiary); margin-bottom: var(--space-2); }
-  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: var(--space-2) 0; border-bottom: 1px solid var(--surface-border); }
+  .settings-pane { padding: var(--s-4); }
+  .settings-description { font: var(--t-meta)/var(--lh-body) var(--font-ui); color: var(--nil-ink-3); margin-bottom: var(--s-4); }
+  .settings-group { margin-bottom: var(--s-4); }
+  .settings-group h4 { font: 600 var(--t-micro)/1 var(--font-ui); letter-spacing: var(--track-tick); text-transform: uppercase; color: var(--nil-ink-3); margin-bottom: var(--s-2); }
+  .settings-row { display: flex; align-items: center; justify-content: space-between; padding: var(--s-2) 0; border-bottom: 1px solid var(--nil-line); font: var(--t-meta)/1 var(--font-ui); color: var(--nil-ink); }
+  .mono { font-family: var(--font-machine); color: var(--nil-ink-2); }
 </style>

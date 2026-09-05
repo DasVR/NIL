@@ -1,7 +1,7 @@
 # Finn — Install, Welcome, Workstation
 
-Living spec for first contact. Information architecture of `/app` stays in
-[`UX_REDESIGN.md`](../UX_REDESIGN.md) (v3). This file is the operator journey from
+Living spec for first contact. Information architecture of the workstation stays in
+[`FRAMEWORK.md`](../FRAMEWORK.md). This file is the operator journey from
 download to the first approved command.
 
 Three eras. One product. Per operating system.
@@ -28,8 +28,7 @@ running, Welcome only asks how tools run, then names the Space.
 ## 1. Install era (native)
 
 Double-click **Finn-Setup**. No Terminal. Source of truth for files, paths, and
-first-launch notes: [`install/catalog.json`](../install/catalog.json)
-(copied to `web/src/lib/install-catalog.json`).
+first-launch notes: [`install/catalog.json`](../install/catalog.json).
 
 | OS | Primary file | Also |
 |---|---|---|
@@ -104,7 +103,7 @@ Same shape: Spaces tree | block log | findings. First lines are OS-aware.
 ## 3. Workstation era
 
 Unchanged from v3: terminal default, Finn via `⌘J`, palette `⌘K`, approval
-gate, YOLO per Space. See `UX_REDESIGN.md`.
+gate, YOLO per Space. See `FRAMEWORK.md`.
 
 ---
 
@@ -125,6 +124,5 @@ GTK/WebKit only for source builds.
 ## 5. What this is not
 
 - Re-asking user vs admin inside `/app`
-- A v5 Agents-window homepage (`cursor-research/redesign/MASTER-REDESIGN.md`
-  is research; it does not own first-run)
+- A second homepage that competes with the agent stream
 - Emoji empty states, `window.prompt`, or a second settings page

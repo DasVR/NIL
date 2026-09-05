@@ -2,14 +2,16 @@
 import api, { type Engagement } from '$lib/api';
 import { browser } from '$app/environment';
 
+type Theme = 'dark';
+
 interface AppState {
   sidebarOpen: boolean;
   sidebarWidth: number;
   rightSidebarOpen: boolean;
   rightSidebarWidth: number;
-  aiStripState: 'collapsed' | 'composer' | 'running' | 'review';
   settingsOpen: boolean;
-  theme: 'dark' | 'light' | 'system';
+  theme: Theme;
+  reducedMotion: boolean;
   activeTargetId: string | null;
   activeEngagementId: string | null;
 }
@@ -19,9 +21,9 @@ const defaultState: AppState = {
   sidebarWidth: 280,
   rightSidebarOpen: true,
   rightSidebarWidth: 320,
-  aiStripState: 'collapsed',
   settingsOpen: false,
   theme: 'dark',
+  reducedMotion: false,
   activeTargetId: null,
   activeEngagementId: null,
 };
@@ -30,28 +32,26 @@ let sidebarOpen = $state(defaultState.sidebarOpen);
 let sidebarWidth = $state(defaultState.sidebarWidth);
 let rightSidebarOpen = $state(defaultState.rightSidebarOpen);
 let rightSidebarWidth = $state(defaultState.rightSidebarWidth);
-let aiStripState = $state(defaultState.aiStripState);
 let settingsOpen = $state(defaultState.settingsOpen);
-let theme = $state(defaultState.theme);
+let theme = $state<Theme>(defaultState.theme);
+let reducedMotion = $state(defaultState.reducedMotion);
 let activeTargetId = $state(defaultState.activeTargetId);
 let activeEngagementId = $state(defaultState.activeEngagementId);
 let yoloMode = $state(false);
+let composerFocus: () => void = () => {};
 
 let engagements = $state<Engagement[]>([]);
 let backendHealthy = $state(false);
 let backendVersion = $state('');
 
-function applyTheme() {
+function applyReducedMotion(value: boolean) {
   if (!browser) return;
-  if (theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
-    document.documentElement.classList.add('dark');
-  } else {
-    document.documentElement.classList.remove('dark');
-  }
+  document.documentElement.classList.toggle('reduce-motion', value);
 }
 
 async function init() {
   if (!browser) return;
+  applyReducedMotion(reducedMotion);
   try {
     const health = await api.health();
     backendHealthy = health.status === 'ok';
@@ -62,8 +62,9 @@ async function init() {
       activeEngagementId = engagements[0].name;
       activeTargetId = engagements[0].name;
     }
-  } catch (e: any) {
-    console.error('Failed to init app state:', e.message);
+  } catch (e: unknown) {
+    const message = e instanceof Error ? e.message : 'init failed';
+    console.error('Failed to init app state:', message);
     backendHealthy = false;
   }
 }
@@ -97,12 +98,14 @@ export const appState = {
   set rightSidebarOpen(v: boolean) { rightSidebarOpen = v; },
   get rightSidebarWidth() { return rightSidebarWidth; },
   set rightSidebarWidth(v: number) { rightSidebarWidth = v; },
-  get aiStripState() { return aiStripState; },
-  set aiStripState(v: AppState['aiStripState']) { aiStripState = v; },
   get settingsOpen() { return settingsOpen; },
   set settingsOpen(v: boolean) { settingsOpen = v; },
   get theme() { return theme; },
-  set theme(v: AppState['theme']) { theme = v; },
+  get reducedMotion() { return reducedMotion; },
+  set reducedMotion(v: boolean) {
+    reducedMotion = v;
+    applyReducedMotion(v);
+  },
   get activeTargetId() { return activeTargetId; },
   set activeTargetId(v: string | null) { activeTargetId = v; },
   get activeEngagementId() { return activeEngagementId; },
@@ -118,13 +121,10 @@ export const appState = {
   setRightSidebarWidth: (w: number) => { rightSidebarWidth = Math.max(240, Math.min(500, w)); },
   toggleSidebar: () => { sidebarOpen = !sidebarOpen; },
   toggleRightSidebar: () => { rightSidebarOpen = !rightSidebarOpen; },
-  cycleAIStrip: () => {
-    const states: AppState['aiStripState'][] = ['collapsed', 'composer', 'running', 'review'];
-    const idx = states.indexOf(aiStripState);
-    aiStripState = states[(idx + 1) % states.length];
-  },
   toggleSettings: () => { settingsOpen = !settingsOpen; },
   toggleYolo,
+  setComposerFocus: (fn: () => void) => { composerFocus = fn; },
+  focusComposer: () => { composerFocus(); },
 
   init,
   createEngagement,

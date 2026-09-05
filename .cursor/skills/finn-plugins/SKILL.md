@@ -67,9 +67,9 @@ Built-ins need no registration beyond existing in the directory — do not edit
 `GET /v1/plugins` feeds `appState.plugins`. Both consumers are automatic once the plugin
 discovers:
 
-- `web/src/lib/components/Sidebar.svelte` — Plugins section, "Propose run" against the
+- `frontend/src/lib/components/shell/Sidebar.svelte` — Plugins section, "Propose run" against the
   selected target.
-- `web/src/lib/components/CommandPalette.svelte` — a palette entry per plugin.
+- `frontend/src/lib/components/shell/CommandPalette.svelte` — a palette entry per plugin.
 
 A new plugin must not need a new route or a new page.
 
