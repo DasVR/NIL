@@ -36,6 +36,9 @@ export function stepToBlock(s: Step): AgentBlock {
         : 'failed',
       output: s.output,
       error: s.error,
+      cost: s.usage
+        ? { inputTokens: s.usage.promptTokens, outputTokens: s.usage.completionTokens, estCostUSD: s.usage.costUsd }
+        : undefined,
       startTime: s.startTime,
       endTime: s.endTime,
     };

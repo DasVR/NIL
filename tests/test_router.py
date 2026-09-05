@@ -50,6 +50,9 @@ def test_router_failsover_on_429(finn_home, monkeypatch):
     result = asyncio.run(_run())
     assert result.text == "hello from secondary"
     assert result.provider == "secondary"
+    assert result.prompt_tokens == 10
+    assert result.completion_tokens == 5
+    assert result.cost_usd == pytest.approx(0.000015)
     assert calls == ["primary", "secondary"]
 
 

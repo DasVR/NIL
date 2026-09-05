@@ -1,6 +1,7 @@
 <script lang="ts">
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
+  import ApprovalBlock from '$lib/components/ui/ApprovalBlock.svelte';
 
   type Mode = 'hunt' | 'chat' | 'code' | 'report';
 
@@ -20,15 +21,18 @@
     { id: 'report', label: 'report' },
   ];
 
+  const pending = $derived(agentRun.pendingApproval);
+  const gated = $derived(Boolean(pending));
+
   function send() {
     const text = input.trim();
-    if (!text) return;
+    if (!text || gated) return;
     agentRun.sendMessage(text, appState.activeEngagementId || 'default', mode);
     input = '';
   }
 
   function onKey(e: KeyboardEvent) {
-    if (e.key === 'Enter' && !e.shiftKey) {
+    if (e.key === 'Enter' && !e.shiftKey && !(e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       send();
     }
@@ -47,6 +51,9 @@
       >{m.label}</button>
     {/each}
   </div>
+  {#if pending}
+    <ApprovalBlock step={pending} />
+  {/if}
   <div class="row">
     <span class="gt" aria-hidden="true">&gt;</span>
     <textarea
@@ -56,9 +63,10 @@
       onkeydown={onKey}
       rows="1"
       aria-label="Agent input"
-      placeholder="Describe the next step"
+      placeholder={gated ? 'Allow or deny the pending command' : 'Describe the next step'}
+      disabled={gated}
     ></textarea>
-    <button class="nil-lift nil-halo send" type="button" onclick={send} disabled={!input.trim() || agentRun.running}>
+    <button class="nil-lift nil-halo send" type="button" onclick={send} disabled={!input.trim() || agentRun.running || gated}>
       Send
     </button>
   </div>
@@ -126,7 +134,7 @@
     outline: none;
   }
 
-  textarea::placeholder { color: var(--nil-ink-4); }
+  textarea:disabled { color: var(--nil-ink-3); }
 
   .send {
     height: 28px;

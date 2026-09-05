@@ -340,7 +340,7 @@ NIL already specified this in `FRAMEWORK.md`: left targets, center stream, right
 
 1. **Chip → detail panel.** Stream stays dense (`ToolBlock` ~36px). Click opens Computer (xterm, file, HTTP, notes). NIL's ToolBlock currently expands **inline** — keep REVEAL for errors (failed calls expand by default) but move long PTY/HTTP into the right inspector with a scrubber.
 2. **Tool timeline scrubber** in the inspector (prev / next / live) while streaming.
-3. **Approval in the composer** with Allow once / Allow for session / Deny — not a competing pulse in the stream. Matches NIL's "one attention object".
+3. **Approval in the composer** with Allow once / Allow this engagement / Deny / Stop — not a competing pulse in the stream. Matches NIL's "one attention object". Live spend for *this turn* sits on the gate.
 4. **450ms delay** before "needs approval" / "reviewing".
 5. **Todo spine** above the composer; hide when the inspector owns it. NIL has `PlanBlock` — wire it to `todo_write`.
 6. **Pinned autoscroll + Jump to latest.** NIL already has this primitive.
@@ -376,7 +376,8 @@ Keyboard: they are sparse (`⌘⇧S` sidebar, `⌘K` search, `Ctrl+C` stop). NIL
 | Native tool calling | AI SDK tools | Parse fenced bash | **P0** |
 | Ask vs Agent API split | Yes | Four prompt modes, one loop | **P0** (map Ask→chat, Agent→hunt) |
 | Step budget | 500 | 8 | **P0** |
-| Approval execute-await | Yes + grants | UI stub + YOLO flag | **P0** |
+| Approval execute-await | Yes + grants | Composer gate + prefix grant + YOLO | **Shipped (UI)**; native tool await still P0 |
+| Per-turn token/cost display | UsageTracker + billing halt | SQLite + JSONL ledger, status bar, gate | **Shipped (observe only)** |
 | Finding lead/confirmed | Prompt + notes | Report mode only | **P0** |
 | Kali tool image | Full | nmap + 3–6 tools | **P0** |
 | Doom-loop | Yes | No | **P0** |
@@ -427,7 +428,7 @@ Backend (`finn_pentest/ai/hunt.py`, new `finn_pentest/ai/tools/`):
 
 1. Native tool loop (OpenAI-compat `tools=` on the router). BYOM already speaks this.
 2. Step cap 200+ for hunt (500 is SaaS-scale; personal Docker is the real limit).
-3. Approval as execute-await. Wire `ApprovalBlock` (no emoji, `--nil-*` chrome, Cmd+Enter / Cmd+Shift+Enter). Prefix grant: "Allow nmap* this engagement".
+3. Approval as execute-await. Wire `ApprovalBlock` in the composer (no emoji, `--nil-*` chrome, Cmd+Enter / Cmd+Shift+Enter). Prefix grant: "Allow nmap this engagement". Live token/cost on the gate and status bar.
 4. Doom-loop (warn 3 / halt 5). Empty-arg exclusion.
 5. Prompt: port `<finding_quality>`, `<scan_methodology>`, sequential-vs-parallel, authorization persistence. Keep NIL voice (no "HackerAI").
 6. Finding cards: status `confirmed | needs-validation | ruled-out`. No invented CVSS.
@@ -587,6 +588,8 @@ Plugins stay first-class: `validate_target` + `parse_output` → findings. Unkno
 HackerAI’s numbers are SaaS meters: free 128k / $0.25/mo / 10 req, paid 200k, Extra Usage 1.4–1.5×, $5/run cap, 10 min stream slice, 4h Trigger wall. They exist to protect *their* GPU bill.
 
 You liked the *idea* of seeing cost. You do not want it as a product constraint.
+
+**Shipped (observe, do not halt):** each model turn writes `token_usage` (SQLite) and `engagements/<name>/run/usage.jsonl`. `GET /v1/usage?engagement=` returns totals + recent. The status bar and approval gate show real in/out tokens and USD from `cost_per_1k`. Zero-usage local models show nothing rather than a fake `$0.00`. No spend cap, no Extra Usage, no run halt.
 
 | Keep | Drop |
 |------|------|
@@ -922,7 +925,7 @@ Overrides Part 1 §12.
 | **2** | SearXNG + 4get in Compose + parallel `web_search`/`open_url` (safesearch off, 12 queries). Stealth profile. Slim overlay images (see §30). Spill-to-loot instead of dropping output. |
 | **3** | Right-rail notes + Computer inspector. PlanBlock ← `todo_write`. Finding cards from `notes/findings`. |
 | **4** | Skill catalog: Strix vulns + ACS web/API/pentest/cloud subset + defending-code skills. `search_skills` / `load_skill`. |
-| **5** | Parallel small-task workers. Depth-1 subagents. Optional auto-review. Token *display* only. |
+| **5** | Parallel small-task workers. Depth-1 subagents. Optional auto-review. Optional *operator-set* spend cap (off by default). |
 
 ---
 
@@ -1139,7 +1142,7 @@ Insert into the Part 2 table:
 | Wave | Add |
 |------|-----|
 | **0** | Slim overlay Kali/Debian templates + pack `.list` files. Working-set token budget in the context builder (stop dumping plugins/timeline). |
-| **1** | WS token/tool streaming. transcript.jsonl + episode files. `memory_search`/`memory_read`. Checkpoint/resume. Protected notes/todos. |
+| **1** | WS token/tool streaming. transcript.jsonl + episode files. `memory_search`/`memory_read`. Checkpoint/resume. Protected notes/todos. Composer approval + live spend ledger (Part 5). |
 | **2** | SearXNG **and** 4get. Spill large tool output to loot instead of dropping. |
 | **3** | Inspector reads episodes/notes; compaction UI is a quiet divider, not a chat message. |
 
@@ -1372,7 +1375,7 @@ Insert into the Part 2 / Part 3 table:
 | Wave | Add |
 |------|-----|
 | **0** | Tool catalog index + `search_tools` / `describe_tool` contract. Variant table (prompt + pack + skills) even if only pentest/chat/code/report are wired. Copy `security_authorization.md` on bootstrap (done). |
-| **1** | Provider-boundary authz tag + forgery strip (done). Approval execute-await still applies to MCP and `install_package`. |
+| **1** | Provider-boundary authz tag + forgery strip (done). Composer approval + prefix grant + live spend (Part 5). Approval execute-await still applies to MCP and `install_package`. |
 | **2** | MCP host (`mcp.yaml`), host-vs-sandbox backend on each tool. `trusted_installs.yaml` + pack-list YOLO bypass. No `curl\|sh`. |
 | **3** | Device plugins: Flipper as the first `device` type. Loot path. Host ToolBlocks in the same inspector. |
 | **4** | Remaining variants (recon, web, cloud, hardware, osint) as first-class modes. Skill allowlists per variant. |
@@ -1380,5 +1383,115 @@ Insert into the Part 2 / Part 3 table:
 ---
 
 *Part 4 added 2026-09-05. More tools via discovery, not prompt stuffing. NIL hosts MCP. Device buses stay on the host. Installs are human-gated except an operator-signed exact-name allowlist. Authorization prompt + silent tag are already wired. Many variants, one gate.*
+
+---
+
+# Part 5 — Approval UX and live spend (observe, do not gate)
+
+Locked 2026-09-05. HackerAI's approval prompt and `UsageTracker` are the interaction reference. Steal the *attention model*, not the skin, and **do not** import their billing halt.
+
+HackerAI asks for two things at once: permission to run a tool, and awareness of what the run is costing. Their implementation mixes those with Extra Usage, $5/run stops, and a delayed "Reviewing" spinner for a second model. NIL keeps the first two (permission + documented spend) and drops the third as product policy.
+
+---
+
+## 41. One attention object, in the composer
+
+HackerAI mounts `AgentApprovalPrompt` on `ChatInput`: category, optional justification, exact target in `<pre>`, then **Allow once** / **Allow this conversation** / Deny / Stop. Stream `ToolBlock`s stay chips. The composer is the only thing pulsing.
+
+NIL already specified this in `FRAMEWORK.md` and anti-slop ("one attention object"). The previous `ApprovalBlock.svelte` violated it: emoji, illegal `--accent-primary` / `--surface-*` tokens, `console.log` handlers, never mounted. Inline Approve/Reject on `ToolBlock` competed with the composer.
+
+**Shipped interaction:**
+
+```
+StreamComposer
+├── mode chips (hunt / chat / code / report)
+├── ApprovalBlock          ← only when agentRun.pendingApproval
+│     category             (Terminal command / File change)
+│     this-turn spend      (real tokens + USD, or omitted if the provider reported 0)
+│     justification        (assistant prose, hidden if it only echoes the command)
+│     exact command        (JetBrains Mono)
+│     prefix hint          ("Allow this engagement covers later commands using nmap")
+│     Allow once ⌘↵
+│     Allow this engagement
+│     Deny ⌘⇧↵
+│     Stop
+└── input row (disabled while gated)
+```
+
+Rules:
+
+1. **One pending gate.** Stream ToolBlocks show `pending` as a chip. They do not grow a second button row.
+2. **Greyscale chrome.** Allow once is `--nil-raised` + hairline, not a colored primary. Deny/Stop are ghost. Color still means risk, not "go."
+3. **SCANLINE on the gate while the approved command runs.** No BorderBeam canvas (Zone C, brand-violet gradient).
+4. **MAGNETIC on Allow once only** (one of the max-3 CTAs).
+5. **Keyboard.** `⌘↵` allow once, `⌘⇧↵` deny, `⌘Y` YOLO (unchanged). Composer Enter does not send while gated.
+6. **Stop** rejects the pending run and marks the stream interrupted. Partial output stays.
+7. Skip HackerAI's 450ms "Reviewing" delay until we actually have auto-review. A fake delay is a lie about system state.
+
+### Prefix grant ("Allow this engagement")
+
+HackerAI's conversation grant is an argv prefix for the rest of that chat. NIL's unit of work is the **engagement**.
+
+- Derive prefix = first real executable (`nmap`), skipping `sudo` / `proxychains` / `env`.
+- Persist in SQLite `tool_grants` (`engagement`, `kind=command_prefix`, `prefix`).
+- Later `propose_command` matching that prefix auto-approves and executes, **except** `safety_level == dangerous` (still a human, even under a grant; YOLO already has the same dangerous caveat).
+- HTTP `POST /v1/tools/approve` with `{ grant: "engagement_prefix", execute: true }` saves the grant then runs. Default `execute: true` because "Allow" means run it — the library still splits `approve_command` / `execute_command`.
+
+Do not silently `curl | sh` via a `curl` prefix grant; install stays a separate gate (§37).
+
+---
+
+## 42. Live spend — document as you go
+
+HackerAI's `UsageTracker` accumulates per-step input/output tokens, provider cost, sandbox non-model cost, then **settles billing**. We accumulate the same numbers and **write them down**. We do not halt the hunt.
+
+### Source of truth
+
+| Layer | What |
+|-------|------|
+| Provider response `usage` | `prompt_tokens` / `completion_tokens` (0 if the model does not report — common for local Ollama) |
+| `ProviderConfig.cost_per_1k` | Operator-declared USD per 1k total tokens. Local models stay `0`. |
+| SQLite `token_usage` | Every `AIRouter.send` inserts a row |
+| `engagements/<name>/run/usage.jsonl` | Same record, append-only, survives DB rebuilds |
+| `GET /v1/usage?engagement=` | Totals + `by_provider` + last 20 rows |
+| `POST /v1/chat` payload | `usage` on that turn + `response` alias + `tool_call` for the first pending run |
+
+Cost formula (honest, boring): `(prompt + completion) / 1000 * cost_per_1k`. No cache-token theater until a provider actually returns cache reads. No estimated tokens when the API sent zeros. **If there is nothing to show, show nothing.**
+
+### Surfaces
+
+| Surface | Copy | When hidden |
+|---------|------|-------------|
+| Status bar | compact ` $0.003 · 2.0k ` (machine typeface, no uppercase) | totals are 0 |
+| Approval gate | `This turn` + in/out + USD | this turn reported 0 |
+| Tool chip | compact spend from the model turn that proposed it | 0 |
+| Assistant step | usage attached for later inspector | 0 |
+
+Ink weight, not severity color: dim for small, full ink above ~$1. Spend is not CVSS.
+
+Frontend `usageStore` loads the engagement ledger on engagement change, sets `lastTurn` from the chat response, then refreshes totals from `GET /v1/usage` so a WS drop cannot invent a number.
+
+### What we will not ship
+
+- Free-tier $ floors, Extra Usage, Stripe, `$5/run` halt
+- Fabricated CVSS-adjacent "estimated remaining budget"
+- A colored cost badge
+- Token counts guessed from character length
+
+An optional **operator-set** cap (toast, then pause) can wait for Wave 5. Default is unlimited local spend with a visible ledger.
+
+---
+
+## 43. Wave patch (Part 5)
+
+| Wave | Add |
+|------|-----|
+| **1** | Composer `ApprovalBlock` + prefix grants + `/v1/chat` usage + status-bar ledger (**this slice**). Native tool-call execute-await still outstanding. |
+| **3** | Inspector usage tab: JSONL timeline, per-provider breakdown, click-through to the turn. |
+| **5** | Optional operator spend cap. Auto-review delay only if a reviewer model exists. |
+
+---
+
+*Part 5 added 2026-09-05. Approval lives in the composer. Spend is documented as it happens. Nothing stops a hunt because a meter ran out.*
 
 

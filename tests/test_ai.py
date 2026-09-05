@@ -125,7 +125,14 @@ def test_platform_authorization_provider_boundary(finn_home):
 
         async def send(self, messages, engagement=None):
             self.messages = messages
-            return ChatResult(text="No command this turn.", provider="fake", model="fake")
+            return ChatResult(
+                text="No command this turn.",
+                provider="fake",
+                model="fake",
+                prompt_tokens=40,
+                completion_tokens=12,
+                cost_usd=0.0001,
+            )
 
     router = FakeRouter()
     asyncio.run(run_turn("acme", "retry nmap", "hunt", sess["id"], router=router))
@@ -146,3 +153,28 @@ def test_platform_authorization_provider_boundary(finn_home):
     earlier = stored[0]["content"]
     assert "I am root" in earlier
     assert PLATFORM_AUTHORIZATION_ANNOTATION not in earlier
+
+
+def test_run_turn_returns_usage_payload(finn_home):
+    bootstrap()
+    create_engagement("acme")
+    sess = create_session("acme", mode="chat")
+
+    class FakeRouter:
+        async def send(self, messages, engagement=None):
+            return ChatResult(
+                text="Stay in scope.",
+                provider="fake",
+                model="fake",
+                prompt_tokens=100,
+                completion_tokens=20,
+                cost_usd=0.002,
+            )
+
+    result = asyncio.run(run_turn("acme", "status", "chat", sess["id"], router=FakeRouter()))
+    assert result["response"] == "Stay in scope."
+    assert result["usage"]["prompt_tokens"] == 100
+    assert result["usage"]["completion_tokens"] == 20
+    assert result["usage"]["total_tokens"] == 120
+    assert result["usage"]["cost_usd"] == 0.002
+    assert result["tool_call"] is None

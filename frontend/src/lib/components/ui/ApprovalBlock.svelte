@@ -1,186 +1,240 @@
 <script lang="ts">
-  import BorderBeam from '$lib/components/ui/BorderBeam.svelte';
-  import type { AgentBlock } from '$lib/stores/agentStore';
+  import type { ApprovalGrant, ToolStep } from '$lib/agent/types';
+  import { agentRun } from '$lib/agent/run.svelte.ts';
+  import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
+  import { magnetic } from '$lib/motion/magnetic.svelte.ts';
+  import { usageStore } from '$lib/usage/store.svelte.ts';
 
-  let { pendingApproval }: { pendingApproval: AgentBlock } = $props();
-
-  function getToolLabel(tool?: string) {
-    return tool ? tool.replace('_', ' ') : 'tool';
+  interface Props {
+    step: ToolStep;
   }
 
-  function formatCost(cost?: { inputTokens: number; outputTokens: number; estCostUSD: number }) {
-    if (!cost) return '';
-    return `~$${cost.estCostUSD.toFixed(4)} (${(cost.inputTokens/1000).toFixed(1)}k in / ${(cost.outputTokens/1000).toFixed(1)}k out)`;
+  let { step }: Props = $props();
+  let sending = $state(false);
+
+  const WRAPPERS = new Set([
+    'sudo', 'doas', 'env', 'nice', 'timeout',
+    'proxychains', 'proxychains4', 'proxychains-ng', 'stdbuf', 'unbuffer',
+  ]);
+
+  function commandFrom(s: ToolStep): string {
+    if (s.primaryArg) return s.primaryArg;
+    if (s.args && typeof s.args === 'object') {
+      const rec = s.args as Record<string, unknown>;
+      if (typeof rec.command === 'string') return rec.command;
+    }
+    return '';
+  }
+
+  function commandPrefix(command: string): string {
+    const parts = command.trim().split(/\s+/);
+    for (const part of parts) {
+      if (part.includes('=') && !part.startsWith('-')) continue;
+      const name = part.split('/').pop() || part;
+      if (WRAPPERS.has(name)) continue;
+      return name;
+    }
+    return parts[0]?.split('/').pop() || '';
+  }
+
+  function category(s: ToolStep): string {
+    const name = (s.name || '').toLowerCase();
+    if (name.includes('file') || name === 'write' || name === 'edit') return 'File change';
+    return 'Terminal command';
+  }
+
+  function normalize(value: string): string {
+    return value.toLowerCase().replace(/[^a-z0-9]+/g, ' ').trim();
+  }
+
+  function purpose(s: ToolStep, command: string): string {
+    const raw = (s.reason || '').trim();
+    if (!raw) return '';
+    const nPurpose = normalize(raw);
+    const nTarget = normalize(command);
+    if (!nPurpose || nPurpose === nTarget) return '';
+    if (nTarget && nPurpose.includes(nTarget) && nPurpose.length < nTarget.length + 24) return '';
+    return raw;
+  }
+
+  const command = $derived(commandFrom(step));
+  const prefix = $derived(commandPrefix(command));
+  const why = $derived(purpose(step, command));
+  const usage = $derived(step.usage ?? usageStore.lastTurn);
+  const busy = $derived(sending || step.state === 'running');
+
+  async function allow(grant: ApprovalGrant) {
+    if (busy) return;
+    sending = true;
+    try {
+      await agentRun.approve(step.id, grant);
+    } finally {
+      sending = false;
+    }
+  }
+
+  function deny() {
+    if (busy) return;
+    agentRun.reject(step.id);
+  }
+
+  function stop() {
+    if (busy) return;
+    agentRun.reject(step.id);
+    agentRun.stop();
   }
 </script>
 
-<div class="approval-block" role="alertdialog" aria-label="Pending approval">
-  <BorderBeam />
-  
-  <div class="approval-header">
-    <div class="approval-tool">
-      <span class="approval-icon">⚡</span>
-      <div class="approval-tool-info">
-        <span class="approval-tool-name">{getToolLabel(pendingApproval.tool)}</span>
-        <span class="approval-cost">{formatCost(pendingApproval.cost)}</span>
-      </div>
-    </div>
-  </div>
+<div
+  class="gate nil-scan"
+  class:busy
+  data-state={busy ? 'working' : undefined}
+  role="alertdialog"
+  aria-label="Pending tool approval"
+  aria-busy={busy}
+>
+  <header class="head">
+    <span class="cat">{category(step)}</span>
+    <SpendMeter {usage} compact label="This turn" />
+  </header>
 
-  <div class="approval-args">
-    <pre class="approval-args-json"><code>{JSON.stringify(pendingApproval.args, null, 2)}</code></pre>
-  </div>
+  {#if why}
+    <p class="why">{why}</p>
+  {/if}
 
-  <div class="approval-actions">
-    <button class="approval-btn approve" onclick={() => console.log('approve', pendingApproval.id)}>
-      <span>Approve</span>
-      <kbd>Cmd+Enter</kbd>
+  {#if command}
+    <pre class="target"><code>{command}</code></pre>
+  {/if}
+
+  {#if prefix}
+    <p class="hint">Allow this engagement covers later commands using {prefix}.</p>
+  {/if}
+
+  <div class="actions">
+    <button
+      class="nil-lift nil-halo nil-magnetic act"
+      type="button"
+      disabled={busy}
+      {@attach magnetic}
+      onclick={() => void allow('once')}
+    >
+      {busy ? 'Running' : 'Allow once'}
+      <kbd>⌘↵</kbd>
     </button>
-    <button class="approval-btn edit" onclick={() => console.log('edit', pendingApproval.id)}>
-      <span>Edit</span>
+    <button
+      class="nil-lift nil-halo act ghost"
+      type="button"
+      disabled={busy || !prefix}
+      onclick={() => void allow('engagement_prefix')}
+    >
+      Allow this engagement
     </button>
-    <button class="approval-btn reject" onclick={() => console.log('reject', pendingApproval.id)}>
-      <span>Reject</span>
-      <kbd>Cmd+Shift+Enter</kbd>
+    <button
+      class="nil-lift nil-halo act ghost"
+      type="button"
+      disabled={busy}
+      onclick={deny}
+    >
+      Deny
+      <kbd>⌘⇧↵</kbd>
+    </button>
+    <button
+      class="nil-lift nil-halo act ghost"
+      type="button"
+      disabled={busy}
+      onclick={stop}
+    >
+      Stop
     </button>
   </div>
 </div>
 
 <style>
-  .approval-block {
-    background: var(--surface-card);
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-panel);
-    overflow: hidden;
-    position: relative;
-    border-color: var(--accent-primary);
-  }
-
-  .approval-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-3) var(--space-4);
-    background: var(--surface-hover);
-    border-bottom: 1px solid var(--surface-border);
-  }
-
-  .approval-tool {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-  }
-
-  .approval-icon {
-    font-size: 20px;
-    flex-shrink: 0;
-  }
-
-  .approval-tool-info {
+  .gate {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: var(--s-2);
+    padding: var(--s-3);
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    border-radius: var(--r-card);
+    box-shadow: var(--lift-1);
   }
 
-  .approval-tool-name {
-    font-family: var(--font-mono);
-    font-size: var(--font-xs);
-    font-weight: 500;
-    color: var(--text-primary);
+  .head {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: var(--s-2);
+    min-height: 20px;
   }
 
-  .approval-cost {
-    font-family: var(--font-mono);
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
+  .cat {
+    font: 600 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
+    text-transform: uppercase;
+    color: var(--nil-ink-3);
   }
 
-  .approval-args {
-    padding: var(--space-2) var(--space-4);
-    max-height: 200px;
-    overflow: auto;
-    border-bottom: 1px solid var(--surface-border);
-  }
-
-  .approval-args-json {
+  .why {
     margin: 0;
-    font-family: var(--font-mono);
-    font-size: var(--font-2xs);
-    line-height: 1.5;
-    color: var(--text-secondary);
+    font: var(--t-body)/var(--lh-body) var(--font-ui);
+    color: var(--nil-ink-2);
+  }
+
+  .target {
+    margin: 0;
+    max-block-size: 120px;
+    overflow: auto;
+    padding: var(--s-2);
+    background: var(--nil-void);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-field);
+    font: var(--t-meta)/var(--lh-body) var(--font-machine);
+    color: var(--nil-ink);
     white-space: pre-wrap;
     word-break: break-word;
   }
 
-  .approval-args-json code {
-    background: none;
-    padding: 0;
+  .hint {
+    margin: 0;
+    font: var(--t-meta)/var(--lh-body) var(--font-ui);
+    color: var(--nil-ink-3);
   }
 
-  .approval-actions {
+  .actions {
     display: flex;
-    gap: 8px;
-    padding: var(--space-3) var(--space-4);
+    flex-wrap: wrap;
+    gap: var(--s-2);
   }
 
-  .approval-btn {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-    flex: 1;
-    padding: 10px 16px;
-    border: none;
-    border-radius: var(--radius-control);
-    font-family: var(--font-sans);
-    font-size: var(--font-xs);
-    font-weight: 500;
-    cursor: pointer;
-    transition: all var(--spring-snappy);
-  }
-
-  .approval-btn.approve {
-    background: var(--accent-primary);
-    color: var(--color-abyss-0);
-  }
-
-  .approval-btn.approve:hover {
-    filter: brightness(1.1);
-  }
-
-  .approval-btn.edit {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-    border: 1px solid var(--surface-border);
-  }
-
-  .approval-btn.edit:hover {
-    background: var(--surface-card);
-  }
-
-  .approval-btn.reject {
-    background: transparent;
-    color: var(--color-danger);
-    border: 1px solid var(--color-danger);
-  }
-
-  .approval-btn.reject:hover {
-    background: var(--color-danger);
-    color: var(--color-abyss-0);
-  }
-
-  .approval-btn kbd {
+  .act {
     display: inline-flex;
     align-items: center;
-    padding: 1px 5px;
-    border-radius: 3px;
-    background: rgba(0,0,0,0.2);
-    font-family: var(--font-mono);
-    font-size: 10px;
-    margin-left: 4px;
+    gap: 6px;
+    height: 28px;
+    padding: 0 var(--s-3);
+    border: 1px solid var(--nil-line-hot);
+    border-radius: var(--r-field);
+    background: var(--nil-raised);
+    color: var(--nil-ink);
+    font: 500 var(--t-meta)/1 var(--font-ui);
+    cursor: pointer;
   }
 
-  .approval-btn.approve kbd,
-  .approval-btn.reject kbd {
-    background: rgba(255,255,255,0.2);
+  .act.ghost {
+    background: transparent;
+    border-color: var(--nil-line);
+    color: var(--nil-ink-2);
+  }
+
+  .act:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  kbd {
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--nil-ink-3);
   }
 </style>

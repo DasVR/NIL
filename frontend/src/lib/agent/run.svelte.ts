@@ -1,5 +1,7 @@
-import api, { type ChatRequest, type ToolPropose, type ToolApprove } from '$lib/api';
-import type { Finding, Step, ToolStep } from './types';
+import api, { type ChatRequest, type ToolApprove, type ToolRun } from '$lib/api';
+import type { ApprovalGrant, Finding, Step, TokenUsage, ToolState, ToolStep } from './types';
+import { fromApiUsage } from '$lib/usage/format';
+import { usageStore } from '$lib/usage/store.svelte.ts';
 
 let steps = $state<Step[]>([]);
 let findings = $state<Finding[]>([]);
@@ -15,6 +17,35 @@ function primaryArg(args: unknown, fallback: string): string {
     if (typeof v === 'string' && v.length) return v;
   }
   return fallback;
+}
+
+function runId(run: ToolRun): string {
+  return run.run_id || run.id || '';
+}
+
+function runOutput(run: ToolRun): string | undefined {
+  return run.output || run.stdout || undefined;
+}
+
+function mapRunState(run: ToolRun): ToolState {
+  if (run.approval === 'rejected') return 'error';
+  if (run.status === 'running') return 'running';
+  if (run.status === 'pending' || run.status === 'proposed') return 'pending';
+  if (run.status === 'failed' || run.status === 'error' || run.status === 'timeout' || run.status === 'cancelled') {
+    return 'error';
+  }
+  if (run.status === 'completed' || run.status === 'done' || run.status === 'ok' || run.status === 'approved') {
+    return 'ok';
+  }
+  return 'pending';
+}
+
+function stripFences(text: string): string {
+  return text.replace(/```[\s\S]*?```/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function chatText(res: { response?: string; text?: string }): string {
+  return res.response || res.text || '';
 }
 
 export const agentRun = {
@@ -37,7 +68,6 @@ export const agentRun = {
   },
 
   stop() {
-    if (!running) return;
     running = false;
     interrupted = true;
     const last = steps[steps.length - 1];
@@ -53,7 +83,10 @@ export const agentRun = {
       }];
     }
     for (const s of steps) {
-      if (s.kind === 'tool' && s.state === 'running') s.state = 'error';
+      if (s.kind === 'tool' && (s.state === 'running' || s.state === 'pending')) {
+        s.state = 'error';
+        s.error = s.error || 'Stopped';
+      }
     }
   },
 
@@ -73,24 +106,60 @@ export const agentRun = {
       sessionId = res.session_id;
       if (interrupted) return;
 
+      const usage: TokenUsage | null = fromApiUsage(res.usage);
+      usageStore.recordTurn(usage);
+      void usageStore.refresh(engagement);
+
+      const assistantText = chatText(res);
       steps = [...steps, {
         kind: 'message',
         id: `assistant-${Date.now()}`,
         role: 'assistant',
-        text: res.response,
+        text: assistantText,
+        usage: usage ?? undefined,
       }];
+
+      const reason = stripFences(assistantText).slice(0, 280);
+      const pendingRuns = (res.runs || []).filter((run) => run.approval === 'pending');
+      const toolCalls = res.tool_call ? [res.tool_call] : [];
+      if (pendingRuns.length === 0 && toolCalls.length === 0) {
+        for (const run of res.runs || []) {
+          if (run.approval === 'pending') continue;
+          toolIndex += 1;
+          const tool: ToolStep = {
+            kind: 'tool',
+            id: runId(run),
+            index: toolIndex,
+            name: run.tool || 'run_command',
+            primaryArg: run.command,
+            args: { command: run.command },
+            state: mapRunState(run),
+            output: runOutput(run),
+            error: run.error,
+            exitCode: run.exit_code ?? run.returncode,
+            safetyLevel: run.safety_level,
+            usage: usage ?? undefined,
+          };
+          steps = [...steps, tool];
+        }
+        return;
+      }
 
       if (res.tool_call) {
         const tc = res.tool_call;
         toolIndex += 1;
+        const command = primaryArg(tc.args, '');
         const tool: ToolStep = {
           kind: 'tool',
           id: tc.run_id || `tool-${Date.now()}`,
           index: toolIndex,
           name: tc.tool || 'run_command',
-          primaryArg: primaryArg(tc.args, tc.reason || ''),
+          primaryArg: command,
           args: tc.args || {},
           state: 'pending',
+          safetyLevel: tc.safety_level,
+          reason,
+          usage: usage ?? undefined,
         };
         steps = [...steps, tool];
       }
@@ -111,19 +180,19 @@ export const agentRun = {
     running = true;
     interrupted = false;
     try {
-      const body: ToolPropose = { engagement, tool, command, safety_level };
-      const run = await api.proposeTool(body);
+      const run = await api.proposeTool({ engagement, tool, command, safety_level });
       toolIndex += 1;
       const step: ToolStep = {
         kind: 'tool',
-        id: run.id,
+        id: runId(run),
         index: toolIndex,
         name: run.tool,
         primaryArg: run.command,
         args: { command: run.command },
-        state: 'pending',
-        output: run.output,
+        state: mapRunState(run),
+        output: runOutput(run),
         error: run.error,
+        safetyLevel: run.safety_level,
       };
       steps = [...steps, step];
       return run;
@@ -132,7 +201,7 @@ export const agentRun = {
     }
   },
 
-  async approve(id: string) {
+  async approve(id: string, grant: ApprovalGrant = 'once') {
     const step = steps.find((s): s is ToolStep => s.kind === 'tool' && s.id === id);
     if (!step) return;
     step.state = 'running';
@@ -141,13 +210,17 @@ export const agentRun = {
     interrupted = false;
 
     try {
-      const body: ToolApprove = { run_id: id };
+      const body: ToolApprove = { run_id: id, grant, execute: true };
       const run = await api.approveTool(body);
       if (interrupted) return;
-      step.state = run.status === 'error' ? 'error' : 'ok';
+      step.state = mapRunState(run);
+      if (step.state === 'pending' || run.status === 'approved') {
+        step.state = run.error ? 'error' : 'ok';
+      }
       step.endTime = Date.now();
-      step.output = run.output;
+      step.output = runOutput(run);
       step.error = run.error;
+      step.exitCode = run.exit_code ?? run.returncode;
     } catch (err: unknown) {
       step.state = 'error';
       step.error = err instanceof Error ? err.message : 'Approve failed';
@@ -158,7 +231,11 @@ export const agentRun = {
 
   reject(id: string) {
     api.rejectTool(id).catch(console.error);
-    steps = steps.filter((s) => s.id !== id);
+    const step = steps.find((s): s is ToolStep => s.kind === 'tool' && s.id === id);
+    if (step) {
+      step.state = 'error';
+      step.error = 'Denied';
+    }
   },
 
   addFinding(finding: Finding) {

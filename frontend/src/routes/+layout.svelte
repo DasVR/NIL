@@ -19,6 +19,7 @@
   import { keymap } from '$lib/keymap.svelte.ts';
   import { browser } from '$app/environment';
   import { agentRun } from '$lib/agent/run.svelte.ts';
+  import { usageStore } from '$lib/usage/store.svelte.ts';
 
   let { children }: { children: Snippet } = $props();
 
@@ -29,6 +30,11 @@
     setupTauriEvents();
     keymap.init();
     keymap.setComposerFocus(() => composerInput?.focus());
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    void usageStore.refresh(appState.activeEngagementId);
   });
 </script>
 

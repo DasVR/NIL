@@ -2,6 +2,17 @@ export type ToolState = 'pending' | 'running' | 'ok' | 'error';
 
 export type FindingSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
+export type ApprovalGrant = 'once' | 'engagement_prefix';
+
+export interface TokenUsage {
+  promptTokens: number;
+  completionTokens: number;
+  totalTokens: number;
+  costUsd: number;
+  provider?: string;
+  model?: string;
+}
+
 export interface ToolStep {
   kind: 'tool';
   id: string;
@@ -15,6 +26,9 @@ export interface ToolStep {
   exitCode?: number;
   startTime?: number;
   endTime?: number;
+  safetyLevel?: string;
+  reason?: string;
+  usage?: TokenUsage;
 }
 
 export interface MessageStep {
@@ -23,6 +37,7 @@ export interface MessageStep {
   role: 'user' | 'assistant';
   text: string;
   interrupted?: boolean;
+  usage?: TokenUsage;
 }
 
 export interface ThoughtStep {

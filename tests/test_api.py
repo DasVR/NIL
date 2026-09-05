@@ -3,6 +3,7 @@ from fastapi.testclient import TestClient
 from finn_pentest.api.app import create_app
 from finn_pentest.core.bootstrap import bootstrap
 from finn_pentest.core.runtime import apply_setup
+from finn_pentest.providers.openai_compat import log_usage
 
 
 def test_health_and_engagement_routes(finn_home):
@@ -43,3 +44,15 @@ def test_sandbox_switch_and_start_docker(finn_home, monkeypatch):
     assert docker.status_code == 503
     assert docker.json()["code"] == NOT_INSTALLED
     assert "not installed" in docker.json()["message"].lower()
+
+
+def test_usage_endpoint_totals(finn_home):
+    bootstrap()
+    log_usage("acme", "local", "llama", 200, 50, 0.0)
+    client = TestClient(create_app())
+    body = client.get("/v1/usage", params={"engagement": "acme"}).json()
+    assert body["prompt_tokens"] == 200
+    assert body["completion_tokens"] == 50
+    assert body["total_tokens"] == 250
+    assert body["cost_usd"] == 0
+    assert body["by_provider"][0]["model"] == "llama"

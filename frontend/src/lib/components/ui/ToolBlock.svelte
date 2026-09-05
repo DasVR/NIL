@@ -1,6 +1,6 @@
 <script lang="ts">
   import type { ToolStep } from '$lib/agent/types';
-  import { agentRun } from '$lib/agent/run.svelte.ts';
+  import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
 
   interface Props {
     step: ToolStep;
@@ -59,18 +59,8 @@
         <span class="glyph">{stateGlyph}</span>
         <span class="label">{stateLabel}</span>
       </span>
+      <SpendMeter usage={step.usage} compact />
     </header>
-
-    {#if step.state === 'pending'}
-      <div class="actions">
-        <button class="nil-lift nil-halo act" type="button" onclick={() => agentRun.approve(step.id)}>
-          Approve <kbd>⌘↵</kbd>
-        </button>
-        <button class="nil-lift nil-halo act ghost" type="button" onclick={() => agentRun.reject(step.id)}>
-          Reject
-        </button>
-      </div>
-    {/if}
 
     {#if step.state === 'error' || step.output || step.state === 'ok'}
       <button
@@ -164,37 +154,6 @@
   .state[data-state="error"] { color: var(--sev-critical); }
 
   .glyph { font-variant-numeric: tabular-nums; }
-
-  .actions {
-    display: flex;
-    gap: var(--s-2);
-    padding-block: var(--s-2);
-  }
-
-  .act {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    height: 28px;
-    padding: 0 var(--s-3);
-    border: 1px solid var(--nil-line-hot);
-    border-radius: var(--r-field);
-    background: var(--nil-raised);
-    color: var(--nil-ink);
-    font: 500 var(--t-meta)/1 var(--font-ui);
-    cursor: pointer;
-  }
-
-  .act.ghost {
-    background: transparent;
-    border-color: var(--nil-line);
-    color: var(--nil-ink-2);
-  }
-
-  .act kbd {
-    font: var(--t-micro)/1 var(--font-machine);
-    color: var(--nil-ink-3);
-  }
 
   .toggle {
     display: inline-flex;

@@ -2,6 +2,8 @@
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { tabsStore } from '$lib/stores/tabsStore';
+  import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
+  import { usageStore } from '$lib/usage/store.svelte.ts';
 
   let tabs = $derived($tabsStore);
   let activeTab = $derived(tabs.tabs.find(t => t.id === tabs.activeTabId));
@@ -24,6 +26,7 @@
       <span class="div" aria-hidden="true"></span>
       <span class="nil-scan" data-state="working">running</span>
     {/if}
+    <SpendMeter usage={usageStore.totals} compact />
   </div>
 
   <div class="cluster">
