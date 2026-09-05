@@ -7,11 +7,11 @@
   <div class="settings-group">
     <h4>Defaults</h4>
     <div class="settings-row">
-      <label>Font</label>
+      <span>Font</span>
       <span class="mono">JetBrains Mono 13</span>
     </div>
     <div class="settings-row">
-      <label>PTY</label>
+      <span>PTY</span>
       <span>Tauri sidecar</span>
     </div>
   </div>

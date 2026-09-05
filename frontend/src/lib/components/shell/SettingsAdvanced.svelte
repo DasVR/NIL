@@ -8,7 +8,7 @@
   <div class="settings-group">
     <h4>Agent</h4>
     <div class="settings-row">
-      <label>YOLO</label>
+      <span>YOLO</span>
       <span class="mono">{appState.yoloMode ? 'on' : 'off'}</span>
     </div>
   </div>

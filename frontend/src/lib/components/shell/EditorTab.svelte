@@ -62,7 +62,7 @@
   });
 </script>
 
-<div class="editor-tab" bind:this={container} data-tab={tab.id} />
+<div class="editor-tab" bind:this={container} data-tab={tab.id}></div>
 
 <style>
   .editor-tab {

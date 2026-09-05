@@ -24,7 +24,7 @@
   });
 </script>
 
-<div class="preview-tab" bind:this={container} />
+<div class="preview-tab" bind:this={container}></div>
 
 <style>
   .preview-tab {

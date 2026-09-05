@@ -7,49 +7,49 @@
   <div class="settings-group">
     <h4>General</h4>
     <div class="settings-row">
-      <label>Command palette</label>
+      <span>Command palette</span>
       <kbd>Cmd+K</kbd>
     </div>
     <div class="settings-row">
-      <label>Focus composer</label>
+      <span>Focus composer</span>
       <kbd>Cmd+J</kbd>
     </div>
     <div class="settings-row">
-      <label>Settings</label>
+      <span>Settings</span>
       <kbd>Cmd+,</kbd>
     </div>
     <div class="settings-row">
-      <label>Toggle sidebar</label>
+      <span>Toggle sidebar</span>
       <kbd>Cmd+B</kbd>
     </div>
     <div class="settings-row">
-      <label>Toggle inspector</label>
+      <span>Toggle inspector</span>
       <kbd>Cmd+\</kbd>
     </div>
   </div>
   <div class="settings-group">
     <h4>Agent</h4>
     <div class="settings-row">
-      <label>Approve pending tool</label>
+      <span>Approve pending tool</span>
       <kbd>Cmd+Enter</kbd>
     </div>
     <div class="settings-row">
-      <label>Reject pending tool</label>
+      <span>Reject pending tool</span>
       <kbd>Cmd+Shift+Enter</kbd>
     </div>
     <div class="settings-row">
-      <label>Toggle YOLO</label>
+      <span>Toggle YOLO</span>
       <kbd>Cmd+Y</kbd>
     </div>
   </div>
   <div class="settings-group">
     <h4>Tabs</h4>
     <div class="settings-row">
-      <label>New terminal</label>
+      <span>New terminal</span>
       <kbd>Cmd+T</kbd>
     </div>
     <div class="settings-row">
-      <label>Close tab</label>
+      <span>Close tab</span>
       <kbd>Cmd+W</kbd>
     </div>
   </div>

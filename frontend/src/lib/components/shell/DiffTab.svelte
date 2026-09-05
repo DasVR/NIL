@@ -2,11 +2,12 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
   import type { Tab } from '$lib/stores/tabsStore';
+  import type { editor as MonacoEditor } from 'monaco-editor';
 
   let { tab }: { tab: Tab } = $props();
 
   let container: HTMLDivElement;
-  let editor: { dispose: () => void; setModel: (m: unknown) => void } | undefined;
+  let editor: MonacoEditor.IStandaloneDiffEditor | undefined;
 
   function token(name: string, fallback: string): string {
     const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -36,7 +37,7 @@
         },
       });
 
-      editor = monaco.editor.createDiffEditor(container, {
+      const diff = monaco.editor.createDiffEditor(container, {
         theme: 'nil-diff',
         fontFamily: 'JetBrains Mono',
         fontSize: 13,
@@ -46,8 +47,9 @@
         readOnly: true,
         renderSideBySide: window.innerWidth > 1000,
       });
+      editor = diff;
 
-      editor.setModel({
+      diff.setModel({
         original: monaco.editor.createModel('', 'plaintext'),
         modified: monaco.editor.createModel('', 'plaintext'),
       });
@@ -59,7 +61,7 @@
   });
 </script>
 
-<div class="diff-tab" bind:this={container} data-tab={tab.id} />
+<div class="diff-tab" bind:this={container} data-tab={tab.id}></div>
 
 <style>
   .diff-tab {

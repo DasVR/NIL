@@ -3,6 +3,8 @@
   import { browser } from '$app/environment';
   import { terminalStore } from '$lib/stores/terminalStore.svelte.ts';
   import { tabsStore } from '$lib/stores/tabsStore';
+  import type { Terminal as XtermTerminal } from '@xterm/xterm';
+  import type { FitAddon as XtermFitAddon } from '@xterm/addon-fit';
 
   interface Props {
     tab: { id: string; type: string; label: string; dirty: boolean };
@@ -11,9 +13,8 @@
   let { tab }: Props = $props();
 
   let container: HTMLDivElement;
-  let terminal: { write: (d: string) => void; writeln: (d: string) => void; open: (el: HTMLElement) => void; loadAddon: (a: unknown) => void; focus: () => void; dispose: () => void; onData: (cb: (d: string) => void) => void; onResize: (cb: (s: { cols: number; rows: number }) => void) => void } | undefined;
-  let fitAddon: { fit: () => void } | undefined;
-  let ptyConnected = $state(false);
+  let terminal: XtermTerminal | undefined;
+  let fitAddon: XtermFitAddon | undefined;
 
   function token(name: string, fallback: string): string {
     const v = getComputedStyle(document.documentElement).getPropertyValue(name).trim();
@@ -45,7 +46,7 @@
     const medium = token('--sev-medium', '#d9b341');
     const low = token('--sev-low', '#5c9ead');
 
-    terminal = new Terminal({
+    const term = new Terminal({
       fontFamily: 'JetBrains Mono, monospace',
       fontSize: 13,
       lineHeight: 1.45,
@@ -76,15 +77,17 @@
       convertEol: true,
       scrollback: 10000,
     });
+    terminal = term;
 
-    fitAddon = new FitAddon();
+    const fit = new FitAddon();
+    fitAddon = fit;
     const webglAddon = new WebglAddon();
 
-    terminal.loadAddon(fitAddon);
-    terminal.loadAddon(webglAddon);
+    term.loadAddon(fit);
+    term.loadAddon(webglAddon);
 
-    terminal.open(container);
-    fitAddon.fit();
+    term.open(container);
+    fit.fit();
 
     // Connect to PTY via Tauri
     if (window.__TAURI__) {
@@ -96,17 +99,15 @@
         ws.binaryType = 'arraybuffer';
         
         ws.onopen = () => {
-          ptyConnected = true;
           terminalStore.setConnected(true);
         };
         
         ws.onmessage = (event) => {
           const data = new TextDecoder().decode(event.data);
-          terminal.write(data);
+          term.write(data);
         };
         
         ws.onclose = () => {
-          ptyConnected = false;
           terminalStore.setConnected(false);
         };
         
@@ -114,26 +115,26 @@
           console.error('PTY WebSocket error:', err);
         };
 
-        terminal.onData((data: string) => {
+        term.onData((data: string) => {
           ws.send(data);
         });
 
-        terminal.onResize(({ cols, rows }: { cols: number; rows: number }) => {
+        term.onResize(({ cols, rows }: { cols: number; rows: number }) => {
           ws.send(JSON.stringify({ type: 'resize', cols, rows }));
         });
 
-        terminalStore.setTerminal(terminal);
+        terminalStore.setTerminal(term);
         terminalStore.setWebSocket(ws);
       } catch (err) {
         console.error('Failed to connect PTY:', err);
-        terminal.writeln('PTY connection failed. Run npm run tauri dev for a live terminal.');
+        term.writeln('PTY connection failed. Run npm run tauri dev for a live terminal.');
       }
     } else {
-      terminal.writeln('Not running in Tauri. Run npm run tauri dev for a live terminal.');
+      term.writeln('Not running in Tauri. Run npm run tauri dev for a live terminal.');
     }
 
     const resizeObserver = new ResizeObserver(() => {
-      fitAddon.fit();
+      fit.fit();
     });
     resizeObserver.observe(container);
 

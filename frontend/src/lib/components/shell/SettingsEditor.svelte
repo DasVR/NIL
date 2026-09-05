@@ -7,15 +7,15 @@
   <div class="settings-group">
     <h4>Defaults</h4>
     <div class="settings-row">
-      <label>Font</label>
+      <span>Font</span>
       <span class="mono">JetBrains Mono 13</span>
     </div>
     <div class="settings-row">
-      <label>Tab size</label>
+      <span>Tab size</span>
       <span class="mono">2 spaces</span>
     </div>
     <div class="settings-row">
-      <label>Minimap</label>
+      <span>Minimap</span>
       <span>Off</span>
     </div>
   </div>

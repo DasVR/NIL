@@ -214,38 +214,6 @@
     overflow: hidden;
   }
 
-  .settings-search {
-    position: relative;
-    padding: var(--space-4);
-    border-bottom: 1px solid var(--surface-border);
-    flex-shrink: 0;
-  }
-
-  .settings-search svg {
-    position: absolute;
-    left: 28px;
-    top: 50%;
-    transform: translateY(-50%);
-    color: var(--text-tertiary);
-    flex-shrink: 0;
-  }
-
-  .settings-search input {
-    width: 100%;
-    padding: 8px 12px 8px 44px;
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-control);
-    background: var(--surface-input);
-    color: var(--input-text);
-    font-family: var(--font-sans);
-    font-size: var(--font-xs);
-    outline: none;
-  }
-
-  .settings-search input:focus {
-    border-color: var(--nil-line-hot);
-  }
-
   .settings-footer {
     display: flex;
     align-items: center;
