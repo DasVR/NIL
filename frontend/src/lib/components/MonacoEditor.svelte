@@ -29,9 +29,9 @@
           inherit: true,
           rules: [],
           colors: {
-            'editor.background': '#050507',
-            'editor.lineHighlightBackground': '#101016',
-            'editor.selectionBackground': '#452a8466',
+            'editor.background': '#08090a',
+            'editor.lineHighlightBackground': '#151819',
+            'editor.selectionBackground': '#e8e6e326',
           },
         });
 

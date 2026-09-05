@@ -1,5 +1,10 @@
 # NIL — Bookmark Sourcing Ledger
 
+> **Note (2026-09-04):** the violet/coral/cream row below reflects the palette this
+> ledger originally sourced, since replaced by the color-means-risk law in
+> `.cursor/rules/00-nil-design-language.mdc`. Left as-is — this file is a historical
+> record of where decisions came from, not a live spec.
+>
 > **Purpose:** Every design decision traced to a specific bookmark URL + verified package. No generic inspo. This is the receipt.
 
 ---

@@ -7,26 +7,6 @@
   <p class="settings-description">Visual customization and density</p>
 
   <div class="settings-group">
-    <h4>Color Scheme</h4>
-    <div class="setting-row">
-      <div class="setting-info">
-        <span class="setting-label">Accent Color</span>
-        <span class="setting-desc">Primary accent color for UI</span>
-      </div>
-      <div class="setting-control">
-        <div class="color-picker-row">
-          <button class="color-swatch" style="background: #452a84" title="Deep Violet" />
-          <button class="color-swatch" style="background: #8b5cf6" title="Violet" />
-          <button class="color-swatch" style="background: #00d992" title="Mint (Legacy)" />
-          <button class="color-swatch" style="background: #10b981" title="Emerald" />
-          <button class="color-swatch" style="background: #f59e0b" title="Amber" />
-          <button class="color-swatch" style="background: #ef4444" title="Red" />
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <div class="settings-group">
     <h4>Glass & Transparency</h4>
     <div class="setting-row">
       <div class="setting-info">
@@ -110,7 +90,7 @@
     <div class="setting-row">
       <div class="setting-info">
         <span class="setting-label">Particle Effects</span>
-        <span class="setting-desc">ThinkingOrbs, BorderBeam, LiquidMetal</span>
+        <span class="setting-desc">BorderBeam, LiquidMetal</span>
       </div>
       <div class="setting-control">
         <label class="toggle">
@@ -123,25 +103,6 @@
 </div>
 
 <style>
-  .color-picker-row {
-    display: flex;
-    gap: 8px;
-  }
-
-  .color-swatch {
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-control);
-    border: 2px solid transparent;
-    cursor: pointer;
-    transition: transform var(--spring-snappy), border-color var(--spring-snappy);
-  }
-
-  .color-swatch:hover {
-    transform: scale(1.15);
-    border-color: var(--accent-primary);
-  }
-
   .setting-control input[type="number"] {
     width: 80px;
     padding: 6px 10px;

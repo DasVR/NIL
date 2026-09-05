@@ -7,7 +7,7 @@ Build the NIL agent loop backend — a FastAPI service that runs AI agents with 
 - Project: `/home/das/projects/finn-pentest-harness/`
 - Existing backend: `backend/godmode/` — contains the godmod3.ai multi-model router (Ollama Cloud, OpenRouter, etc.)
 - Frontend: `frontend/` — SvelteKit 5 + Tauri 2, already has IA Shell with AI Strip
-- Design tokens: NIL palette (violet #452a84, cream #f5f2ec, coral #fe6f69)
+- Design tokens: color-means-risk (severity ramp only in chrome; `--brand-ember-*` reserved for Zone A identity moments) — see `.cursor/rules/00-nil-design-language.mdc`, not the retired violet/cream/coral palette
 
 ## Architecture
 

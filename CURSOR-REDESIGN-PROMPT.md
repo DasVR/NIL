@@ -1,5 +1,10 @@
 # NIL — Cursor Redesign Build Prompt
 
+> **Superseded 2026-09-04** by `.cursor/rules/00-nil-design-language.mdc` +
+> `frontend/src/lib/styles/tokens.css` (color-means-risk law, ten-primitive motion
+> system). Do not drop this file into Cursor as-is — it will rebuild the retired
+> violet/coral/cream palette and glass-tier system. Kept for historical context only.
+>
 > **Usage:** Drop this entire file into Cursor (Cmd+K → "Build from this prompt") or give to any AI coding agent. Self-contained, no external context needed.
 
 ---
