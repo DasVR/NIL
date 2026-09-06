@@ -51,23 +51,46 @@ export interface ChatRequest {
   hunt?: boolean;
 }
 
+export interface TokenUsagePayload {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost_usd: number;
+  provider?: string;
+  model?: string;
+}
+
 export interface ChatResponse {
   session_id: string;
   response: string;
+  text?: string;
   mode: string;
-  tool_call?: any;
+  tool_call?: {
+    run_id?: string;
+    tool?: string;
+    args?: Record<string, unknown>;
+    reason?: string;
+    safety_level?: string;
+  };
+  runs?: ToolRun[];
+  usage?: TokenUsagePayload | null;
 }
 
 export interface ToolRun {
-  id: string;
+  id?: string;
+  run_id?: string;
   engagement: string;
   tool: string;
   command: string;
-  status: 'proposed' | 'approved' | 'rejected' | 'running' | 'done' | 'error';
+  status: string;
+  approval?: string;
   output?: string;
+  stdout?: string;
   error?: string;
   returncode?: number;
+  exit_code?: number;
   yolo?: boolean;
+  safety_level?: string;
 }
 
 export interface ToolPropose {
@@ -80,6 +103,32 @@ export interface ToolPropose {
 export interface ToolApprove {
   run_id: string;
   edited_command?: string;
+  grant?: 'once' | 'engagement_prefix';
+  execute?: boolean;
+}
+
+export interface UsageSummary {
+  prompt_tokens: number;
+  completion_tokens: number;
+  total_tokens: number;
+  cost_usd: number;
+  by_provider: Array<{
+    provider: string;
+    model: string;
+    prompt_tokens: number;
+    completion_tokens: number;
+    cost_usd: number;
+  }>;
+  recent?: Array<{
+    engagement?: string;
+    provider: string;
+    model: string;
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+    cost_usd: number;
+    created_at: string;
+  }>;
 }
 
 export interface YoloToggle {
@@ -124,6 +173,10 @@ export const api = {
 
   yoloStatus: (engagement: string) => apiFetch<{ yolo_enabled: boolean }>(`/yolo/${encodeURIComponent(engagement)}`),
   yoloToggle: (body: YoloToggle) => apiFetch<{ yolo_enabled: boolean }>('/yolo/toggle', { method: 'POST', body }),
+
+  getUsage: (engagement?: string) => apiFetch<UsageSummary>(
+    engagement ? `/usage?engagement=${encodeURIComponent(engagement)}` : '/usage'
+  ),
 
   listFindings: () => apiFetch<{ findings: any[] }>('/findings'),
   getTimeline: (engagement: string) => apiFetch<{ timeline: string }>(`/timeline/${encodeURIComponent(engagement)}`),
