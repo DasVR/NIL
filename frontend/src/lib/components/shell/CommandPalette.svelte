@@ -129,11 +129,8 @@
   .palette-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(5, 5, 7, 0.7);
-    backdrop-filter: blur(8px);
-    -webkit-backdrop-filter: blur(8px);
+    background: color-mix(in oklab, var(--nil-void) 72%, transparent);
     z-index: var(--z-modal);
-    animation: fadeIn 0.15s var(--spring-smooth);
   }
 
   .palette-window {
@@ -143,22 +140,12 @@
     transform: translateX(-50%);
     width: 640px;
     max-width: calc(100vw - 32px);
-    background: var(--surface-card);
-    border-radius: var(--radius-lg);
-    border: 1px solid var(--accent-primary);
+    background: var(--nil-raised);
+    border-radius: var(--r-panel);
+    border: 1px solid var(--nil-line-hot);
+    box-shadow: var(--lift-3);
     z-index: var(--z-modal);
     overflow: hidden;
-    animation: slideDown 0.2s var(--spring-snappy);
-  }
-
-  @keyframes fadeIn {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  @keyframes slideDown {
-    from { opacity: 0; transform: translateX(-50%) translateY(-16px); }
-    to { opacity: 1; transform: translateX(-50%) translateY(0); }
   }
 
   .palette-header {
@@ -195,7 +182,7 @@
   }
 
   .palette-search input:focus {
-    border-color: var(--accent-primary);
+    border-color: var(--nil-line-hot);
   }
 
   .palette-hint {
@@ -231,7 +218,7 @@
   }
 
   .palette-item.selected {
-    outline: 1px solid var(--accent-primary);
+    outline: 1px solid var(--nil-line-hot);
   }
 
   .palette-item-main {
@@ -300,11 +287,4 @@
   .palette-empty span {
     font-size: var(--font-2xs);
   }
-
-  @media (prefers-reduced-motion: reduce) {
-    .palette-overlay, .palette-window { animation: none; }
-  }
-
-  :global(html.reduce-motion) .palette-overlay,
-  :global(html.reduce-motion) .palette-window { animation: none; }
 </style>

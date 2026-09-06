@@ -1,24 +1,25 @@
-"""Locked Finn color tokens.
+"""Locked NIL color tokens.
 
-Canonical CSS lives in web/src/app.css. This module is the installer/TUI copy so
-the Setup wizard does not drift into a second palette.
+Canonical CSS lives in frontend/src/lib/styles/tokens.css. This module is the
+installer copy so the Setup wizard does not drift into a second palette.
+Chrome is greyscale. Saturation is reserved for severity.
 """
 
 from __future__ import annotations
 
 COLOR = {
-    "abyss": "#050507",
-    "abyss_1": "#0a0a0c",
-    "abyss_2": "#0a0a0e",
-    "abyss_3": "#101016",
-    "abyss_4": "#16161d",
-    "green": "#00d992",
-    "green_dim": "#00b377",
-    "text": "#e8e8e6",
-    "text_dim": "#9a9a94",
-    "text_faint": "#55554f",
-    "danger": "#ff5c5c",
-    "warning": "#ffb454",
-    "info": "#5cb8ff",
-    "critical": "#ff2d55",
+    "abyss": "#08090a",
+    "abyss_1": "#0e1011",
+    "abyss_2": "#151819",
+    "abyss_3": "#151819",
+    "abyss_4": "#1c2022",
+    "green": "#e8e6e3",
+    "green_dim": "#9aa0a4",
+    "text": "#e8e6e3",
+    "text_dim": "#9aa0a4",
+    "text_faint": "#6b7175",
+    "danger": "#e5484d",
+    "warning": "#e8833a",
+    "info": "#5c9ead",
+    "critical": "#e5484d",
 }

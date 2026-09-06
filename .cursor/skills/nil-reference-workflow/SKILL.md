@@ -21,7 +21,7 @@ description: Pengsonal reference-first methodology — give agents good referenc
 ```
 
 **Never:** "Design a settings page"
-**Always:** "Build a settings sheet using Linear's sidebar density, Raycast's category layout, and our glass-2 tokens. Reference: linear.app/settings, raycast.com/settings"
+**Always:** "Build a settings sheet using Linear's sidebar density, Raycast's category layout, and our `--nil-*` surface tokens. Reference: linear.app/settings, raycast.com/settings"
 
 ---
 
@@ -108,9 +108,10 @@ Run hallmark audit before finishing:
 
 ```
 You are building for NIL, an open-source AI coding agent workspace.
-Design DNA: macOS-native, terminal-first, dark abyss (#050507), 
-violet/coral/cream accents, JetBrains Mono + Inter, spring physics, 
-liquid glass, zero AI slop.
+Design DNA: macOS-native, terminal-first, dark abyss (--nil-void), color means risk
+(severity is the only saturated color in the workstation; --brand-ember-* is reserved
+for Zone A identity moments only — cold open, lock screen, session handoff, report
+cover), JetBrains Mono + Inter, the ten motion primitives in motion.css, zero AI slop.
 
 ALWAYS:
 1. Reference the nil-design-system skill for tokens

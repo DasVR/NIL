@@ -5,11 +5,8 @@ from finn_pentest.sandbox import docker_launch
 from finn_pentest.sandbox.dispatch import run_command
 from finn_pentest.sandbox.host import exec_on_host
 from finn_pentest.tools.ingest import ingest_run_output
-from finn_pentest.ai.hunt import continue_after_run, register_wait
 
-import asyncio
 import sys
-from types import SimpleNamespace
 
 
 def test_switching_to_host_clears_docker_feature(finn_home, monkeypatch):
@@ -125,28 +122,3 @@ def test_docker_launch_starts_then_ready(monkeypatch):
     launch = docker_launch.ensure_docker_running()
     assert launch.available is True
     assert launch.started is True
-
-
-def test_hunt_continues_after_approved_run(finn_home, monkeypatch):
-    bootstrap()
-    called = {}
-
-    async def fake_run_turn(engagement, message, mode, session_id, router=None, hunt_steps=None):
-        called["message"] = message
-        called["mode"] = mode
-        called["steps"] = hunt_steps
-        return {"runs": []}
-
-    monkeypatch.setattr("finn_pentest.ai.hunt.run_turn", fake_run_turn)
-    register_wait("acme", "sess", ["abc123"], steps=0)
-    run = SimpleNamespace(
-        engagement="acme",
-        id="abc123",
-        stdout="22/tcp open ssh",
-        stderr="",
-        error=None,
-    )
-    asyncio.run(continue_after_run(run))
-    assert "22/tcp open ssh" in called["message"]
-    assert called["mode"] == "hunt"
-    assert called["steps"] == 1

@@ -1,4 +1,5 @@
-// Command palette store (Svelte 5 runes)
+import { appState } from '$lib/stores/appState.svelte.ts';
+import { tabsStore } from '$lib/stores/tabsStore';
 
 interface PaletteCommand {
   id: string;
@@ -11,20 +12,82 @@ interface PaletteCommand {
 
 let open = $state(false);
 let query = $state('');
-let commands = $state<PaletteCommand[]>([
-  { id: 'new-engagement', label: 'New Engagement', shortcut: 'Cmd+N', action: () => console.log('new engagement'), section: 'Engagement', icon: 'ph:plus-bold' },
-  { id: 'open-engagement', label: 'Open Engagement', shortcut: 'Cmd+O', action: () => console.log('open engagement'), section: 'Engagement', icon: 'ph:folder-open-bold' },
-  { id: 'save-engagement', label: 'Save Engagement', shortcut: 'Cmd+S', action: () => console.log('save engagement'), section: 'Engagement', icon: 'ph:floppy-disk-bold' },
-  { id: 'run-scan', label: 'Run Target Scan', shortcut: 'Cmd+R', action: () => console.log('run scan'), section: 'Tools', icon: 'ph:radar-bold' },
-  { id: 'run-nuclei', label: 'Run Nuclei Templates', action: () => console.log('run nuclei'), section: 'Tools', icon: 'ph:play-circle-bold' },
-  { id: 'generate-report', label: 'Generate Report', action: () => console.log('generate report'), section: 'Report', icon: 'ph:file-text-bold' },
-  { id: 'toggle-ai-strip', label: 'Toggle AI Strip', shortcut: 'Cmd+J', action: () => console.log('toggle ai strip'), section: 'View', icon: 'ph:chat-circle-dots-bold' },
-  { id: 'toggle-sidebar', label: 'Toggle Sidebar', shortcut: 'Cmd+B', action: () => console.log('toggle sidebar'), section: 'View', icon: 'ph:sidebar-bold' },
-  { id: 'toggle-right-sidebar', label: 'Toggle Inspector', shortcut: 'Cmd+\\', action: () => console.log('toggle right sidebar'), section: 'View', icon: 'ph:sidebar-bold' },
-  { id: 'toggle-yolo', label: 'Toggle YOLO Mode', shortcut: 'Cmd+Y', action: () => console.log('toggle yolo'), section: 'Agent', icon: 'ph:rocket-launch-bold' },
-  { id: 'open-settings', label: 'Open Settings', shortcut: 'Cmd+,', action: () => console.log('open settings'), section: 'Settings', icon: 'ph:gear-bold' },
-  { id: 'open-palette', label: 'Open Command Palette', shortcut: 'Cmd+K', action: () => console.log('open palette'), section: 'Help', icon: 'ph:keyboard-bold' },
-]);
+
+function newEngagementName(): string {
+  const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
+  return `engagement-${stamp}`;
+}
+
+const commands: PaletteCommand[] = [
+  {
+    id: 'new-engagement',
+    label: 'New engagement',
+    shortcut: 'Cmd+N',
+    section: 'Engagement',
+    icon: 'ph:plus-bold',
+    action: () => {
+      void appState.createEngagement(newEngagementName()).then(() => tabsStore.showStream());
+    },
+  },
+  {
+    id: 'show-stream',
+    label: 'Show stream',
+    section: 'View',
+    icon: 'ph:rows-bold',
+    action: () => tabsStore.showStream(),
+  },
+  {
+    id: 'new-terminal',
+    label: 'New terminal',
+    shortcut: 'Cmd+T',
+    section: 'View',
+    icon: 'ph:terminal-bold',
+    action: () => {
+      const id = `terminal-${Date.now()}`;
+      tabsStore.addTab({ id, type: 'terminal', label: 'Terminal', dirty: false });
+    },
+  },
+  {
+    id: 'focus-composer',
+    label: 'Focus composer',
+    shortcut: 'Cmd+J',
+    section: 'View',
+    icon: 'ph:text-aa-bold',
+    action: () => appState.focusComposer(),
+  },
+  {
+    id: 'toggle-sidebar',
+    label: 'Toggle sidebar',
+    shortcut: 'Cmd+B',
+    section: 'View',
+    icon: 'ph:sidebar-simple-bold',
+    action: () => appState.toggleSidebar(),
+  },
+  {
+    id: 'toggle-inspector',
+    label: 'Toggle inspector',
+    shortcut: 'Cmd+\\',
+    section: 'View',
+    icon: 'ph:sidebar-simple-bold',
+    action: () => appState.toggleRightSidebar(),
+  },
+  {
+    id: 'toggle-yolo',
+    label: 'Toggle YOLO mode',
+    shortcut: 'Cmd+Y',
+    section: 'Agent',
+    icon: 'ph:fast-forward-bold',
+    action: () => { void appState.toggleYolo(); },
+  },
+  {
+    id: 'open-settings',
+    label: 'Open settings',
+    shortcut: 'Cmd+,',
+    section: 'Settings',
+    icon: 'ph:gear-bold',
+    action: () => appState.toggleSettings(),
+  },
+];
 
 export const paletteStore = {
   get open() { return open; },
@@ -32,33 +95,10 @@ export const paletteStore = {
   get query() { return query; },
   set query(v: string) { query = v; },
   get commands() { return commands; },
-  set commands(v: PaletteCommand[]) { commands = v; },
-
-  get filteredCommands() {
-    if (!query) return commands;
-    const q = query.toLowerCase();
-    return commands.filter(c => 
-      c.label.toLowerCase().includes(q) || 
-      c.shortcut?.toLowerCase().includes(q) ||
-      c.section?.toLowerCase().includes(q)
-    );
-  },
 
   openPalette: () => { open = true; },
   closePalette: () => { open = false; query = ''; },
   togglePalette: () => { open = !open; if (!open) query = ''; },
-
-  registerCommand: (cmd: PaletteCommand) => {
-    commands = [...commands, cmd];
-  },
-
-  unregisterCommand: (id: string) => {
-    commands = commands.filter(c => c.id !== id);
-  },
-
-  registerCommands: (cmds: PaletteCommand[]) => {
-    commands = [...commands, ...cmds];
-  },
 
   executeCommand: (id: string) => {
     const cmd = commands.find(c => c.id === id);

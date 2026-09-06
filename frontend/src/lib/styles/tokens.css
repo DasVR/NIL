@@ -1,8 +1,11 @@
 /* ============================================================
    NIL — token layer
    Rule of the system: COLOR MEANS RISK.
-   Chrome is greyscale. Saturation is reserved for severity.
-   If something is colored and it isn't a severity, it's a bug.
+   Chrome is greyscale. Saturation in Zone B/C is reserved for severity.
+   --brand-ember-* is the one named exception, Zone A identity only
+   (cold open, lock screen, session handoff, report cover).
+   If something in the workstation is colored and it isn't a severity,
+   it's a bug.
    ============================================================ */
 
 :root {
@@ -18,6 +21,17 @@
   --nil-ink-2:     #9aa0a4;  /* secondary label */
   --nil-ink-3:     #6b7175;  /* dim / metadata / disabled */
   --nil-ink-4:     #3a4043;  /* placeholder, inactive tick */
+
+  /* -- brand ember: the ONE named exception to "color means risk," and it is
+        narrow on purpose. Reserved for Zone A identity moments only (cold open,
+        lock screen, session handoff, report export cover — see 40-nil-gpu.mdc).
+        Never reference these in Zone B chrome or Zone C stream/findings/terminal;
+        that is what --sev-* and --nil-ink-* are for. See 00-nil-design-language.mdc
+        Law 1. Replaces the retired --color-violet* primitives. -- */
+  --brand-ember-900: #3a1c15;  /* deepest — pressed / shadow within Zone A */
+  --brand-ember-700: #7a3320;  /* identity mark, resting */
+  --brand-ember-500: #bd572d;  /* identity mark, active / highlight */
+  --brand-ember-300: #e69a52;  /* brightest — glint, never a fill */
 
   /* -- severity ramp: chroma falls with severity, so the eye is pulled
         to Critical without a single decorative accent in the app -- */

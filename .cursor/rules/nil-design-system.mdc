@@ -11,8 +11,11 @@ alwaysApply: true
 - Motion: `frontend/src/lib/styles/motion.css`
 - IA: `FRAMEWORK.md`
 
-Do not invent colors. Do not use `--color-violet` or a brand accent.
-Color means risk: `--sev-critical` … `--sev-info` only.
+Do not invent colors. `--color-violet*` do not exist — those historical primitives are
+retired. A brand accent (`--brand-ember-*`) exists but is scoped to Zone A identity
+moments only (cold open, lock screen, session handoff, report cover) — see
+`00-nil-design-language.mdc` Law 1. Everywhere else, color means risk:
+`--sev-critical` … `--sev-info` only.
 
 Type: `--font-ui` (Inter) for NIL voice; `--font-machine` (JetBrains Mono) for machine output.
 

@@ -5,7 +5,13 @@ description: NIL component primitives spec — bits-ui + our tokens. Buttons, in
 
 # NIL Components — Primitives Spec
 
-All components built on **bits-ui** (headless) + **NIL tokens** from `app.css`. No Tailwind utility classes in components — use CSS custom properties.
+> **Note (2026-09-04):** `--accent-primary` is ink (`--nil-ink`), not violet. There is no
+> colored primary button. `--brand-ember-*` is Zone A only. `--spring-*` names in the
+> examples below are compatibility aliases for `motion.css` easings — prefer
+> `--ease-out` / `--dur-flip`. Canonical tokens: `frontend/src/lib/styles/tokens.css`.
+> Law: `.cursor/rules/00-nil-design-language.mdc`.
+
+All components built on **bits-ui** (headless) + **NIL tokens** from `tokens.css` / `app.css`. No Tailwind utility classes in components — use CSS custom properties.
 
 ---
 

@@ -1,6 +1,6 @@
 ---
 name: nil-terminal-ui
-description: Terminal-first IA — terminal is the product, AI strip summoned via Cmd+J with 4 explicit states. Real PTY, block output, no fake chrome.
+description: Terminal-first IA — terminal and agent stream are the product. Composer via Cmd+J. Real PTY, block output, no fake chrome.
 ---
 
 # NIL Terminal UI — Terminal is the Product
@@ -141,7 +141,7 @@ main  ●  2.34s  │  1.2k/800 tok  │  $0.003  │  🟢 Connected  │  14:3
 
 | Key | Action |
 |-----|--------|
-| `Cmd+J` | Toggle AI strip (cycles states) |
+| `Cmd+J` | Focus composer |
 | `Cmd+K` | Command palette |
 | `Cmd+Shift+P` | Command palette (alt) |
 | `Cmd+T` | New terminal tab |

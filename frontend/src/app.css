@@ -88,6 +88,7 @@
   --accent-danger: var(--sev-critical);
   --accent-done: var(--nil-ink);
   --accent-cream: var(--nil-ink);
+  --color-cream: var(--nil-ink);
   --accent-coral: var(--nil-ink-2);
   --accent-warm: var(--nil-ink);
   --accent-soft: color-mix(in oklab, var(--nil-ink) 10%, transparent);

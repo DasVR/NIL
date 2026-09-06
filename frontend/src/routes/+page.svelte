@@ -11,7 +11,7 @@
 
   function startEngagement() {
     tabsStore.showStream();
-    appState.aiStripState = 'composer';
+    appState.focusComposer();
   }
 </script>
 

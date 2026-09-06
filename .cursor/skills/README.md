@@ -9,7 +9,7 @@ This directory contains Cursor `.mdc` skill files that define the NIL design sys
 | `finn-ui/SKILL.md` | NIL workspace UI rules (tokens, density, materials, layout) |
 | `nil-design-system/SKILL.md` | Token architecture (primitive → semantic → component) |
 | `nil-agent-patterns/SKILL.md` | Agent loop UI patterns (Cursor 3, Claude Code, Warp) |
-| `nil-terminal-ui/SKILL.md` | Terminal-first IA (terminal = product, AI strip = Cmd+J) |
+| `nil-terminal-ui/SKILL.md` | Terminal-first IA (stream + terminal; Cmd+J focuses composer) |
 | `nil-motion/SKILL.md` | Spring physics, reduced-motion, animation rules |
 | `nil-typography/SKILL.md` | Inter (human) vs JetBrains Mono (machine) rules |
 | `nil-anti-slop/SKILL.md` | Anti-slop rules from hallmark + bookmarks |

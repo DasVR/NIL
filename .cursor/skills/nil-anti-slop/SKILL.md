@@ -16,7 +16,7 @@ description: Anti-slop rules from hallmark + bookmarks research. Non-negotiable 
 | Box shadows on idle cards/buttons | `--lift-*` (inset highlight + long soft shadow) + hairline `--nil-line` only |
 | Generic gradients (blue-purple, cyan-magenta) | Greyscale chrome; `--sev-*` for risk |
 | Decorative drop-shadows | `--lift-*` on floating panels, never per-card grey blobs |
-| Brand accent / colored primary button | Ink-derived chrome. Color means risk. |
+| Brand accent / colored primary button in Zone B/C | Ink-derived chrome. Color means risk. `--brand-ember-*` is Zone A identity only (cold open, lock, handoff, report cover). |
 | Fake terminal chrome ($ prompts, green-tinted blocks) | Real PTY only, structured cards |
 | Chat bubbles for tool output | Structured blocks (plan/tool/diff/finding/artifact) |
 | Rounded chat bubbles with avatars | Clean cards, subtle meta headers |

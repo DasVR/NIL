@@ -22,10 +22,10 @@ Windows SmartScreen on a GitHub download: More info → Run anyway. Launch as a 
 ```
 install/
   README.md          this file
-  catalog.json       per-OS files, paths, first-launch notes (copied to web/)
+  catalog.json       per-OS files, paths, first-launch notes
   catalog.py         loader for wizard.py + tests
   engine.py          shared install engine (no Python urllib — curl only)
-  palette.py         locked abyss/green tokens (matches web/src/app.css)
+  palette.py         locked NIL tokens (matches frontend/src/lib/styles/tokens.css)
   wizard.py          Welcome → Installing → Launch (Tk GUI + --cli)
   run-api.py         bundled API launcher
   unix/install.sh    headless CLI → wizard.py --cli

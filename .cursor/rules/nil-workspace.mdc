@@ -28,8 +28,10 @@ grep -r "#[0-9a-fA-F]\{3,8\}" frontend/src --include="*.svelte" --include="*.css
 
 ## Color law
 
-Chrome is greyscale (`--nil-*`). The only saturated color is `--sev-*`.
-If something is colored and it is not a severity, it is a bug.
+Chrome is greyscale (`--nil-*`). The only saturated color in Zone B/C is `--sev-*`.
+`--brand-ember-*` exists solely for Zone A identity moments (cold open, lock screen,
+session handoff, report cover) — see `00-nil-design-language.mdc` Law 1. If something
+in the workstation is colored and it is not a severity, it is a bug.
 
 ## Motion
 
@@ -46,7 +48,7 @@ See `40-nil-gpu.mdc`. Zone C (stream, findings, terminal) is transform/opacity o
 
 ## Anti-slop
 
-- No brand accent, no colored primary button, no gradient washes
+- No brand accent, no colored primary button, no gradient washes in Zone B/C (ember is Zone A only)
 - No fake metrics or fabricated CVSS
 - No emoji in product UI
 - No chat bubbles — tool cards with meta headers

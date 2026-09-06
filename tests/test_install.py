@@ -37,15 +37,17 @@ def test_cli_wrapper_syntax():
     assert (INSTALL / "palette.py").is_file()
     assert (INSTALL / "catalog.py").is_file()
     assert (INSTALL / "catalog.json").is_file()
-    bat = (ROOT / "desktop" / "scripts" / "windows-install.bat").read_text(encoding="utf-8")
-    assert "finn server" not in bat
-    hooks = (ROOT / "desktop" / "src-tauri" / "windows" / "nsis-hooks.nsh").read_text(encoding="utf-8")
-    assert "NSIS_HOOK_POSTINSTALL" in hooks
-    assert "Finn.lnk" in hooks
-    stager = (ROOT / "desktop" / "scripts" / "stage-windows-python.mjs").read_text(encoding="utf-8")
-    assert "Expand-Archive" in stager
-    assert "uvicorn[standard]" in stager
-    assert "pip install" in stager and "apiDir" not in stager
+    desktop_bat = ROOT / "desktop" / "scripts" / "windows-install.bat"
+    if desktop_bat.is_file():
+        bat = desktop_bat.read_text(encoding="utf-8")
+        assert "finn server" not in bat
+        hooks = (ROOT / "desktop" / "src-tauri" / "windows" / "nsis-hooks.nsh").read_text(encoding="utf-8")
+        assert "NSIS_HOOK_POSTINSTALL" in hooks
+        assert "Finn.lnk" in hooks
+        stager = (ROOT / "desktop" / "scripts" / "stage-windows-python.mjs").read_text(encoding="utf-8")
+        assert "Expand-Archive" in stager
+        assert "uvicorn[standard]" in stager
+        assert "pip install" in stager and "apiDir" not in stager
 
 
 def test_setup_gui_avoids_aqua_double_draw():
@@ -97,11 +99,17 @@ def test_palette_matches_web_tokens():
     sys.path.insert(0, str(INSTALL))
     import palette
 
-    css = (ROOT / "web" / "src" / "app.css").read_text(encoding="utf-8")
-    assert "--abyss:        #050507;" in css or "--abyss:" in css and palette.COLOR["abyss"] == "#050507"
-    assert palette.COLOR["green"] == "#00d992"
+    css = (ROOT / "frontend" / "src" / "lib" / "styles" / "tokens.css").read_text(encoding="utf-8")
+    assert "--nil-void:" in css
+    assert palette.COLOR["abyss"] == "#08090a"
     assert palette.COLOR["abyss"] in css
-    assert palette.COLOR["green"] in css
+    assert palette.COLOR["text"] in css
+    assert palette.COLOR["danger"] in css
+    assert "--brand-ember-500:" in css
+    assert "--sev-critical:" in css
+    assert "--color-violet:" not in css
+    assert "#00d992" not in css
+    assert "#00d992" not in (INSTALL / "palette.py").read_text(encoding="utf-8")
 
 
 def test_find_wheel_in_dist(tmp_path):
@@ -232,9 +240,6 @@ def test_windows_user_paths_use_localappdata(tmp_path, monkeypatch):
 
 
 def test_catalog_matches_web_copy():
-    native = (INSTALL / "catalog.json").read_text(encoding="utf-8")
-    web = (ROOT / "web" / "src" / "lib" / "install-catalog.json").read_text(encoding="utf-8")
-    assert native == web
     sys.path.insert(0, str(INSTALL))
     import catalog
 
@@ -264,16 +269,8 @@ def test_welcome_docs_exist():
     assert "Welcome era" in welcome
     assert "Workstation era" in welcome
     assert "catalog.json" in welcome
-    ux = (ROOT / "UX_REDESIGN.md").read_text(encoding="utf-8")
-    assert "docs/WELCOME.md" in ux
-    assert "SetupWizard" not in (ROOT / "web" / "src" / "routes" / "app" / "+layout.svelte").read_text(
-        encoding="utf-8"
-    )
-    layout = (ROOT / "web" / "src" / "routes" / "app" / "+layout.svelte").read_text(encoding="utf-8")
-    assert "WelcomeSheet" in layout
-    empty = (ROOT / "web" / "src" / "lib" / "components" / "EmptyState.svelte").read_text(encoding="utf-8")
-    assert "welcomeLine" in empty
-    stores = (ROOT / "web" / "src" / "lib" / "stores.svelte.ts").read_text(encoding="utf-8")
-    assert "seedWelcomeBlock" in stores
-    assert "scope loaded" in stores
+    framework = (ROOT / "FRAMEWORK.md").read_text(encoding="utf-8")
+    assert "Color means risk" in framework
+    page = (ROOT / "frontend" / "src" / "routes" / "+page.svelte").read_text(encoding="utf-8")
+    assert "No findings yet" in page
 

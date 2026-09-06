@@ -76,12 +76,19 @@ vec3 metal(vec2 uv, float t) {
   float diff = max(dot(n, L), 0.0);
   float fres = pow(1.0 - max(n.z, 0.0), 3.0);
 
-  vec3 col = vec3(0.055, 0.062, 0.068) + diff * 0.10 + spec * 0.85 + fres * 0.06;
+  // Zone A identity accent (--brand-ember-500, see tokens.css): the raking
+  // light itself carries the one named exception to "color means risk." Kept
+  // to a partial mix so the metal still reads neutral off-highlight — this is
+  // a glint, not a tint wash. Never do this outside Zone A.
+  vec3 emberLight = vec3(0.741, 0.341, 0.176);
+  vec3 specCol = mix(vec3(1.0), emberLight, 0.5);
+
+  vec3 col = vec3(0.055, 0.062, 0.068) + diff * 0.10 + spec * 0.85 * specCol + fres * 0.06;
 
   // The raking highlight band. This is what makes it read as a lit surface
   // rather than a texture.
   float streak = pow(max(0.0, 1.0 - abs(uv.x - (sweep * 0.5 + 0.5)) * 2.2), 6.0);
-  return col + streak * (0.10 + h * 0.22);
+  return col + streak * (0.10 + h * 0.22) * mix(vec3(1.0), emberLight, 0.35);
 }
 
 // ---------------- scene ----------------

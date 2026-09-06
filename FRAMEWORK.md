@@ -195,8 +195,6 @@ src/lib/styles/
 src/lib/gl/
   coldopen.frag                  the shader
   ColdOpen.svelte                harness — gates, perf bail, teardown
-preview/
-  coldopen.html                  self-contained, open in a browser
 ```
 
 Import both stylesheets once in the root layout. Rule `00` is always on; the rest scope

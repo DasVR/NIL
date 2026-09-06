@@ -33,17 +33,6 @@ services:
     networks:
       - finn-network
 
-  web:
-    build:
-      context: ./web
-      dockerfile: Dockerfile
-    container_name: finn-pentest-web
-    ports:
-      - "5173:5173"
-    restart: unless-stopped
-    networks:
-      - finn-network
-
   sandbox-builder:
     build:
       context: .
