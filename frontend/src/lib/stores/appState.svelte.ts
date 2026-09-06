@@ -1,5 +1,5 @@
 // App-level state store (Svelte 5 runes) — backed by NIL API
-import api, { type Engagement } from '$lib/api';
+import api, { type AgentMode, type Engagement } from '$lib/api';
 import { browser } from '$app/environment';
 
 type Theme = 'dark';
@@ -69,7 +69,7 @@ async function init() {
   }
 }
 
-async function createEngagement(name: string, scope = '', mode: 'hunt' | 'chat' | 'code' | 'report' = 'hunt') {
+async function createEngagement(name: string, scope = '', mode: AgentMode = 'hunt') {
   const eng = await api.createEngagement({ name, scope, mode });
   engagements = [...engagements, eng];
   activeEngagementId = eng.name;

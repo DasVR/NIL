@@ -35,17 +35,19 @@ export interface Engagement {
   created_at: string;
 }
 
+export type AgentMode = 'hunt' | 'exploit' | 'chat' | 'code' | 'report';
+
 export interface EngagementCreate {
   name: string;
   scope?: string;
   target?: string;
-  mode?: 'hunt' | 'chat' | 'code' | 'report';
+  mode?: AgentMode;
 }
 
 export interface ChatRequest {
   engagement: string;
   message: string;
-  mode?: 'hunt' | 'chat' | 'code' | 'report';
+  mode?: AgentMode;
   stream?: boolean;
   session_id?: string;
   hunt?: boolean;

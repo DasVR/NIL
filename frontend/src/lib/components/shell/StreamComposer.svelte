@@ -2,8 +2,7 @@
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import ApprovalBlock from '$lib/components/ui/ApprovalBlock.svelte';
-
-  type Mode = 'hunt' | 'chat' | 'code' | 'report';
+  import type { AgentMode } from '$lib/api';
 
   interface Props {
     inputEl?: HTMLTextAreaElement;
@@ -12,10 +11,11 @@
   let { inputEl = $bindable() }: Props = $props();
 
   let input = $state('');
-  let mode = $state<Mode>('hunt');
+  let mode = $state<AgentMode>('hunt');
 
-  const modes: { id: Mode; label: string }[] = [
+  const modes: { id: AgentMode; label: string }[] = [
     { id: 'hunt', label: 'hunt' },
+    { id: 'exploit', label: 'exploit' },
     { id: 'chat', label: 'chat' },
     { id: 'code', label: 'code' },
     { id: 'report', label: 'report' },
@@ -23,6 +23,14 @@
 
   const pending = $derived(agentRun.pendingApproval);
   const gated = $derived(Boolean(pending));
+
+  const placeholder = $derived(
+    gated
+      ? 'Allow or deny the pending command'
+      : mode === 'exploit'
+        ? 'Name the in-scope finding to confirm'
+        : 'Describe the next step',
+  );
 
   function send() {
     const text = input.trim();
@@ -63,7 +71,7 @@
       onkeydown={onKey}
       rows="1"
       aria-label="Agent input"
-      placeholder={gated ? 'Allow or deny the pending command' : 'Describe the next step'}
+      placeholder={placeholder}
       disabled={gated}
     ></textarea>
     <button class="nil-lift nil-halo send" type="button" onclick={send} disabled={!input.trim() || agentRun.running || gated}>

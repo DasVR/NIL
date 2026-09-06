@@ -33,7 +33,7 @@
   });
 
   const engagement = $derived(appState.activeEngagementId || 'no-engagement');
-  const modeChips = ['hunt', 'chat', 'code', 'report'] as const;
+  const modeChips = ['hunt', 'exploit', 'chat', 'code', 'report'] as const;
 </script>
 
 <div class="titlebar" onmousedown={handleMouseDown} role="banner" aria-label="Window title bar">

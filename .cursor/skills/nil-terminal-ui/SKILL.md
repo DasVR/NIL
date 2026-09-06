@@ -94,7 +94,7 @@ Cmd+J toggles through 4 explicit states:
 | State | Height | Content |
 |-------|--------|---------|
 | **Collapsed** | 0px (hidden) | Nothing — terminal full height |
-| **Composer** | 120px | Auto-grow input, mode chips (hunt/chat/code/report), drag-drop files |
+| **Composer** | 120px | Auto-grow input, mode chips (hunt/exploit/chat/code/report), drag-drop files |
 | **Running** | 200px | Live tool blocks streaming, cost metrics, cancel button |
 | **Review** | 300px | Diff blocks, approval buttons, finding cards |
 
