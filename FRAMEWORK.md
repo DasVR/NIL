@@ -76,7 +76,7 @@ macOS workstation, three zones, panels floating in a well:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│ ● ● ●   nil ── engagement/acme-q3        [hunt] chat code report │
+│ ● ● ●   nil ── engagement/acme-q3 [hunt] exploit chat code report │
 ├──────────┬──────────────────────────────────────┬───────────┤
 │ TARGETS  │  /Stream(01)                          │ /Findings │
 │          │                                        │   (03)    │

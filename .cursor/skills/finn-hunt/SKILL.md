@@ -1,22 +1,25 @@
 ---
 name: finn-hunt
-description: How a Finn engagement actually runs — modes, the approval gate, recon sequencing with the shipped plugins, and the finding format. Use when changing hunt/chat/code/report behavior, prompts, the approval flow, or how findings are written.
+description: How a Finn engagement actually runs — modes, the approval gate, recon sequencing with the shipped plugins, and the finding format. Use when changing hunt/exploit/chat/code/report behavior, prompts, the approval flow, or how findings are written.
 ---
 
 # Running an engagement
 
 Authorized testing only. Every workflow here assumes a signed scope; the backend treats
-authorization as already verified and the operator as a professional. This is recon and
-assessment tooling — no exploit kits, C2, or credential stuffing.
+authorization as already verified and the operator as a professional. Hunt is recon.
+Exploit confirms in-scope findings. Neither is a C2 kit, persistence drop, or credential
+stuffing pipeline.
 
 ## Modes
 
-Four modes, defined in `finn_pentest/ai/prompts.py` and overridable per install from the
-`prompts/` directory. `base.md` is always prepended.
+Five modes, defined in `finn_pentest/ai/prompts.py` and overridable per install from the
+`prompts/` directory. `base.md` is always prepended. `hunt` and `exploit` share the
+propose → wait → continue loop (`LOOP_MODES`).
 
 | Mode | Job |
 |---|---|
-| `hunt` | The assessment loop: analyze state, propose the single next command, wait for output, repeat |
+| `hunt` | The assessment loop: analyze state, propose the single next recon command, wait for output, repeat |
+| `exploit` | Confirm one in-scope finding at a time with a working PoC, then emit a finding card |
 | `chat` | Answer security questions with mechanics, detection, and prevention |
 | `code` | Write assessment scripts and parsers — not exploit kits |
 | `report` | Turn findings into report sections |
@@ -25,9 +28,13 @@ Four modes, defined in `finn_pentest/ai/prompts.py` and overridable per install 
 flag encyclopedias; after each result it summarizes the new services, then proposes the
 next step.
 
+`exploit` proposes one confirmation command and stops for approval. After proof it writes
+a finding card whose evidence points at the block it came from. It does not dump exploit
+encyclopedias, chain unproven steps, or invent CVSS.
+
 ## Approval gate
 
-The gate is the most important interaction in the product.
+The gate is the default. YOLO is a choice, not a requirement — including in exploit.
 
 - Default: Finn proposes a command, it appears as a pending block, the operator approves,
   edits, or rejects. Approve is `Cmd+Enter`, reject is `Cmd+Shift+Enter`.

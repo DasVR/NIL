@@ -41,7 +41,7 @@ Always key `{#each steps as step (step.id)}`.
 - `routes/` holds layout and data loading only. No agent logic, no styling beyond grid.
 - `lib/components/` is presentational and takes data as props. A component never reaches
   into agent state directly.
-- `lib/agent/` owns transport, step reduction, and the hunt/chat/code/report mode
+- `lib/agent/` owns transport, step reduction, and the hunt/exploit/chat/code/report mode
   contracts from `prompts/`. UI imports types from here, never the reverse.
 - `lib/styles/` is tokens and motion only. Component styles are scoped `<style>` blocks
   that consume tokens — no raw hex, no raw ms, anywhere else in the codebase.

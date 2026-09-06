@@ -11,6 +11,10 @@
       <span>Recon and evidence</span>
     </div>
     <div class="settings-row">
+      <span class="mode">exploit</span>
+      <span>Confirm findings with in-scope proofs</span>
+    </div>
+    <div class="settings-row">
       <span class="mode">chat</span>
       <span>Questions against the engagement</span>
     </div>
