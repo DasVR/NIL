@@ -60,6 +60,7 @@
                 class="settings-category {activeCategory === cat.id ? 'active' : ''}"
                 onclick={() => activeCategory = cat.id}
                 aria-current={activeCategory === cat.id ? 'true' : undefined}
+                data-cuelume-hover="tick"
               >
                 <Icon icon={cat.icon} width="16" height="16" />
                 <span>{cat.label}</span>

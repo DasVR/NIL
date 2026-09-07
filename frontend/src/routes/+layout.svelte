@@ -15,6 +15,7 @@
   import ColdOpen from '$lib/gl/ColdOpen.svelte';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
+  import { soundStore } from '$lib/stores/soundStore.svelte.ts';
   import { setupTauriEvents } from '$lib/tauri-events';
   import { keymap } from '$lib/keymap.svelte.ts';
   import { browser } from '$app/environment';
@@ -29,6 +30,7 @@
   onMount(() => {
     setupTauriEvents();
     keymap.init();
+    soundStore.init();
     appState.setComposerFocus(() => composerInput?.focus());
   });
 
