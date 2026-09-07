@@ -167,6 +167,10 @@
   }
 </script>
 
+<!-- Roving tabindex (WAI-ARIA APG tree pattern): the tree container itself is
+     never the focus target, exactly one treeitem below holds tabindex=0 at a
+     time, so no tabindex belongs here. -->
+<!-- svelte-ignore a11y_interactive_supports_focus -->
 <div
   class="target-tree"
   role="tree"
@@ -176,6 +180,9 @@
 >
   {#each rows as row (row.node.id)}
     {@const selected = row.node.id === appState.activeTargetId}
+    <!-- Keyboard activation is handled by onKeydownTree on the ancestor
+         .target-tree, per the roving-tabindex pattern above. -->
+    <!-- svelte-ignore a11y_click_events_have_key_events -->
     <div
       class="tree-row"
       class:selected

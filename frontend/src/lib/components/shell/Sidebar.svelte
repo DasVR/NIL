@@ -91,16 +91,23 @@
     </button>
   </div>
 
-  <button
+  <!-- WAI-ARIA APG "window splitter" pattern, matching RightSidebar's resize
+       handle: a focusable separator with aria-valuenow/min/max, not a button
+       (those value attributes aren't valid ARIA on role="button"). -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+  <div
     class="sidebar-resize-handle"
     onmousedown={handleResizeStart}
     onkeydown={handleResizeKeydown}
     aria-label="Resize sidebar"
+    role="separator"
+    aria-orientation="vertical"
     aria-valuenow={width}
     aria-valuemin={200}
     aria-valuemax={400}
-    type="button"
-  ></button>
+    tabindex="0"
+  ></div>
 </aside>
 
 <style>

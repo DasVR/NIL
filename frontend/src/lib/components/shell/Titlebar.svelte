@@ -35,6 +35,10 @@
   const engagement = $derived(appState.activeEngagementId || 'no-engagement');
 </script>
 
+<!-- OS window-drag region: Tauri's dragMove() needs a plain mousedown listener
+     on non-button chrome, not a real interactive element. Buttons inside are
+     excluded above via the HTMLButtonElement check. -->
+<!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="titlebar" onmousedown={handleMouseDown} role="banner" aria-label="Window title bar">
   <div class="metal" class:paused={agentRun.running}>
     <LiquidMetal paused={agentRun.running} />

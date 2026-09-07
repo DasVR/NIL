@@ -10,7 +10,7 @@
 
   let { open = false, onToggle }: Props = $props();
 
-  let inputRef: HTMLInputElement;
+  let inputRef: HTMLInputElement | undefined = $state();
   let selectedIndex = $state(0);
 
   function filteredCommands() {
@@ -68,7 +68,12 @@
 </script>
 
 {#if open}
-  <div class="palette-overlay" onclick={() => { if (onToggle) onToggle(false); }} />
+  <button
+    type="button"
+    class="palette-overlay"
+    aria-label="Close command palette"
+    onclick={() => { if (onToggle) onToggle(false); }}
+  ></button>
   <div class="palette-window" role="dialog" aria-label="Command Palette">
     <div class="palette-header">
       <div class="palette-search">
@@ -84,6 +89,8 @@
           onkeydown={handleKeydown}
           placeholder="Type a command or search..."
           aria-label="Command palette search"
+          aria-controls="palette-listbox"
+          aria-activedescendant={visibleCommands[selectedIndex] ? `cmd-${visibleCommands[selectedIndex].id}` : undefined}
           autocomplete="off"
           spellcheck="false"
         />
@@ -91,7 +98,7 @@
       </div>
     </div>
 
-    <div class="palette-results" role="listbox" aria-activedescendant={`cmd-${visibleCommands[selectedIndex]?.id}`}>
+    <div id="palette-listbox" class="palette-results" role="listbox">
       {#if visibleCommands.length === 0}
         <div class="palette-empty">
           <Icon icon="ph:magnifying-glass-bold" width="20" height="20" />
@@ -103,6 +110,11 @@
           <div class="palette-section-header">{group.section}</div>
           {#each group.commands as cmd}
             {@const globalIdx = visibleCommands.indexOf(cmd)}
+            <!-- Focus stays on the search input (aria-activedescendant pattern above);
+                 these rows are never independently focusable, so no tabindex/keydown here. -->
+            <!-- svelte-ignore a11y_click_events_have_key_events -->
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <!-- svelte-ignore a11y_interactive_supports_focus -->
             <div
               class="palette-item {globalIdx === selectedIndex ? 'selected' : ''}"
               role="option"
@@ -127,8 +139,13 @@
 
 <style>
   .palette-overlay {
+    display: block;
     position: fixed;
     inset: 0;
+    width: 100%;
+    border: none;
+    padding: 0;
+    cursor: default;
     background: color-mix(in oklab, var(--nil-void) 72%, transparent);
     z-index: var(--z-modal);
   }

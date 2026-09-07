@@ -152,7 +152,17 @@
   });
 </script>
 
-<div class="terminal-tab" bind:this={container} tabindex="0"></div>
+<!-- role="application" hands key handling to xterm.js itself; the linter's
+     interactive-role list doesn't include "application", so the otherwise
+     correct tabindex reads as a false-positive noninteractive warning. -->
+<!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+<div
+  class="terminal-tab"
+  bind:this={container}
+  tabindex="0"
+  role="application"
+  aria-label="Terminal"
+></div>
 
 <style>
   .terminal-tab {
