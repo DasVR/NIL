@@ -1,8 +1,10 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { agentRun } from '$lib/agent/run.svelte.ts';
-  import FindingCard from '$lib/components/ui/FindingCard.svelte';
+  import FindingRow from '$lib/components/ui/FindingRow.svelte';
+  import { tabsStore } from '$lib/stores/tabsStore';
   import Icon from '@iconify/svelte';
+  import type { Finding } from '$lib/agent/types';
 
   interface RightSidebarProps {
     open?: boolean;
@@ -19,6 +21,17 @@
   let resizing = $state(false);
 
   let findings = $derived(agentRun.findings);
+  let activeTabId = $derived($tabsStore.activeTabId);
+
+  function openFinding(finding: Finding) {
+    tabsStore.addTab({
+      id: `finding-${finding.id}`,
+      type: 'finding',
+      label: finding.title,
+      dirty: false,
+      data: finding,
+    });
+  }
 
   function handleResizeStart(e: MouseEvent) {
     e.preventDefault();
@@ -114,8 +127,12 @@
   <div class="right-sidebar-content">
     {#if activeTab === 'findings'}
       <div class="findings-list">
-        {#each findings as finding}
-          <FindingCard {finding} />
+        {#each findings as finding (finding.id)}
+          <FindingRow
+            {finding}
+            active={activeTabId === `finding-${finding.id}`}
+            onSelect={() => openFinding(finding)}
+          />
         {/each}
         {#if findings.length === 0}
           <div class="empty-state">
@@ -287,7 +304,7 @@
   .findings-list {
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
+    gap: 1px;
   }
 
   .timeline-empty,

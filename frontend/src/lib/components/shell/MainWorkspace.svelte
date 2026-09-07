@@ -5,6 +5,7 @@
   import PreviewTab from '$lib/components/shell/PreviewTab.svelte';
   import DiffTab from '$lib/components/shell/DiffTab.svelte';
   import AgentStream from '$lib/components/shell/AgentStream.svelte';
+  import FindingCard from '$lib/components/ui/FindingCard.svelte';
   import { tabsStore } from '$lib/stores/tabsStore';
   import type { Snippet } from 'svelte';
 
@@ -106,6 +107,10 @@
           <PreviewTab {tab} />
         {:else if tab.type === 'diff'}
           <DiffTab {tab} />
+        {:else if tab.type === 'finding'}
+          <div class="finding-detail-host">
+            <FindingCard finding={tab.data} />
+          </div>
         {/if}
       </div>
     {/each}
@@ -122,6 +127,20 @@
     display: flex;
     flex-direction: column;
     padding: var(--s-2);
+  }
+
+  .finding-detail-host {
+    height: 100%;
+    overflow-y: auto;
+    padding: var(--s-6) var(--s-6) var(--s-6);
+    display: flex;
+    justify-content: center;
+  }
+
+  .finding-detail-host :global(.finding) {
+    width: 100%;
+    max-width: 40rem;
+    height: fit-content;
   }
 
   .main-workspace {
@@ -195,6 +214,7 @@
   .workspace-tab-icon[data-type="editor"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E") center/contain no-repeat; }
   .workspace-tab-icon[data-type="preview"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Crect x='2' y='3' width='20' height='14' rx='2'/%3E%3Cpath d='M8 21h8'/%3E%3Cpath d='M12 17v4'/%3E%3C/svg%3E") center/contain no-repeat; }
   .workspace-tab-icon[data-type="diff"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M12 3v18'/%3E%3Cpath d='M3 12h18'/%3E%3C/svg%3E") center/contain no-repeat; }
+  .workspace-tab-icon[data-type="finding"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M4 22V4a1 1 0 0 1 1-1h9l5 5v6'/%3E%3Cpath d='M4 15s1-1 3-1 3 1 5 1 3-1 3-1'/%3E%3C/svg%3E") center/contain no-repeat; }
 
   .workspace-tab-dirty {
     width: 6px;

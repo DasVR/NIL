@@ -3,7 +3,7 @@ import { writable, get } from 'svelte/store';
 
 export interface Tab {
   id: string;
-  type: 'terminal' | 'editor' | 'preview' | 'diff';
+  type: 'terminal' | 'editor' | 'preview' | 'diff' | 'finding';
   label: string;
   dirty: boolean;
   data?: any;
