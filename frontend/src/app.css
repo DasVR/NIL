@@ -50,7 +50,7 @@
 
   --font-sans: var(--font-ui);
   --font-mono: var(--font-machine);
-  --font-display: var(--font-ui);
+  /* --font-display comes from tokens.css (Outfit) — not aliased to --font-ui. */
 
   --step--2: var(--t-micro);
   --step--1: var(--t-meta);

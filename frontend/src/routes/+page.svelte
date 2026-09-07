@@ -104,7 +104,7 @@
   }
 
   .title {
-    font: 500 var(--t-head)/var(--lh-tight) var(--font-ui);
+    font: 600 var(--t-head)/var(--lh-tight) var(--font-display);
     letter-spacing: var(--track-tight);
     color: var(--nil-ink);
   }
