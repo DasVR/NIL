@@ -43,12 +43,34 @@
     document.body.style.userSelect = 'none';
   }
 
+  const MIN_W = 240;
+  const MAX_W = 500;
+
+  function setWidth(next: number) {
+    const clamped = Math.max(MIN_W, Math.min(MAX_W, next));
+    width = clamped;
+    if (onResize) onResize(clamped);
+  }
+
+  function handleResizeKeydown(e: KeyboardEvent) {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+      e.preventDefault();
+      // Gutter is on the left edge: moving left grows the panel.
+      setWidth(width + (e.key === 'ArrowLeft' ? 1 : -1) * 16);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      setWidth(MIN_W);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      setWidth(MAX_W);
+    }
+  }
+
   function handleResizeMove(e: MouseEvent) {
     if (!resizing) return;
     const delta = dragStartX - e.clientX; // Right sidebar resizes opposite
-    const newWidth = Math.max(240, Math.min(500, startWidth + delta));
-    width = newWidth;
-    if (onResize) onResize(newWidth);
+    const newWidth = startWidth + delta;
+    setWidth(newWidth);
   }
 
   function handleResizeEnd() {
@@ -169,11 +191,15 @@
     {/if}
   </div>
 
-  <div class="right-sidebar-resize-handle" 
+  <div class="right-sidebar-resize-handle"
     onmousedown={handleResizeStart}
-    onkeydown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handleResizeStart(e as unknown as MouseEvent); } }}
+    onkeydown={handleResizeKeydown}
     aria-label="Resize inspector"
     role="separator"
+    aria-orientation="vertical"
+    aria-valuemin={240}
+    aria-valuemax={500}
+    aria-valuenow={Math.round(width)}
     tabIndex={0}
   ></div>
 </aside>
@@ -343,10 +369,25 @@
     cursor: col-resize;
     background: transparent;
     z-index: 10;
-    transition: background var(--spring-snappy);
   }
 
-  .right-sidebar-resize-handle:hover {
+  /* Hairline, not a painted slab: the 8px strip is hit area only. */
+  .right-sidebar-resize-handle::after {
+    content: "";
+    position: absolute;
+    inset-block: 0;
+    inset-inline-start: 4px;
+    width: 1px;
+    background: var(--nil-line);
+    transition: background-color var(--dur-flip) var(--ease-out);
+  }
+
+  .right-sidebar-resize-handle:hover::after,
+  .right-sidebar-resize-handle:focus-visible::after {
     background: var(--nil-line-hot);
+  }
+
+  .right-sidebar.resizing .right-sidebar-resize-handle::after {
+    background: var(--nil-ink-2);
   }
 </style>

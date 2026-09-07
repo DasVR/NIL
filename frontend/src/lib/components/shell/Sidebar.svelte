@@ -86,7 +86,7 @@
   <div class="sidebar-divider"></div>
 
   <div class="sidebar-footer">
-    <button class="sidebar-footer-btn" aria-label="Toggle sidebar" onclick={() => { if (onToggle) onToggle(); }}>
+    <button class="icon-btn sidebar-footer-btn" aria-label="Toggle sidebar" onclick={() => { if (onToggle) onToggle(); }}>
       <Icon icon={collapsed ? 'ph:caret-right-bold' : 'ph:caret-left-bold'} width="16" height="16" />
     </button>
   </div>

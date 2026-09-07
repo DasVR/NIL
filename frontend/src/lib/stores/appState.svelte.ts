@@ -3,6 +3,7 @@ import api, { type AgentMode, type Engagement } from '$lib/api';
 import { browser } from '$app/environment';
 
 type Theme = 'dark';
+export type ComposerMode = 'hunt' | 'exploit' | 'chat' | 'code' | 'report';
 
 interface AppState {
   sidebarOpen: boolean;
@@ -38,6 +39,7 @@ let reducedMotion = $state(defaultState.reducedMotion);
 let activeTargetId = $state(defaultState.activeTargetId);
 let activeEngagementId = $state(defaultState.activeEngagementId);
 let yoloMode = $state(false);
+let composerMode = $state<ComposerMode>('hunt');
 let composerFocus: () => void = () => {};
 
 let engagements = $state<Engagement[]>([]);
@@ -112,6 +114,8 @@ export const appState = {
   set activeEngagementId(v: string | null) { activeEngagementId = v; },
   get yoloMode() { return yoloMode; },
   set yoloMode(v: boolean) { yoloMode = v; },
+  get composerMode() { return composerMode; },
+  set composerMode(v: ComposerMode) { composerMode = v; },
 
   get engagements() { return engagements; },
   get backendHealthy() { return backendHealthy; },

@@ -35,6 +35,20 @@
   const displayText = $derived(showAll || resultText.length <= PREVIEW ? resultText : resultText.slice(0, PREVIEW));
 
   const indexLabel = $derived(String(step.index).padStart(2, '0'));
+
+  // Real duration metric from the approval lifecycle (startTime/endTime are set
+  // when the run is dispatched and settles). Blank cell when absent — grid stays.
+  const durationLabel = $derived(
+    step.startTime != null && step.endTime != null
+      ? formatDuration(step.endTime - step.startTime)
+      : ''
+  );
+
+  function formatDuration(ms: number): string {
+    if (ms < 1000) return `${Math.round(ms)}ms`;
+    if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
+    return `${Math.floor(ms / 60000)}m${String(Math.round((ms % 60000) / 1000)).padStart(2, '0')}s`;
+  }
 </script>
 
 <article
@@ -59,6 +73,7 @@
         <span class="glyph">{stateGlyph}</span>
         <span class="label">{stateLabel}</span>
       </span>
+      <span class="dur">{durationLabel}</span>
       <SpendMeter usage={step.usage} compact />
     </header>
 
@@ -105,7 +120,10 @@
   }
 
   .idx {
+    width: 2ch; /* fixed gutter column: index never nudges the trace spine */
+    text-align: center;
     font: var(--t-micro)/1 var(--font-machine);
+    font-variant-numeric: tabular-nums;
     letter-spacing: var(--track-tick);
     color: var(--nil-ink-3);
   }
@@ -144,8 +162,25 @@
     align-items: center;
     gap: 6px;
     font: var(--t-micro)/1 var(--font-machine);
+    font-variant-numeric: tabular-nums;
     letter-spacing: var(--track-tick);
     text-transform: uppercase;
+    color: var(--nil-ink-3);
+  }
+
+  /* Fixed event-type pill: pending/running/ok/error swap without nudging the
+     duration and spend columns left of the flex-end. */
+  .state .glyph { width: 3ch; text-align: center; }
+  .state .label { width: 7ch; }
+
+  /* Duration metric: fixed right-aligned cell, blank but present when the run
+     has no timing data — zero horizontal shift on reveal. */
+  .dur {
+    width: 6ch;
+    text-align: end;
+    flex-shrink: 0;
+    font: var(--t-micro)/1 var(--font-machine);
+    font-variant-numeric: tabular-nums;
     color: var(--nil-ink-3);
   }
 
@@ -170,7 +205,25 @@
     cursor: pointer;
   }
 
-  .bytes { font-family: var(--font-machine); }
+  .bytes {
+    font-family: var(--font-machine);
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* Accordion accent: explicit left hairline on the reveal region. The
+     block-size animation itself stays on the sanctioned 07 REVEAL primitive;
+     only the state color flips at --dur-flip. */
+  .nil-reveal {
+    border-inline-start: 1px solid var(--nil-line);
+    padding-inline-start: var(--s-2);
+    margin-inline-start: 3px;
+  }
+  .nil-reveal[data-open="true"] {
+    border-inline-start-color: var(--nil-line-hot);
+    transition: border-color var(--dur-flip) var(--ease-out),
+                block-size var(--dur-panel) var(--ease-out),
+                opacity var(--dur-enter) var(--ease-out);
+  }
 
   .result {
     max-block-size: 240px;
@@ -184,6 +237,7 @@
   .result pre {
     margin: 0;
     font: var(--t-meta)/var(--lh-body) var(--font-machine);
+    font-variant-numeric: tabular-nums; /* hex offsets / addresses never shift */
     color: var(--nil-ink-2);
     white-space: pre-wrap;
     word-break: break-word;
@@ -191,6 +245,7 @@
 
   .exit {
     font: var(--t-micro)/1 var(--font-machine);
+    font-variant-numeric: tabular-nums;
     color: var(--sev-critical);
     margin-block-end: var(--s-2);
   }

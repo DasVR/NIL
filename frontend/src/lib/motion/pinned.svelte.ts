@@ -13,8 +13,16 @@ export function pinned(node: HTMLElement, onChange: (isPinned: boolean) => void)
     }
   };
 
+  // Batch scroll writes to one per frame — a burst of childList/characterData
+  // mutations during rapid append must not issue a scrollTo per mutation.
+  let scheduled = false;
   const observer = new MutationObserver(() => {
-    if (isPinned) node.scrollTo({ top: node.scrollHeight, behavior: 'instant' });
+    if (!isPinned || scheduled) return;
+    scheduled = true;
+    requestAnimationFrame(() => {
+      scheduled = false;
+      if (isPinned) node.scrollTo({ top: node.scrollHeight, behavior: 'instant' });
+    });
   });
 
   node.addEventListener('scroll', onScroll, { passive: true });

@@ -69,6 +69,24 @@ evidence.", not "Nothing here."
 Never invent severity, confidence, or metrics in placeholder content. Fabricated CVSS
 scores in a security tool are worse than a blank state.
 
+## Charter amendments (2026-09-07, lead design review)
+
+Two scoped exceptions, approved deliberately. They are not bugs; do not "fix" them back
+to chrome greyscale without the lead's sign-off. Both live in `StreamComposer.svelte`:
+
+1. **Focus affordance (Law 1 exception).** A 1px chromatic dispersion ring (conic
+   spectrum, masked to the border) may appear under `:focus-within` on the command deck
+   only, to disambiguate input capture in low light. Never rendered at rest, never
+   anywhere else, and it rotates via a registered custom property (`--prism-angle`),
+   staying compositor-only and static under reduced motion.
+2. **Chip background continuity (Law 3 exception).** An SVG surface-tension filter
+   (`#nil-goo-surface`, feGaussianBlur + alpha contrast + `atop`) may be applied to the
+   mode chips' background layer only. Text and icons always live in a separate DOM layer
+   above it and are never filtered.
+
+Everything else about the three laws stands unchanged — saturation elsewhere in the
+workstation still means severity, and all other motion is transform/opacity.
+
 ## Known tells to avoid
 
 Do not produce: identical rounded cards for every content type; a single acid-green or

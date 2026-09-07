@@ -113,6 +113,15 @@ function handleKeydown(e: KeyboardEvent) {
       return;
     }
     appState.focusComposer();
+    return;
+  }
+
+  // Bare G: jump the agent stream to latest (backs the "Jump to latest <kbd>G</kbd>"
+  // keycap). Editable targets already returned above, so this never steals typing.
+  if (!mod && !shift && (e.key === 'g' || e.key === 'G')) {
+    if (paletteStore.open || appState.settingsOpen) return;
+    window.dispatchEvent(new CustomEvent('nil:jump-latest'));
+    return;
   }
 }
 

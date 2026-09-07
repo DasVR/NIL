@@ -63,6 +63,15 @@
   const usage = $derived(step.usage ?? usageStore.lastTurn);
   const busy = $derived(sending || step.state === 'running');
 
+  let primaryBtn = $state<HTMLButtonElement | null>(null);
+
+  // alertdialog behavior: mount moves focus to the primary action so the gate
+  // is both announced (aria-live) and immediately operable. Esc returns focus
+  // to the composer via keymap.svelte.ts.
+  $effect(() => {
+    primaryBtn?.focus();
+  });
+
   async function allow(grant: ApprovalGrant) {
     if (busy) return;
     sending = true;
@@ -88,9 +97,10 @@
 <div
   class="gate nil-scan"
   class:busy
-  data-state={busy ? 'working' : undefined}
+  data-state="working"
   role="alertdialog"
   aria-label="Pending tool approval"
+  aria-live="assertive"
   aria-busy={busy}
 >
   <header class="head">
@@ -114,6 +124,7 @@
     <button
       class="nil-lift nil-halo nil-magnetic act"
       type="button"
+      bind:this={primaryBtn}
       disabled={busy}
       {@attach magnetic}
       onclick={() => void allow('once')}
@@ -229,12 +240,12 @@
   }
 
   .act:disabled {
-    opacity: 0.4;
+    opacity: 0.45;
     cursor: not-allowed;
   }
 
   kbd {
     font: var(--t-micro)/1 var(--font-machine);
-    color: var(--nil-ink-3);
+    color: var(--nil-ink-2); /* keycap standard: AA on --nil-raised */
   }
 </style>

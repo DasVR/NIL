@@ -33,7 +33,6 @@
   });
 
   const engagement = $derived(appState.activeEngagementId || 'no-engagement');
-  const modeChips = ['hunt', 'exploit', 'chat', 'code', 'report'] as const;
 </script>
 
 <div class="titlebar" onmousedown={handleMouseDown} role="banner" aria-label="Window title bar">
@@ -45,12 +44,6 @@
     <span class="brand">nil</span>
     <span class="sep" aria-hidden="true">──</span>
     <span class="path">{engagement}</span>
-  </div>
-
-  <div class="titlebar-center">
-    {#each modeChips as m}
-      <span class="mode">{m}</span>
-    {/each}
   </div>
 
   <div class="titlebar-right">
@@ -85,7 +78,6 @@
   .metal.paused { opacity: 0.08; }
 
   .titlebar-left,
-  .titlebar-center,
   .titlebar-right {
     position: relative;
     z-index: 1;
@@ -96,8 +88,7 @@
     -webkit-app-region: no-drag;
   }
 
-  .titlebar-left { -webkit-app-region: drag; min-width: 0; }
-  .titlebar-center { flex: 1; justify-content: flex-end; gap: var(--s-3); }
+  .titlebar-left { -webkit-app-region: drag; min-width: 0; flex: 1; }
 
   .brand {
     font: 600 var(--t-meta)/1 var(--font-machine);
@@ -114,12 +105,5 @@
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-  }
-
-  .mode {
-    font: 500 var(--t-micro)/1 var(--font-ui);
-    letter-spacing: var(--track-tick);
-    text-transform: uppercase;
-    color: var(--nil-ink-3);
   }
 </style>
