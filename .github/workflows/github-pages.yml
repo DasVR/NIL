@@ -35,15 +35,16 @@ jobs:
         run: npm ci
 
       - name: Build static site
+        env:
+          # This is a project page (dasvr.github.io/NIL/), not a user/org page, so every
+          # asset path SvelteKit emits — in index.html AND in the inline bootstrap JS that
+          # dynamically imports the app chunks — needs this prefix baked in at build time.
+          # A post-build sed on index.html alone doesn't reach those inline imports and
+          # silently 404s every JS module (blank page, nothing in the DOM to inspect).
+          BASE_PATH: /${{ github.event.repository.name }}
         run: |
           npm run check
           npm run build
-
-      - name: Adjust paths for GitHub Pages
-        run: |
-          # SvelteKit static adapter writes absolute paths; for a project page we need relative.
-          # Replace absolute href/src in index.html with relative paths for the root path.
-          sed -i 's|href="/|href="./|g; s|src="/|src="./|g' build/index.html
 
       - uses: actions/upload-pages-artifact@v3
         with:
