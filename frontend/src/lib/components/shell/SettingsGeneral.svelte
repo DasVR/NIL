@@ -1,5 +1,6 @@
 <script lang="ts">
   import { appState } from '$lib/stores/appState.svelte.ts';
+  import { soundStore } from '$lib/stores/soundStore.svelte.ts';
 </script>
 
 <div class="settings-pane">
@@ -40,7 +41,7 @@
         <span class="setting-label">YOLO mode</span>
         <span class="setting-desc">Auto-approve tool runs for this engagement</span>
       </div>
-      <label class="toggle">
+      <label class="toggle" data-cuelume-toggle="toggle">
         <input
           type="checkbox"
           checked={appState.yoloMode}
@@ -48,6 +49,42 @@
         />
         <span class="toggle-slider"></span>
       </label>
+    </div>
+  </div>
+
+  <div class="settings-group">
+    <h4>Sound</h4>
+    <div class="setting-row">
+      <div class="setting-info">
+        <span class="setting-label">Interaction sounds</span>
+        <span class="setting-desc">Synthesized cues on hover, press, and approve/deny</span>
+      </div>
+      <label class="toggle" data-cuelume-toggle="toggle">
+        <input
+          type="checkbox"
+          checked={soundStore.enabled}
+          onchange={(e) => soundStore.enabled = e.currentTarget.checked}
+        />
+        <span class="toggle-slider"></span>
+      </label>
+    </div>
+    <div class="setting-row">
+      <div class="setting-info">
+        <span class="setting-label">Volume</span>
+        <span class="setting-desc">Global playback level</span>
+      </div>
+      <input
+        class="volume-slider"
+        type="range"
+        min="0"
+        max="1"
+        step="0.05"
+        value={soundStore.volume}
+        disabled={!soundStore.enabled}
+        oninput={(e) => soundStore.volume = Number(e.currentTarget.value)}
+        data-cuelume-release="tick"
+        aria-label="Sound volume"
+      />
     </div>
   </div>
 </div>
@@ -121,4 +158,10 @@
     outline: 2px solid var(--nil-halo);
     outline-offset: 2px;
   }
+
+  .volume-slider {
+    width: 120px;
+    accent-color: var(--nil-ink-2);
+  }
+  .volume-slider:disabled { opacity: 0.4; }
 </style>

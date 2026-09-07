@@ -41,7 +41,7 @@
 <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
 <div class="titlebar" onmousedown={handleMouseDown} role="banner" aria-label="Window title bar">
   <div class="metal" class:paused={agentRun.running}>
-    <LiquidMetal paused={agentRun.running} />
+    <LiquidMetal paused={agentRun.running} pending={!!agentRun.pendingApproval} />
   </div>
 
   <div class="titlebar-left titlebar-drag">

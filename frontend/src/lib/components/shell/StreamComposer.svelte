@@ -83,6 +83,7 @@
           class="nil-halo chip"
           class:on={active}
           aria-pressed={active}
+          data-cuelume-toggle="tick"
           onclick={() => (appState.composerMode = m.id)}
         >{m.label}</button>
       </span>
@@ -105,7 +106,14 @@
       placeholder={placeholder}
       disabled={gated}
     ></textarea>
-    <button class="nil-lift nil-halo send" type="button" onclick={send} disabled={!input.trim() || agentRun.running || gated}>
+    <button
+      class="nil-lift nil-halo send"
+      type="button"
+      onclick={send}
+      disabled={!input.trim() || agentRun.running || gated}
+      data-cuelume-press
+      data-cuelume-release="whisper"
+    >
       Send <kbd aria-hidden="true">↵</kbd>
     </button>
   </div>

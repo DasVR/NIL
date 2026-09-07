@@ -127,6 +127,8 @@
       bind:this={primaryBtn}
       disabled={busy}
       {@attach magnetic}
+      data-cuelume-press
+      data-cuelume-release="success"
       onclick={() => void allow('once')}
     >
       {busy ? 'Running' : 'Allow once'}
@@ -136,6 +138,8 @@
       class="nil-lift nil-halo act ghost"
       type="button"
       disabled={busy || !prefix}
+      data-cuelume-press
+      data-cuelume-release="success"
       onclick={() => void allow('engagement_prefix')}
     >
       Allow this engagement
@@ -144,6 +148,8 @@
       class="nil-lift nil-halo act ghost"
       type="button"
       disabled={busy}
+      data-cuelume-press
+      data-cuelume-release="error"
       onclick={deny}
     >
       Deny
@@ -153,6 +159,8 @@
       class="nil-lift nil-halo act ghost"
       type="button"
       disabled={busy}
+      data-cuelume-press
+      data-cuelume-release="error"
       onclick={stop}
     >
       Stop
