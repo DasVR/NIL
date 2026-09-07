@@ -1,5 +1,7 @@
 <script lang="ts">
+  import { fade } from 'svelte/transition';
   import { appState } from '$lib/stores/appState.svelte.ts';
+  import { settle } from '$lib/motion/settle';
   import Icon from '@iconify/svelte';
   import SettingsGeneral from '$lib/components/shell/SettingsGeneral.svelte';
   import SettingsAppearance from '$lib/components/shell/SettingsAppearance.svelte';
@@ -42,8 +44,16 @@
     class="settings-overlay"
     aria-label="Close settings"
     onclick={() => { if (onToggle) onToggle(false); }}
+    transition:fade={{ duration: 160 }}
   ></button>
-  <div class="settings-sheet" role="dialog" aria-label="Settings" tabindex="-1" onkeydown={handleKeydown}>
+  <div
+    class="settings-sheet"
+    role="dialog"
+    aria-label="Settings"
+    tabindex="-1"
+    onkeydown={handleKeydown}
+    transition:settle={{ duration: 160, base: 'translate(-50%, -50%)' }}
+  >
     <div class="settings-header">
       <h2>Settings</h2>
       <button class="settings-close" onclick={appState.toggleSettings} aria-label="Close">

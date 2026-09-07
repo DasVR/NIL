@@ -1,6 +1,8 @@
 <script lang="ts">
   import { onMount } from 'svelte';
+  import { fade } from 'svelte/transition';
   import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
+  import { settle } from '$lib/motion/settle';
   import Icon from '@iconify/svelte';
 
   interface Props {
@@ -73,8 +75,14 @@
     class="palette-overlay"
     aria-label="Close command palette"
     onclick={() => { if (onToggle) onToggle(false); }}
+    transition:fade={{ duration: 160 }}
   ></button>
-  <div class="palette-window" role="dialog" aria-label="Command Palette">
+  <div
+    class="palette-window"
+    role="dialog"
+    aria-label="Command Palette"
+    transition:settle={{ duration: 160, base: 'translateX(-50%)' }}
+  >
     <div class="palette-header">
       <div class="palette-search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
