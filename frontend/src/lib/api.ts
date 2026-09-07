@@ -1,5 +1,9 @@
 // NIL API client — typed fetch wrapper for the Python backend
-const API_BASE = import.meta.env.VITE_API_BASE || 'http://localhost:8000/v1';
+// Production builds are served by the same FastAPI app they talk to (see
+// shipped_web_dir() in finn_pentest/core/config.py), so a relative path
+// always reaches the right origin/port regardless of FINN_API_PORT. The
+// dev server has no backend of its own, so it needs an absolute default.
+const API_BASE = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? 'http://localhost:8766/v1' : '/v1');
 
 interface FetchOptions extends RequestInit {
   body?: any;

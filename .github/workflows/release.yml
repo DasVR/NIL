@@ -49,6 +49,11 @@ jobs:
           npm ci --prefix frontend
           npm run build --prefix frontend
 
+      - name: Bundle frontend into the wheel
+        run: |
+          rm -rf finn_pentest/webui
+          cp -r frontend/build finn_pentest/webui
+
       - name: Build Python wheel
         run: |
           python -m pip install --upgrade pip build
@@ -117,8 +122,19 @@ jobs:
             echo ""
             echo "\`\`\`bash"
             echo "pip install finn_pentest-*.whl"
-            echo "python -m finn_pentest.cli.main run-api"
-            echo "# open http://localhost:8000"
+            echo "finn api"
+            echo "# if 'finn' isn't found (Python Scripts dir not on PATH), use:"
+            echo "python -m finn_pentest.cli.main api"
+            echo "# open http://127.0.0.1:8766"
+            echo "\`\`\`"
+            echo ""
+            echo "## Run it as a background service"
+            echo ""
+            echo "\`\`\`bash"
+            echo "finn service install   # Task Scheduler (Windows) / launchd (macOS) / systemd --user (Linux)"
+            echo "finn service status"
+            echo "finn service stop"
+            echo "finn service uninstall"
             echo "\`\`\`"
             echo ""
             echo "## Changes since ${PREV:-initial release}"

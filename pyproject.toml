@@ -39,7 +39,11 @@ finn-tui = "finn_pentest.cli.main:run_tui"
 include = ["finn_pentest*"]
 
 [tool.setuptools.package-data]
-finn_pentest = ["sandbox/Dockerfile.sandbox", "sandbox/Dockerfile.sandbox.kali"]
+finn_pentest = [
+    "sandbox/Dockerfile.sandbox",
+    "sandbox/Dockerfile.sandbox.kali",
+    "webui/**/*",
+]
 
 [tool.pytest.ini_options]
 asyncio_mode = "auto"
