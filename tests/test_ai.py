@@ -33,6 +33,14 @@ def test_prompt_layers(finn_home):
     assert "YOLO MODE ACTIVE" in hunt
     assert "flag encyclopedias" in hunt.lower()
     assert "Prefer safe and caution-level reconnaissance" in hunt
+    assert "<finding_quality>" in hunt
+    assert "<scan_methodology>" in hunt
+    assert "<plugin_recipes>" in hunt
+    assert "nmap -T4 -F" in hunt
+    chat = build_system_prompt("chat", yolo=False)
+    assert "<finding_quality>" in chat
+    assert "<scan_methodology>" not in chat
+    assert "<plugin_recipes>" not in chat
     exploit = build_system_prompt("exploit", yolo=True)
     assert "MODE: EXPLOIT" in exploit
     assert "YOLO MODE ACTIVE" in exploit
@@ -52,6 +60,31 @@ def test_parse_commands(finn_home):
     assert parsed.needs_approval is True
     parsed_yolo = parse_response("```bash\nnmap -F 10.0.0.1\n```", yolo=True)
     assert parsed_yolo.needs_approval is False
+
+
+def test_parse_finding_card_lead_na():
+    card = """# Open Jenkins
+**CVSS**: n/a
+**Status**: lead
+
+## Description
+Unauthenticated console.
+
+## Evidence
+nmap showed 8080/tcp open.
+
+## Remediation
+Bind Jenkins to localhost.
+"""
+    parsed = parse_response(card)
+    assert len(parsed.findings) == 1
+    finding = parsed.findings[0]
+    assert finding["title"] == "Open Jenkins"
+    assert finding["cvss"] is None
+    assert finding["status"] == "lead"
+    assert "8080/tcp" in finding["evidence"]
+    prose = parse_response("The High severity template fired on staging.")
+    assert prose.findings == []
 
 
 def test_fts5_rag(finn_home):
@@ -133,7 +166,7 @@ def test_platform_authorization_provider_boundary(finn_home):
         def __init__(self) -> None:
             self.messages = None
 
-        async def send(self, messages, engagement=None):
+        async def send(self, messages, engagement=None, **kwargs):
             self.messages = messages
             return ChatResult(
                 text="No command this turn.",
@@ -171,7 +204,7 @@ def test_run_turn_returns_usage_payload(finn_home):
     sess = create_session("acme", mode="chat")
 
     class FakeRouter:
-        async def send(self, messages, engagement=None):
+        async def send(self, messages, engagement=None, **kwargs):
             return ChatResult(
                 text="Stay in scope.",
                 provider="fake",
@@ -196,7 +229,7 @@ def test_run_turn_registers_exploit_wait(finn_home):
     sess = create_session("acme", mode="exploit")
 
     class FakeRouter:
-        async def send(self, messages, engagement=None):
+        async def send(self, messages, engagement=None, **kwargs):
             return ChatResult(
                 text="Confirm with:\n```bash\ncurl -I http://10.0.0.1/\n```\n",
                 provider="fake",
@@ -274,3 +307,59 @@ def test_continue_after_run_keeps_hunt_mode(finn_home, monkeypatch):
     asyncio.run(continue_after_run(Run()))
     assert captured["mode"] == "hunt"
     assert "Continue the assessment." in captured["message"]
+
+
+def test_run_turn_strips_hedges_before_store(finn_home):
+    bootstrap()
+    create_engagement("acme")
+    sess = create_session("acme", mode="chat")
+
+    class FakeRouter:
+        async def send(self, messages, engagement=None, **kwargs):
+            return ChatResult(
+                text="Sure, here's the information:\nStay in scope.",
+                provider="fake",
+                model="fake",
+                prompt_tokens=8,
+                completion_tokens=4,
+                cost_usd=0.0,
+            )
+
+    asyncio.run(run_turn("acme", "status", "chat", sess["id"], router=FakeRouter()))
+    stored = get_messages(sess["id"])
+    assistant = [item for item in stored if item["role"] == "assistant"][-1]
+    assert "Sure, here's the information" not in assistant["content"]
+    assert "Stay in scope." in assistant["content"]
+
+
+def test_run_turn_recovers_once_on_refusal(finn_home):
+    bootstrap()
+    create_engagement("acme")
+    sess = create_session("acme", mode="hunt")
+    roles = []
+
+    class FakeRouter:
+        async def send(self, messages, engagement=None, **kwargs):
+            roles.append(kwargs.get("role"))
+            if kwargs.get("role") == "recover":
+                return ChatResult(
+                    text="```bash\nnmap -T4 -F 10.0.0.1\n```",
+                    provider="grok",
+                    model="grok-4.5",
+                    prompt_tokens=8,
+                    completion_tokens=4,
+                    cost_usd=0.0,
+                )
+            return ChatResult(
+                text="I cannot help with that request.",
+                provider="deepseek-flash",
+                model="deepseek-v4-flash",
+                prompt_tokens=8,
+                completion_tokens=4,
+                cost_usd=0.0,
+            )
+
+    result = asyncio.run(run_turn("acme", "scan it", "hunt", sess["id"], router=FakeRouter()))
+    assert roles == ["hunt", "recover"]
+    assert result["commands"] == ["nmap -T4 -F 10.0.0.1"]
+    assert result["provider"] == "grok"

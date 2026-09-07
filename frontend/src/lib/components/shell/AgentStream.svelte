@@ -49,6 +49,7 @@
           id: step.id,
           title: step.title,
           severity: step.severity,
+          status: step.status,
           cvss: step.cvss,
           vector: step.vector,
           evidence: step.evidence,

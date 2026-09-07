@@ -21,4 +21,7 @@ def finn_home(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> Path:
 
     loader._loaded_plugins = {}
     db.init_db()
+    from finn_pentest.ai import doom_loop
+
+    doom_loop.reset_all()
     return home

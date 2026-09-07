@@ -1,5 +1,5 @@
-import api, { type ChatRequest, type ToolApprove, type ToolRun } from '$lib/api';
-import type { ApprovalGrant, Finding, Step, TokenUsage, ToolState, ToolStep } from './types';
+import api, { type ChatRequest, type ChatResponse, type ToolApprove, type ToolRun } from '$lib/api';
+import type { ApprovalGrant, Finding, FindingSeverity, FindingStatus, Step, TokenUsage, ToolState, ToolStep } from './types';
 import { fromApiUsage } from '$lib/usage/format';
 import { usageStore } from '$lib/usage/store.svelte.ts';
 
@@ -118,6 +118,10 @@ export const agentRun = {
         text: assistantText,
         usage: usage ?? undefined,
       }];
+
+      for (const raw of res.findings || []) {
+        agentRun.addFinding(fromApiFinding(raw));
+      }
 
       const reason = stripFences(assistantText).slice(0, 280);
       const pendingRuns = (res.runs || []).filter((run) => run.approval === 'pending');
@@ -250,6 +254,47 @@ export const agentRun = {
       evidence: finding.evidence,
       assessment: finding.assessment,
       remediation: finding.remediation,
+      status: finding.status,
     }];
   },
 };
+
+function fromApiFinding(raw: NonNullable<ChatResponse['findings']>[number]): Finding {
+  const severity = normalizeSeverity(raw.severity);
+  const status = normalizeStatus(raw.status);
+  return {
+    id: `finding-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    title: raw.title || 'Finding',
+    severity,
+    status,
+    cvss: raw.cvss ?? null,
+    vector: raw.vector,
+    evidence: raw.evidence || '',
+    assessment: raw.assessment || '',
+    remediation: raw.remediation || '',
+  };
+}
+
+function normalizeSeverity(value: string | undefined): FindingSeverity {
+  switch (value) {
+    case 'critical':
+    case 'high':
+    case 'medium':
+    case 'low':
+    case 'info':
+      return value;
+    default:
+      return 'info';
+  }
+}
+
+function normalizeStatus(value: string | undefined): FindingStatus {
+  switch (value) {
+    case 'lead':
+    case 'confirmed':
+    case 'ruled_out':
+      return value;
+    default:
+      return 'lead';
+  }
+}
