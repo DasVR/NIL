@@ -191,6 +191,11 @@
     {/if}
   </div>
 
+  <!-- WAI-ARIA APG "window splitter" pattern: a focusable separator with
+       aria-valuenow/min/max is the documented accessible shape for a resize
+       handle. The a11y linter doesn't special-case role="separator" as
+       interactive; this is a known false positive for that pattern. -->
+  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
   <div class="right-sidebar-resize-handle"
     onmousedown={handleResizeStart}
     onkeydown={handleResizeKeydown}

@@ -37,8 +37,13 @@
 </script>
 
 {#if open}
-  <div class="settings-overlay" onclick={() => { if (onToggle) onToggle(false); }} />
-  <div class="settings-sheet" role="dialog" aria-label="Settings" onkeydown={handleKeydown}>
+  <button
+    type="button"
+    class="settings-overlay"
+    aria-label="Close settings"
+    onclick={() => { if (onToggle) onToggle(false); }}
+  ></button>
+  <div class="settings-sheet" role="dialog" aria-label="Settings" tabindex="-1" onkeydown={handleKeydown}>
     <div class="settings-header">
       <h2>Settings</h2>
       <button class="settings-close" onclick={appState.toggleSettings} aria-label="Close">
@@ -54,7 +59,7 @@
               <button
                 class="settings-category {activeCategory === cat.id ? 'active' : ''}"
                 onclick={() => activeCategory = cat.id}
-                aria-selected={activeCategory === cat.id}
+                aria-current={activeCategory === cat.id ? 'true' : undefined}
               >
                 <Icon icon={cat.icon} width="16" height="16" />
                 <span>{cat.label}</span>
@@ -96,8 +101,13 @@
 
 <style>
   .settings-overlay {
+    display: block;
     position: fixed;
     inset: 0;
+    width: 100%;
+    border: none;
+    padding: 0;
+    cursor: default;
     background: color-mix(in oklab, var(--nil-void) 72%, transparent);
     z-index: var(--z-modal);
   }

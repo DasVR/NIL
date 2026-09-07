@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte';
   import type { ToolStep } from '$lib/agent/types';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
 
@@ -8,7 +9,9 @@
 
   let { step }: Props = $props();
 
-  let open = $state(step.state === 'error');
+  // Initial open state only — later error transitions are handled by the $effect
+  // below, not by re-reading step here (untrack makes that intent explicit).
+  let open = $state(untrack(() => step.state === 'error'));
 
   $effect(() => {
     if (step.state === 'error') open = true;
