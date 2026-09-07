@@ -2,6 +2,8 @@ export type ToolState = 'pending' | 'running' | 'ok' | 'error';
 
 export type FindingSeverity = 'critical' | 'high' | 'medium' | 'low' | 'info';
 
+export type FindingStatus = 'lead' | 'confirmed' | 'ruled_out';
+
 export type ApprovalGrant = 'once' | 'engagement_prefix';
 
 export interface TokenUsage {
@@ -51,7 +53,8 @@ export interface FindingStep {
   id: string;
   title: string;
   severity: FindingSeverity;
-  cvss: number;
+  status: FindingStatus;
+  cvss: number | null;
   vector?: string;
   evidence: string;
   assessment: string;
@@ -64,7 +67,8 @@ export interface Finding {
   id: string;
   title: string;
   severity: FindingSeverity;
-  cvss: number;
+  status: FindingStatus;
+  cvss: number | null;
   vector?: string;
   evidence: string;
   assessment: string;

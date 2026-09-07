@@ -13,8 +13,9 @@ stuffing pipeline.
 ## Modes
 
 Five modes, defined in `finn_pentest/ai/prompts.py` and overridable per install from the
-`prompts/` directory. `base.md` is always prepended. `hunt` and `exploit` share the
-propose → wait → continue loop (`LOOP_MODES`).
+`prompts/` directory. Static prefix is `base` + `security_authorization` + `finding_quality`
++ mode. Hunt also loads `scan_methodology`. Hunt and exploit load `plugin_recipes`.
+`hunt` and `exploit` share the propose → wait → continue loop (`LOOP_MODES`).
 
 | Mode | Job |
 |---|---|
@@ -24,9 +25,10 @@ propose → wait → continue loop (`LOOP_MODES`).
 | `code` | Write assessment scripts and parsers — not exploit kits |
 | `report` | Turn findings into report sections |
 
-`hunt` proposes one command (or a small batch) and stops for approval. It does not dump
-flag encyclopedias; after each result it summarizes the new services, then proposes the
-next step.
+`hunt` proposes one command (or a small batch) and stops for approval. If it proposes work,
+it emits a fenced bash block — it does not ask in prose. It does not dump flag
+encyclopedias; after each result it summarizes the new services, then proposes the next
+step.
 
 `exploit` proposes one confirmation command and stops for approval. After proof it writes
 a finding card whose evidence points at the block it came from. It does not dump exploit
@@ -60,7 +62,12 @@ subfinder (passive subdomains when the target is a domain, not an IP)
 
 Match the tool to the target shape: `nmap` takes IPs/CIDRs, the HTTP tools take hosts or
 URLs. Plugin `validate_target` enforces this. To add a scanner, see the `finn-plugins`
-skill.
+skill. Nuclei and nikto hits are leads until confirmed.
+
+## Doom-loop
+
+Identical consecutive commands warn at 3 and halt at 5 (`finn_pentest/ai/doom_loop.py`).
+The halt does not enqueue that command. YOLO does not bypass it.
 
 ## Findings
 
@@ -71,6 +78,7 @@ expect this shape:
 ```markdown
 # <title>
 **CVSS**: <score or n/a>
+**Status**: lead | confirmed | ruled_out
 **Date**: <iso date>
 
 ## Description
@@ -83,9 +91,8 @@ Command output, request/response, loot references. Point at the block it came fr
 How to fix it, in prose.
 ```
 
-Severity is one of `critical` / `high` / `medium` / `low` / `info` and drives the left
-border color (`SEVERITY_COLOR`) and sort order (`SEVERITY_ORDER`). Critical gets the glow;
-nothing else does.
+Status is `lead` until proven. Color (`--sev-*`) is only for **confirmed** severity.
+Leads stay greyscale. Never invent CVSS; the card shows `n/a` when there is no score.
 
 `Explain` and `Draft` on a card summon the Finn column with the finding as context — they
 never navigate to a chat page.

@@ -75,6 +75,16 @@ export interface ChatResponse {
     safety_level?: string;
   };
   runs?: ToolRun[];
+  findings?: Array<{
+    title?: string;
+    severity?: 'critical' | 'high' | 'medium' | 'low' | 'info';
+    status?: 'lead' | 'confirmed' | 'ruled_out';
+    cvss?: number | null;
+    evidence?: string;
+    assessment?: string;
+    remediation?: string;
+    vector?: string;
+  }>;
   usage?: TokenUsagePayload | null;
 }
 

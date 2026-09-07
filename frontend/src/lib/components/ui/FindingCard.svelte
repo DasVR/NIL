@@ -1,5 +1,6 @@
 <script lang="ts">
-  import type { Finding, FindingSeverity } from '$lib/agent/types';
+  import type { Finding, FindingSeverity, FindingStatus } from '$lib/agent/types';
+  import { formatCvss, findingConfirmed } from '$lib/findings/display';
   import { scramble } from '$lib/motion/scramble.svelte.ts';
 
   interface Props {
@@ -38,14 +39,32 @@
     }
   }
 
-  const cvssLabel = $derived(finding.cvss.toFixed(1));
+  function statusLabel(s: FindingStatus): string {
+    switch (s) {
+      case 'lead': return 'lead';
+      case 'confirmed': return 'confirmed';
+      case 'ruled_out': return 'ruled out';
+      default: {
+        const _n: never = s;
+        return _n;
+      }
+    }
+  }
+
+  const status = $derived(finding.status ?? 'lead');
+  const confirmed = $derived(findingConfirmed(status));
+  const cvssLabel = $derived(formatCvss(finding.cvss));
+  const chipText = $derived(confirmed ? finding.severity : statusLabel(status));
+  const tone = $derived(confirmed ? sevToken(finding.severity) : 'var(--nil-ink-3)');
 </script>
 
-<article class="finding" style:--sev={sevToken(finding.severity)}>
+<article class="finding" class:confirmed data-status={status} data-cvss={cvssLabel} style:--sev={tone}>
   <header class="lead">
-    <span class="chip" title={finding.severity}>
-      <span class="shape" aria-hidden="true">{sevShape(finding.severity)}</span>
-      <span class="sev-label">{finding.severity}</span>
+    <span class="chip" title={chipText}>
+      {#if confirmed}
+        <span class="shape" aria-hidden="true">{sevShape(finding.severity)}</span>
+      {/if}
+      <span class="sev-label">{chipText}</span>
     </span>
     <span class="cvss nil-scramble" {@attach scramble(() => cvssLabel)}>
       {cvssLabel}

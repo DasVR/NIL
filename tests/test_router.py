@@ -76,3 +76,96 @@ def test_router_exhausted(finn_home, monkeypatch):
 
     with pytest.raises(AllProvidersExhausted):
         asyncio.run(router.send([{"role": "user", "content": "hi"}]))
+
+
+def test_router_role_prefers_tagged_provider(finn_home, monkeypatch):
+    bootstrap()
+    save_providers(
+        {
+            "priority": [
+                {
+                    "name": "flash",
+                    "model": "deepseek-v4-flash",
+                    "base_url": "https://flash.example/v1",
+                    "api_key": "k1",
+                    "cost_per_1k": 0.001,
+                    "roles": ["hunt"],
+                },
+                {
+                    "name": "pro",
+                    "model": "deepseek-v4-pro",
+                    "base_url": "https://pro.example/v1",
+                    "api_key": "k2",
+                    "cost_per_1k": 0.002,
+                    "roles": ["code"],
+                },
+                {
+                    "name": "grok",
+                    "model": "grok-4.5",
+                    "base_url": "https://grok.example/v1",
+                    "api_key": "k3",
+                    "cost_per_1k": 0.003,
+                    "roles": ["recover"],
+                },
+            ]
+        }
+    )
+    calls = []
+
+    async def fake_chat(provider: ProviderConfig, messages, stream=False):
+        calls.append(provider.name)
+        return {
+            "choices": [{"message": {"content": provider.name}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+        }
+
+    monkeypatch.setattr("finn_pentest.providers.router.chat_completion", fake_chat)
+    router = AIRouter()
+    result = asyncio.run(router.send([{"role": "user", "content": "hi"}], engagement="acme", role="hunt"))
+    assert result.provider == "flash"
+    assert calls == ["flash"]
+
+
+def test_router_skip_names_on_recover(finn_home, monkeypatch):
+    bootstrap()
+    save_providers(
+        {
+            "priority": [
+                {
+                    "name": "flash",
+                    "model": "deepseek-v4-flash",
+                    "base_url": "https://flash.example/v1",
+                    "api_key": "k1",
+                    "roles": ["hunt"],
+                },
+                {
+                    "name": "grok",
+                    "model": "grok-4.5",
+                    "base_url": "https://grok.example/v1",
+                    "api_key": "k3",
+                    "roles": ["recover"],
+                },
+            ]
+        }
+    )
+    calls = []
+
+    async def fake_chat(provider: ProviderConfig, messages, stream=False):
+        calls.append(provider.name)
+        return {
+            "choices": [{"message": {"content": provider.name}}],
+            "usage": {"prompt_tokens": 1, "completion_tokens": 1},
+        }
+
+    monkeypatch.setattr("finn_pentest.providers.router.chat_completion", fake_chat)
+    router = AIRouter()
+    result = asyncio.run(
+        router.send(
+            [{"role": "user", "content": "hi"}],
+            engagement="acme",
+            role="recover",
+            skip_names={"flash"},
+        )
+    )
+    assert result.provider == "grok"
+    assert calls == ["grok"]
