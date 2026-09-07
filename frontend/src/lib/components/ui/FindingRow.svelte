@@ -23,7 +23,7 @@
     }
   }
 
-  const cvssLabel = $derived(finding.cvss.toFixed(1));
+  const cvssLabel = $derived(finding.cvss != null ? finding.cvss.toFixed(1) : '');
 </script>
 
 <button
@@ -37,7 +37,9 @@
   <span class="title">{finding.title}</span>
   <span class="meta">
     <span class="sev">{finding.severity}</span>
-    <span class="cvss">{cvssLabel}</span>
+    {#if cvssLabel}
+      <span class="cvss">{cvssLabel}</span>
+    {/if}
   </span>
 </button>
 
