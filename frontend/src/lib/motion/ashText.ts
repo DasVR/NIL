@@ -1,0 +1,98 @@
+/** Streaming ash text — one letter at a time, a small burst of ember particles. */
+
+const BURST = 7;
+
+export function commonPrefix(a: string, b: string): number {
+  const n = Math.min(a.length, b.length);
+  let i = 0;
+  while (i < n && a[i] === b[i]) i += 1;
+  return i;
+}
+
+export type AshHandle = {
+  play: (text: string) => Promise<void>;
+  stop: () => void;
+};
+
+export function attachAsh(host: HTMLElement): AshHandle {
+  let cancelled = false;
+  let frame = 0;
+
+  const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  function ember(): string {
+    return getComputedStyle(document.documentElement).getPropertyValue('--brand-ember-300').trim()
+      || getComputedStyle(document.documentElement).getPropertyValue('--nil-ink').trim();
+  }
+
+  async function play(text: string): Promise<void> {
+    cancelled = false;
+    host.replaceChildren();
+    if (reduced()) {
+      host.textContent = text;
+      return;
+    }
+    const color = ember();
+    for (let i = 0; i < text.length; i++) {
+      if (cancelled) return;
+      const ch = text[i];
+      const span = document.createElement('span');
+      span.className = 'nil-ash-letter';
+      span.textContent = ch === ' ' ? '\u00a0' : ch;
+      span.style.opacity = '0';
+      host.appendChild(span);
+      await burst(span, color);
+      if (cancelled) return;
+      span.style.opacity = '1';
+      span.style.color = '';
+    }
+  }
+
+  function burst(letter: HTMLElement, color: string): Promise<void> {
+    return new Promise((resolve) => {
+      const bits: HTMLElement[] = [];
+      for (let i = 0; i < BURST; i++) {
+        const p = document.createElement('i');
+        p.className = 'nil-ash-bit';
+        p.style.background = color;
+        const ang = (Math.PI * 2 * i) / BURST + Math.random() * 0.4;
+        const dist = 8 + Math.random() * 10;
+        p.style.setProperty('--dx', `${Math.cos(ang) * dist}px`);
+        p.style.setProperty('--dy', `${Math.sin(ang) * dist}px`);
+        letter.appendChild(p);
+        bits.push(p);
+      }
+      letter.style.color = color;
+      const t0 = performance.now();
+      const D = 160;
+      const tick = (now: number) => {
+        if (cancelled) {
+          bits.forEach((b) => b.remove());
+          resolve();
+          return;
+        }
+        const t = Math.min(1, (now - t0) / D);
+        const u = 1 - t;
+        for (const b of bits) {
+          const dx = parseFloat(b.style.getPropertyValue('--dx'));
+          const dy = parseFloat(b.style.getPropertyValue('--dy'));
+          b.style.transform = `translate(${dx * u}px, ${dy * u}px) scale(${0.4 + t * 0.6})`;
+          b.style.opacity = String(1 - t);
+        }
+        if (t < 1) frame = requestAnimationFrame(tick);
+        else {
+          bits.forEach((b) => b.remove());
+          resolve();
+        }
+      };
+      frame = requestAnimationFrame(tick);
+    });
+  }
+
+  function stop() {
+    cancelled = true;
+    cancelAnimationFrame(frame);
+  }
+
+  return { play, stop };
+}

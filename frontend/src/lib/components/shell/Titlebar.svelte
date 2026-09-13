@@ -3,6 +3,7 @@
   import { appState } from '$lib/stores/appState.svelte.ts';
   import LiquidMetal from '$lib/components/ui/LiquidMetal.svelte';
   import WindowControls from '$lib/components/ui/WindowControls.svelte';
+  import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import { agentRun } from '$lib/agent/run.svelte.ts';
 
   let dragging = $state(false);
@@ -48,6 +49,9 @@
     <span class="brand">nil</span>
     <span class="sep" aria-hidden="true">──</span>
     <span class="path">{engagement}</span>
+    <span class="copy-hit">
+      <CopyAffordance value={engagement} />
+    </span>
   </div>
 
   <div class="titlebar-right">
@@ -110,4 +114,5 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .copy-hit { -webkit-app-region: no-drag; }
 </style>

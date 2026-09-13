@@ -3,7 +3,9 @@
   import { fade } from 'svelte/transition';
   import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
   import { settle } from '$lib/motion/settle';
-  import Icon from '@iconify/svelte';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import { droplet } from '$lib/motion/droplet';
+  import DitherWipe from '$lib/ui/DitherWipe.svelte';
 
   interface Props {
     open?: boolean;
@@ -83,6 +85,7 @@
     aria-label="Command Palette"
     transition:settle={{ duration: 160, base: 'translateX(-50%)' }}
   >
+    <DitherWipe mode="dissolve" />
     <div class="palette-header">
       <div class="palette-search">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -109,7 +112,7 @@
     <div id="palette-listbox" class="palette-results" role="listbox">
       {#if visibleCommands.length === 0}
         <div class="palette-empty">
-          <Icon icon="ph:magnifying-glass-bold" width="20" height="20" />
+          <NilIcon name="search" size={16} />
           <p>No commands found</p>
           <span>Try a different search</span>
         </div>
@@ -128,10 +131,11 @@
               role="option"
               aria-selected={globalIdx === selectedIndex}
               id={`cmd-${cmd.id}`}
+              {@attach droplet}
               onclick={() => paletteStore.executeCommand(cmd.id)}
             >
               <div class="palette-item-main">
-                <Icon icon={cmd.icon || 'ph:command-bold'} width="14" height="14" />
+                <NilIcon name={cmd.icon || 'command'} size={16} />
                 <span class="palette-item-label">{cmd.label}</span>
               </div>
               {#if cmd.shortcut}
@@ -239,7 +243,7 @@
 
   .palette-item:hover,
   .palette-item.selected {
-    background: var(--surface-hover);
+    background: transparent;
   }
 
   .palette-item.selected {

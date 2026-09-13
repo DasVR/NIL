@@ -8,6 +8,8 @@
   import MainWorkspace from '$lib/components/shell/MainWorkspace.svelte';
   import RightSidebar from '$lib/components/shell/RightSidebar.svelte';
   import StreamComposer from '$lib/components/shell/StreamComposer.svelte';
+  import ToolDock from '$lib/components/shell/ToolDock.svelte';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
   import StatusBar from '$lib/components/shell/StatusBar.svelte';
   import CommandPalette from '$lib/components/shell/CommandPalette.svelte';
   import SettingsSheet from '$lib/components/shell/SettingsSheet.svelte';
@@ -38,6 +40,24 @@
     if (!browser) return;
     void usageStore.refresh(appState.activeEngagementId);
   });
+
+  $effect(() => {
+    if (!browser) return;
+    const runningTool = agentRun.steps.find((s) => s.kind === 'tool' && s.state === 'running');
+    if (runningTool && runningTool.kind === 'tool') {
+      workspace.openDock({
+        id: runningTool.id,
+        title: runningTool.name,
+        kind: 'command',
+        status: 'running',
+        output: runningTool.output || runningTool.primaryArg,
+      });
+      return;
+    }
+    if (workspace.dock?.kind === 'command' && workspace.dock.status === 'running') {
+      workspace.updateDock({ status: 'ok' });
+    }
+  });
 </script>
 
 <svelte:window onkeydown={keymap.handleKeydown} />
@@ -60,6 +80,7 @@
           {@render children()}
         {/snippet}
       </MainWorkspace>
+      <ToolDock />
       <StreamComposer bind:inputEl={composerInput} />
     </main>
 

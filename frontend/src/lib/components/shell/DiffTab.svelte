@@ -18,9 +18,9 @@
     if (!browser || !container) return;
 
     import('monaco-editor').then((monaco) => {
-      const voidC = token('--nil-void', '#08090a');
-      const ink = token('--nil-ink', '#e8e6e3');
-      const line = token('--nil-line', '#1c2022');
+      const voidC = token('--nil-void', '#0a0908');
+      const ink = token('--nil-ink', '#efe9e0');
+      const line = token('--nil-line', '#2a2622');
       const criticalBg = 'rgba(229, 72, 77, 0.15)';
       const lowBg = 'rgba(92, 158, 173, 0.15)';
 

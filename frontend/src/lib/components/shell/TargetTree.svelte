@@ -1,6 +1,7 @@
 <script lang="ts">
   import { appState } from '$lib/stores/appState.svelte.ts';
-  import Icon from '@iconify/svelte';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import { droplet } from '$lib/motion/droplet';
 
   interface TargetNode {
     id: string;
@@ -157,12 +158,16 @@
 
   function getIcon(type: TargetNode['type']) {
     switch (type) {
-      case 'engagement': return 'ph:briefcase-bold';
-      case 'domain': return 'ph:globe-bold';
-      case 'host': return 'ph:server-bold';
-      case 'network': return 'ph:network-bold';
-      case 'finding': return 'ph:flag-bold';
-      case 'timeline': return 'ph:clock-bold';
+      case 'engagement': return 'briefcase';
+      case 'domain': return 'globe';
+      case 'host': return 'server';
+      case 'network': return 'network';
+      case 'finding': return 'flag';
+      case 'timeline': return 'clock';
+      default: {
+        const _n: never = type;
+        return _n;
+      }
     }
   }
 </script>
@@ -194,6 +199,7 @@
       aria-selected={selected}
       tabindex={row.node.id === (focusId ?? rows[0]?.node.id) ? 0 : -1}
       style:--indent={row.depth}
+      {@attach droplet}
       onclick={() => { focusId = row.node.id; selectRow(row); }}
     >
       <!-- Guide rails: rendered only where an ancestor branch continues.
@@ -213,7 +219,7 @@
           onclick={(e) => { e.stopPropagation(); toggleExpand(row); }}
         >
           <span class="caret" class:open={row.expanded}>
-            <Icon icon="ph:caret-right-bold" width="10" height="10" />
+            <NilIcon name="chevron-right" size={16} />
           </span>
         </button>
       {:else}
@@ -228,7 +234,7 @@
       {/if}
 
       <span class="node-icon" data-tier={row.node.type}>
-        <Icon icon={getIcon(row.node.type)} width="13" height="13" />
+        <NilIcon name={getIcon(row.node.type)} size={16} />
       </span>
 
       <span class="node-name" data-tier={row.node.type}>{row.node.name}</span>
@@ -267,7 +273,7 @@
   }
 
   .tree-row:hover {
-    background: var(--sidebar-item-hover);
+    background: transparent;
   }
 
   /* Selected: monochrome surface + left accent hairline. Never a saturated

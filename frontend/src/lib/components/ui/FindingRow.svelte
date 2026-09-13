@@ -1,5 +1,6 @@
 <script lang="ts">
   import type { Finding, FindingSeverity } from '$lib/agent/types';
+  import { droplet } from '$lib/motion/droplet';
 
   interface Props {
     finding: Finding;
@@ -31,6 +32,7 @@
   class="row"
   class:active
   style:--sev={sevToken(finding.severity)}
+  {@attach droplet}
   onclick={() => onSelect?.()}
 >
   <span class="dot" aria-hidden="true"></span>
@@ -61,7 +63,7 @@
   }
 
   .row:hover {
-    background: var(--nil-raised);
+    background: transparent;
   }
 
   .row.active {

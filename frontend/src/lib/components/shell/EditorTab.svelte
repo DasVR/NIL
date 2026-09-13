@@ -17,11 +17,11 @@
     if (!browser || !container) return;
 
     import('monaco-editor').then((monaco) => {
-      const voidC = token('--nil-void', '#08090a');
-      const ink = token('--nil-ink', '#e8e6e3');
-      const ink3 = token('--nil-ink-3', '#6b7175');
-      const raised = token('--nil-raised', '#151819');
-      const line = token('--nil-line', '#1c2022');
+      const voidC = token('--nil-void', '#0a0908');
+      const ink = token('--nil-ink', '#efe9e0');
+      const ink3 = token('--nil-ink-3', '#736a5f');
+      const raised = token('--nil-raised', '#1c1916');
+      const line = token('--nil-line', '#2a2622');
 
       monaco.editor.defineTheme('nil', {
         base: 'vs-dark',

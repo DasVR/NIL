@@ -18,7 +18,7 @@ interface AppState {
 }
 
 const defaultState: AppState = {
-  sidebarOpen: true,
+  sidebarOpen: false,
   sidebarWidth: 280,
   rightSidebarOpen: true,
   rightSidebarWidth: 320,

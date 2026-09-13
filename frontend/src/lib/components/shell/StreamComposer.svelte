@@ -1,7 +1,15 @@
 <script lang="ts">
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
+  import {
+    workspace,
+    engagementFiles,
+    type WorkstationMode,
+  } from '$lib/stores/workspace.svelte.ts';
   import ApprovalBlock from '$lib/components/ui/ApprovalBlock.svelte';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import OnDeviceHint from '$lib/components/ui/OnDeviceHint.svelte';
+  import { jelly } from '$lib/motion/jelly.ts';
   import { cubicIn } from 'svelte/easing';
 
   interface Props {
@@ -11,13 +19,13 @@
   let { inputEl = $bindable() }: Props = $props();
 
   let input = $state('');
-  const modes: { id: ComposerMode; label: string }[] = [
-    { id: 'hunt', label: 'hunt' },
-    { id: 'exploit', label: 'exploit' },
-    { id: 'chat', label: 'chat' },
-    { id: 'code', label: 'code' },
-    { id: 'report', label: 'report' },
-  ];
+  let mentionOpen = $state(false);
+  let mentionQuery = $state('');
+  let mentionIndex = $state(0);
+  let modelOpen = $state(false);
+  let chipLeaving = $state<string | null>(null);
+  let pillEl: HTMLSpanElement | undefined = $state();
+  let lastMode = $state<WorkstationMode>(workspace.workstationMode);
 
   const pending = $derived(agentRun.pendingApproval);
   const gated = $derived(Boolean(pending));
@@ -25,14 +33,19 @@
   const placeholder = $derived(
     gated
       ? 'Allow or deny the pending command'
-      : appState.composerMode === 'exploit'
-        ? 'Name the in-scope finding to confirm'
-        : 'Describe the next step',
+      : workspace.workstationMode === 'pentest'
+        ? 'Describe the next hunt step'
+        : 'Ask NIL to build, edit, or inspect files',
   );
 
-  // Gate resolution exit: element-out = --dur-enter (160ms) + --ease-in, opacity +
-  // translateY only (Law 3). Reduced motion keeps the opacity fade at 80ms, per the
-  // motion.css contract (state stays legible, travel is killed).
+  const files = $derived(
+    engagementFiles().filter((f) =>
+      mentionQuery
+        ? f.path.toLowerCase().includes(mentionQuery) || f.label.toLowerCase().includes(mentionQuery)
+        : true,
+    ),
+  );
+
   function gateExit(node: HTMLElement) {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const t0 = reduced ? 80 : 160;
@@ -47,65 +60,127 @@
   function send() {
     const text = input.trim();
     if (!text || gated) return;
-    agentRun.sendMessage(text, appState.activeEngagementId || 'default', appState.composerMode);
+    const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
+    agentRun.sendMessage(text, appState.activeEngagementId || 'default', mode);
     input = '';
+    mentionOpen = false;
+  }
+
+  function setMode(next: WorkstationMode) {
+    if (next === workspace.workstationMode) return;
+    const dir = next === 'pentest' ? 'right' : 'left';
+    workspace.workstationMode = next;
+    lastMode = next;
+    if (pillEl) jelly(pillEl, dir);
   }
 
   function onKey(e: KeyboardEvent) {
+    if (mentionOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        mentionIndex = Math.min(mentionIndex + 1, Math.max(0, files.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        mentionIndex = Math.max(mentionIndex - 1, 0);
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        pickMention(mentionIndex);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        mentionOpen = false;
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey && !(e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       send();
     }
   }
+
+  function onInput() {
+    const at = input.lastIndexOf('@');
+    if (at >= 0 && (at === 0 || /\s/.test(input[at - 1] ?? ''))) {
+      const rest = input.slice(at + 1);
+      if (!rest.includes(' ') && !rest.includes('\n')) {
+        mentionOpen = true;
+        mentionQuery = rest.toLowerCase();
+        mentionIndex = 0;
+        return;
+      }
+    }
+    mentionOpen = false;
+  }
+
+  function pickMention(index: number) {
+    const file = files[index];
+    if (!file) return;
+    workspace.attachFile(file);
+    const at = input.lastIndexOf('@');
+    if (at >= 0) input = input.slice(0, at).trimEnd() + (at > 0 ? ' ' : '');
+    mentionOpen = false;
+  }
+
+  function dismissChip(id: string) {
+    chipLeaving = id;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(() => {
+      workspace.detachFile(id);
+      chipLeaving = null;
+    }, reduced ? 80 : 180);
+  }
+
+  function toggleDictation() {
+    workspace.dictationActive = !workspace.dictationActive;
+  }
 </script>
 
 <div class="composer nil-scan" data-state={agentRun.running ? 'working' : undefined}>
-  <!-- Charter amendment 2026-09-07: Law 3 exception. The goo surface applies ONLY
-       to chip background layers (.chip-bg). Labels live in the buttons above the
-       filtered layer and are never blurred. -->
-  <svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
-    <defs>
-      <filter id="nil-goo-surface">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-        <feColorMatrix in="blur" mode="matrix"
-          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -7" result="goo" />
-        <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-      </filter>
-    </defs>
-  </svg>
-  <div class="modes" role="group" aria-label="Agent mode">
-    {#each modes as m}
-      {@const active = appState.composerMode === m.id}
-      <span class="chip-slot">
-        <i class="chip-bg" data-on={active} aria-hidden="true"></i>
-        <button
-          type="button"
-          class="nil-halo chip"
-          class:on={active}
-          aria-pressed={active}
-          data-cuelume-toggle="tick"
-          onclick={() => (appState.composerMode = m.id)}
-        >{m.label}</button>
-      </span>
-    {/each}
-  </div>
+  {#if workspace.attached.length}
+    <div class="chips" aria-label="Attached files">
+      {#each workspace.attached as file (file.id)}
+        <span class="chip" class:leaving={chipLeaving === file.id}>
+          <span class="chip-path">{file.path}</span>
+          <button class="chip-x nil-halo" type="button" aria-label={`Remove ${file.path}`} onclick={() => dismissChip(file.id)}>
+            <NilIcon name="x" size={16} />
+          </button>
+        </span>
+      {/each}
+    </div>
+  {/if}
+
   {#if pending}
     <div class="gate-host" out:gateExit>
       <ApprovalBlock step={pending} />
     </div>
   {/if}
+
   <div class="row">
-    <span class="gt" aria-hidden="true">&gt;</span>
     <textarea
       id="agent-composer"
       bind:this={inputEl}
       bind:value={input}
       onkeydown={onKey}
+      oninput={onInput}
       rows="1"
       aria-label="Agent input"
       placeholder={placeholder}
       disabled={gated}
     ></textarea>
+    <button
+      class="icon-btn nil-halo"
+      type="button"
+      aria-label="Voice input"
+      aria-pressed={workspace.dictationActive}
+      onclick={toggleDictation}
+    >
+      <NilIcon name={workspace.dictationActive ? 'audio-lines' : 'mic'} size={16} />
+    </button>
     <button
       class="nil-lift nil-halo send"
       type="button"
@@ -116,6 +191,102 @@
     >
       Send <kbd aria-hidden="true">↵</kbd>
     </button>
+  </div>
+
+  {#if mentionOpen}
+    <div class="mentions" role="listbox" aria-label="Mention a file">
+      {#if files.length === 0}
+        <div class="empty">No matching files</div>
+      {:else}
+        {#each files as file, i (file.id)}
+          <button
+            class="mention"
+            class:on={i === mentionIndex}
+            type="button"
+            role="option"
+            aria-selected={i === mentionIndex}
+            onclick={() => pickMention(i)}
+          >
+            <span class="m-label">{file.label}</span>
+            <span class="m-path">{file.path}</span>
+          </button>
+        {/each}
+      {/if}
+    </div>
+  {/if}
+
+  {#if workspace.dictationActive}
+    <OnDeviceHint active />
+  {/if}
+
+  <div class="bar">
+    <div class="segment" role="group" aria-label="Workstation mode">
+      <span
+        class="pill nil-jelly"
+        bind:this={pillEl}
+        style:--jelly-origin={lastMode === 'pentest' ? 'right center' : 'left center'}
+        style:transform={workspace.workstationMode === 'pentest' ? 'translateX(100%)' : 'translateX(0)'}
+      ></span>
+      <button
+        class="seg nil-halo"
+        class:on={workspace.workstationMode === 'build'}
+        type="button"
+        aria-pressed={workspace.workstationMode === 'build'}
+        onclick={() => setMode('build')}
+      >Build</button>
+      <button
+        class="seg nil-halo"
+        class:on={workspace.workstationMode === 'pentest'}
+        type="button"
+        aria-pressed={workspace.workstationMode === 'pentest'}
+        onclick={() => setMode('pentest')}
+      >Pentest</button>
+    </div>
+
+    <div class="model-wrap">
+      <button
+        class="model nil-halo"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={modelOpen}
+        onclick={() => (modelOpen = !modelOpen)}
+      >
+        {workspace.model.name}
+        <NilIcon name="chevron-down" size={16} />
+      </button>
+      {#if modelOpen}
+        <div class="picker" role="listbox" aria-label="Model">
+          {#each workspace.models as m (m.id)}
+            <button
+              class="pick"
+              type="button"
+              role="option"
+              aria-selected={m.id === workspace.modelId}
+              onclick={() => { workspace.modelId = m.id; modelOpen = false; }}
+            >
+              <span class="pick-name">{m.name}</span>
+              <span class="pick-desc">{m.description}</span>
+              {#if m.id === workspace.modelId}
+                <span class="check"><NilIcon name="check" size={16} /></span>
+              {/if}
+            </button>
+          {/each}
+          <div class="divider"></div>
+          <div class="effort" role="group" aria-label="Effort">
+            <span>Effort</span>
+            {#each (['low', 'medium', 'high'] as const) as level}
+              <button
+                class="eff"
+                class:on={workspace.effort === level}
+                type="button"
+                onclick={() => (workspace.effort = level)}
+              >{level}</button>
+            {/each}
+          </div>
+          <button class="pick more" type="button" disabled>More models</button>
+        </div>
+      {/if}
+    </div>
   </div>
 </div>
 
@@ -134,15 +305,8 @@
     position: relative;
     isolation: isolate;
   }
+  .composer:focus-within { border-color: var(--nil-line-hot); }
 
-  .composer:focus-within {
-    border-color: var(--nil-line-hot);
-  }
-
-  /* Charter amendment 2026-09-07 — Law 1 exception (single sanctioned use):
-     a 1px chromatic dispersion ring exists ONLY under :focus-within on the command
-     deck, to disambiguate input capture in low light. Never rendered at rest;
-     compositor-driven rotation via @property; static ring under reduced motion. */
   @property --prism-angle {
     syntax: "<angle>";
     initial-value: 0deg;
@@ -153,7 +317,7 @@
     position: absolute;
     inset: 0;
     border-radius: var(--r-panel);
-    padding: 1px; /* the ring's width */
+    padding: 1px;
     background: conic-gradient(from var(--prism-angle),
       #00f0ff, #7000ff, #ffaa00, #4d7cff, #00f0ff);
     -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
@@ -164,68 +328,43 @@
     transition: opacity var(--dur-flip) var(--ease-out);
     animation: nil-prism-spin 6s linear infinite;
     animation-play-state: paused;
-    will-change: transform;
     pointer-events: none;
   }
   .composer:focus-within::before {
     opacity: 1;
     animation-play-state: running;
   }
-  @keyframes nil-prism-spin {
-    to { --prism-angle: 360deg; }
-  }
+  @keyframes nil-prism-spin { to { --prism-angle: 360deg; } }
   @media (prefers-reduced-motion: reduce) {
-    .composer::before { animation: none; } /* static ring; focus stays legible */
+    .composer::before { animation: none; }
   }
 
-  .modes {
-    display: flex;
-    gap: 4px;
-  }
-
-  .chip-slot {
-    position: relative;
-    display: inline-flex;
-  }
-
-  /* Filtered background layer — the ONLY thing the goo surface touches. */
-  .chip-bg {
-    position: absolute;
-    inset: 0;
-    border: 1px solid transparent;
-    border-radius: var(--r-chip);
-    filter: url(#nil-goo-surface);
-    pointer-events: none;
-    transition: border-color var(--dur-flip) var(--ease-out),
-                background-color var(--dur-flip) var(--ease-out);
-  }
-  .chip-bg[data-on="true"] {
-    border-color: var(--nil-line-hot);
-    background: var(--nil-raised);
-  }
-
-  /* Labels sit above the filtered layer, unblurred. */
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
-    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
     height: 22px;
-    padding: 0 8px;
-    border: none;
+    padding: 0 4px 0 8px;
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-chip);
+    background: var(--nil-raised);
+    transform: scale(1);
+    opacity: 1;
+    transition: transform var(--dur-enter) var(--ease-out),
+                opacity var(--dur-enter) var(--ease-out);
+  }
+  .chip.leaving { transform: scale(0.86); opacity: 0; }
+  .chip-path { font: var(--t-micro)/1 var(--font-machine); color: var(--nil-ink-2); }
+  .chip-x {
+    display: grid;
+    place-items: center;
+    width: 16px;
+    height: 16px;
+    border: 0;
     background: transparent;
-    color: var(--nil-ink-2);
-    font: 500 var(--t-micro)/1 var(--font-ui);
-    letter-spacing: var(--track-tick);
-    text-transform: uppercase;
+    color: var(--nil-ink-3);
     cursor: pointer;
-    transition: color var(--dur-flip) var(--ease-out),
-                transform var(--dur-flip) var(--ease-out);
-  }
-
-  .chip:active {
-    transform: scale(0.96); /* tactile micro-press */
-  }
-
-  .chip.on {
-    color: var(--nil-ink);
   }
 
   .row {
@@ -233,13 +372,6 @@
     align-items: flex-end;
     gap: var(--s-2);
   }
-
-  .gt {
-    font: var(--t-body)/1.6 var(--font-machine);
-    color: var(--nil-ink-3);
-    padding-block-end: 2px;
-  }
-
   textarea {
     flex: 1;
     min-height: 28px;
@@ -252,8 +384,20 @@
     resize: none;
     outline: none;
   }
-
   textarea:disabled { color: var(--nil-ink-3); }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: transparent;
+    color: var(--nil-ink-3);
+    cursor: pointer;
+    border-radius: var(--r-field);
+  }
+  .icon-btn:hover, .icon-btn[aria-pressed="true"] { color: var(--nil-ink); background: var(--nil-raised); }
 
   .send {
     display: inline-flex;
@@ -268,11 +412,143 @@
     font: 500 var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
   }
-
   .send:disabled { opacity: 0.4; cursor: not-allowed; }
+  .send kbd { font: var(--t-micro)/1 var(--font-machine); color: var(--nil-ink-2); }
 
-  .send kbd {
-    font: var(--t-micro)/1 var(--font-machine);
-    color: var(--nil-ink-2); /* AA on --nil-raised; hints are control information */
+  .mentions {
+    position: absolute;
+    left: var(--s-3);
+    right: var(--s-3);
+    bottom: calc(100% - 8px);
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    border-radius: var(--r-card);
+    box-shadow: var(--lift-2);
+    z-index: var(--z-overlay);
+    max-height: 180px;
+    overflow: auto;
+    padding: 4px;
   }
+  .mention {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    border-radius: var(--r-field);
+  }
+  .mention.on, .mention:hover { background: var(--nil-panel); }
+  .m-label { font: 500 var(--t-meta)/1 var(--font-ui); color: var(--nil-ink); }
+  .m-path { font: var(--t-micro)/1 var(--font-machine); color: var(--nil-ink-3); }
+  .empty { padding: 8px; font: var(--t-meta)/1 var(--font-ui); color: var(--nil-ink-3); }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  .segment {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 168px;
+    height: 26px;
+    padding: 2px;
+    background: var(--nil-void);
+    border: 1px solid var(--nil-line);
+    border-radius: 999px;
+  }
+  .pill {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: calc(50% - 2px);
+    height: calc(100% - 4px);
+    border-radius: 999px;
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    pointer-events: none;
+    transition: transform var(--dur-jelly) var(--ease-pop);
+  }
+  .seg {
+    position: relative;
+    z-index: 1;
+    border: 0;
+    background: transparent;
+    color: var(--nil-ink-3);
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
+    border-radius: 999px;
+  }
+  .seg.on { color: var(--nil-ink); }
+
+  .model-wrap { position: relative; }
+  .model {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    padding: 0 8px;
+    border: 1px solid var(--nil-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--nil-ink-2);
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
+  }
+  .picker {
+    position: absolute;
+    right: 0;
+    bottom: calc(100% + 6px);
+    width: 260px;
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    border-radius: var(--r-card);
+    box-shadow: var(--lift-3);
+    padding: 4px;
+    z-index: var(--z-overlay);
+  }
+  .pick {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 8px 28px 8px 8px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    border-radius: var(--r-field);
+  }
+  .pick:hover { background: var(--nil-panel); }
+  .pick-name { font: 500 var(--t-meta)/1 var(--font-ui); color: var(--nil-ink); }
+  .pick-desc { font: var(--t-micro)/1.3 var(--font-ui); color: var(--nil-ink-3); }
+  .check { position: absolute; right: 8px; top: 10px; color: var(--nil-ink); }
+  .divider { height: 1px; background: var(--nil-line); margin: 4px 0; }
+  .effort {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    font: var(--t-micro)/1 var(--font-ui);
+    color: var(--nil-ink-3);
+  }
+  .eff {
+    border: 1px solid var(--nil-line);
+    background: transparent;
+    color: var(--nil-ink-2);
+    border-radius: var(--r-chip);
+    padding: 2px 6px;
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
+  }
+  .eff.on { color: var(--nil-ink); border-color: var(--nil-line-hot); background: var(--nil-panel); }
+  .more { color: var(--nil-ink-3); cursor: not-allowed; }
 </style>

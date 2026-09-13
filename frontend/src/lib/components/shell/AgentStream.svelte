@@ -3,6 +3,10 @@
   import { pinned } from '$lib/motion/pinned.svelte.ts';
   import ToolBlock from '$lib/components/ui/ToolBlock.svelte';
   import FindingCard from '$lib/components/ui/FindingCard.svelte';
+  import AgentStatus from '$lib/components/ui/AgentStatus.svelte';
+  import PentestEmpty from '$lib/components/shell/PentestEmpty.svelte';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
+  import { appState } from '$lib/stores/appState.svelte.ts';
   import type { Snippet } from 'svelte';
 
   let { emptyState }: { emptyState?: Snippet } = $props();
@@ -19,6 +23,33 @@
   }
 
   let scroller: HTMLElement | undefined = $state();
+  let statusOpen = $state(false);
+
+  const runningSummary = $derived.by(() => {
+    const tools = agentRun.steps.filter((s) => s.kind === 'tool');
+    const reads = tools.filter((s) => s.kind === 'tool' && /read|search|grep|glob/i.test(s.name)).length;
+    const cmds = tools.filter((s) => s.kind === 'tool' && s.state !== 'pending').length;
+    if (cmds === 0 && reads === 0) return 'Working';
+    const bits: string[] = [];
+    if (reads) bits.push(`read ${reads} file${reads === 1 ? '' : 's'}`);
+    if (cmds) bits.push(`ran a command`);
+    return bits.join(', ').replace(/^./, (c) => c.toUpperCase());
+  });
+
+  const runDuration = $derived.by(() => {
+    const starts = agentRun.steps
+      .filter((s): s is Extract<typeof s, { startTime?: number }> => 'startTime' in s && typeof s.startTime === 'number')
+      .map((s) => s.startTime as number);
+    if (starts.length === 0) return '0s';
+    const ms = Date.now() - Math.min(...starts);
+    const m = Math.floor(ms / 60000);
+    const s = Math.floor((ms % 60000) / 1000);
+    return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  });
+
+  const runTokens = $derived(
+    agentRun.steps.reduce((n, s) => n + (('usage' in s && s.usage?.totalTokens) ? s.usage.totalTokens : 0), 0),
+  );
 
   // Receipt time: stamped once per step id at first render (logger time, not
   // emitter time — terminal convention). Fixed HH:MM:SS width keeps the time
@@ -57,7 +88,9 @@
   >
     {#if agentRun.steps.length === 0}
       <div class="idle">
-        {#if emptyState}
+        {#if workspace.workstationMode === 'pentest' && !appState.activeEngagementId}
+          <PentestEmpty />
+        {:else if emptyState}
           {@render emptyState()}
         {:else}
           <p class="idle-title">/Stream(01)</p>
@@ -116,7 +149,12 @@
 
   {#if agentRun.running}
     <div class="runbar">
-      <span class="nil-scan" data-state="working">Streaming</span>
+      <AgentStatus
+        bind:open={statusOpen}
+        summary={runningSummary}
+        duration={runDuration}
+        tokens={runTokens}
+      />
       <button class="nil-halo stop" type="button" onclick={() => agentRun.stop()}>Stop</button>
     </div>
   {/if}
@@ -254,14 +292,13 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    height: 32px;
-    padding: 0 var(--s-3);
+    gap: var(--s-3);
+    min-height: 48px;
+    padding: var(--s-2) var(--s-3);
     border-top: 1px solid var(--nil-line);
-    font: var(--t-micro)/1 var(--font-ui);
-    letter-spacing: var(--track-tick);
-    text-transform: uppercase;
     color: var(--nil-ink-2);
   }
+  .runbar :global(.status) { flex: 1; min-width: 0; }
 
   .stop {
     height: 24px;

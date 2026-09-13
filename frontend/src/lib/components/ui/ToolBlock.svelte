@@ -2,6 +2,8 @@
   import { untrack } from 'svelte';
   import type { ToolStep } from '$lib/agent/types';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
+  import InlineDiff from '$lib/ui/InlineDiff.svelte';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
 
   interface Props {
     step: ToolStep;
@@ -36,6 +38,8 @@
   let showAll = $state(false);
   const PREVIEW = 4000;
   const displayText = $derived(showAll || resultText.length <= PREVIEW ? resultText : resultText.slice(0, PREVIEW));
+  const isDiff = $derived(/^(diff --git |@@ |\+\+\+ |--- )/m.test(resultText));
+  const touchedFile = $derived(fileFrom(step));
 
   const indexLabel = $derived(String(step.index).padStart(2, '0'));
 
@@ -51,6 +55,16 @@
     if (ms < 1000) return `${Math.round(ms)}ms`;
     if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
     return `${Math.floor(ms / 60000)}m${String(Math.round((ms % 60000) / 1000)).padStart(2, '0')}s`;
+  }
+
+  function fileFrom(s: ToolStep): string | null {
+    if (s.args && typeof s.args === 'object') {
+      const rec = s.args as Record<string, unknown>;
+      const v = rec.path ?? rec.file ?? rec.filename;
+      if (typeof v === 'string' && v.length) return v;
+    }
+    if (/\.[a-z0-9]{1,8}$/i.test(s.primaryArg) || s.primaryArg.includes('/')) return s.primaryArg;
+    return null;
   }
 </script>
 
@@ -70,8 +84,16 @@
 
   <div class="body">
     <header class="head">
-      <span class="name">{step.name}</span>
-      <span class="arg">{step.primaryArg}</span>
+      <button
+        class="toggle nil-halo"
+        type="button"
+        aria-expanded={open}
+        onclick={() => (open = !open)}
+      >
+        <span class="chev" class:open><NilIcon name="chevron-right" size={16} /></span>
+        <span class="name">{step.name}</span>
+        <span class="arg">{touchedFile || step.primaryArg}</span>
+      </button>
       <span class="state" data-state={step.state}>
         <span class="glyph">{stateGlyph}</span>
         <span class="label">{stateLabel}</span>
@@ -80,30 +102,26 @@
       <SpendMeter usage={step.usage} compact />
     </header>
 
-    {#if step.state === 'error' || step.output || step.state === 'ok'}
-      <button
-        class="toggle nil-halo"
-        type="button"
-        aria-expanded={open}
-        onclick={() => (open = !open)}
-      >
-        {open ? 'Hide output' : 'Show output'}
-        {#if resultBytes > 0}
-          <span class="bytes">{resultBytes} B</span>
-        {/if}
-      </button>
-      <div class="nil-reveal" data-open={open ? 'true' : 'false'}>
+    <div class="nil-reveal" data-open={open ? 'true' : 'false'}>
+      {#if step.state === 'error' || step.output || step.state === 'ok'}
         <div class="result">
           {#if step.state === 'error' && step.exitCode !== undefined}
             <p class="exit">exit {step.exitCode}</p>
           {/if}
-          <pre><code>{displayText}</code></pre>
+          {#if isDiff}
+            <InlineDiff diff={displayText} />
+          {:else}
+            <pre><code>{displayText}</code></pre>
+          {/if}
           {#if resultText.length > PREVIEW && !showAll}
             <button class="nil-halo show-all" type="button" onclick={() => (showAll = true)}>Show all</button>
           {/if}
+          {#if resultBytes > 0}
+            <span class="bytes">{resultBytes} B</span>
+          {/if}
         </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 </article>
 
@@ -195,18 +213,24 @@
 
   .toggle {
     display: inline-flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--s-2);
-    height: 24px;
+    min-width: 0;
     padding: 0;
     border: 0;
     background: none;
-    color: var(--nil-ink-3);
-    font: var(--t-micro)/1 var(--font-ui);
-    letter-spacing: var(--track-tick);
-    text-transform: uppercase;
+    color: inherit;
     cursor: pointer;
+    text-align: left;
   }
+  .chev {
+    display: grid;
+    place-items: center;
+    color: var(--nil-ink-3);
+    transition: transform var(--dur-flip) var(--ease-out);
+    flex-shrink: 0;
+  }
+  .chev.open { transform: rotate(90deg); }
 
   .bytes {
     font-family: var(--font-machine);

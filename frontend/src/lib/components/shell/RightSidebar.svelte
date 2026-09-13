@@ -3,7 +3,7 @@
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import FindingRow from '$lib/components/ui/FindingRow.svelte';
   import { tabsStore } from '$lib/stores/tabsStore';
-  import Icon from '@iconify/svelte';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
   import type { Finding } from '$lib/agent/types';
 
   interface RightSidebarProps {
@@ -102,7 +102,7 @@
         aria-selected={activeTab === 'findings'}
         onclick={() => activeTab = 'findings'}
       >
-        <Icon icon="ph:flag-bold" width="14" height="14" />
+        <NilIcon name="flag" size={16} />
         <span>Findings</span>
         <span class="tab-badge">{findings.length}</span>
       </button>
@@ -112,7 +112,7 @@
         aria-selected={activeTab === 'timeline'}
         onclick={() => activeTab = 'timeline'}
       >
-        <Icon icon="ph:clock-bold" width="14" height="14" />
+        <NilIcon name="clock" size={16} />
         <span>Timeline</span>
       </button>
       <button 
@@ -121,7 +121,7 @@
         aria-selected={activeTab === 'evidence'}
         onclick={() => activeTab = 'evidence'}
       >
-        <Icon icon="ph:folder-bold" width="14" height="14" />
+        <NilIcon name="folder" size={16} />
         <span>Evidence</span>
       </button>
       <button 
@@ -130,16 +130,16 @@
         aria-selected={activeTab === 'context'}
         onclick={() => activeTab = 'context'}
       >
-        <Icon icon="ph:brain-bold" width="14" height="14" />
+        <NilIcon name="brain" size={16} />
         <span>Context</span>
       </button>
     </div>
     <div class="right-sidebar-actions">
       <button class="icon-btn" aria-label="Refresh" title="Refresh">
-        <Icon icon="ph:arrows-clockwise-bold" width="16" height="16" />
+        <NilIcon name="refresh-cw" size={16} />
       </button>
       <button class="icon-btn" aria-label="Filter" title="Filter">
-        <Icon icon="ph:funnel-bold" width="16" height="16" />
+        <NilIcon name="filter" size={16} />
       </button>
     </div>
   </div>
@@ -158,7 +158,7 @@
         {/each}
         {#if findings.length === 0}
           <div class="empty-state">
-            <Icon icon="ph:flag-bold" width="32" height="32" />
+            <NilIcon name="flag" size={20} />
             <p>No findings yet</p>
             <span>Run a hunt to start collecting evidence.</span>
           </div>
@@ -167,7 +167,7 @@
     {:else if activeTab === 'timeline'}
       <div class="timeline-list">
         <div class="timeline-empty">
-          <Icon icon="ph:clock-bold" width="32" height="32" />
+          <NilIcon name="clock" size={20} />
           <p>No timeline events</p>
           <span>Activity will appear here</span>
         </div>
@@ -175,7 +175,7 @@
     {:else if activeTab === 'evidence'}
       <div class="evidence-list">
         <div class="timeline-empty">
-          <Icon icon="ph:folder-bold" width="32" height="32" />
+          <NilIcon name="folder" size={20} />
           <p>No evidence collected</p>
           <span>Artifacts from tool runs appear here</span>
         </div>
@@ -183,7 +183,7 @@
     {:else if activeTab === 'context'}
       <div class="context-view">
         <div class="timeline-empty">
-          <Icon icon="ph:brain-bold" width="32" height="32" />
+          <NilIcon name="brain" size={20} />
           <p>No context loaded</p>
           <span>Select a target to load context</span>
         </div>

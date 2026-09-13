@@ -24,7 +24,7 @@ const commands: PaletteCommand[] = [
     label: 'New engagement',
     shortcut: 'Cmd+N',
     section: 'Engagement',
-    icon: 'ph:plus-bold',
+    icon: 'plus',
     action: () => {
       void appState.createEngagement(newEngagementName()).then(() => tabsStore.showStream());
     },
@@ -33,7 +33,7 @@ const commands: PaletteCommand[] = [
     id: 'show-stream',
     label: 'Show stream',
     section: 'View',
-    icon: 'ph:rows-bold',
+    icon: 'rows-3',
     action: () => tabsStore.showStream(),
   },
   {
@@ -41,7 +41,7 @@ const commands: PaletteCommand[] = [
     label: 'New terminal',
     shortcut: 'Cmd+T',
     section: 'View',
-    icon: 'ph:terminal-bold',
+    icon: 'terminal',
     action: () => {
       const id = `terminal-${Date.now()}`;
       tabsStore.addTab({ id, type: 'terminal', label: 'Terminal', dirty: false });
@@ -52,7 +52,7 @@ const commands: PaletteCommand[] = [
     label: 'Focus composer',
     shortcut: 'Cmd+J',
     section: 'View',
-    icon: 'ph:text-aa-bold',
+    icon: 'type',
     action: () => appState.focusComposer(),
   },
   {
@@ -60,7 +60,7 @@ const commands: PaletteCommand[] = [
     label: 'Toggle sidebar',
     shortcut: 'Cmd+B',
     section: 'View',
-    icon: 'ph:sidebar-simple-bold',
+    icon: 'panel-left',
     action: () => appState.toggleSidebar(),
   },
   {
@@ -68,7 +68,7 @@ const commands: PaletteCommand[] = [
     label: 'Toggle inspector',
     shortcut: 'Cmd+\\',
     section: 'View',
-    icon: 'ph:sidebar-simple-bold',
+    icon: 'panel-right',
     action: () => appState.toggleRightSidebar(),
   },
   {
@@ -76,7 +76,7 @@ const commands: PaletteCommand[] = [
     label: 'Toggle YOLO mode',
     shortcut: 'Cmd+Y',
     section: 'Agent',
-    icon: 'ph:fast-forward-bold',
+    icon: 'fast-forward',
     action: () => { void appState.toggleYolo(); },
   },
   {
@@ -84,7 +84,7 @@ const commands: PaletteCommand[] = [
     label: 'Open settings',
     shortcut: 'Cmd+,',
     section: 'Settings',
-    icon: 'ph:gear-bold',
+    icon: 'settings',
     action: () => appState.toggleSettings(),
   },
 ];
