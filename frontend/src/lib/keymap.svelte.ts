@@ -10,9 +10,13 @@ function handleKeydown(e: KeyboardEvent) {
   if (!shortcutsEnabled) return;
 
   const target = e.target as HTMLElement;
-  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-    if (!((e.metaKey || e.ctrlKey) && e.key === 'Enter')) return;
-  }
+  const inField =
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.isContentEditable;
+  // Modifier chords still run from the composer (⌘K, ⌘,, ⌘B, …).
+  // Bare keys stay with the field so typing is never stolen.
+  if (inField && !(e.metaKey || e.ctrlKey)) return;
 
   const isMac = navigator.platform.includes('Mac');
   const mod = isMac ? e.metaKey : e.ctrlKey;
