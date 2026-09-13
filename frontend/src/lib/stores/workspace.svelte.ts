@@ -451,6 +451,8 @@ function requestMode(next: WorkstationMode) {
     return;
   }
   pendingMode = next;
+  surface = 'stream';
+  tabsStore.showStream();
 }
 
 function commitPendingMode() {
