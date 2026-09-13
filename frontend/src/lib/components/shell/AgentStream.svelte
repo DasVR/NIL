@@ -101,10 +101,10 @@
   >
     {#if agentRun.steps.length === 0 && !workspace.clarify && !workspace.pendingMode}
       <div class="idle">
-        {#if workspace.workstationMode === 'pentest' && agentRun.findings.length === 0}
-          <PentestEmpty />
-        {:else if emptyState && !workspace.sessionStarted}
+        {#if emptyState && !workspace.sessionStarted}
           {@render emptyState()}
+        {:else if workspace.workstationMode === 'pentest' && agentRun.findings.length === 0}
+          <PentestEmpty />
         {:else if workspace.workstationMode === 'build'}
           <BuildEmpty />
         {:else if agentRun.findings.length === 0}
