@@ -44,16 +44,17 @@ export function clarifyFromPayload(raw: unknown): AgentClarify | null {
   };
 }
 
+const OPTION_LINE = /^\s*(?:(?:\d+)[.)]|[-*])\s+(.+)$/;
+
 /** Numbered choices under a question — Claude's clarify shape, parsed from the reply. */
 export function parseClarifyFromText(text: string): AgentClarify | null {
   const trimmed = text.trim();
   if (!trimmed || trimmed.length > 1600 || trimmed.includes('```')) return null;
   const lines = trimmed.split('\n').map((line) => line.trim()).filter(Boolean);
-  const optionRe = /^(?:(?:\d+)[.)]|[-*])\s+(.+)$/;
   const options: string[] = [];
   let firstOpt = -1;
   for (let i = 0; i < lines.length; i++) {
-    const match = lines[i]?.match(optionRe);
+    const match = lines[i]?.match(OPTION_LINE);
     if (match?.[1]) {
       if (firstOpt < 0) firstOpt = i;
       else if (options.length && i > firstOpt + options.length) break;
@@ -72,4 +73,21 @@ export function parseClarifyFromText(text: string): AgentClarify | null {
     index: 1,
     total: 1,
   };
+}
+
+/** Keep the question in the transcript; the card owns the numbered choices. */
+export function transcriptForClarify(text: string, card: AgentClarify): string {
+  const trimmed = text.trim();
+  if (!trimmed) return card.title;
+  const lines = trimmed.split('\n');
+  let firstOpt = -1;
+  for (let i = 0; i < lines.length; i++) {
+    if (OPTION_LINE.test(lines[i] ?? '')) {
+      firstOpt = i;
+      break;
+    }
+  }
+  if (firstOpt < 0) return trimmed;
+  const before = lines.slice(0, firstOpt).join('\n').trim();
+  return before || card.title;
 }

@@ -76,7 +76,10 @@
     {/if}
   </header>
 
-  <h3 class="title">{finding.title}</h3>
+  <div class="title-row">
+    <h3 class="title">{finding.title}</h3>
+    <CopyAffordance value={finding.title} />
+  </div>
 
   <section class="block">
     <h4 class="eyebrow">Evidence</h4>
@@ -153,7 +156,17 @@
     white-space: nowrap;
   }
 
+  .title-row {
+    display: flex;
+    align-items: flex-start;
+    gap: var(--s-2);
+    min-width: 0;
+  }
+
   .title {
+    flex: 1;
+    min-width: 0;
+    margin: 0;
     font: 500 var(--t-lead)/var(--lh-tight) var(--font-ui);
     color: var(--nil-ink);
   }

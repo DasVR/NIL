@@ -3,7 +3,7 @@ import type { ApprovalGrant, Finding, Step, TokenUsage, ToolState, ToolStep } fr
 import { fromListedFinding, type ListedFinding } from '$lib/findings/display';
 import { fromApiUsage } from '$lib/usage/format';
 import { usageStore } from '$lib/usage/store.svelte.ts';
-import { clarifyFromPayload, parseClarifyFromText, type AgentClarify } from './clarify';
+import { clarifyFromPayload, parseClarifyFromText, transcriptForClarify, type AgentClarify } from './clarify';
 
 export interface TurnExtras {
   model?: string;
@@ -204,19 +204,26 @@ function pendingTool(): boolean {
   return steps.some((s) => s.kind === 'tool' && (s.state === 'running' || s.state === 'pending'));
 }
 
-function adoptClarify(next: AgentClarify | null) {
+function rewriteAssistantForClarify(card: AgentClarify, sourceText: string) {
+  const display = transcriptForClarify(sourceText, card);
+  const last = [...steps].reverse().find(
+    (s): s is Extract<Step, { kind: 'message' }> => s.kind === 'message' && s.role === 'assistant',
+  );
+  if (!last || last.text === display) return;
+  last.text = display;
+  steps = [...steps];
+}
+
+function adoptClarify(next: AgentClarify | null, sourceText?: string) {
   if (!next) return;
   if (pendingTool()) return;
   clarify = next;
+  if (sourceText != null) rewriteAssistantForClarify(next, sourceText);
 }
 
 function ingestClarify(res: ChatResponse, text: string) {
   const fromPayload = clarifyFromPayload(res.clarify);
-  if (fromPayload) {
-    adoptClarify(fromPayload);
-    return;
-  }
-  adoptClarify(parseClarifyFromText(text));
+  adoptClarify(fromPayload ?? parseClarifyFromText(text), text);
 }
 
 function ingestHttpResult(res: ChatResponse, engagement?: string) {
@@ -453,7 +460,8 @@ export const agentRun = {
       case 'chat.clarify':
       case 'agent.clarify':
       case 'clarify': {
-        adoptClarify(clarifyFromPayload(event.clarify ?? event));
+        const raw = typeof event.content === 'string' ? event.content : undefined;
+        adoptClarify(clarifyFromPayload(event.clarify ?? event), raw);
         return;
       }
       case 'chat.delta':
