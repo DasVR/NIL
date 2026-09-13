@@ -109,7 +109,10 @@ function pentestMode(mode: ComposerMode): boolean {
 function applyMode(next: WorkstationMode) {
   workstationMode = next;
   if (next === 'build') appState.composerMode = 'code';
-  else if (!pentestMode(appState.composerMode)) appState.composerMode = 'hunt';
+  else {
+    if (!pentestMode(appState.composerMode)) appState.composerMode = 'hunt';
+    appState.rightSidebarOpen = true;
+  }
 }
 
 function applyClarify(id: ClarifyId) {

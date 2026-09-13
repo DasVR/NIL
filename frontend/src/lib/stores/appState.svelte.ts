@@ -20,7 +20,7 @@ interface AppState {
 const defaultState: AppState = {
   sidebarOpen: false,
   sidebarWidth: 280,
-  rightSidebarOpen: true,
+  rightSidebarOpen: false,
   rightSidebarWidth: 320,
   settingsOpen: false,
   theme: 'dark',
