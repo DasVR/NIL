@@ -20,6 +20,7 @@
    * or "streaming" state here; that vocabulary belongs to the agent stream.
    */
   import { onMount } from 'svelte';
+  import { MONOGRAM_GRID, monogramCells } from '$lib/motion/monogramGrid.ts';
 
   interface Props {
     state?: 'idle' | 'active' | 'resolved';
@@ -27,6 +28,8 @@
   }
 
   let { state: markState = 'idle', size = 32 }: Props = $props();
+
+  const cells = monogramCells();
 
   let reducedMotion = $state(false);
 
@@ -49,11 +52,16 @@
   aria-label="NIL"
   role="img"
 >
-  <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <svg
+    viewBox={`0 0 ${MONOGRAM_GRID} ${MONOGRAM_GRID}`}
+    fill="none"
+    xmlns="http://www.w3.org/2000/svg"
+    shape-rendering="crispEdges"
+  >
     <g class="n-shape">
-      <rect x="4" y="4" width="6" height="24" rx="1" />
-      <rect x="22" y="4" width="6" height="24" rx="1" />
-      <path d="M10 4 L16 4 L22 28 L16 28 Z" />
+      {#each cells as c (`${c.x}:${c.y}`)}
+        <rect x={c.x} y={c.y} width="0.92" height="0.92" rx="0.14" />
+      {/each}
     </g>
   </svg>
 </div>

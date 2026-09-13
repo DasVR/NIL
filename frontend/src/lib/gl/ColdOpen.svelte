@@ -1,10 +1,11 @@
 <script lang="ts">
   import frag from './coldopen.frag?raw';
+  import { paintMonogram } from '$lib/motion/monogramGrid.ts';
 
   interface Props {
     /** Fires when the shell should take over. Always fires — on success, skip, or bail. */
     onbooted: () => void;
-    /** Wordmark mask. Rasterize your dot-matrix SVG here for the real thing. */
+    /** Wordmark mask. Defaults to the real N + signal-wave-bracket pixel grid. */
     mark?: (ctx: CanvasRenderingContext2D, w: number, h: number) => void;
   }
   let { onbooted, mark = defaultMark }: Props = $props();
@@ -19,13 +20,9 @@ void main() {
   let finish = $state<() => void>(() => onbooted());
 
   function defaultMark(c: CanvasRenderingContext2D, w: number, h: number) {
-    c.clearRect(0, 0, w, h);
-    c.fillStyle = '#fff';
-    c.textAlign = 'center';
-    c.textBaseline = 'middle';
-    const size = Math.min(w * 0.26, h * 0.42);
-    c.font = `500 ${size}px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif`;
-    c.fillText('NIL', w / 2, h * 0.46);
+    // A centered hero mark, not a screen-filling one — the viewport here is
+    // the whole window, not a small logo slot.
+    paintMonogram(c, w, h, '#fff', 22, 0.2);
   }
 
   // Attachment, not onMount — teardown is guaranteed and colocated.
