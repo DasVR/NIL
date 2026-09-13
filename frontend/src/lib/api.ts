@@ -106,6 +106,7 @@ export interface ChatResponse {
     vector?: string;
   }>;
   usage?: TokenUsagePayload | null;
+  clarify?: unknown;
 }
 
 export interface ToolRun {

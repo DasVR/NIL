@@ -1,11 +1,14 @@
 <script lang="ts">
-  import { fly } from 'svelte/transition';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
+  import InlineDiff from '$lib/ui/InlineDiff.svelte';
   import TerminalTab from '$lib/components/shell/TerminalTab.svelte';
+  import { settle } from '$lib/motion/settle';
 
   const job = $derived(workspace.dock);
   const isPty = $derived(job?.kind === 'terminal');
+  const isDiff = $derived(Boolean(job?.output && /^(diff --git |@@ |\+\+\+ |--- )/m.test(job.output)));
 </script>
 
 {#if job}
@@ -14,7 +17,7 @@
     class:pty={isPty}
     data-state={job.status === 'running' ? 'working' : undefined}
     aria-label={job.title}
-    transition:fly={{ y: 12, duration: 260 }}
+    in:settle
   >
     <header class="head">
       <span class="title">{job.title}</span>
@@ -22,7 +25,13 @@
         <span class="kind">{job.kind}</span>
         <span class="status">{job.status}</span>
       {/if}
-      <button class="nil-halo close" type="button" aria-label="Hide tool output" onclick={() => workspace.closeDock()}>
+      {#if job.path}
+        <button class="path nil-halo nil-quiet" type="button" onclick={() => workspace.openFile(job.path ?? '')}>{job.path}</button>
+      {/if}
+      {#if job.output}
+        <CopyAffordance value={job.output} />
+      {/if}
+      <button class="nil-halo nil-quiet close" type="button" aria-label="Hide tool output" onclick={() => workspace.closeDock()}>
         <NilIcon name="chevron-down" size={16} />
       </button>
     </header>
@@ -33,6 +42,8 @@
           focusOnMount
         />
       </div>
+    {:else if isDiff && job.output}
+      <div class="diff"><InlineDiff diff={job.output} /></div>
     {:else}
       <pre class="out"><code>{job.output || 'Waiting for output…'}</code></pre>
     {/if}
@@ -62,6 +73,18 @@
   }
   .title { font: 500 var(--t-meta)/1 var(--font-ui); color: var(--nil-ink); }
   .kind, .status { font: var(--t-micro)/1 var(--font-machine); color: var(--nil-ink-3); }
+  .path {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    border: 0;
+    background: transparent;
+    color: var(--nil-ink-2);
+    font: var(--t-micro)/1 var(--font-machine);
+    cursor: pointer;
+  }
+  .path:hover { color: var(--nil-ink); }
   .close {
     margin-inline-start: auto;
     display: grid;
@@ -73,7 +96,7 @@
     color: var(--nil-ink-3);
     cursor: pointer;
   }
-  .out {
+  .out, .diff {
     margin: 0;
     flex: 1;
     overflow: auto;

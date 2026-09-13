@@ -2,6 +2,7 @@
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import AgentStatus from '$lib/components/ui/AgentStatus.svelte';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
+  import { usageStore } from '$lib/usage/store.svelte.ts';
 
   let statusOpen = $state(false);
   let now = $state(Date.now());
@@ -43,15 +44,18 @@
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
   });
 
-  const runTokens = $derived(
-    agentRun.steps.reduce((n, s) => n + (('usage' in s && s.usage?.totalTokens) ? s.usage.totalTokens : 0), 0),
-  );
+  const runTokens = $derived.by(() => {
+    const fromSteps = agentRun.steps.reduce((n, s) => n + (('usage' in s && s.usage?.totalTokens) ? s.usage.totalTokens : 0), 0);
+    if (fromSteps > 0) return fromSteps;
+    return usageStore.lastTurn?.totalTokens ?? 0;
+  });
 
   const runHint = $derived.by(() => {
     if (agentRun.huntLoop) return 'Hunt running';
     const tool = agentRun.steps.find((s) => s.kind === 'tool' && s.state === 'running');
     if (tool && tool.kind === 'tool') return tool.name;
     if (agentRun.queued.length) return 'Follow-up queued';
+    if (agentRun.thinking) return 'Almost done thinking…';
     return 'Waiting on the model';
   });
 

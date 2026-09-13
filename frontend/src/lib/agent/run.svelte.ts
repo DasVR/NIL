@@ -1,8 +1,9 @@
-import api, { type ChatRequest, type ChatResponse, type ToolApprove, type ToolRun } from '$lib/api';
+import api, { type ChatRequest, type ChatResponse, type TokenUsagePayload, type ToolApprove, type ToolRun } from '$lib/api';
 import type { ApprovalGrant, Finding, Step, TokenUsage, ToolState, ToolStep } from './types';
 import { fromListedFinding, type ListedFinding } from '$lib/findings/display';
 import { fromApiUsage } from '$lib/usage/format';
 import { usageStore } from '$lib/usage/store.svelte.ts';
+import { clarifyFromPayload, parseClarifyFromText, type AgentClarify } from './clarify';
 
 export interface TurnExtras {
   model?: string;
@@ -31,6 +32,7 @@ let huntLoop = $state(false);
 let lastEngagement = $state<string | null>(null);
 let httpInFlight = false;
 let settleTimer: ReturnType<typeof setTimeout> | null = null;
+let clarify = $state<AgentClarify | null>(null);
 
 function markRunning() {
   if (!running) startedAt = Date.now();
@@ -198,6 +200,25 @@ function asRun(value: unknown): ToolRun | null {
   return rec;
 }
 
+function pendingTool(): boolean {
+  return steps.some((s) => s.kind === 'tool' && (s.state === 'running' || s.state === 'pending'));
+}
+
+function adoptClarify(next: AgentClarify | null) {
+  if (!next) return;
+  if (pendingTool()) return;
+  clarify = next;
+}
+
+function ingestClarify(res: ChatResponse, text: string) {
+  const fromPayload = clarifyFromPayload(res.clarify);
+  if (fromPayload) {
+    adoptClarify(fromPayload);
+    return;
+  }
+  adoptClarify(parseClarifyFromText(text));
+}
+
 function ingestHttpResult(res: ChatResponse, engagement?: string) {
   if (res.session_id) sessionId = res.session_id;
   const usage: TokenUsage | null = fromApiUsage(res.usage);
@@ -232,6 +253,7 @@ function ingestHttpResult(res: ChatResponse, engagement?: string) {
       safety_level: tc.safety_level,
     }, reason, usage ?? undefined);
   }
+  ingestClarify(res, assistantText);
 }
 
 export function toolFilePath(step: ToolStep): string | null {
@@ -254,8 +276,16 @@ export const agentRun = {
   get queued() { return queued; },
   get engagementLog() { return engagementLog; },
   get huntLoop() { return huntLoop; },
+  get thinking() {
+    return running && !pendingTool();
+  },
+  get clarify() { return clarify; },
   get pendingApproval() {
     return steps.find((s): s is ToolStep => s.kind === 'tool' && s.state === 'pending') ?? null;
+  },
+
+  dismissClarify() {
+    clarify = null;
   },
 
   clear() {
@@ -270,6 +300,7 @@ export const agentRun = {
     engagementLog = [];
     huntLoop = false;
     httpInFlight = false;
+    clarify = null;
     if (settleTimer) {
       clearTimeout(settleTimer);
       settleTimer = null;
@@ -413,8 +444,16 @@ export const agentRun = {
     const type = typeof event.type === 'string' ? event.type : '';
     switch (type) {
       case 'chat.message': {
-        appendAssistant(typeof event.content === 'string' ? event.content : '');
+        const content = typeof event.content === 'string' ? event.content : '';
+        appendAssistant(content);
+        ingestClarify({ session_id: sessionId || '' }, content);
         if (huntLoop) scheduleHuntSettle();
+        return;
+      }
+      case 'chat.clarify':
+      case 'agent.clarify':
+      case 'clarify': {
+        adoptClarify(clarifyFromPayload(event.clarify ?? event));
         return;
       }
       case 'chat.delta':
@@ -482,7 +521,21 @@ export const agentRun = {
         huntLoop = true;
         markRunning();
         return;
-      case 'usage.turn':
+      case 'usage.turn': {
+        const raw = event.usage;
+        const usage = fromApiUsage(raw && typeof raw === 'object' ? raw as TokenUsagePayload : null);
+        if (usage) {
+          usageStore.recordTurn(usage);
+          const last = [...steps].reverse().find(
+            (s): s is Extract<Step, { kind: 'message' }> => s.kind === 'message' && s.role === 'assistant',
+          );
+          if (last) {
+            last.usage = usage;
+            steps = [...steps];
+          }
+        }
+        return;
+      }
       case 'approval.granted':
       case 'approval.approved':
       case 'yolo.toggled':

@@ -32,6 +32,7 @@ export interface DockJob {
   kind: 'terminal' | 'test' | 'build' | 'lint' | 'command';
   status: 'running' | 'ok' | 'error';
   output: string;
+  path?: string;
 }
 
 export interface ContextFile {
@@ -136,6 +137,7 @@ let models = $state<ModelOption[]>(FALLBACK_MODELS);
 let modelId = $state('default');
 let effort = $state<'low' | 'medium' | 'high'>('medium');
 let splitPct = $state(SPLIT_DEFAULT);
+let composerDraft = $state('');
 let dictationActive = $state(false);
 let dictationPaused = $state(false);
 let dictationLevel = $state(0);
@@ -488,6 +490,13 @@ function openSide(panel: SidePanel) {
   appState.sidebarOpen = true;
 }
 
+function noteSession() {
+  if (sessionStarted) return;
+  sessionStarted = true;
+  surface = 'stream';
+  rememberSession(workstationMode, appState.activeEngagementId || undefined);
+}
+
 function beginSession(mode: WorkstationMode) {
   sessionStarted = true;
   surface = 'stream';
@@ -612,6 +621,8 @@ export const workspace = {
     splitPct = clampSplit(v);
     persistPrefs();
   },
+  get composerDraft() { return composerDraft; },
+  set composerDraft(v: string) { composerDraft = v; },
   get dictationActive() { return dictationActive; },
   set dictationActive(v: boolean) {
     dictationActive = v;
@@ -635,6 +646,7 @@ export const workspace = {
   togglePin,
   openSide,
   beginSession,
+  noteSession,
   resumeSession,
   requestMode,
   commitPendingMode,

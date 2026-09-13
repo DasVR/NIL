@@ -195,18 +195,39 @@
       </div>
     {/if}
 
-    {#if workspace.clarify && agentRun.steps.length === 0}
+    {#if agentRun.clarify || (workspace.clarify && agentRun.steps.length === 0)}
+      {@const card = agentRun.clarify ?? workspace.clarify}
+      {#if card}
       <div class="prompt-card">
         <ClarifyCard
-          title={workspace.clarify.title}
-          index={workspace.clarify.index}
-          total={workspace.clarify.total}
-          options={workspace.clarify.options}
-          onSelect={(id, other) => workspace.answerClarify(id, other)}
-          onPrev={() => workspace.prevClarify()}
-          onNext={() => workspace.nextClarify()}
+          title={card.title}
+          index={card.index}
+          total={card.total}
+          options={card.options}
+          onSelect={(id, other) => {
+            if (agentRun.clarify) {
+              const picked = agentRun.clarify.options.find((o) => o.id === id)?.label ?? '';
+              const text = (id === 'reply' || id === 'other') ? (other?.trim() || '') : picked;
+              agentRun.dismissClarify();
+              if (!text) {
+                appState.focusComposer();
+                return;
+              }
+              const mode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
+              const engagement = appState.activeEngagementId || 'default';
+              void agentRun.sendMessage(text, engagement, mode, {
+                model: workspace.modelId,
+                effort: workspace.effort,
+              });
+              return;
+            }
+            workspace.answerClarify(id, other);
+          }}
+          onPrev={agentRun.clarify ? undefined : () => workspace.prevClarify()}
+          onNext={agentRun.clarify ? undefined : () => workspace.nextClarify()}
         />
       </div>
+      {/if}
     {/if}
 
     {#if workspace.pendingMode}

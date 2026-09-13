@@ -5,6 +5,7 @@
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import DitherWaterfall from '$lib/ui/DitherWaterfall.svelte';
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import StreamComposer from '$lib/components/shell/StreamComposer.svelte';
 
   interface RecentRow {
     id: string;
@@ -86,6 +87,10 @@
       </button>
     </div>
 
+    <div class="welcome-composer">
+      <StreamComposer />
+    </div>
+
     {#if recent.length > 0}
       <div class="recent">
         <p class="eyebrow">Recent sessions</p>
@@ -147,6 +152,7 @@
     max-width: 42ch;
   }
   .actions { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-block-start: var(--s-2); }
+  .welcome-composer { width: 100%; margin-block-start: var(--s-3); }
   .row {
     display: flex;
     align-items: center;

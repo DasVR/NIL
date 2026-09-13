@@ -21,7 +21,7 @@
   import { setupTauriEvents } from '$lib/tauri-events';
   import { keymap } from '$lib/keymap.svelte.ts';
   import { browser } from '$app/environment';
-  import { agentRun } from '$lib/agent/run.svelte.ts';
+  import { agentRun, toolFilePath } from '$lib/agent/run.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
   import { refreshProject } from '$lib/project.svelte.ts';
   import { connectBus } from '$lib/agent/bus';
@@ -67,6 +67,7 @@
           kind: workspace.classifyDock(runningTool.name),
           status: 'running',
           output,
+          path: toolFilePath(runningTool) ?? undefined,
         });
       });
       return;
@@ -106,7 +107,9 @@
       </MainWorkspace>
       <ToolDock />
       <AgentRunBar />
-      <StreamComposer bind:inputEl={composerInput} />
+      {#if workspace.sessionStarted}
+        <StreamComposer bind:inputEl={composerInput} />
+      {/if}
     </main>
 
     <RightSidebar

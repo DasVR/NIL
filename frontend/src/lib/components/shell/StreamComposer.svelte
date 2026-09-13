@@ -22,7 +22,7 @@
 
   let { inputEl = $bindable() }: Props = $props();
 
-  let input = $state('');
+  let input = $state(workspace.composerDraft);
   let mentionOpen = $state(false);
   let mentionQuery = $state('');
   let mentionIndex = $state(0);
@@ -32,6 +32,17 @@
   let pillEl: HTMLSpanElement | undefined = $state();
   let lastMode = $state<WorkstationMode>(workspace.workstationMode);
   let composerEl: HTMLDivElement | undefined = $state();
+
+  $effect(() => {
+    const next = input;
+    untrack(() => { workspace.composerDraft = next; });
+  });
+
+  $effect(() => {
+    const el = inputEl;
+    if (!el) return;
+    appState.setComposerFocus(() => { el.focus(); });
+  });
 
   $effect(() => {
     if (!modelOpen) return;
@@ -151,17 +162,20 @@
     const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
     const engagement = appState.activeEngagementId || 'default';
     const payload = composeTurn(text);
+    const extras = { model: workspace.modelId, effort: workspace.effort };
     workspace.dismissClarify();
+    agentRun.dismissClarify();
     workspace.dictationActive = false;
     workspace.dictationPaused = false;
-    const extras = { model: workspace.modelId, effort: workspace.effort };
+    input = '';
+    workspace.composerDraft = '';
+    mentionOpen = false;
+    if (!workspace.sessionStarted) workspace.noteSession();
     if (agentRun.running) {
       agentRun.queueFollowup(payload, engagement, mode, extras);
     } else {
       agentRun.sendMessage(payload, engagement, mode, extras);
     }
-    input = '';
-    mentionOpen = false;
   }
 
   function setMode(next: WorkstationMode) {
