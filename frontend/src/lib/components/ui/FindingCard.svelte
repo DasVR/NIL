@@ -2,6 +2,7 @@
   import type { Finding, FindingSeverity, FindingStatus } from '$lib/agent/types';
   import { formatCvss, findingConfirmed } from '$lib/findings/display';
   import { scramble } from '$lib/motion/scramble.svelte.ts';
+  import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
 
   interface Props {
     finding: Finding;
@@ -71,6 +72,7 @@
     </span>
     {#if finding.vector}
       <span class="vector">{finding.vector}</span>
+      <CopyAffordance value={finding.vector} />
     {/if}
   </header>
 

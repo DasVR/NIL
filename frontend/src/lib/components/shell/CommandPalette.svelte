@@ -5,10 +5,21 @@
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import { droplet } from '$lib/motion/droplet';
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
+  import { engagementFiles, workspace } from '$lib/stores/workspace.svelte.ts';
 
   interface Props {
     open?: boolean;
     onToggle?: (open: boolean) => void;
+  }
+
+  interface PaletteRow {
+    id: string;
+    label: string;
+    hint?: string;
+    icon: string;
+    section: string;
+    shortcut?: string;
+    run: () => void;
   }
 
   let { open = false, onToggle }: Props = $props();
@@ -16,42 +27,83 @@
   let inputRef: HTMLInputElement | undefined = $state();
   let selectedIndex = $state(0);
 
-  function filteredCommands() {
-    if (!paletteStore.query) return paletteStore.commands;
-    const q = paletteStore.query.toLowerCase();
-    return paletteStore.commands.filter(c => 
-      c.label.toLowerCase().includes(q) || 
-      c.shortcut?.toLowerCase().includes(q) ||
-      c.section?.toLowerCase().includes(q)
-    );
+  function fileScore(path: string, label: string, q: string): number {
+    const p = path.toLowerCase();
+    const l = label.toLowerCase();
+    if (l === q || p === q) return 0;
+    if (l.startsWith(q) || p.endsWith(`/${q}`)) return 1;
+    if (l.includes(q)) return 2;
+    if (p.includes(q)) return 3;
+    return 4;
   }
 
-  let visibleCommands = $derived(filteredCommands());
+  const rows = $derived.by(() => {
+    const q = paletteStore.query.trim().toLowerCase();
+    const out: PaletteRow[] = [];
 
-  function groupCommands(cmds: typeof visibleCommands) {
-    const map = new Map<string, typeof visibleCommands>();
+    if (q) {
+      const files = engagementFiles()
+        .filter((f) => f.path.toLowerCase().includes(q) || f.label.toLowerCase().includes(q))
+        .sort((a, b) => fileScore(a.path, a.label, q) - fileScore(b.path, b.label, q) || a.path.length - b.path.length)
+        .slice(0, 12);
+      for (const file of files) {
+        out.push({
+          id: `file:${file.id}`,
+          label: file.label,
+          hint: file.path,
+          icon: 'file',
+          section: 'Files',
+          run: () => {
+            workspace.openFile(file.path);
+            workspace.attachFile(file);
+            paletteStore.closePalette();
+          },
+        });
+      }
+    }
+
+    const cmds = q
+      ? paletteStore.commands.filter((c) =>
+          c.label.toLowerCase().includes(q)
+          || c.shortcut?.toLowerCase().includes(q)
+          || (c.section ?? '').toLowerCase().includes(q),
+        )
+      : paletteStore.commands;
     for (const cmd of cmds) {
-      const section = cmd.section ?? 'General';
-      if (!map.has(section)) map.set(section, []);
-      map.get(section)!.push(cmd);
+      out.push({
+        id: `cmd:${cmd.id}`,
+        label: cmd.label,
+        icon: cmd.icon || 'command',
+        section: cmd.section ?? 'General',
+        shortcut: cmd.shortcut,
+        run: () => paletteStore.executeCommand(cmd.id),
+      });
+    }
+    return out;
+  });
+
+  function groupRows(items: PaletteRow[]) {
+    const map = new Map<string, PaletteRow[]>();
+    for (const row of items) {
+      const list = map.get(row.section) ?? [];
+      list.push(row);
+      map.set(row.section, list);
     }
     return Array.from(map.entries()).map(([section, commands]) => ({ section, commands }));
   }
 
-  let groupedCommands = $derived(groupCommands(visibleCommands));
+  let grouped = $derived(groupRows(rows));
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      selectedIndex = Math.min(selectedIndex + 1, visibleCommands.length - 1);
+      selectedIndex = Math.min(selectedIndex + 1, Math.max(0, rows.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       selectedIndex = Math.max(selectedIndex - 1, 0);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (visibleCommands[selectedIndex]) {
-        paletteStore.executeCommand(visibleCommands[selectedIndex].id);
-      }
+      rows[selectedIndex]?.run();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       paletteStore.closePalette();
@@ -95,10 +147,10 @@
           bind:value={paletteStore.query}
           oninput={handleInput}
           onkeydown={handleKeydown}
-          placeholder="Type a command or search..."
+          placeholder="Type a command or search files..."
           aria-label="Command palette search"
           aria-controls="palette-listbox"
-          aria-activedescendant={visibleCommands[selectedIndex] ? `cmd-${visibleCommands[selectedIndex].id}` : undefined}
+          aria-activedescendant={rows[selectedIndex] ? `cmd-${rows[selectedIndex].id}` : undefined}
           autocomplete="off"
           spellcheck="false"
         />
@@ -107,17 +159,17 @@
     </div>
 
     <div id="palette-listbox" class="palette-results" role="listbox">
-      {#if visibleCommands.length === 0}
+      {#if rows.length === 0}
         <div class="palette-empty">
           <NilIcon name="search" size={16} />
           <p>No commands found</p>
           <span>Try a different search</span>
         </div>
       {:else}
-        {#each groupedCommands as group}
+        {#each grouped as group}
           <div class="palette-section-header">{group.section}</div>
           {#each group.commands as cmd}
-            {@const globalIdx = visibleCommands.indexOf(cmd)}
+            {@const globalIdx = rows.indexOf(cmd)}
             <!-- Focus stays on the search input (aria-activedescendant pattern above);
                  these rows are never independently focusable, so no tabindex/keydown here. -->
             <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -129,11 +181,16 @@
               aria-selected={globalIdx === selectedIndex}
               id={`cmd-${cmd.id}`}
               {@attach droplet}
-              onclick={() => paletteStore.executeCommand(cmd.id)}
+              onclick={() => cmd.run()}
             >
               <div class="palette-item-main">
-                <NilIcon name={cmd.icon || 'command'} size={16} />
-                <span class="palette-item-label">{cmd.label}</span>
+                <NilIcon name={cmd.icon} size={16} />
+                <span class="palette-item-copy">
+                  <span class="palette-item-label">{cmd.label}</span>
+                  {#if cmd.hint}
+                    <span class="palette-item-hint">{cmd.hint}</span>
+                  {/if}
+                </span>
               </div>
               {#if cmd.shortcut}
                 <kbd class="palette-item-shortcut">{cmd.shortcut}</kbd>
@@ -256,6 +313,19 @@
   .palette-item-label {
     font: 500 var(--t-meta)/1 var(--font-ui);
     color: var(--nil-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .palette-item-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .palette-item-hint {
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--nil-ink-3);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;

@@ -55,10 +55,16 @@ export function attachAsh(host: HTMLElement): AshHandle {
       }
       shown = shown.slice(0, cut);
     }
-    if (reduced() || !animate || text.length - shown.length > 40) {
+    const remaining = text.length - shown.length;
+    if (reduced() || !animate) {
       host.textContent = text;
       shown = text;
       return;
+    }
+    if (remaining > 120) {
+      const cut = text.length - 48;
+      host.textContent = text.slice(0, cut);
+      shown = text.slice(0, cut);
     }
     const color = ember();
     for (let i = shown.length; i < text.length; i++) {

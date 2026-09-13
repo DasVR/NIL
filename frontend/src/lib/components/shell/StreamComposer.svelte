@@ -360,12 +360,28 @@
 
   <div class="bar">
     <div class="segment" role="group" aria-label="Workstation mode">
+      <!-- Charter amendment 2026-09-07: Law 3 exception. Goo applies ONLY to
+           .chip-bg. Labels stay in the buttons above and are never filtered. -->
+      <svg class="goo-defs" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="nil-goo-surface">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -7"
+              result="goo"
+            />
+            <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+          </filter>
+        </defs>
+      </svg>
       <span
         class="pill-track"
         style:transform={workspace.workstationMode === 'pentest' ? 'translateX(100%)' : 'translateX(0)'}
       >
         <span
-          class="pill nil-jelly"
+          class="pill chip-bg nil-jelly"
           bind:this={pillEl}
           style:--jelly-origin={lastMode === 'pentest' ? 'right center' : 'left center'}
         ></span>
@@ -586,6 +602,12 @@
     border: 1px solid var(--nil-line);
     border-radius: 999px;
   }
+  .goo-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
   .pill-track {
     position: absolute;
     top: 2px;
@@ -603,10 +625,12 @@
     background: var(--nil-raised);
     border: 1px solid var(--nil-line-hot);
     transform-origin: var(--jelly-origin, left center);
+    filter: url(#nil-goo-surface);
   }
   .seg {
     position: relative;
     z-index: 1;
+    width: 100%;
     border: 0;
     background: transparent;
     color: var(--nil-ink-3);
@@ -615,6 +639,9 @@
     border-radius: 999px;
   }
   .seg.on { color: var(--nil-ink); }
+  @media (prefers-reduced-motion: reduce) {
+    .pill { filter: none; }
+  }
 
   .model-wrap { position: relative; }
   .model {

@@ -96,7 +96,7 @@
     {#each items as item}
       {@const active = workspace.activeRail === item.id}
       <button
-        class="rail-btn nil-halo"
+        class="rail-btn nil-halo nil-lift"
         class:active
         type="button"
         aria-label={item.label}

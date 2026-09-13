@@ -1,4 +1,5 @@
 import { base } from '$app/paths';
+import api from '$lib/api';
 
 export interface ProjectFile {
   id: string;
@@ -74,7 +75,27 @@ export async function readProjectFile(rel: string): Promise<string | null> {
   return data.content;
 }
 
+function engagementArtifact(rel: string): { name: string; kind: 'scope' | 'notes' } | null {
+  const decoded = rel.replace(/\\/g, '/').replace(/^\/+/, '');
+  const match = decoded.match(/^(?:.*\/)?([^/]+)\/(scope|notes)$/);
+  if (!match) return null;
+  const name = match[1];
+  const kind = match[2];
+  if (kind !== 'scope' && kind !== 'notes') return null;
+  return { name, kind };
+}
+
 export async function writeProjectFile(rel: string, content: string): Promise<boolean> {
+  const artifact = engagementArtifact(rel);
+  if (artifact) {
+    try {
+      if (artifact.kind === 'scope') await api.putScope(artifact.name, content);
+      else await api.putNotes(artifact.name, content);
+      return true;
+    } catch {
+      // Not an engagement on the harness — try the workspace file bridge.
+    }
+  }
   try {
     const res = await fetch(`${prefix()}/file`, {
       method: 'PUT',
