@@ -44,18 +44,6 @@
     appState.sidebarOpen = workspace.railPinned;
   }
 
-  // Rail mode: collapsed isn't just the tree squeezed into 48px anymore — it's
-  // a real icon rail (one destination per engagement), and clicking a
-  // destination pins the sidebar open, the way hovering a label then clicking
-  // it does in a Claude/Grok-style rail. `open` arrives one-way from the
-  // parent (appState.sidebarOpen); onToggle is a flip, so only call it while
-  // actually collapsed or this would re-collapse an already-open sidebar.
-  function selectEngagementFromRail(name: string) {
-    appState.activeEngagementId = name;
-    appState.activeTargetId = name;
-    if (collapsed) onToggle?.();
-  }
-
   function handleResizeStart(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -294,64 +282,6 @@
   }
   .seg.on { color: var(--nil-ink); background: var(--nil-raised); }
   .danger { padding: var(--s-2); border-top: 1px solid var(--nil-line); }
-
-  /* Rail mode — one icon per destination, hover for the name, click to
-     select it and pin the sidebar back open. */
-  .rail-list {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-2) 0;
-  }
-
-  .rail-new {
-    margin: 0;
-  }
-
-  .rail-icon {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: var(--r-field);
-    background: transparent;
-    color: var(--nil-ink-3);
-    cursor: pointer;
-    flex-shrink: 0;
-    transition: color var(--dur-flip) var(--ease-out),
-                background-color var(--dur-flip) var(--ease-out);
-  }
-
-  .rail-icon:hover {
-    color: var(--nil-ink);
-    background: var(--nil-raised);
-  }
-
-  .rail-icon.active {
-    color: var(--nil-ink);
-    background: var(--nil-void);
-    box-shadow: 0 0 0 1px var(--nil-line-hot) inset;
-  }
-
-  .rail-icon:active {
-    transform: scale(0.9);
-  }
-
-  .rail-badge {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    min-width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--nil-ink-2);
-  }
 
   .sidebar-resize-handle {
     position: absolute;

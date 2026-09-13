@@ -54,9 +54,6 @@ let activeEngagementId = $state(defaultState.activeEngagementId);
 let yoloMode = $state(false);
 let composerMode = $state<ComposerMode>('code');
 let composerFocus: () => void = () => {};
-let contextChips = $state<ContextChip[]>([]);
-let selectedModel = $state(MODEL_OPTIONS[1].id);
-let effort = $state<Effort>('medium');
 
 let engagements = $state<Engagement[]>([]);
 let backendHealthy = $state(false);
@@ -134,22 +131,6 @@ export const appState = {
   set yoloMode(v: boolean) { yoloMode = v; },
   get composerMode() { return composerMode; },
   set composerMode(v: ComposerMode) { composerMode = v; },
-
-  get contextChips() { return contextChips; },
-  addContextChip: (path: string, line?: number) => {
-    const id = line !== undefined ? `${path}:${line}` : path;
-    if (contextChips.some((c) => c.id === id)) return;
-    contextChips = [...contextChips, { id, path, line }];
-  },
-  removeContextChip: (id: string) => {
-    contextChips = contextChips.filter((c) => c.id !== id);
-  },
-  clearContextChips: () => { contextChips = []; },
-
-  get selectedModel() { return selectedModel; },
-  set selectedModel(v: string) { selectedModel = v; },
-  get effort() { return effort; },
-  set effort(v: Effort) { effort = v; },
 
   get engagements() { return engagements; },
   get backendHealthy() { return backendHealthy; },
