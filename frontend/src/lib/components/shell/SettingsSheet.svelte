@@ -16,6 +16,7 @@
   import SourceControl from '$lib/components/shell/SourceControl.svelte';
   import GitHubPanel from '$lib/components/shell/GitHubPanel.svelte';
   import McpPanel from '$lib/components/shell/McpPanel.svelte';
+  import type { SettingsCategory } from '$lib/stores/appState.svelte.ts';
 
   interface Props {
     open?: boolean;
@@ -24,8 +25,8 @@
 
   let { open = false, onToggle }: Props = $props();
 
-  let activeCategory = $state<'general' | 'appearance' | 'editor' | 'terminal' | 'ai' | 'plugins' | 'shortcuts' | 'source' | 'github' | 'mcp' | 'advanced'>('general');
-  let categories = [
+  const activeCategory = $derived(appState.settingsCategory);
+  const categories: { id: SettingsCategory; label: string; icon: string }[] = [
     { id: 'general', label: 'General', icon: 'settings' },
     { id: 'appearance', label: 'Appearance', icon: 'palette' },
     { id: 'editor', label: 'Editor', icon: 'code' },
@@ -37,7 +38,7 @@
     { id: 'plugins', label: 'Plugins', icon: 'puzzle' },
     { id: 'shortcuts', label: 'Shortcuts', icon: 'keyboard' },
     { id: 'advanced', label: 'Advanced', icon: 'wrench' },
-  ] as const;
+  ];
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -77,7 +78,7 @@
             <li>
               <button
                 class="settings-category nil-halo {activeCategory === cat.id ? 'active' : ''}"
-                onclick={() => activeCategory = cat.id}
+                onclick={() => (appState.settingsCategory = cat.id)}
                 aria-current={activeCategory === cat.id ? 'true' : undefined}
                 {@attach droplet}
                 data-cuelume-hover="tick"

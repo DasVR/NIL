@@ -4,6 +4,18 @@ import { browser } from '$app/environment';
 
 type Theme = 'dark';
 export type ComposerMode = 'hunt' | 'exploit' | 'chat' | 'code' | 'report';
+export type SettingsCategory =
+  | 'general'
+  | 'appearance'
+  | 'editor'
+  | 'terminal'
+  | 'ai'
+  | 'plugins'
+  | 'shortcuts'
+  | 'source'
+  | 'github'
+  | 'mcp'
+  | 'advanced';
 
 interface AppState {
   sidebarOpen: boolean;
@@ -34,6 +46,7 @@ let sidebarWidth = $state(defaultState.sidebarWidth);
 let rightSidebarOpen = $state(defaultState.rightSidebarOpen);
 let rightSidebarWidth = $state(defaultState.rightSidebarWidth);
 let settingsOpen = $state(defaultState.settingsOpen);
+let settingsCategory = $state<SettingsCategory>('general');
 let theme = $state<Theme>(defaultState.theme);
 let reducedMotion = $state(defaultState.reducedMotion);
 let activeTargetId = $state(defaultState.activeTargetId);
@@ -102,6 +115,8 @@ export const appState = {
   set rightSidebarWidth(v: number) { rightSidebarWidth = v; },
   get settingsOpen() { return settingsOpen; },
   set settingsOpen(v: boolean) { settingsOpen = v; },
+  get settingsCategory() { return settingsCategory; },
+  set settingsCategory(v: SettingsCategory) { settingsCategory = v; },
   get theme() { return theme; },
   get reducedMotion() { return reducedMotion; },
   set reducedMotion(v: boolean) {
@@ -126,6 +141,10 @@ export const appState = {
   toggleSidebar: () => { sidebarOpen = !sidebarOpen; },
   toggleRightSidebar: () => { rightSidebarOpen = !rightSidebarOpen; },
   toggleSettings: () => { settingsOpen = !settingsOpen; },
+  openSettings: (category?: SettingsCategory) => {
+    if (category) settingsCategory = category;
+    settingsOpen = true;
+  },
   toggleYolo,
   setComposerFocus: (fn: () => void) => { composerFocus = fn; },
   focusComposer: () => { composerFocus(); },

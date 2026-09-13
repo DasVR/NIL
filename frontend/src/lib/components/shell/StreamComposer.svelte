@@ -428,7 +428,14 @@
               >{level}</button>
             {/each}
           </div>
-          <button class="pick more" type="button" disabled>More models</button>
+          <button
+            class="pick more"
+            type="button"
+            onclick={() => {
+              modelOpen = false;
+              appState.openSettings('ai');
+            }}
+          >More models</button>
         </div>
       {/if}
     </div>
@@ -661,5 +668,5 @@
     cursor: pointer;
   }
   .eff.on { color: var(--nil-ink); border-color: var(--nil-line-hot); background: var(--nil-panel); }
-  .more { color: var(--nil-ink-3); cursor: not-allowed; }
+  .more { color: var(--nil-ink-2); }
 </style>

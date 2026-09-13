@@ -34,6 +34,12 @@
   let scroller: HTMLElement | undefined = $state();
   let statusOpen = $state(false);
   let now = $state(Date.now());
+  let handoffPlay = $state(0);
+
+  $effect(() => {
+    const n = workspace.handoff;
+    if (n > 0) handoffPlay = n;
+  });
 
   $effect(() => {
     if (!agentRun.running) return;
@@ -75,6 +81,14 @@
   const runTokens = $derived(
     agentRun.steps.reduce((n, s) => n + (('usage' in s && s.usage?.totalTokens) ? s.usage.totalTokens : 0), 0),
   );
+
+  const runHint = $derived.by(() => {
+    if (agentRun.huntLoop) return 'Hunt running';
+    const tool = agentRun.steps.find((s) => s.kind === 'tool' && s.state === 'running');
+    if (tool && tool.kind === 'tool') return tool.name;
+    if (agentRun.queued.length) return 'Follow-up queued';
+    return 'Waiting on the model';
+  });
 
   const tasks = $derived(
     agentRun.steps
@@ -119,16 +133,16 @@
 </script>
 
 <section class="stream" aria-label="Agent stream">
-  {#key workspace.handoff}
-    {#if workspace.handoff > 0}
+  {#if handoffPlay > 0}
+    {#key handoffPlay}
       <div class="handoff" aria-hidden="true">
-        <DitherWipe mode="wipe" tone="ember" />
+        <DitherWipe mode="wipe" tone="ember" onDone={() => (handoffPlay = 0)} />
         <div class="handoff-mark">
           <NilMonogram state="active" size={32} />
         </div>
       </div>
-    {/if}
-  {/key}
+    {/key}
+  {/if}
   <div
     class="log"
     bind:this={scroller}
@@ -284,13 +298,13 @@
   {/if}
 
   {#if agentRun.running}
-    <div class="runbar">
+    <div class="runbar nil-scan" data-state="working">
       <AgentStatus
         bind:open={statusOpen}
         summary={runningSummary}
         duration={runDuration}
         tokens={runTokens}
-        hint="Almost done thinking…"
+        hint={runHint}
         items={statusItems}
       />
       <button class="nil-lift nil-halo stop" type="button" onclick={() => agentRun.stop()}>Stop</button>

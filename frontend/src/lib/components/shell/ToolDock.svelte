@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { fly } from 'svelte/transition';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import TerminalTab from '$lib/components/shell/TerminalTab.svelte';
@@ -13,6 +14,7 @@
     class:pty={isPty}
     data-state={job.status === 'running' ? 'working' : undefined}
     aria-label={job.title}
+    transition:fly={{ y: 12, duration: 260 }}
   >
     <header class="head">
       <span class="title">{job.title}</span>
