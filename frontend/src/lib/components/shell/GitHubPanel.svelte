@@ -1,4 +1,6 @@
 <script lang="ts">
+  import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
+
   const repo = 'DasVR/NIL';
   const prs = 0;
   const issues = 0;
@@ -7,7 +9,10 @@
 <section class="pane" aria-label="GitHub">
   <header class="head">
     <span class="eyebrow">GitHub</span>
-    <span class="repo">{repo}</span>
+    <div class="repo-row">
+      <span class="repo">{repo}</span>
+      <CopyAffordance value={repo} />
+    </div>
   </header>
   <dl class="stats">
     <div><dt>Pull requests</dt><dd>{prs}</dd></div>
@@ -25,6 +30,7 @@
     color: var(--nil-ink-3);
   }
   .head { display: flex; flex-direction: column; gap: 6px; }
+  .repo-row { display: flex; align-items: center; gap: 4px; }
   .repo { font: 500 var(--t-body)/1 var(--font-machine); color: var(--nil-ink); }
   .stats { display: flex; flex-direction: column; gap: var(--s-2); margin: 0; }
   .stats div { display: flex; justify-content: space-between; }

@@ -11,12 +11,15 @@ export function commonPrefix(a: string, b: string): number {
 
 export type AshHandle = {
   play: (text: string) => Promise<void>;
+  sync: (text: string) => Promise<void>;
   stop: () => void;
 };
 
 export function attachAsh(host: HTMLElement): AshHandle {
   let cancelled = false;
   let frame = 0;
+  let shown = '';
+  let queue: Promise<void> = Promise.resolve();
 
   const reduced = () => matchMedia('(prefers-reduced-motion: reduce)').matches;
 
@@ -25,27 +28,54 @@ export function attachAsh(host: HTMLElement): AshHandle {
       || getComputedStyle(document.documentElement).getPropertyValue('--nil-ink').trim();
   }
 
-  async function play(text: string): Promise<void> {
-    cancelled = false;
-    host.replaceChildren();
-    if (reduced()) {
-      host.textContent = text;
-      return;
+  function appendLetter(ch: string, animate: boolean, color: string): Promise<void> {
+    const span = document.createElement('span');
+    span.className = 'nil-ash-letter';
+    span.textContent = ch === ' ' ? '\u00a0' : ch;
+    host.appendChild(span);
+    shown += ch;
+    if (!animate) {
+      span.style.opacity = '1';
+      return Promise.resolve();
     }
-    const color = ember();
-    for (let i = 0; i < text.length; i++) {
-      if (cancelled) return;
-      const ch = text[i];
-      const span = document.createElement('span');
-      span.className = 'nil-ash-letter';
-      span.textContent = ch === ' ' ? '\u00a0' : ch;
-      span.style.opacity = '0';
-      host.appendChild(span);
-      await burst(span, color);
+    span.style.opacity = '0';
+    return burst(span, color).then(() => {
       if (cancelled) return;
       span.style.opacity = '1';
       span.style.color = '';
+    });
+  }
+
+  async function reveal(text: string, animate: boolean): Promise<void> {
+    cancelled = false;
+    const cut = commonPrefix(shown, text);
+    if (cut < shown.length) {
+      while (host.childNodes.length > cut) {
+        host.removeChild(host.lastChild as ChildNode);
+      }
+      shown = shown.slice(0, cut);
     }
+    if (reduced() || !animate) {
+      host.textContent = text;
+      shown = text;
+      return;
+    }
+    const color = ember();
+    for (let i = shown.length; i < text.length; i++) {
+      if (cancelled) return;
+      await appendLetter(text[i], true, color);
+    }
+  }
+
+  async function play(text: string): Promise<void> {
+    host.replaceChildren();
+    shown = '';
+    await reveal(text, true);
+  }
+
+  function sync(text: string): Promise<void> {
+    queue = queue.then(() => reveal(text, true));
+    return queue;
   }
 
   function burst(letter: HTMLElement, color: string): Promise<void> {
@@ -94,5 +124,5 @@ export function attachAsh(host: HTMLElement): AshHandle {
     cancelAnimationFrame(frame);
   }
 
-  return { play, stop };
+  return { play, sync, stop };
 }

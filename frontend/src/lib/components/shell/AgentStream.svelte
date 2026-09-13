@@ -4,6 +4,9 @@
   import ToolBlock from '$lib/components/ui/ToolBlock.svelte';
   import FindingCard from '$lib/components/ui/FindingCard.svelte';
   import AgentStatus from '$lib/components/ui/AgentStatus.svelte';
+  import ClarifyCard from '$lib/components/ui/ClarifyCard.svelte';
+  import ConfirmCard from '$lib/components/ui/ConfirmCard.svelte';
+  import AshText from '$lib/ui/AshText.svelte';
   import PentestEmpty from '$lib/components/shell/PentestEmpty.svelte';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
@@ -86,12 +89,15 @@
     aria-live="polite"
     aria-relevant="additions"
   >
-    {#if agentRun.steps.length === 0}
+    {#if agentRun.steps.length === 0 && !workspace.clarify && !workspace.pendingMode}
       <div class="idle">
         {#if workspace.workstationMode === 'pentest' && !appState.activeEngagementId}
           <PentestEmpty />
-        {:else if emptyState}
+        {:else if emptyState && !workspace.sessionStarted}
           {@render emptyState()}
+        {:else if workspace.workstationMode === 'build'}
+          <p class="idle-title">Build</p>
+          <p class="idle-copy">Describe a task in the composer, or pin Files to open a project.</p>
         {:else}
           <p class="idle-title">/Stream(01)</p>
           <p class="idle-copy">No findings yet. Run a hunt to start collecting evidence.</p>
@@ -124,7 +130,11 @@
               {#if step.role === 'user'}
                 <span class="prompt">&gt;</span>
               {/if}
-              <p class="msg-text" class:interrupted={step.interrupted}>{step.text}</p>
+              {#if step.role === 'assistant'}
+                <p class="msg-text" class:interrupted={step.interrupted}><AshText text={step.text} /></p>
+              {:else}
+                <p class="msg-text" class:interrupted={step.interrupted}>{step.text}</p>
+              {/if}
               {#if step.interrupted}
                 <span class="flag">interrupted</span>
               {/if}
@@ -135,6 +145,35 @@
         </div>
       </div>
     {/each}
+
+    {#if workspace.clarify}
+      <div class="prompt-card">
+        <ClarifyCard
+          title={workspace.clarify.title}
+          index={workspace.clarify.index}
+          total={workspace.clarify.total}
+          options={workspace.clarify.options}
+          onSelect={(id) => workspace.answerClarify(id)}
+          onPrev={() => workspace.prevClarify()}
+          onNext={() => workspace.nextClarify()}
+        />
+      </div>
+    {/if}
+
+    {#if workspace.pendingMode}
+      <div class="prompt-card">
+        <ConfirmCard
+          title="Leave this run?"
+          body="The agent is still working. Switching modes stops the current task."
+          confirmLabel="Continue"
+          onConfirm={() => {
+            agentRun.stop();
+            workspace.commitPendingMode();
+          }}
+          onCancel={() => workspace.cancelPendingMode()}
+        />
+      </div>
+    {/if}
   </div>
 
   {#if !isPinned}
@@ -218,6 +257,11 @@
     margin: 0;
     width: 100%;
     min-height: 100%;
+  }
+
+  .prompt-card {
+    padding: var(--s-3) 0;
+    max-width: 36rem;
   }
 
   .idle-title {

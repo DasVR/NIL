@@ -65,7 +65,7 @@
     <div class="settings-header">
       <h2>Settings</h2>
       <button class="settings-close" onclick={appState.toggleSettings} aria-label="Close">
-        <NilIcon name="x" size={20} />
+        <NilIcon name="x" size={16} />
       </button>
     </div>
 
@@ -116,7 +116,7 @@
     </div>
 
     <div class="settings-footer">
-      <button class="settings-btn secondary" onclick={appState.toggleSettings}>
+      <button class="settings-btn secondary nil-lift nil-halo" onclick={appState.toggleSettings}>
         <NilIcon name="x" size={16} />
         <span>Close</span>
       </button>

@@ -1,5 +1,6 @@
 <script lang="ts">
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import { droplet } from '$lib/motion/droplet';
 
   export interface ClarifyOption {
     id: string;
@@ -21,6 +22,15 @@
   let otherOpen = $state(false);
   let otherText = $state('');
   let reply = $state('');
+
+  $effect(() => {
+    title;
+    index;
+    selected = 0;
+    otherOpen = false;
+    otherText = '';
+    reply = '';
+  });
 
   function choose(i: number) {
     selected = i;
@@ -68,7 +78,7 @@
   <ol class="opts">
     {#each options as opt, i (opt.id)}
       <li>
-        <button class="opt nil-row-host nil-halo" class:on={selected === i && !otherOpen} type="button" onclick={() => choose(i)}>
+        <button class="opt nil-halo" class:on={selected === i && !otherOpen} type="button" {@attach droplet} onclick={() => choose(i)}>
           <span class="n">{i + 1}</span>
           <span>{opt.label}</span>
         </button>
@@ -78,7 +88,7 @@
       {#if otherOpen}
         <input class="other" bind:value={otherText} placeholder="Something else" aria-label="Something else" />
       {:else}
-        <button class="opt nil-row-host nil-halo" class:on={selected === options.length} type="button" onclick={() => { otherOpen = true; selected = options.length; }}>
+        <button class="opt nil-halo" class:on={selected === options.length} type="button" {@attach droplet} onclick={() => { otherOpen = true; selected = options.length; }}>
           <span class="n">{options.length + 1}</span>
           <span>Something else</span>
         </button>

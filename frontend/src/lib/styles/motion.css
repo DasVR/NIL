@@ -177,6 +177,38 @@
 }
 
 /* ------------------------------------------------------------
+   18 · WAVE — dictation live vs paused. Static bars at rest;
+   scaleY pulse only while capture is actually on. Not chrome SCANLINE.
+   ------------------------------------------------------------ */
+.nil-wave {
+  display: inline-flex;
+  align-items: flex-end;
+  gap: 2px;
+  height: 18px;
+}
+.nil-wave i {
+  display: block;
+  width: 2px;
+  height: 4px;
+  background: var(--nil-ink-3);
+  border-radius: 1px;
+  transform-origin: center bottom;
+}
+.nil-wave[data-live="true"] i {
+  height: var(--h, 8px);
+  background: var(--nil-ink);
+  animation: nil-wave 900ms var(--ease-mono) infinite;
+  animation-delay: var(--d, 0ms);
+}
+@keyframes nil-wave {
+  0%, 100% { transform: scaleY(0.35); }
+  50% { transform: scaleY(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .nil-wave[data-live="true"] i { animation: none; }
+}
+
+/* ------------------------------------------------------------
    03 · HALO — keyboard focus. :focus-visible only, never :focus.
    Toggles / segmented controls / focus rings all share --ease-pop
    so the vocabulary stays one curve, not a different bounce each.

@@ -70,7 +70,7 @@
     <Sidebar
       open={appState.sidebarOpen}
       width={appState.sidebarWidth}
-      onToggle={() => appState.sidebarOpen = !appState.sidebarOpen}
+      onToggle={() => workspace.togglePin()}
       onResize={(w) => appState.sidebarWidth = w}
     />
 

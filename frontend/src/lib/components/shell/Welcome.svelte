@@ -13,7 +13,7 @@
   const recent = $derived(appState.engagements.slice(0, 5));
 
   function start(mode: 'build' | 'pentest') {
-    workspace.workstationMode = mode;
+    workspace.beginSession(mode);
     tabsStore.showStream();
     appState.focusComposer();
   }

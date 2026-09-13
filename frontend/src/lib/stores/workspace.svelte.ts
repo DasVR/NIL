@@ -3,6 +3,23 @@ import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
 
 export type RailId = 'files' | 'terminal' | 'diffs' | 'pentest';
 export type WorkstationMode = 'build' | 'pentest';
+export type SidePanel = 'targets' | 'scm' | 'github' | 'mcp';
+export type ClarifyId =
+  | 'files'
+  | 'task'
+  | 'diff'
+  | 'small'
+  | 'broad'
+  | 'ask'
+  | 'stream'
+  | 'terminal'
+  | 'pin'
+  | 'other';
+
+export interface ClarifyQuestion {
+  title: string;
+  options: { id: ClarifyId; label: string }[];
+}
 
 export interface DockJob {
   id: string;
@@ -32,9 +49,40 @@ const MODELS: ModelOption[] = [
 
 const RAIL_WIDTH = 48;
 
+const ONBOARD: ClarifyQuestion[] = [
+  {
+    title: 'What should we work on first?',
+    options: [
+      { id: 'files', label: 'Open files in the rail' },
+      { id: 'task', label: 'Describe a task in the composer' },
+      { id: 'diff', label: 'Review the current diff' },
+    ],
+  },
+  {
+    title: 'How should NIL treat this session?',
+    options: [
+      { id: 'small', label: 'Small, reviewable edits' },
+      { id: 'broad', label: 'Broader changes when the task needs them' },
+      { id: 'ask', label: 'Ask before changing files' },
+    ],
+  },
+  {
+    title: 'Where should we land when work starts?',
+    options: [
+      { id: 'stream', label: 'Stay on the stream' },
+      { id: 'terminal', label: 'Keep a terminal ready' },
+      { id: 'pin', label: 'Keep the file rail pinned' },
+    ],
+  },
+];
+
 let activeRail = $state<RailId>('files');
 let railPinned = $state(false);
-let workstationMode = $state<WorkstationMode>('pentest');
+let sidePanel = $state<SidePanel>('targets');
+let workstationMode = $state<WorkstationMode>('build');
+let sessionStarted = $state(false);
+let clarifyIndex = $state<number | null>(null);
+let pendingMode = $state<WorkstationMode | null>(null);
 let dock = $state<DockJob | null>(null);
 let dockLinger: ReturnType<typeof setTimeout> | null = null;
 let attached = $state<ContextFile[]>([]);
@@ -62,6 +110,61 @@ function applyMode(next: WorkstationMode) {
   workstationMode = next;
   if (next === 'build') appState.composerMode = 'code';
   else if (!pentestMode(appState.composerMode)) appState.composerMode = 'hunt';
+}
+
+function applyClarify(id: ClarifyId) {
+  switch (id) {
+    case 'files':
+    case 'pin':
+      activeRail = 'files';
+      railPinned = true;
+      appState.sidebarOpen = true;
+      break;
+    case 'task':
+    case 'other':
+      appState.focusComposer();
+      break;
+    case 'diff':
+      selectRail('diffs');
+      break;
+    case 'small':
+      effort = 'low';
+      break;
+    case 'broad':
+      effort = 'high';
+      break;
+    case 'ask':
+      effort = 'medium';
+      break;
+    case 'stream':
+      tabsStore.showStream();
+      break;
+    case 'terminal':
+      selectRail('terminal');
+      break;
+    default: {
+      const _n: never = id;
+      return _n;
+    }
+  }
+}
+
+function parseClarify(id: string): ClarifyId {
+  switch (id) {
+    case 'files':
+    case 'task':
+    case 'diff':
+    case 'small':
+    case 'broad':
+    case 'ask':
+    case 'stream':
+    case 'terminal':
+    case 'pin':
+    case 'other':
+      return id;
+    default:
+      return 'other';
+  }
 }
 
 function selectRail(id: RailId) {
@@ -154,13 +257,82 @@ function detachFile(id: string) {
   attached = attached.filter((f) => f.id !== id);
 }
 
+function togglePin() {
+  railPinned = !railPinned;
+  if (railPinned) activeRail = 'files';
+  appState.sidebarOpen = railPinned;
+}
+
+function openSide(panel: SidePanel) {
+  sidePanel = panel;
+  railPinned = true;
+  activeRail = 'files';
+  appState.sidebarOpen = true;
+}
+
+function beginSession(mode: WorkstationMode) {
+  sessionStarted = true;
+  applyMode(mode);
+  pendingMode = null;
+  if (mode === 'pentest') {
+    clarifyIndex = null;
+    selectRail('pentest');
+  } else {
+    clarifyIndex = 0;
+    tabsStore.showStream();
+  }
+}
+
+function requestMode(next: WorkstationMode) {
+  if (next === workstationMode) {
+    pendingMode = null;
+    return;
+  }
+  pendingMode = next;
+}
+
+function commitPendingMode() {
+  if (pendingMode) applyMode(pendingMode);
+  pendingMode = null;
+}
+
+function cancelPendingMode() {
+  pendingMode = null;
+}
+
+function answerClarify(id: string) {
+  applyClarify(parseClarify(id));
+  if (clarifyIndex == null) return;
+  if (clarifyIndex < ONBOARD.length - 1) clarifyIndex += 1;
+  else clarifyIndex = null;
+}
+
+function prevClarify() {
+  if (clarifyIndex == null) return;
+  clarifyIndex = Math.max(0, clarifyIndex - 1);
+}
+
+function nextClarify() {
+  if (clarifyIndex == null) return;
+  clarifyIndex = Math.min(ONBOARD.length - 1, clarifyIndex + 1);
+}
+
 export const workspace = {
   RAIL_WIDTH,
   get activeRail() { return activeRail; },
   get railPinned() { return railPinned; },
   set railPinned(v: boolean) { railPinned = v; },
+  get sidePanel() { return sidePanel; },
+  set sidePanel(v: SidePanel) { sidePanel = v; },
   get workstationMode() { return workstationMode; },
   set workstationMode(v: WorkstationMode) { applyMode(v); },
+  get sessionStarted() { return sessionStarted; },
+  get clarify() {
+    if (clarifyIndex == null) return null;
+    const q = ONBOARD[clarifyIndex];
+    return q ? { ...q, index: clarifyIndex + 1, total: ONBOARD.length } : null;
+  },
+  get pendingMode() { return pendingMode; },
   get dock() { return dock; },
   get attached() { return attached; },
   get models() { return MODELS; },
@@ -172,6 +344,15 @@ export const workspace = {
   set dictationActive(v: boolean) { dictationActive = v; },
   get model() { return MODELS.find((m) => m.id === modelId) ?? MODELS[0]; },
   selectRail,
+  togglePin,
+  openSide,
+  beginSession,
+  requestMode,
+  commitPendingMode,
+  cancelPendingMode,
+  answerClarify,
+  prevClarify,
+  nextClarify,
   openDock,
   updateDock,
   closeDock,

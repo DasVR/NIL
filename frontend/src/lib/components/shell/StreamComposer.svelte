@@ -10,6 +10,7 @@
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import OnDeviceHint from '$lib/components/ui/OnDeviceHint.svelte';
   import { jelly } from '$lib/motion/jelly.ts';
+  import { droplet } from '$lib/motion/droplet';
   import { cubicIn } from 'svelte/easing';
 
   interface Props {
@@ -23,9 +24,29 @@
   let mentionQuery = $state('');
   let mentionIndex = $state(0);
   let modelOpen = $state(false);
+  let modelWrap: HTMLDivElement | undefined = $state();
   let chipLeaving = $state<string | null>(null);
   let pillEl: HTMLSpanElement | undefined = $state();
   let lastMode = $state<WorkstationMode>(workspace.workstationMode);
+
+  $effect(() => {
+    if (!modelOpen) return;
+    const close = (e: PointerEvent) => {
+      const t = e.target as Node | null;
+      if (t && modelWrap?.contains(t)) return;
+      modelOpen = false;
+    };
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  });
+
+  $effect(() => {
+    const next = workspace.workstationMode;
+    if (next === lastMode) return;
+    const dir = next === 'pentest' ? 'right' : 'left';
+    lastMode = next;
+    if (pillEl) jelly(pillEl, dir);
+  });
 
   const pending = $derived(agentRun.pendingApproval);
   const gated = $derived(Boolean(pending));
@@ -68,10 +89,11 @@
 
   function setMode(next: WorkstationMode) {
     if (next === workspace.workstationMode) return;
-    const dir = next === 'pentest' ? 'right' : 'left';
+    if (agentRun.running) {
+      workspace.requestMode(next);
+      return;
+    }
     workspace.workstationMode = next;
-    lastMode = next;
-    if (pillEl) jelly(pillEl, dir);
   }
 
   function onKey(e: KeyboardEvent) {
@@ -94,6 +116,13 @@
       if (e.key === 'Escape') {
         e.preventDefault();
         mentionOpen = false;
+        return;
+      }
+    }
+    if (e.key === 'Escape') {
+      if (modelOpen) {
+        e.preventDefault();
+        modelOpen = false;
         return;
       }
     }
@@ -205,6 +234,7 @@
             type="button"
             role="option"
             aria-selected={i === mentionIndex}
+            {@attach droplet}
             onclick={() => pickMention(i)}
           >
             <span class="m-label">{file.label}</span>
@@ -243,7 +273,7 @@
       >Pentest</button>
     </div>
 
-    <div class="model-wrap">
+    <div class="model-wrap" bind:this={modelWrap}>
       <button
         class="model nil-halo"
         type="button"

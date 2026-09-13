@@ -220,7 +220,7 @@
     width: 6px;
     height: 6px;
     border-radius: 50%;
-    background: var(--color-warning);
+    background: var(--nil-ink-2);
     flex-shrink: 0;
   }
 

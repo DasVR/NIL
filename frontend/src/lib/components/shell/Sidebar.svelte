@@ -23,7 +23,7 @@
   let dragStartX = 0;
   let startWidth = 0;
   let resizing = $state(false);
-  let panel = $state<'targets' | 'scm' | 'github' | 'mcp'>('targets');
+  let panel = $derived(workspace.sidePanel);
 
   const RAIL = workspace.RAIL_WIDTH;
   const pinned = $derived(open || workspace.railPinned);
@@ -116,10 +116,10 @@
     <div class="panel">
       <div class="panel-head">
         <div class="segs" role="tablist" aria-label="Sidebar panel">
-          <button class="seg" class:on={panel === 'targets'} type="button" onclick={() => (panel = 'targets')}>Targets</button>
-          <button class="seg" class:on={panel === 'scm'} type="button" onclick={() => (panel = 'scm')}>Source</button>
-          <button class="seg" class:on={panel === 'github'} type="button" onclick={() => (panel = 'github')}>GitHub</button>
-          <button class="seg" class:on={panel === 'mcp'} type="button" onclick={() => (panel = 'mcp')}>MCP</button>
+          <button class="seg" class:on={panel === 'targets'} type="button" onclick={() => (workspace.sidePanel = 'targets')}>Targets</button>
+          <button class="seg" class:on={panel === 'scm'} type="button" onclick={() => (workspace.sidePanel = 'scm')}>Source</button>
+          <button class="seg" class:on={panel === 'github'} type="button" onclick={() => (workspace.sidePanel = 'github')}>GitHub</button>
+          <button class="seg" class:on={panel === 'mcp'} type="button" onclick={() => (workspace.sidePanel = 'mcp')}>MCP</button>
         </div>
       </div>
       {#if panel === 'targets'}

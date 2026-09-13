@@ -1,5 +1,6 @@
 import { appState } from '$lib/stores/appState.svelte.ts';
 import { tabsStore } from '$lib/stores/tabsStore';
+import { workspace } from '$lib/stores/workspace.svelte.ts';
 
 interface PaletteCommand {
   id: string;
@@ -19,6 +20,49 @@ function newEngagementName(): string {
 }
 
 const commands: PaletteCommand[] = [
+  {
+    id: 'start-build',
+    label: 'Start building',
+    section: 'Session',
+    icon: 'hammer',
+    action: () => {
+      workspace.beginSession('build');
+      tabsStore.showStream();
+      appState.focusComposer();
+    },
+  },
+  {
+    id: 'start-hunt',
+    label: 'Start a hunt',
+    section: 'Session',
+    icon: 'shield',
+    action: () => {
+      workspace.beginSession('pentest');
+      tabsStore.showStream();
+      appState.focusComposer();
+    },
+  },
+  {
+    id: 'open-source',
+    label: 'Open source control',
+    section: 'View',
+    icon: 'git-branch',
+    action: () => workspace.openSide('scm'),
+  },
+  {
+    id: 'open-github',
+    label: 'Open GitHub',
+    section: 'View',
+    icon: 'github',
+    action: () => workspace.openSide('github'),
+  },
+  {
+    id: 'open-mcp',
+    label: 'Open MCP tools',
+    section: 'View',
+    icon: 'plug',
+    action: () => workspace.openSide('mcp'),
+  },
   {
     id: 'new-engagement',
     label: 'New engagement',
@@ -61,7 +105,7 @@ const commands: PaletteCommand[] = [
     shortcut: 'Cmd+B',
     section: 'View',
     icon: 'panel-left',
-    action: () => appState.toggleSidebar(),
+    action: () => workspace.togglePin(),
   },
   {
     id: 'toggle-inspector',

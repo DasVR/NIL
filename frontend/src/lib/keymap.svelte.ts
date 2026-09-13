@@ -2,6 +2,7 @@ import { appState } from '$lib/stores/appState.svelte.ts';
 import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
 import { agentStore } from '$lib/stores/agentStore';
 import { tabsStore } from '$lib/stores/tabsStore';
+import { workspace } from '$lib/stores/workspace.svelte.ts';
 
 let shortcutsEnabled = $state(true);
 
@@ -91,7 +92,7 @@ function handleKeydown(e: KeyboardEvent) {
 
   if (mod && e.key === 'b' && !shift) {
     e.preventDefault();
-    appState.toggleSidebar();
+    workspace.togglePin();
     return;
   }
 
