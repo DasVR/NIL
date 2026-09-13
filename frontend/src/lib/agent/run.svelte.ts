@@ -4,11 +4,18 @@ import { fromListedFinding, type ListedFinding } from '$lib/findings/display';
 import { fromApiUsage } from '$lib/usage/format';
 import { usageStore } from '$lib/usage/store.svelte.ts';
 
+export interface TurnExtras {
+  model?: string;
+  effort?: 'low' | 'medium' | 'high';
+}
+
 export interface QueuedTurn {
   id: string;
   text: string;
   engagement: string;
   mode: string;
+  model?: string;
+  effort?: 'low' | 'medium' | 'high';
 }
 
 let steps = $state<Step[]>([]);
@@ -325,7 +332,7 @@ export const agentRun = {
     interrupted = false;
   },
 
-  queueFollowup(text: string, engagement: string, mode: string) {
+  queueFollowup(text: string, engagement: string, mode: string, extras?: TurnExtras) {
     const trimmed = text.trim();
     if (!trimmed) return;
     queued = [...queued, {
@@ -333,6 +340,8 @@ export const agentRun = {
       text: trimmed,
       engagement,
       mode,
+      model: extras?.model,
+      effort: extras?.effort,
     }];
   },
 
@@ -345,10 +354,13 @@ export const agentRun = {
     const next = queued[0];
     if (!next) return;
     queued = queued.slice(1);
-    void agentRun.sendMessage(next.text, next.engagement, next.mode);
+    void agentRun.sendMessage(next.text, next.engagement, next.mode, {
+      model: next.model,
+      effort: next.effort,
+    });
   },
 
-  async sendMessage(input: string, engagement: string, mode: string) {
+  async sendMessage(input: string, engagement: string, mode: string, extras?: TurnExtras) {
     lastEngagement = engagement;
     markRunning();
     httpInFlight = true;
@@ -372,6 +384,8 @@ export const agentRun = {
         mode: mode as ChatRequest['mode'],
         session_id: sessionId || undefined,
         hunt: mode === 'hunt',
+        model: extras?.model,
+        effort: extras?.effort,
       };
       const res = await api.chat(body);
       sessionId = res.session_id;

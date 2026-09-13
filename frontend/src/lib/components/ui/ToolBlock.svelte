@@ -3,6 +3,7 @@
   import type { ToolStep } from '$lib/agent/types';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
   import InlineDiff from '$lib/ui/InlineDiff.svelte';
+  import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { toolFilePath } from '$lib/agent/run.svelte.ts';
@@ -42,6 +43,7 @@
   const displayText = $derived(showAll || resultText.length <= PREVIEW ? resultText : resultText.slice(0, PREVIEW));
   const isDiff = $derived(/^(diff --git |@@ |\+\+\+ |--- )/m.test(resultText));
   const touchedFile = $derived(toolFilePath(step));
+  const copyValue = $derived(touchedFile || step.primaryArg);
 
   $effect(() => {
     if (isDiff && resultText) workspace.setDiff(resultText);
@@ -95,11 +97,16 @@
         <span class="chev" class:open><NilIcon name="chevron-right" size={16} /></span>
         <span class="name">{step.name}</span>
       </button>
-      {#if touchedFile}
-        <button class="arg link nil-halo" type="button" onclick={openTouched}>{touchedFile}</button>
-      {:else}
-        <span class="arg">{step.primaryArg}</span>
-      {/if}
+      <span class="arg-row">
+        {#if touchedFile}
+          <button class="arg link nil-halo" type="button" onclick={openTouched}>{touchedFile}</button>
+        {:else}
+          <span class="arg">{step.primaryArg}</span>
+        {/if}
+        {#if copyValue}
+          <CopyAffordance value={copyValue} />
+        {/if}
+      </span>
       <span class="state" data-state={step.state}>
         <span class="glyph">{stateGlyph}</span>
         <span class="label">{stateLabel}</span>
@@ -174,6 +181,13 @@
     color: var(--nil-ink);
   }
 
+  .arg-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+  }
   .arg {
     font: var(--t-meta)/var(--lh-tight) var(--font-machine);
     color: var(--nil-ink-2);

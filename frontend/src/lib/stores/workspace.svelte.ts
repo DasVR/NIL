@@ -138,6 +138,7 @@ let effort = $state<'low' | 'medium' | 'high'>('medium');
 let splitPct = $state(SPLIT_DEFAULT);
 let dictationActive = $state(false);
 let dictationPaused = $state(false);
+let dictationLevel = $state(0);
 let recents = $state<RecentSession[]>(loadRecents());
 let diffText = $state('');
 let handoff = $state(0);
@@ -537,7 +538,7 @@ function sendClarifyTurn(text: string) {
   clarifyIndex = null;
   const mode: ComposerMode = workstationMode === 'build' ? 'code' : appState.composerMode;
   const engagement = appState.activeEngagementId || 'default';
-  void agentRun.sendMessage(text, engagement, mode);
+  void agentRun.sendMessage(text, engagement, mode, { model: modelId, effort });
 }
 
 function answerClarify(id: string, other?: string) {
@@ -615,9 +616,17 @@ export const workspace = {
   set dictationActive(v: boolean) {
     dictationActive = v;
     if (v) dictationPaused = false;
+    else dictationLevel = 0;
   },
   get dictationPaused() { return dictationPaused; },
-  set dictationPaused(v: boolean) { dictationPaused = v; },
+  set dictationPaused(v: boolean) {
+    dictationPaused = v;
+    if (v) dictationLevel = 0;
+  },
+  get dictationLevel() { return dictationLevel; },
+  set dictationLevel(v: number) {
+    dictationLevel = Math.min(1, Math.max(0, v));
+  },
   get recents() { return recents; },
   get handoff() { return handoff; },
   get reportCover() { return reportCover; },

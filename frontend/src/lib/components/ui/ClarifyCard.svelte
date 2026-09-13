@@ -66,11 +66,11 @@
   <header class="head">
     <h2>{title}</h2>
     <div class="pager">
-      <button class="icon nil-halo" type="button" aria-label="Previous question" disabled={index <= 1} onclick={onPrev}>
+      <button class="icon nil-halo nil-quiet" type="button" aria-label="Previous question" disabled={index <= 1} onclick={onPrev}>
         <NilIcon name="chevron-left" size={16} />
       </button>
       <span class="idx">{index} of {total}</span>
-      <button class="icon nil-halo" type="button" aria-label="Next question" disabled={index >= total} onclick={onNext}>
+      <button class="icon nil-halo nil-quiet" type="button" aria-label="Next question" disabled={index >= total} onclick={onNext}>
         <NilIcon name="chevron-right" size={16} />
       </button>
     </div>

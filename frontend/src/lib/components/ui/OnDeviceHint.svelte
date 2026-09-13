@@ -5,9 +5,10 @@
   interface Props {
     active?: boolean;
     available?: boolean;
+    level?: number;
   }
 
-  let { active = false, available = true }: Props = $props();
+  let { active = false, available = true, level = 0 }: Props = $props();
 </script>
 
 <p class="hint">
@@ -20,7 +21,7 @@
     {/if}
   </span>
   {#if available}
-    <DictationWave {active} />
+    <DictationWave {active} {level} />
   {/if}
 </p>
 

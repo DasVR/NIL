@@ -9,11 +9,6 @@
 
   const KEY = 'nil.mcp.servers';
 
-  const FALLBACK: McpServer[] = [
-    { id: 'local', name: 'Local filesystem', description: 'Read workspace files', source: 'session' },
-    { id: 'github', name: 'GitHub', description: 'Issues, PRs, and checks', source: 'session' },
-  ];
-
   function loadToggles(): Record<string, boolean> {
     if (!browser) return {};
     try {
@@ -35,16 +30,15 @@
 
   let toggles = $state<Record<string, boolean>>(loadToggles());
 
-  const listed = $derived(project.mcp);
-  const source = $derived(listed && listed.length > 0 ? listed : FALLBACK);
+  const listed = $derived(project.mcp ?? []);
   const rows = $derived<Row[]>(
-    source.map((s) => ({
+    listed.map((s) => ({
       ...s,
       on: s.id in toggles ? toggles[s.id] : true,
     })),
   );
 
-  const empty = $derived(project.bridge && listed !== null && listed.length === 0);
+  const empty = $derived(listed.length === 0);
 
   function toggle(id: string, on: boolean) {
     const next = { ...toggles, [id]: on };
@@ -61,10 +55,8 @@
     <p class="lede">
       {#if empty}
         Declare servers in this workspace when you have them. Toggles stay on this machine.
-      {:else if listed && listed.length > 0}
-        Servers declared in this workspace. Toggles stay on this machine and do not start or stop a process.
       {:else}
-        Servers the agent can call. Toggle one off without disconnecting the rest. These toggles stay on this machine.
+        Servers declared in this workspace. Toggles stay on this machine and do not start or stop a process.
       {/if}
     </p>
   </header>

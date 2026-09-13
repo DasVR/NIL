@@ -118,12 +118,12 @@
     <div class="panel">
       <div class="panel-head">
         <div class="segs" role="tablist" aria-label="Sidebar panel">
-          <button class="seg" class:on={panel === 'targets'} type="button" onclick={() => (workspace.sidePanel = 'targets')}>
+          <button class="seg nil-quiet" class:on={panel === 'targets'} type="button" onclick={() => (workspace.sidePanel = 'targets')}>
             {workspace.workstationMode === 'pentest' ? 'Targets' : 'Files'}
           </button>
-          <button class="seg" class:on={panel === 'scm'} type="button" onclick={() => (workspace.sidePanel = 'scm')}>Source</button>
-          <button class="seg" class:on={panel === 'github'} type="button" onclick={() => (workspace.sidePanel = 'github')}>GitHub</button>
-          <button class="seg" class:on={panel === 'mcp'} type="button" onclick={() => (workspace.sidePanel = 'mcp')}>MCP</button>
+          <button class="seg nil-quiet" class:on={panel === 'scm'} type="button" onclick={() => (workspace.sidePanel = 'scm')}>Source</button>
+          <button class="seg nil-quiet" class:on={panel === 'github'} type="button" onclick={() => (workspace.sidePanel = 'github')}>GitHub</button>
+          <button class="seg nil-quiet" class:on={panel === 'mcp'} type="button" onclick={() => (workspace.sidePanel = 'mcp')}>MCP</button>
         </div>
       </div>
       {#if panel === 'targets'}

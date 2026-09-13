@@ -184,7 +184,7 @@
       <div class="row tick" data-step-id="dictation">
         <span class="time">{receiptTime('dictation')}</span>
         <div class="cell listen">
-          <DictationWave active={!workspace.dictationPaused} />
+          <DictationWave active={!workspace.dictationPaused} level={workspace.dictationLevel} />
           <span class="flag">{workspace.dictationPaused ? 'paused' : 'listening'}</span>
           <button
             class="nil-halo listen-btn"

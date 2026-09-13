@@ -154,10 +154,11 @@
     workspace.dismissClarify();
     workspace.dictationActive = false;
     workspace.dictationPaused = false;
+    const extras = { model: workspace.modelId, effort: workspace.effort };
     if (agentRun.running) {
-      agentRun.queueFollowup(payload, engagement, mode);
+      agentRun.queueFollowup(payload, engagement, mode, extras);
     } else {
-      agentRun.sendMessage(payload, engagement, mode);
+      agentRun.sendMessage(payload, engagement, mode, extras);
     }
     input = '';
     mentionOpen = false;
@@ -250,11 +251,18 @@
   }
 
   $effect(() => {
-    if (!workspace.dictationActive || workspace.dictationPaused) return;
+    if (!workspace.dictationActive || workspace.dictationPaused) {
+      untrack(() => { workspace.dictationLevel = 0; });
+      return;
+    }
     const base = untrack(() => input);
     let last = base;
     let playAbort: AbortController | null = null;
+    let cool: ReturnType<typeof setTimeout> | null = null;
     const stop = listenSpeech((text) => {
+      workspace.dictationLevel = Math.min(1, 0.4 + Math.min(text.length, 40) / 50);
+      if (cool) clearTimeout(cool);
+      cool = setTimeout(() => { workspace.dictationLevel = 0.15; }, 280);
       const prefix = base.replace(/\s+$/, '');
       const next = prefix ? `${prefix} ${text}` : text;
       playAbort?.abort();
@@ -267,7 +275,9 @@
     });
     return () => {
       playAbort?.abort();
+      if (cool) clearTimeout(cool);
       stop();
+      workspace.dictationLevel = 0;
     };
   });
 </script>
@@ -277,8 +287,8 @@
     <div class="chips" aria-label="Attached files">
       {#each workspace.attached as file (file.id)}
         <span class="chip" class:leaving={chipLeaving === file.id}>
-          <button class="chip-path nil-halo" type="button" onclick={() => workspace.openFile(file.path)}>{file.path}</button>
-          <button class="chip-x nil-halo" type="button" aria-label={`Detach ${file.path}`} onclick={() => dismissChip(file.id)}>
+          <button class="chip-path nil-halo nil-quiet" type="button" onclick={() => workspace.openFile(file.path)}>{file.path}</button>
+          <button class="chip-x nil-halo nil-quiet" type="button" aria-label={`Detach ${file.path}`} onclick={() => dismissChip(file.id)}>
             <NilIcon name="x" size={16} />
           </button>
         </span>
@@ -291,7 +301,7 @@
       {#each agentRun.queued as item (item.id)}
         <span class="chip">
           <span class="chip-path">queued · {item.text}</span>
-          <button class="chip-x nil-halo" type="button" aria-label="Remove queued follow-up" onclick={() => agentRun.dropFollowup(item.id)}>
+          <button class="chip-x nil-halo nil-quiet" type="button" aria-label="Remove queued follow-up" onclick={() => agentRun.dropFollowup(item.id)}>
             <NilIcon name="x" size={16} />
           </button>
         </span>
@@ -319,7 +329,7 @@
       disabled={gated}
     ></textarea>
     <button
-      class="icon-btn nil-halo"
+      class="icon-btn nil-lift nil-halo"
       type="button"
       aria-label="Voice input"
       aria-pressed={workspace.dictationActive}
@@ -371,7 +381,7 @@
   {/if}
 
     {#if workspace.dictationActive}
-    <OnDeviceHint active={!workspace.dictationPaused} available={speechAvailable()} />
+    <OnDeviceHint active={!workspace.dictationPaused} available={speechAvailable()} level={workspace.dictationLevel} />
   {/if}
 
   <div class="bar">
@@ -403,14 +413,14 @@
         ></span>
       </span>
       <button
-        class="seg nil-halo"
+        class="seg nil-quiet nil-halo"
         class:on={workspace.workstationMode === 'build'}
         type="button"
         aria-pressed={workspace.workstationMode === 'build'}
         onclick={() => setMode('build')}
       >Build</button>
       <button
-        class="seg nil-halo"
+        class="seg nil-quiet nil-halo"
         class:on={workspace.workstationMode === 'pentest'}
         type="button"
         aria-pressed={workspace.workstationMode === 'pentest'}
@@ -439,10 +449,11 @@
         >
           {#each workspace.models as m (m.id)}
             <button
-              class="pick"
+              class="pick nil-halo"
               type="button"
               role="option"
               aria-selected={m.id === workspace.modelId}
+              {@attach droplet}
               onclick={() => { workspace.modelId = m.id; modelOpen = false; }}
             >
               <span class="pick-name">{m.name}</span>

@@ -26,7 +26,7 @@
 </script>
 
 <button
-  class="nil-morph nil-halo copy"
+  class="nil-morph nil-halo nil-quiet copy"
   type="button"
   data-confirmed={confirmed ? 'true' : undefined}
   aria-label={confirmed ? label : `Copy ${value}`}

@@ -2,6 +2,7 @@
   import type { ApprovalGrant, ToolStep } from '$lib/agent/types';
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
+  import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import { magnetic } from '$lib/motion/magnetic.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
 
@@ -113,7 +114,10 @@
   {/if}
 
   {#if command}
-    <pre class="target"><code>{command}</code></pre>
+    <div class="target-wrap">
+      <pre class="target"><code>{command}</code></pre>
+      <CopyAffordance value={command} />
+    </div>
   {/if}
 
   {#if prefix}
@@ -201,11 +205,20 @@
     color: var(--nil-ink-2);
   }
 
+  .target-wrap {
+    position: relative;
+  }
+  .target-wrap :global(.copy) {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+  }
   .target {
     margin: 0;
     max-block-size: 120px;
     overflow: auto;
     padding: var(--s-2);
+    padding-inline-end: 28px;
     background: var(--nil-void);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-field);

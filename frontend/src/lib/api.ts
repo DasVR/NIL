@@ -67,6 +67,9 @@ export interface ChatRequest {
   stream?: boolean;
   session_id?: string;
   hunt?: boolean;
+  /** Session picker value. The harness uses the enabled provider until it reads this. */
+  model?: string;
+  effort?: 'low' | 'medium' | 'high';
 }
 
 export interface TokenUsagePayload {

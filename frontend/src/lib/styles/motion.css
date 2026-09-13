@@ -52,14 +52,16 @@
    01 · LIFT — hover on any interactive surface
    Border brightens, surface rises 1px. Soft shadow only on lift.
    ------------------------------------------------------------ */
-.nil-lift {
+.nil-lift,
+.app-shell button:not(.nil-quiet):not(.nil-row-host) {
   transition: transform var(--dur-panel) var(--ease-spring),
               border-color var(--dur-flip) var(--ease-out),
               background-color var(--dur-flip) var(--ease-out),
               box-shadow var(--dur-flip) var(--ease-out);
   will-change: transform;
 }
-.nil-lift:hover {
+.nil-lift:hover,
+.app-shell button:not(.nil-quiet):not(.nil-row-host):hover {
   transform: translateY(-1px);
   border-color: var(--nil-line-hot);
   box-shadow: var(--lift-1);
@@ -72,7 +74,8 @@
    Release falls back to LIFT's own transition, which is where the
    spring lives — it settles with a little weight, not a hard snap.
    ------------------------------------------------------------ */
-.nil-lift:active {
+.nil-lift:active,
+.app-shell button:not(.nil-quiet):not(.nil-row-host):active {
   transform: scale(0.955) translateY(0);
   transition-duration: 70ms;
   transition-timing-function: var(--ease-out);
@@ -195,8 +198,11 @@
   transform-origin: center bottom;
 }
 .nil-wave[data-live="true"] i {
-  height: var(--h, 8px);
+  height: 4px;
   background: var(--nil-ink);
+}
+.nil-wave[data-live="true"][data-hot="true"] i {
+  height: var(--h, 8px);
   animation: nil-wave 900ms var(--ease-mono) infinite;
   animation-delay: var(--d, 0ms);
 }
@@ -350,7 +356,9 @@ dialog[open]::backdrop {
     transition-duration: 80ms !important;
     scroll-behavior: auto !important;
   }
-  .nil-lift:hover, .nil-lift:active, .nil-magnetic { transform: none; }
+  .nil-lift:hover, .nil-lift:active, .nil-magnetic,
+  .app-shell button:not(.nil-quiet):not(.nil-row-host):hover,
+  .app-shell button:not(.nil-quiet):not(.nil-row-host):active { transform: none; }
   .btn-primary:hover, .btn-primary:active,
   .btn-ghost:hover, .btn-ghost:active { transform: none; }
   .nil-scan[data-state="working"]::after { animation: none; background: var(--nil-ink-3); }

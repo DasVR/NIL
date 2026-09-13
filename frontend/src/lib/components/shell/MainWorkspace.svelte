@@ -117,7 +117,7 @@
           {/if}
           <button
             type="button"
-            class="workspace-tab-close nil-halo"
+            class="workspace-tab-close nil-halo nil-quiet"
             onclick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
             aria-label="Close"
             tabindex="-1"
@@ -145,7 +145,7 @@
       {#if split}
         <button
           type="button"
-          class="split-handle"
+          class="split-handle nil-quiet"
           aria-label="Resize agent and editor"
           onpointerdown={onSplitPointer}
           onkeydown={onSplitKey}

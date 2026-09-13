@@ -1,6 +1,7 @@
 import type { Finding } from '$lib/agent/types';
 import { agentRun } from '$lib/agent/run.svelte.ts';
 import { appState } from '$lib/stores/appState.svelte.ts';
+import { workspace } from '$lib/stores/workspace.svelte.ts';
 
 function engagement(): string {
   return appState.activeEngagementId || 'default';
@@ -14,7 +15,10 @@ export function explainFinding(finding: Finding) {
     finding.assessment,
     finding.evidence,
   ].filter(Boolean).join('\n\n');
-  void agentRun.sendMessage(body, engagement(), 'chat');
+  void agentRun.sendMessage(body, engagement(), 'chat', {
+    model: workspace.modelId,
+    effort: workspace.effort,
+  });
 }
 
 export function draftFinding(finding: Finding) {
@@ -23,5 +27,6 @@ export function draftFinding(finding: Finding) {
     `Draft a report section for: ${finding.title}`,
     engagement(),
     'report',
+    { model: workspace.modelId, effort: workspace.effort },
   );
 }

@@ -9,7 +9,7 @@
 <div class="settings-pane">
   <h3>Agent</h3>
   <p class="settings-description">
-    Models come from the API provider list. Mode prompts ship with the harness. Picking a model here is a session preference — the next chat turn still uses the provider the harness has enabled.
+    Models come from the API provider list. Mode prompts ship with the harness. The picker is sent with each turn. The harness still uses the enabled provider until it reads that field.
   </p>
   <div class="settings-group">
     <h4>Models</h4>

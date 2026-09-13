@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { droplet } from '$lib/motion/droplet';
+
   interface Props {
     checked?: boolean;
     label: string;
@@ -9,7 +11,7 @@
   let { checked = false, label, description, onChange }: Props = $props();
 </script>
 
-<div class="row nil-row-host" class:on={checked}>
+<div class="row nil-row-host" class:on={checked} {@attach droplet}>
   <div class="info">
     <span class="label">{label}</span>
     {#if description}
