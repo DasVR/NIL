@@ -11,6 +11,14 @@ export interface GitEntry {
   status: string;
 }
 
+export interface GitCi {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  url: string;
+  branch: string;
+}
+
 export interface GitSnapshot {
   branch: string;
   ahead: number | null;
@@ -18,6 +26,8 @@ export interface GitSnapshot {
   staged: GitEntry[];
   unstaged: GitEntry[];
   diff: string;
+  ci: GitCi | null;
+  ciLoaded: boolean;
 }
 
 export interface GithubItem {
@@ -91,6 +101,8 @@ export async function refreshProject(): Promise<void> {
     staged?: GitEntry[];
     unstaged?: GitEntry[];
     diff?: string;
+    ci?: GitCi | null;
+    ciLoaded?: boolean;
   }>('/git');
   git = gitRaw?.ok && gitRaw.git && gitRaw.branch
     ? {
@@ -100,6 +112,8 @@ export async function refreshProject(): Promise<void> {
         staged: gitRaw.staged ?? [],
         unstaged: gitRaw.unstaged ?? [],
         diff: gitRaw.diff ?? '',
+        ci: gitRaw.ci ?? null,
+        ciLoaded: Boolean(gitRaw.ciLoaded),
       }
     : null;
 

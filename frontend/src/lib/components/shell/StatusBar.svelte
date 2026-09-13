@@ -38,6 +38,10 @@
   <div class="cluster">
     {#if project.git}
       <span class="mono">{project.git.branch}</span>
+      {#if project.git.ci}
+        <span class="div" aria-hidden="true"></span>
+        <span class="mono">{project.git.ci.conclusion || project.git.ci.status}</span>
+      {/if}
     {/if}
     {#if activeTab}
       <span class="mono">{activeTab.label}</span>

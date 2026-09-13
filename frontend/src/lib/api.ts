@@ -1,9 +1,8 @@
 // NIL API client — typed fetch wrapper for the Python backend
 // Production builds are served by the same FastAPI app they talk to (see
 // shipped_web_dir() in finn_pentest/core/config.py), so a relative path
-// always reaches the right origin/port regardless of FINN_API_PORT. The
-// dev server has no backend of its own, so it needs an absolute default.
-const API_BASE = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? 'http://localhost:8766/v1' : '/v1');
+// always reaches the right origin. Vite dev/preview proxy /v1 to :8766.
+const API_BASE = import.meta.env.VITE_API_BASE || '/v1';
 
 interface FetchOptions extends RequestInit {
   body?: any;
@@ -11,14 +10,19 @@ interface FetchOptions extends RequestInit {
 
 async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    throw new Error('Backend unavailable. Start the API, then send again.');
+  }
 
   if (!res.ok) {
     let detail: any = await res.text();
@@ -26,7 +30,11 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
       throw new Error(`Backend unavailable (HTTP ${res.status}). Start the API, then send again.`);
     }
     try { detail = JSON.parse(detail); } catch { /* keep string */ }
-    throw new Error(typeof detail === 'string' ? detail : detail?.detail || `HTTP ${res.status}`);
+    const fromJson = typeof detail === 'object' && detail ? (detail.detail || detail.error) : null;
+    if (typeof fromJson === 'string' && /econnrefused|econnreset|proxy error/i.test(fromJson)) {
+      throw new Error(`Backend unavailable (HTTP ${res.status}). Start the API, then send again.`);
+    }
+    throw new Error(typeof detail === 'string' ? detail : fromJson || `HTTP ${res.status}`);
   }
 
   return res.json() as Promise<T>;

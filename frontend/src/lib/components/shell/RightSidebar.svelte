@@ -2,6 +2,8 @@
   import { onMount } from 'svelte';
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import FindingRow from '$lib/components/ui/FindingRow.svelte';
+  import TimelinePanel from '$lib/components/shell/TimelinePanel.svelte';
+  import EvidencePanel from '$lib/components/shell/EvidencePanel.svelte';
   import { tabsStore } from '$lib/stores/tabsStore';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon from '$lib/ui/NilIcon.svelte';
@@ -175,17 +177,9 @@
         {/if}
       </div>
     {:else if pentest && activeTab === 'timeline'}
-      <div class="empty-state">
-        <NilIcon name="clock" size={20} />
-        <p>No timeline events</p>
-        <span>Hunt activity lands here as the agent works.</span>
-      </div>
+      <TimelinePanel />
     {:else if pentest && activeTab === 'evidence'}
-      <div class="empty-state">
-        <NilIcon name="folder" size={20} />
-        <p>No evidence collected</p>
-        <span>Artifacts from tool runs appear here.</span>
-      </div>
+      <EvidencePanel />
     {:else}
       <div class="context">
         <dl class="meta">

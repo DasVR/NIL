@@ -1,7 +1,7 @@
 <script lang="ts">
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import { droplet } from '$lib/motion/droplet';
-  import { project, type GitEntry } from '$lib/project.svelte.ts';
+  import { project, type GitCi, type GitEntry } from '$lib/project.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
 
   const git = $derived(project.git);
@@ -24,6 +24,21 @@
       case '?': return 'untracked';
       default: return code;
     }
+  }
+
+  function ciWord(ci: GitCi): string {
+    if (ci.conclusion === 'success') return 'passed';
+    if (ci.conclusion === 'failure') return 'failed';
+    if (ci.conclusion === 'cancelled') return 'cancelled';
+    if (ci.conclusion === 'skipped') return 'skipped';
+    if (ci.status === 'in_progress') return 'in progress';
+    if (ci.status === 'queued' || ci.status === 'waiting' || ci.status === 'pending') return ci.status;
+    return ci.conclusion || ci.status || 'unknown';
+  }
+
+  function openCi(ci: GitCi) {
+    if (!ci.url) return;
+    window.open(ci.url, '_blank', 'noopener,noreferrer');
   }
 </script>
 
@@ -58,6 +73,21 @@
           <dd>{git.ahead ?? 0} ahead · {git.behind ?? 0} behind</dd>
         </div>
       {/if}
+      <div>
+        <dt>CI</dt>
+        <dd>
+          {#if git.ci}
+            {@const run = git.ci}
+            <button class="ci nil-halo" type="button" onclick={() => openCi(run)} disabled={!run.url}>
+              {run.name} · {ciWord(run)}
+            </button>
+          {:else if git.ciLoaded}
+            No workflow runs on this branch yet.
+          {:else}
+            gh is not available, so CI was not loaded.
+          {/if}
+        </dd>
+      </div>
     </dl>
 
     {#if staged.length === 0 && unstaged.length === 0}
@@ -108,6 +138,16 @@
   .stats div { display: flex; justify-content: space-between; gap: var(--s-3); }
   dt { font: var(--t-micro)/1 var(--font-ui); color: var(--nil-ink-3); }
   dd { margin: 0; font: var(--t-meta)/1 var(--font-ui); color: var(--nil-ink-2); }
+  .ci {
+    border: 0;
+    background: transparent;
+    padding: 0;
+    color: inherit;
+    font: var(--t-meta)/1 var(--font-machine);
+    cursor: pointer;
+    text-align: right;
+  }
+  .ci:disabled { cursor: default; }
   .empty { font: var(--t-meta)/var(--lh-body) var(--font-ui); color: var(--nil-ink-3); margin: 0; }
   .g-name {
     margin: 0;

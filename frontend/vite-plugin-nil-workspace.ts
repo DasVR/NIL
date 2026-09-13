@@ -209,6 +209,8 @@ function handle(root: string, base: string, req: IncomingMessage, res: ServerRes
       diff = diff.slice(0, MAX_DIFF);
       truncated = true;
     }
+    const ciRaw = run('gh', ['run', 'list', '--limit', '8', '--json', 'name,status,conclusion,headBranch,url,displayTitle'], root);
+    const { ci, ciLoaded } = parseCi(ciRaw, branch);
     json(res, 200, {
       ok: true,
       git: true,
@@ -219,6 +221,8 @@ function handle(root: string, base: string, req: IncomingMessage, res: ServerRes
       unstaged,
       diff,
       truncated,
+      ci,
+      ciLoaded,
     });
     return true;
   }
@@ -243,6 +247,38 @@ function handle(root: string, base: string, req: IncomingMessage, res: ServerRes
   }
 
   return false;
+}
+
+function parseCi(raw: string | null, branch: string): { ci: {
+  name: string;
+  status: string;
+  conclusion: string | null;
+  url: string;
+  branch: string;
+} | null; ciLoaded: boolean } {
+  if (raw == null) return { ci: null, ciLoaded: false };
+  try {
+    const runs = JSON.parse(raw) as unknown;
+    if (!Array.isArray(runs) || runs.length === 0) return { ci: null, ciLoaded: true };
+    const typed = runs.filter((row): row is Record<string, unknown> => Boolean(row) && typeof row === 'object');
+    const hit = typed.find((row) => row.headBranch === branch) ?? typed[0];
+    if (!hit) return { ci: null, ciLoaded: true };
+    const name = typeof hit.name === 'string' && hit.name
+      ? hit.name
+      : (typeof hit.displayTitle === 'string' ? hit.displayTitle : 'CI');
+    return {
+      ciLoaded: true,
+      ci: {
+        name,
+        status: typeof hit.status === 'string' ? hit.status : '',
+        conclusion: typeof hit.conclusion === 'string' ? hit.conclusion : null,
+        url: typeof hit.url === 'string' ? hit.url : '',
+        branch: typeof hit.headBranch === 'string' ? hit.headBranch : branch,
+      },
+    };
+  } catch {
+    return { ci: null, ciLoaded: false };
+  }
 }
 
 function parseGithubRepo(remote: string): string | null {

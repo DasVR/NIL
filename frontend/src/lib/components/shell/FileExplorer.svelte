@@ -3,6 +3,7 @@
   import { engagementFiles, workspace, type ContextFile } from '$lib/stores/workspace.svelte.ts';
   import { project } from '$lib/project.svelte.ts';
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
 
   let filter = $state('');
   let pin = $state('');
@@ -89,7 +90,7 @@
         <p class="g-name">{group.name}</p>
         <ul class="list">
           {#each group.files as file (file.id)}
-            <li>
+            <li class="item">
               <button
                 class="row nil-halo"
                 class:on={attached.has(file.path)}
@@ -100,6 +101,9 @@
                 <NilIcon name="file" size={16} />
                 <span class="path">{file.path}</span>
               </button>
+              <span class="copy">
+                <CopyAffordance value={file.path} />
+              </span>
             </li>
           {/each}
         </ul>
@@ -164,6 +168,12 @@
     color: var(--nil-ink-3);
   }
   .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+  .item {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 22px;
+    align-items: center;
+  }
+  .copy { display: grid; place-items: center; }
   .row {
     display: grid;
     grid-template-columns: 16px minmax(0, 1fr);
