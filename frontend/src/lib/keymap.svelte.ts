@@ -2,6 +2,7 @@ import { appState } from '$lib/stores/appState.svelte.ts';
 import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
 import { agentStore } from '$lib/stores/agentStore';
 import { tabsStore } from '$lib/stores/tabsStore';
+import { workspace } from '$lib/stores/workspace.svelte.ts';
 
 let shortcutsEnabled = $state(true);
 
@@ -9,27 +10,32 @@ function handleKeydown(e: KeyboardEvent) {
   if (!shortcutsEnabled) return;
 
   const target = e.target as HTMLElement;
-  if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
-    if (!((e.metaKey || e.ctrlKey) && e.key === 'Enter')) return;
-  }
+  const inField =
+    target.tagName === 'INPUT' ||
+    target.tagName === 'TEXTAREA' ||
+    target.isContentEditable;
+  // Modifier chords still run from the composer (⌘K, ⌘,, ⌘B, …).
+  // Bare keys stay with the field so typing is never stolen.
+  if (inField && !(e.metaKey || e.ctrlKey)) return;
 
   const isMac = navigator.platform.includes('Mac');
   const mod = isMac ? e.metaKey : e.ctrlKey;
   const shift = e.shiftKey;
+  const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;
 
-  if (mod && (e.key === 'k' || (shift && e.key === 'p'))) {
+  if (mod && (key === 'k' || (shift && key === 'p'))) {
     e.preventDefault();
     paletteStore.togglePalette();
     return;
   }
 
-  if (mod && !shift && e.key === 'j') {
+  if (mod && !shift && key === 'j') {
     e.preventDefault();
     appState.focusComposer();
     return;
   }
 
-  if (mod && e.key === 'Enter' && !shift) {
+  if (mod && key === 'Enter' && !shift) {
     if (agentStore.pendingApproval) {
       e.preventDefault();
       agentStore.approve(agentStore.pendingApproval.id);
@@ -37,7 +43,7 @@ function handleKeydown(e: KeyboardEvent) {
     }
   }
 
-  if (mod && shift && e.key === 'Enter') {
+  if (mod && shift && key === 'Enter') {
     if (agentStore.pendingApproval) {
       e.preventDefault();
       agentStore.reject(agentStore.pendingApproval.id);
@@ -45,42 +51,49 @@ function handleKeydown(e: KeyboardEvent) {
     }
   }
 
-  if (mod && e.key === 'y') {
+  if (mod && key === 'y') {
     e.preventDefault();
     appState.toggleYolo();
     return;
   }
 
-  if (mod && e.key === ',') {
+  if (mod && key === ',') {
     e.preventDefault();
     appState.toggleSettings();
     return;
   }
 
-  if (mod && e.key === 'n' && !shift) {
+  if (mod && key === 'n' && !shift) {
     e.preventDefault();
     const stamp = new Date().toISOString().slice(0, 19).replace(/[:T]/g, '-');
     void appState.createEngagement(`engagement-${stamp}`).then(() => tabsStore.showStream());
     return;
   }
 
-  if (mod && e.key === 't') {
+  if (mod && key === 't') {
     e.preventDefault();
-    const id = `terminal-${Date.now()}`;
-    tabsStore.addTab({ id, type: 'terminal', label: 'Terminal', dirty: false });
+    workspace.selectRail('terminal');
     return;
   }
 
-  if (mod && e.key === 'w') {
+  if (mod && key === 's') {
     e.preventDefault();
-    if (tabsStore.activeTabId) {
+    void workspace.saveActiveFile();
+    return;
+  }
+
+  if (mod && key === 'w') {
+    e.preventDefault();
+    if (workspace.dock) {
+      workspace.closeDock();
+    } else if (tabsStore.activeTabId) {
       tabsStore.closeTab(tabsStore.activeTabId);
     }
     return;
   }
 
-  if (mod && !shift && ['1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(e.key)) {
-    const idx = parseInt(e.key) - 1;
+  if (mod && !shift && ['1', '2', '3', '4', '5', '6', '7', '8', '9'].includes(key)) {
+    const idx = parseInt(key) - 1;
     const tab = tabsStore.tabs[idx];
     if (tab) {
       e.preventDefault();
@@ -89,19 +102,19 @@ function handleKeydown(e: KeyboardEvent) {
     return;
   }
 
-  if (mod && e.key === 'b' && !shift) {
+  if (mod && key === 'b' && !shift) {
     e.preventDefault();
-    appState.toggleSidebar();
+    workspace.togglePin();
     return;
   }
 
-  if (mod && e.key === '\\') {
+  if (mod && key === '\\') {
     e.preventDefault();
     appState.toggleRightSidebar();
     return;
   }
 
-  if (e.key === 'Escape') {
+  if (key === 'Escape') {
     if (paletteStore.open) {
       e.preventDefault();
       paletteStore.closePalette();
@@ -118,7 +131,7 @@ function handleKeydown(e: KeyboardEvent) {
 
   // Bare G: jump the agent stream to latest (backs the "Jump to latest <kbd>G</kbd>"
   // keycap). Editable targets already returned above, so this never steals typing.
-  if (!mod && !shift && (e.key === 'g' || e.key === 'G')) {
+  if (!mod && !shift && key === 'g') {
     if (paletteStore.open || appState.settingsOpen) return;
     window.dispatchEvent(new CustomEvent('nil:jump-latest'));
     return;
@@ -126,11 +139,11 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 function init() {
-  document.addEventListener('keydown', handleKeydown);
+  shortcutsEnabled = true;
 }
 
 function destroy() {
-  document.removeEventListener('keydown', handleKeydown);
+  shortcutsEnabled = false;
 }
 
 export const keymap = {

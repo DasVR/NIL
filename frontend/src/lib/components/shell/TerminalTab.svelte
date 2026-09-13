@@ -8,9 +8,10 @@
 
   interface Props {
     tab: { id: string; type: string; label: string; dirty: boolean };
+    focusOnMount?: boolean;
   }
 
-  let { tab }: Props = $props();
+  let { tab, focusOnMount = false }: Props = $props();
 
   let container: HTMLDivElement;
   let terminal: XtermTerminal | undefined;
@@ -35,12 +36,12 @@
       import('@xterm/addon-webgl')
     ]);
 
-    const voidC = token('--nil-void', '#08090a');
-    const panel = token('--nil-panel', '#0e1011');
-    const ink = token('--nil-ink', '#e8e6e3');
-    const ink2 = token('--nil-ink-2', '#9aa0a4');
-    const ink3 = token('--nil-ink-3', '#6b7175');
-    const ink4 = token('--nil-ink-4', '#3a4043');
+    const voidC = token('--nil-void', '#0a0908');
+    const panel = token('--nil-panel', '#141210');
+    const ink = token('--nil-ink', '#efe9e0');
+    const ink2 = token('--nil-ink-2', '#a39a8e');
+    const ink3 = token('--nil-ink-3', '#736a5f');
+    const ink4 = token('--nil-ink-4', '#4a453c');
     const critical = token('--sev-critical', '#e5484d');
     const high = token('--sev-high', '#e8833a');
     const medium = token('--sev-medium', '#d9b341');
@@ -146,7 +147,7 @@
   }
 
   $effect(() => {
-    if (tabsStore.activeTabId === tab.id && terminal) {
+    if ((focusOnMount || tabsStore.activeTabId === tab.id) && terminal) {
       terminal.focus();
     }
   });

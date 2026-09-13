@@ -43,13 +43,13 @@
     </div>
   </div>
   <div class="settings-group">
-    <h4>Tabs</h4>
+    <h4>Terminal</h4>
     <div class="settings-row">
-      <span>New terminal</span>
+      <span>Toggle terminal dock</span>
       <kbd>Cmd+T</kbd>
     </div>
     <div class="settings-row">
-      <span>Close tab</span>
+      <span>Hide dock / close file</span>
       <kbd>Cmd+W</kbd>
     </div>
   </div>

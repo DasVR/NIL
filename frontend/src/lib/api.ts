@@ -1,9 +1,8 @@
 // NIL API client — typed fetch wrapper for the Python backend
 // Production builds are served by the same FastAPI app they talk to (see
 // shipped_web_dir() in finn_pentest/core/config.py), so a relative path
-// always reaches the right origin/port regardless of FINN_API_PORT. The
-// dev server has no backend of its own, so it needs an absolute default.
-const API_BASE = import.meta.env.VITE_API_BASE || (import.meta.env.DEV ? 'http://localhost:8766/v1' : '/v1');
+// always reaches the right origin. Vite dev/preview proxy /v1 to :8766.
+const API_BASE = import.meta.env.VITE_API_BASE || '/v1';
 
 interface FetchOptions extends RequestInit {
   body?: any;
@@ -11,19 +10,32 @@ interface FetchOptions extends RequestInit {
 
 async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T> {
   const url = `${API_BASE}${path}`;
-  const res = await fetch(url, {
-    ...options,
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
-    body: options.body ? JSON.stringify(options.body) : undefined,
-  });
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...options,
+      headers: {
+        'Content-Type': 'application/json',
+        ...options.headers,
+      },
+      body: options.body ? JSON.stringify(options.body) : undefined,
+    });
+  } catch {
+    throw new Error('Backend unavailable. Start the API, then send again.');
+  }
 
   if (!res.ok) {
     let detail: any = await res.text();
+    if (typeof detail === 'string' && /^\s*</.test(detail)) {
+      throw new Error(`Backend unavailable (HTTP ${res.status}). Start the API, then send again.`);
+    }
     try { detail = JSON.parse(detail); } catch { /* keep string */ }
-    throw new Error(typeof detail === 'string' ? detail : detail?.detail || `HTTP ${res.status}`);
+    const fromJson = typeof detail === 'object' && detail ? (detail.detail || detail.error) : null;
+    if (typeof fromJson === 'string' && /econnrefused|econnreset|proxy error/i.test(fromJson)) {
+      throw new Error(`Backend unavailable (HTTP ${res.status}). Start the API, then send again.`);
+    }
+    const message = typeof detail === 'string' ? detail.trim() : (typeof fromJson === 'string' ? fromJson : '');
+    throw new Error(message || `Backend unavailable (HTTP ${res.status}). Start the API, then send again.`);
   }
 
   return res.json() as Promise<T>;
@@ -55,6 +67,9 @@ export interface ChatRequest {
   stream?: boolean;
   session_id?: string;
   hunt?: boolean;
+  /** Session picker value. The harness uses the enabled provider until it reads this. */
+  model?: string;
+  effort?: 'low' | 'medium' | 'high';
 }
 
 export interface TokenUsagePayload {
@@ -68,9 +83,10 @@ export interface TokenUsagePayload {
 
 export interface ChatResponse {
   session_id: string;
-  response: string;
+  response?: string;
   text?: string;
-  mode: string;
+  mode?: string;
+  status?: string;
   tool_call?: {
     run_id?: string;
     tool?: string;
@@ -90,6 +106,7 @@ export interface ChatResponse {
     vector?: string;
   }>;
   usage?: TokenUsagePayload | null;
+  clarify?: unknown;
 }
 
 export interface ToolRun {
@@ -147,6 +164,14 @@ export interface UsageSummary {
   }>;
 }
 
+export interface ProviderInfo {
+  name: string;
+  model: string;
+  base_url: string;
+  enabled: boolean;
+  type: string;
+}
+
 export interface YoloToggle {
   engagement: string;
   enabled: boolean;
@@ -194,8 +219,20 @@ export const api = {
     engagement ? `/usage?engagement=${encodeURIComponent(engagement)}` : '/usage'
   ),
 
-  listFindings: () => apiFetch<{ findings: any[] }>('/findings'),
+  getProviders: () => apiFetch<{ resolved: ProviderInfo[] }>('/providers'),
+  listFindings: (engagement: string) => apiFetch<{ findings: Array<Record<string, unknown>> }>(
+    `/findings?engagement=${encodeURIComponent(engagement)}`,
+  ),
   getTimeline: (engagement: string) => apiFetch<{ timeline: string }>(`/timeline/${encodeURIComponent(engagement)}`),
+  stopHunt: (engagement: string) => apiFetch<{ stopped: boolean; engagement: string }>(
+    `/hunt/stop?engagement=${encodeURIComponent(engagement)}`,
+    { method: 'POST' },
+  ),
+  generateReport: (engagement: string, format: 'markdown' | 'json' = 'markdown') =>
+    apiFetch<{ format: string; report: string; files?: unknown }>(
+      '/reports/generate',
+      { method: 'POST', body: { engagement, format } },
+    ),
 };
 
 export default api;

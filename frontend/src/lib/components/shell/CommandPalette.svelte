@@ -1,13 +1,23 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
-  import { fade } from 'svelte/transition';
   import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
-  import { settle } from '$lib/motion/settle';
-  import Icon from '@iconify/svelte';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import { droplet } from '$lib/motion/droplet';
+  import DitherWipe from '$lib/ui/DitherWipe.svelte';
+  import { engagementFiles, workspace } from '$lib/stores/workspace.svelte.ts';
 
   interface Props {
     open?: boolean;
     onToggle?: (open: boolean) => void;
+  }
+
+  interface PaletteRow {
+    id: string;
+    label: string;
+    hint?: string;
+    icon: string;
+    section: string;
+    shortcut?: string;
+    run: () => void;
   }
 
   let { open = false, onToggle }: Props = $props();
@@ -15,42 +25,82 @@
   let inputRef: HTMLInputElement | undefined = $state();
   let selectedIndex = $state(0);
 
-  function filteredCommands() {
-    if (!paletteStore.query) return paletteStore.commands;
-    const q = paletteStore.query.toLowerCase();
-    return paletteStore.commands.filter(c => 
-      c.label.toLowerCase().includes(q) || 
-      c.shortcut?.toLowerCase().includes(q) ||
-      c.section?.toLowerCase().includes(q)
-    );
+  function fileScore(path: string, label: string, q: string): number {
+    const p = path.toLowerCase();
+    const l = label.toLowerCase();
+    if (l === q || p === q) return 0;
+    if (l.startsWith(q) || p.endsWith(`/${q}`)) return 1;
+    if (l.includes(q)) return 2;
+    if (p.includes(q)) return 3;
+    return 4;
   }
 
-  let visibleCommands = $derived(filteredCommands());
+  const rows = $derived.by(() => {
+    const q = paletteStore.query.trim().toLowerCase();
+    const out: PaletteRow[] = [];
 
-  function groupCommands(cmds: typeof visibleCommands) {
-    const map = new Map<string, typeof visibleCommands>();
+    if (q) {
+      const files = engagementFiles()
+        .filter((f) => f.path.toLowerCase().includes(q) || f.label.toLowerCase().includes(q))
+        .sort((a, b) => fileScore(a.path, a.label, q) - fileScore(b.path, b.label, q) || a.path.length - b.path.length)
+        .slice(0, 12);
+      for (const file of files) {
+        out.push({
+          id: `file:${file.id}`,
+          label: file.label,
+          hint: file.path,
+          icon: 'file',
+          section: 'Files',
+          run: () => {
+            workspace.openFile(file.path);
+            paletteStore.closePalette();
+          },
+        });
+      }
+    }
+
+    const cmds = q
+      ? paletteStore.commands.filter((c) =>
+          c.label.toLowerCase().includes(q)
+          || c.shortcut?.toLowerCase().includes(q)
+          || (c.section ?? '').toLowerCase().includes(q),
+        )
+      : paletteStore.commands;
     for (const cmd of cmds) {
-      const section = cmd.section ?? 'General';
-      if (!map.has(section)) map.set(section, []);
-      map.get(section)!.push(cmd);
+      out.push({
+        id: `cmd:${cmd.id}`,
+        label: cmd.label,
+        icon: cmd.icon || 'command',
+        section: cmd.section ?? 'General',
+        shortcut: cmd.shortcut,
+        run: () => paletteStore.executeCommand(cmd.id),
+      });
+    }
+    return out;
+  });
+
+  function groupRows(items: PaletteRow[]) {
+    const map = new Map<string, PaletteRow[]>();
+    for (const row of items) {
+      const list = map.get(row.section) ?? [];
+      list.push(row);
+      map.set(row.section, list);
     }
     return Array.from(map.entries()).map(([section, commands]) => ({ section, commands }));
   }
 
-  let groupedCommands = $derived(groupCommands(visibleCommands));
+  let grouped = $derived(groupRows(rows));
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      selectedIndex = Math.min(selectedIndex + 1, visibleCommands.length - 1);
+      selectedIndex = Math.min(selectedIndex + 1, Math.max(0, rows.length - 1));
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
       selectedIndex = Math.max(selectedIndex - 1, 0);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      if (visibleCommands[selectedIndex]) {
-        paletteStore.executeCommand(visibleCommands[selectedIndex].id);
-      }
+      rows[selectedIndex]?.run();
     } else if (e.key === 'Escape') {
       e.preventDefault();
       paletteStore.closePalette();
@@ -63,9 +113,10 @@
     selectedIndex = 0;
   }
 
-  onMount(() => {
-    inputRef?.focus();
+  $effect(() => {
+    if (!open) return;
     selectedIndex = 0;
+    queueMicrotask(() => inputRef?.focus());
   });
 </script>
 
@@ -75,30 +126,26 @@
     class="palette-overlay"
     aria-label="Close command palette"
     onclick={() => { if (onToggle) onToggle(false); }}
-    transition:fade={{ duration: 160 }}
   ></button>
   <div
     class="palette-window"
     role="dialog"
     aria-label="Command Palette"
-    transition:settle={{ duration: 160, base: 'translateX(-50%)' }}
   >
+    <DitherWipe mode="dissolve" />
     <div class="palette-header">
       <div class="palette-search">
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
+        <NilIcon name="search" size={16} />
         <input
           bind:this={inputRef}
           type="text"
           bind:value={paletteStore.query}
           oninput={handleInput}
           onkeydown={handleKeydown}
-          placeholder="Type a command or search..."
+          placeholder="Type a command or search files..."
           aria-label="Command palette search"
           aria-controls="palette-listbox"
-          aria-activedescendant={visibleCommands[selectedIndex] ? `cmd-${visibleCommands[selectedIndex].id}` : undefined}
+          aria-activedescendant={rows[selectedIndex] ? `cmd-${rows[selectedIndex].id}` : undefined}
           autocomplete="off"
           spellcheck="false"
         />
@@ -107,17 +154,17 @@
     </div>
 
     <div id="palette-listbox" class="palette-results" role="listbox">
-      {#if visibleCommands.length === 0}
+      {#if rows.length === 0}
         <div class="palette-empty">
-          <Icon icon="ph:magnifying-glass-bold" width="20" height="20" />
+          <NilIcon name="search" size={16} />
           <p>No commands found</p>
           <span>Try a different search</span>
         </div>
       {:else}
-        {#each groupedCommands as group}
+        {#each grouped as group}
           <div class="palette-section-header">{group.section}</div>
           {#each group.commands as cmd}
-            {@const globalIdx = visibleCommands.indexOf(cmd)}
+            {@const globalIdx = rows.indexOf(cmd)}
             <!-- Focus stays on the search input (aria-activedescendant pattern above);
                  these rows are never independently focusable, so no tabindex/keydown here. -->
             <!-- svelte-ignore a11y_click_events_have_key_events -->
@@ -128,11 +175,17 @@
               role="option"
               aria-selected={globalIdx === selectedIndex}
               id={`cmd-${cmd.id}`}
-              onclick={() => paletteStore.executeCommand(cmd.id)}
+              {@attach droplet}
+              onclick={() => cmd.run()}
             >
               <div class="palette-item-main">
-                <Icon icon={cmd.icon || 'ph:command-bold'} width="14" height="14" />
-                <span class="palette-item-label">{cmd.label}</span>
+                <NilIcon name={cmd.icon} size={16} />
+                <span class="palette-item-copy">
+                  <span class="palette-item-label">{cmd.label}</span>
+                  {#if cmd.hint}
+                    <span class="palette-item-hint">{cmd.hint}</span>
+                  {/if}
+                </span>
               </div>
               {#if cmd.shortcut}
                 <kbd class="palette-item-shortcut">{cmd.shortcut}</kbd>
@@ -174,8 +227,8 @@
   }
 
   .palette-header {
-    padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--surface-border);
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--nil-line);
   }
 
   .palette-search {
@@ -185,25 +238,25 @@
     gap: 10px;
   }
 
-  .palette-search svg {
+  .palette-search :global(svg) {
     position: absolute;
     left: 14px;
-    color: var(--text-tertiary);
+    color: var(--nil-ink-3);
     flex-shrink: 0;
     z-index: 1;
   }
 
   .palette-search input {
     width: 100%;
-    padding: 10px 14px 10px 42px;
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-control);
-    background: var(--surface-input);
-    color: var(--input-text);
-    font-family: var(--font-sans);
-    font-size: var(--step-0);
+    height: 32px;
+    padding: 0 14px 0 42px;
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-field);
+    background: var(--nil-raised);
+    color: var(--nil-ink);
+    font: var(--t-body)/1 var(--font-ui);
     outline: none;
-    transition: border-color var(--spring-snappy);
+    transition: border-color var(--dur-flip) var(--ease-out);
   }
 
   .palette-search input:focus {
@@ -211,35 +264,33 @@
   }
 
   .palette-hint {
-    font-family: var(--font-mono);
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--nil-ink-3);
     padding: 2px 6px;
-    border-radius: 3px;
-    background: var(--surface-hover);
-    border: 1px solid var(--surface-border);
+    border-radius: var(--r-chip);
+    background: var(--nil-panel);
+    border: 1px solid var(--nil-line);
   }
 
   .palette-results {
     max-height: 480px;
     overflow-y: auto;
-    padding: var(--space-2);
+    padding: var(--s-2);
   }
 
   .palette-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-control);
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-field);
     cursor: pointer;
-    transition: background var(--spring-snappy);
   }
 
   .palette-item:hover,
   .palette-item.selected {
-    background: var(--surface-hover);
+    background: transparent;
   }
 
   .palette-item.selected {
@@ -255,41 +306,51 @@
   }
 
   .palette-item-label {
-    font-size: var(--font-xs);
-    font-weight: 500;
-    color: var(--text-primary);
+    font: 500 var(--t-meta)/1 var(--font-ui);
+    color: var(--nil-ink);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .palette-item-copy {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    min-width: 0;
+  }
+  .palette-item-hint {
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--nil-ink-3);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .palette-item-shortcut {
-    font-family: var(--font-mono);
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--nil-ink-3);
     padding: 2px 6px;
-    border-radius: 3px;
-    background: var(--surface-hover);
-    border: 1px solid var(--surface-border);
+    border-radius: var(--r-chip);
+    background: var(--nil-panel);
+    border: 1px solid var(--nil-line);
     white-space: nowrap;
     flex-shrink: 0;
   }
 
   .palette-section-header {
-    font-size: 10px;
-    font-weight: 600;
+    font: 600 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-tertiary);
-    padding: var(--space-2) var(--space-3) var(--space-1);
+    color: var(--nil-ink-3);
+    padding: var(--s-2) var(--s-3) var(--s-1);
     pointer-events: none;
     user-select: none;
   }
 
   .palette-section-header:not(:first-child) {
-    margin-top: var(--space-2);
-    border-top: 1px solid var(--surface-border);
-    padding-top: var(--space-3);
+    margin-top: var(--s-2);
+    border-top: 1px solid var(--nil-line);
+    padding-top: var(--s-3);
   }
 
   .palette-empty {
@@ -297,19 +358,18 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-8);
-    gap: var(--space-2);
-    color: var(--text-tertiary);
+    padding: var(--s-8);
+    gap: var(--s-2);
+    color: var(--nil-ink-3);
     text-align: center;
   }
 
   .palette-empty p {
-    font-size: var(--font-xs);
-    font-weight: 500;
-    color: var(--text-secondary);
+    font: 500 var(--t-meta)/1 var(--font-ui);
+    color: var(--nil-ink-2);
   }
 
   .palette-empty span {
-    font-size: var(--font-2xs);
+    font: var(--t-micro)/1 var(--font-ui);
   }
 </style>

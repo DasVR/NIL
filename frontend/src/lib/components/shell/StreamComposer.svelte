@@ -1,9 +1,20 @@
 <script lang="ts">
   import { agentRun } from '$lib/agent/run.svelte.ts';
-  import { appState, MODEL_OPTIONS, type ComposerMode, type Effort } from '$lib/stores/appState.svelte.ts';
-  import Icon from '@iconify/svelte';
+  import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
+  import {
+    workspace,
+    engagementFiles,
+    type WorkstationMode,
+    type ContextFile,
+  } from '$lib/stores/workspace.svelte.ts';
   import ApprovalBlock from '$lib/components/ui/ApprovalBlock.svelte';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import OnDeviceHint from '$lib/components/ui/OnDeviceHint.svelte';
+  import { jelly } from '$lib/motion/jelly.ts';
+  import { droplet } from '$lib/motion/droplet';
+  import { listenSpeech, playDictation, speechAvailable } from '$lib/motion/dictation.ts';
   import { cubicIn } from 'svelte/easing';
+  import { untrack } from 'svelte';
 
   interface Props {
     inputEl?: HTMLTextAreaElement;
@@ -11,53 +22,122 @@
 
   let { inputEl = $bindable() }: Props = $props();
 
-  let input = $state('');
-  const modes: { id: ComposerMode; label: string }[] = [
-    { id: 'hunt', label: 'hunt' },
-    { id: 'exploit', label: 'exploit' },
-    { id: 'chat', label: 'chat' },
-    { id: 'code', label: 'code' },
-    { id: 'report', label: 'report' },
-  ];
-  const efforts: { id: Effort; label: string }[] = [
-    { id: 'low', label: 'Low' },
-    { id: 'medium', label: 'Medium' },
-    { id: 'high', label: 'High' },
-  ];
+  let input = $state(workspace.composerDraft);
+  let mentionOpen = $state(false);
+  let mentionQuery = $state('');
+  let mentionIndex = $state(0);
+  let modelOpen = $state(false);
+  let modelWrap: HTMLDivElement | undefined = $state();
+  let chipLeaving = $state<string | null>(null);
+  let pillEl: HTMLSpanElement | undefined = $state();
+  let lastMode = $state<WorkstationMode>(workspace.workstationMode);
+  let composerEl: HTMLDivElement | undefined = $state();
 
-  let modelMenuOpen = $state(false);
-  let modelWrap: HTMLElement | undefined = $state();
-  const activeModel = $derived(MODEL_OPTIONS.find((m) => m.id === appState.selectedModel) ?? MODEL_OPTIONS[0]);
+  $effect(() => {
+    const next = input;
+    untrack(() => { workspace.composerDraft = next; });
+  });
 
-  function pickModel(id: string) {
-    appState.selectedModel = id;
-    modelMenuOpen = false;
-  }
+  $effect(() => {
+    const el = inputEl;
+    if (!el) return;
+    appState.setComposerFocus(() => { el.focus(); });
+  });
 
-  function onDocClick(e: MouseEvent) {
-    if (modelMenuOpen && modelWrap && !modelWrap.contains(e.target as Node)) {
-      modelMenuOpen = false;
-    }
-  }
+  $effect(() => {
+    if (!modelOpen) return;
+    const close = (e: PointerEvent) => {
+      const t = e.target as Node | null;
+      if (t && modelWrap?.contains(t)) return;
+      modelOpen = false;
+    };
+    window.addEventListener('pointerdown', close);
+    return () => window.removeEventListener('pointerdown', close);
+  });
 
-  function onDocKeydown(e: KeyboardEvent) {
-    if (e.key === 'Escape' && modelMenuOpen) modelMenuOpen = false;
-  }
+  $effect(() => {
+    const next = workspace.workstationMode;
+    if (next === lastMode) return;
+    const dir = next === 'pentest' ? 'right' : 'left';
+    lastMode = next;
+    if (pillEl) jelly(pillEl, dir);
+  });
 
   const pending = $derived(agentRun.pendingApproval);
   const gated = $derived(Boolean(pending));
 
+  function mentionQueryParts(raw: string): { needle: string; line: string | null } {
+    const m = raw.match(/^(.*):(\d+(?:-\d+)?)$/);
+    if (m && m[1]) return { needle: m[1], line: m[2] };
+    return { needle: raw, line: null };
+  }
+
+  function mentionScore(file: ContextFile, q: string): number {
+    const label = file.label.toLowerCase();
+    const path = file.path.toLowerCase();
+    if (label === q || path === q) return 0;
+    if (label === `${q}.ts` || label === `${q}.py` || path.endsWith(`/${q}`)) return 1;
+    if (label.startsWith(q)) return 2;
+    if (label.includes(q)) return 3;
+    return 4;
+  }
+
+  const mentionParts = $derived(mentionQueryParts(mentionQuery));
+
   const placeholder = $derived(
     gated
       ? 'Allow or deny the pending command'
-      : appState.composerMode === 'exploit'
-        ? 'Name the in-scope finding to confirm'
-        : 'Describe the next step',
+      : agentRun.running
+        ? 'Queue a follow-up'
+        : workspace.workstationMode === 'pentest'
+          ? 'Describe the next hunt step'
+          : 'Ask NIL to build, edit, or inspect files',
   );
 
-  // Gate resolution exit: element-out = --dur-enter (160ms) + --ease-in, opacity +
-  // translateY only (Law 3). Reduced motion keeps the opacity fade at 80ms, per the
-  // motion.css contract (state stays legible, travel is killed).
+  const mentionAnchor = $derived.by(() => {
+    if (!mentionOpen || !composerEl) return null;
+    const r = composerEl.getBoundingClientRect();
+    return {
+      left: `${Math.round(r.left)}px`,
+      width: `${Math.round(r.width)}px`,
+      bottom: `${Math.round(window.innerHeight - r.top + 6)}px`,
+    };
+  });
+
+  const pickerAnchor = $derived.by(() => {
+    if (!modelOpen || !modelWrap) return null;
+    const r = modelWrap.getBoundingClientRect();
+    return {
+      right: `${Math.round(window.innerWidth - r.right)}px`,
+      bottom: `${Math.round(window.innerHeight - r.top + 6)}px`,
+    };
+  });
+
+  const files = $derived.by(() => {
+    const parsed = mentionParts;
+    const q = parsed.needle;
+    let known = engagementFiles();
+    if (q) {
+      known = known.filter((f) =>
+        f.path.toLowerCase().includes(q) || f.label.toLowerCase().includes(q),
+      );
+      known.sort((a, b) => mentionScore(a, q) - mentionScore(b, q) || a.path.length - b.path.length);
+    }
+    if (!q) return known.slice(0, 40);
+    const exact = known.some((f) => f.path.toLowerCase() === q || f.label.toLowerCase() === q);
+    const list = exact ? known.slice(0, 40) : [
+      ...known.slice(0, 39),
+      { id: `pin:${q}`, path: q, label: q },
+    ];
+    if (!parsed.line) return list;
+    return list.map((f) => ({
+      ...f,
+      id: `${f.id}:${parsed.line}`,
+      path: `${f.path}:${parsed.line}`,
+      label: `${f.label}:${parsed.line}`,
+    }));
+  });
+
   function gateExit(node: HTMLElement) {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     const t0 = reduced ? 80 : 160;
@@ -69,167 +149,357 @@
     };
   }
 
-  // Chip dismissal: shrink + fade together, never an instant disappearance.
-  function chipExit(node: HTMLElement) {
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    return {
-      duration: reduced ? 80 : 140,
-      easing: cubicIn,
-      css: (t: number) => `opacity: ${t}; transform: scale(${0.85 + t * 0.15});`,
-    };
+  function composeTurn(text: string): string {
+    const chips = workspace.attached;
+    if (chips.length === 0) return text;
+    const list = chips.map((f) => `@${f.path}`).join(' ');
+    return `${text}\n\n${list}`;
   }
 
   function send() {
     const text = input.trim();
     if (!text || gated) return;
-    agentRun.sendMessage(text, appState.activeEngagementId || 'default', appState.composerMode);
+    const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
+    const engagement = appState.activeEngagementId || 'default';
+    const payload = composeTurn(text);
+    const extras = { model: workspace.modelId, effort: workspace.effort };
+    workspace.dismissClarify();
+    agentRun.dismissClarify();
+    workspace.dictationActive = false;
+    workspace.dictationPaused = false;
     input = '';
+    workspace.composerDraft = '';
+    mentionOpen = false;
+    if (!workspace.sessionStarted) workspace.noteSession();
+    if (agentRun.running) {
+      agentRun.queueFollowup(payload, engagement, mode, extras);
+    } else {
+      agentRun.sendMessage(payload, engagement, mode, extras);
+    }
+  }
+
+  function setMode(next: WorkstationMode) {
+    if (next === workspace.workstationMode) return;
+    if (agentRun.running) {
+      workspace.requestMode(next);
+      return;
+    }
+    workspace.workstationMode = next;
   }
 
   function onKey(e: KeyboardEvent) {
+    if (mentionOpen) {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        mentionIndex = Math.min(mentionIndex + 1, Math.max(0, files.length - 1));
+        return;
+      }
+      if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        mentionIndex = Math.max(mentionIndex - 1, 0);
+        return;
+      }
+      if (e.key === 'Tab' || e.key === 'Enter') {
+        e.preventDefault();
+        pickMention(mentionIndex);
+        return;
+      }
+      if (e.key === 'Escape') {
+        e.preventDefault();
+        mentionOpen = false;
+        return;
+      }
+    }
+    if (e.key === 'Escape') {
+      if (modelOpen) {
+        e.preventDefault();
+        modelOpen = false;
+        return;
+      }
+    }
     if (e.key === 'Enter' && !e.shiftKey && !(e.metaKey || e.ctrlKey)) {
       e.preventDefault();
       send();
     }
   }
+
+  function onInput() {
+    const at = input.lastIndexOf('@');
+    if (at >= 0 && (at === 0 || /\s/.test(input[at - 1] ?? ''))) {
+      const rest = input.slice(at + 1);
+      if (!rest.includes(' ') && !rest.includes('\n')) {
+        mentionOpen = true;
+        mentionQuery = rest.toLowerCase();
+        mentionIndex = 0;
+        return;
+      }
+    }
+    mentionOpen = false;
+  }
+
+  function pickMention(index: number) {
+    const file = files[index];
+    if (!file) return;
+    workspace.attachFile(file);
+    const at = input.lastIndexOf('@');
+    if (at >= 0) input = input.slice(0, at).trimEnd() + (at > 0 ? ' ' : '');
+    mentionOpen = false;
+  }
+
+  function dismissChip(id: string) {
+    chipLeaving = id;
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    setTimeout(() => {
+      workspace.detachFile(id);
+      chipLeaving = null;
+    }, reduced ? 80 : 180);
+  }
+
+  function toggleDictation() {
+    if (workspace.dictationPaused) {
+      workspace.dictationPaused = false;
+      workspace.dictationActive = true;
+      return;
+    }
+    workspace.dictationActive = !workspace.dictationActive;
+  }
+
+  $effect(() => {
+    if (!workspace.dictationActive || workspace.dictationPaused) {
+      untrack(() => { workspace.dictationLevel = 0; });
+      return;
+    }
+    const base = untrack(() => input);
+    let last = base;
+    let playAbort: AbortController | null = null;
+    let cool: ReturnType<typeof setTimeout> | null = null;
+    const stop = listenSpeech((text) => {
+      workspace.dictationLevel = Math.min(1, 0.4 + Math.min(text.length, 40) / 50);
+      if (cool) clearTimeout(cool);
+      cool = setTimeout(() => { workspace.dictationLevel = 0.15; }, 280);
+      const prefix = base.replace(/\s+$/, '');
+      const next = prefix ? `${prefix} ${text}` : text;
+      playAbort?.abort();
+      playAbort = new AbortController();
+      const from = last;
+      void playDictation(from, next, (v) => {
+        input = v;
+        last = v;
+      }, { signal: playAbort.signal });
+    });
+    return () => {
+      playAbort?.abort();
+      if (cool) clearTimeout(cool);
+      stop();
+      workspace.dictationLevel = 0;
+    };
+  });
 </script>
 
-<svelte:window onclick={onDocClick} onkeydown={onDocKeydown} />
-
-<div class="composer nil-scan" data-state={agentRun.running ? 'working' : undefined}>
-  <!-- Charter amendment 2026-09-07: Law 3 exception. The goo surface applies ONLY
-       to chip background layers (.chip-bg). Labels live in the buttons above the
-       filtered layer and are never blurred. -->
-  <svg aria-hidden="true" focusable="false" style="position:absolute;width:0;height:0;overflow:hidden">
-    <defs>
-      <filter id="nil-goo-surface">
-        <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
-        <feColorMatrix in="blur" mode="matrix"
-          values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -7" result="goo" />
-        <feComposite in="SourceGraphic" in2="goo" operator="atop" />
-      </filter>
-    </defs>
-  </svg>
-  {#if appState.contextChips.length > 0}
-    <div class="context-chips" role="group" aria-label="Attached context">
-      {#each appState.contextChips as chip (chip.id)}
-        <span class="context-chip" out:chipExit>
-          <Icon icon="ph:file-bold" width="11" height="11" />
-          <span class="context-chip-label">{chip.path}{chip.line ? `:${chip.line}` : ''}</span>
-          <button
-            type="button"
-            class="context-chip-remove"
-            aria-label={`Remove ${chip.path} from context`}
-            onclick={() => appState.removeContextChip(chip.id)}
-          >
-            <Icon icon="ph:x-bold" width="9" height="9" />
+<div class="composer nil-scan nil-composer" bind:this={composerEl} data-state={agentRun.running ? 'working' : undefined}>
+  {#if workspace.attached.length}
+    <div class="chips" aria-label="Attached files">
+      {#each workspace.attached as file (file.id)}
+        <span class="chip" class:leaving={chipLeaving === file.id}>
+          <button class="chip-path nil-halo nil-quiet" type="button" onclick={() => workspace.openFile(file.path)}>{file.path}</button>
+          <button class="chip-x nil-halo nil-quiet" type="button" aria-label={`Detach ${file.path}`} onclick={() => dismissChip(file.id)}>
+            <NilIcon name="x" size={16} />
           </button>
         </span>
       {/each}
     </div>
   {/if}
-  <div class="toolbar">
-    <div class="modes" role="group" aria-label="Agent mode">
-      {#each modes as m}
-        {@const active = appState.composerMode === m.id}
-        <span class="chip-slot">
-          <i class="chip-bg" data-on={active} aria-hidden="true"></i>
-          <button
-            type="button"
-            class="nil-halo chip"
-            class:on={active}
-            aria-pressed={active}
-            data-cuelume-toggle="tick"
-            onclick={() => (appState.composerMode = m.id)}
-          >{m.label}</button>
+
+  {#if agentRun.queued.length}
+    <div class="chips" aria-label="Queued follow-ups">
+      {#each agentRun.queued as item (item.id)}
+        <span class="chip">
+          <span class="chip-path">queued · {item.text}</span>
+          <button class="chip-x nil-halo nil-quiet" type="button" aria-label="Remove queued follow-up" onclick={() => agentRun.dropFollowup(item.id)}>
+            <NilIcon name="x" size={16} />
+          </button>
         </span>
       {/each}
     </div>
+  {/if}
 
-    <div class="model-wrap" bind:this={modelWrap}>
-      <button
-        type="button"
-        class="nil-lift nil-halo model-chip"
-        aria-haspopup="menu"
-        aria-expanded={modelMenuOpen}
-        aria-label={`Model: ${activeModel.name}. Open model picker`}
-        onclick={() => (modelMenuOpen = !modelMenuOpen)}
-      >
-        <Icon icon="ph:cpu-bold" width="12" height="12" />
-        {activeModel.name}
-        <Icon icon="ph:caret-down-bold" width="10" height="10" />
-      </button>
-
-      {#if modelMenuOpen}
-        <div class="model-picker" role="menu">
-          <div class="model-picker-label">Model</div>
-          {#each MODEL_OPTIONS as m}
-            {@const active = m.id === appState.selectedModel}
-            <button type="button" class="model-option" class:active role="menuitem" onclick={() => pickModel(m.id)}>
-              <span class="model-option-text">
-                <span class="model-option-name">{m.name}</span>
-                <span class="model-option-desc">{m.description}</span>
-              </span>
-              {#if active}<Icon icon="ph:check-bold" width="13" height="13" />{/if}
-            </button>
-          {/each}
-          <div class="model-picker-divider"></div>
-          <div class="model-picker-label">Effort</div>
-          <div class="effort-segment" role="group" aria-label="Effort">
-            {#each efforts as e}
-              {@const active = appState.effort === e.id}
-              <button
-                type="button"
-                class="effort-option"
-                class:active
-                aria-pressed={active}
-                onclick={() => (appState.effort = e.id)}
-              >{e.label}</button>
-            {/each}
-          </div>
-          <button type="button" class="model-more" disabled title="More models — coming soon">
-            More models
-          </button>
-        </div>
-      {/if}
-    </div>
-  </div>
   {#if pending}
     <div class="gate-host" out:gateExit>
       <ApprovalBlock step={pending} />
     </div>
   {/if}
+
   <div class="row">
-    <span class="gt" aria-hidden="true">&gt;</span>
     <textarea
       id="agent-composer"
       bind:this={inputEl}
       bind:value={input}
       onkeydown={onKey}
+      oninput={onInput}
       rows="1"
       aria-label="Agent input"
+      aria-live={workspace.dictationActive ? 'polite' : undefined}
       placeholder={placeholder}
       disabled={gated}
     ></textarea>
     <button
+      class="icon-btn nil-lift nil-halo"
       type="button"
-      class="nil-lift nil-halo mic"
-      disabled
-      aria-label="Voice input (coming soon)"
-      title="Voice input — coming soon"
+      aria-label="Voice input"
+      aria-pressed={workspace.dictationActive}
+      onclick={toggleDictation}
     >
-      <Icon icon="ph:waveform-bold" width="14" height="14" />
+      <NilIcon name={workspace.dictationActive ? 'audio-lines' : 'mic'} size={16} />
     </button>
     <button
       class="nil-lift nil-halo send"
       type="button"
       onclick={send}
-      disabled={!input.trim() || agentRun.running || gated}
+      disabled={!input.trim() || gated}
+      aria-label={agentRun.running ? 'Queue follow-up' : 'Send'}
       data-cuelume-press
       data-cuelume-release="whisper"
     >
-      Send <kbd aria-hidden="true">↵</kbd>
+      {agentRun.running ? 'Queue' : 'Send'} <kbd aria-hidden="true">↵</kbd>
     </button>
+  </div>
+
+  {#if mentionOpen && mentionAnchor}
+    <div
+      class="mentions"
+      role="listbox"
+      aria-label="Mention a file"
+      style:left={mentionAnchor.left}
+      style:width={mentionAnchor.width}
+      style:bottom={mentionAnchor.bottom}
+    >
+      {#if files.length === 0}
+        <div class="empty">Type a path to pin it</div>
+      {:else}
+        {#each files as file, i (file.id)}
+          <button
+            class="mention"
+            class:on={i === mentionIndex}
+            type="button"
+            role="option"
+            aria-selected={i === mentionIndex}
+            {@attach droplet}
+            onclick={() => pickMention(i)}
+          >
+            <span class="m-label">{file.label}</span>
+            <span class="m-path">{file.path}</span>
+          </button>
+        {/each}
+      {/if}
+    </div>
+  {/if}
+
+    {#if workspace.dictationActive}
+    <OnDeviceHint active={!workspace.dictationPaused} available={speechAvailable()} level={workspace.dictationLevel} />
+  {/if}
+
+  <div class="bar">
+    <div class="segment" role="group" aria-label="Workstation mode">
+      <!-- Charter amendment 2026-09-07: Law 3 exception. Goo applies ONLY to
+           .chip-bg. Labels stay in the buttons above and are never filtered. -->
+      <svg class="goo-defs" aria-hidden="true" focusable="false">
+        <defs>
+          <filter id="nil-goo-surface">
+            <feGaussianBlur in="SourceGraphic" stdDeviation="3" result="blur" />
+            <feColorMatrix
+              in="blur"
+              mode="matrix"
+              values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 16 -7"
+              result="goo"
+            />
+            <feComposite in="SourceGraphic" in2="goo" operator="atop" />
+          </filter>
+        </defs>
+      </svg>
+      <span
+        class="pill-track"
+        style:transform={workspace.workstationMode === 'pentest' ? 'translateX(100%)' : 'translateX(0)'}
+      >
+        <span
+          class="pill chip-bg nil-jelly"
+          bind:this={pillEl}
+          style:--jelly-origin={lastMode === 'pentest' ? 'right center' : 'left center'}
+        ></span>
+      </span>
+      <button
+        class="seg nil-quiet nil-halo"
+        class:on={workspace.workstationMode === 'build'}
+        type="button"
+        aria-pressed={workspace.workstationMode === 'build'}
+        onclick={() => setMode('build')}
+      >Build</button>
+      <button
+        class="seg nil-quiet nil-halo"
+        class:on={workspace.workstationMode === 'pentest'}
+        type="button"
+        aria-pressed={workspace.workstationMode === 'pentest'}
+        onclick={() => setMode('pentest')}
+      >Pentest</button>
+    </div>
+
+    <div class="model-wrap" bind:this={modelWrap}>
+      <button
+        class="model nil-halo"
+        type="button"
+        aria-haspopup="listbox"
+        aria-expanded={modelOpen}
+        onclick={() => (modelOpen = !modelOpen)}
+      >
+        {workspace.model.name}
+        <NilIcon name="chevron-down" size={16} />
+      </button>
+      {#if modelOpen && pickerAnchor}
+        <div
+          class="picker"
+          role="listbox"
+          aria-label="Model"
+          style:right={pickerAnchor.right}
+          style:bottom={pickerAnchor.bottom}
+        >
+          {#each workspace.models as m (m.id)}
+            <button
+              class="pick nil-halo"
+              type="button"
+              role="option"
+              aria-selected={m.id === workspace.modelId}
+              {@attach droplet}
+              onclick={() => { workspace.modelId = m.id; modelOpen = false; }}
+            >
+              <span class="pick-name">{m.name}</span>
+              <span class="pick-desc">{m.description}</span>
+              {#if m.id === workspace.modelId}
+                <span class="check"><NilIcon name="check" size={16} /></span>
+              {/if}
+            </button>
+          {/each}
+          <div class="divider"></div>
+          <div class="effort" role="group" aria-label="Effort">
+            <span>Effort</span>
+            {#each (['low', 'medium', 'high'] as const) as level}
+              <button
+                class="eff"
+                class:on={workspace.effort === level}
+                type="button"
+                onclick={() => (workspace.effort = level)}
+              >{level}</button>
+            {/each}
+          </div>
+          <button
+            class="pick more"
+            type="button"
+            onclick={() => {
+              modelOpen = false;
+              appState.openSettings('ai');
+            }}
+          >More models</button>
+        </div>
+      {/if}
+    </div>
   </div>
 </div>
 
@@ -247,287 +517,44 @@
     transition: border-color var(--dur-flip) var(--ease-out);
     position: relative;
     isolation: isolate;
+    z-index: var(--z-overlay);
   }
+  .composer:focus-within { border-color: var(--nil-line-hot); }
 
-  .composer:focus-within {
-    border-color: var(--nil-line-hot);
-  }
-
-  /* Charter amendment 2026-09-07 — Law 1 exception (single sanctioned use):
-     a 1px chromatic dispersion ring exists ONLY under :focus-within on the command
-     deck, to disambiguate input capture in low light. Never rendered at rest;
-     compositor-driven rotation via @property; static ring under reduced motion. */
-  @property --prism-angle {
-    syntax: "<angle>";
-    initial-value: 0deg;
-    inherits: false;
-  }
-  .composer::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: var(--r-panel);
-    padding: 1px; /* the ring's width */
-    background: conic-gradient(from var(--prism-angle),
-      #00f0ff, #7000ff, #ffaa00, #4d7cff, #00f0ff);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity var(--dur-flip) var(--ease-out);
-    animation: nil-prism-spin 6s linear infinite;
-    animation-play-state: paused;
-    will-change: transform;
-    pointer-events: none;
-  }
-  .composer:focus-within::before {
-    opacity: 1;
-    animation-play-state: running;
-  }
-  @keyframes nil-prism-spin {
-    to { --prism-angle: 360deg; }
-  }
-  @media (prefers-reduced-motion: reduce) {
-    .composer::before { animation: none; } /* static ring; focus stays legible */
-  }
-
-  .context-chips {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 6px;
-  }
-
-  .context-chip {
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chip {
     display: inline-flex;
     align-items: center;
-    gap: 5px;
+    gap: 4px;
     height: 22px;
-    padding: 0 6px 0 8px;
+    padding: 0 4px 0 8px;
     border: 1px solid var(--nil-line);
     border-radius: var(--r-chip);
     background: var(--nil-raised);
+    transform: scale(1);
+    opacity: 1;
+    transition: transform var(--dur-enter) var(--ease-out),
+                opacity var(--dur-enter) var(--ease-out);
+  }
+  .chip.leaving { transform: scale(0.86); opacity: 0; }
+  .chip-path {
+    font: var(--t-micro)/1 var(--font-machine);
     color: var(--nil-ink-2);
-    font: 500 var(--t-micro)/1 var(--font-machine);
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
   }
-
-  .context-chip-label {
-    max-width: 22ch;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-  }
-
-  .context-chip-remove {
+  .chip-path:hover { color: var(--nil-ink); }
+  .chip-x {
     display: grid;
     place-items: center;
-    width: 14px;
-    height: 14px;
-    border: none;
-    border-radius: 50%;
+    width: 16px;
+    height: 16px;
+    border: 0;
     background: transparent;
     color: var(--nil-ink-3);
     cursor: pointer;
-    flex-shrink: 0;
-    transition: color var(--dur-flip) var(--ease-out),
-                background-color var(--dur-flip) var(--ease-out);
-  }
-
-  .context-chip-remove:hover {
-    color: var(--nil-ink);
-    background: var(--nil-void);
-  }
-
-  .toolbar {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s-2);
-  }
-
-  .modes {
-    display: flex;
-    gap: 4px;
-  }
-
-  .model-wrap {
-    position: relative;
-  }
-
-  .model-chip {
-    display: inline-flex;
-    align-items: center;
-    gap: 5px;
-    height: 22px;
-    padding: 0 8px;
-    border: 1px solid transparent;
-    border-radius: var(--r-chip);
-    background: transparent;
-    color: var(--nil-ink-2);
-    font: 500 var(--t-micro)/1 var(--font-ui);
-    cursor: pointer;
-    transition: color var(--dur-flip) var(--ease-out),
-                background-color var(--dur-flip) var(--ease-out);
-  }
-
-  .model-chip:hover {
-    color: var(--nil-ink);
-    background: var(--nil-raised);
-  }
-
-  .model-picker {
-    position: absolute;
-    bottom: calc(100% + 8px);
-    right: 0;
-    z-index: var(--z-overlay);
-    width: 240px;
-    padding: var(--s-2);
-    border: 1px solid var(--nil-line);
-    border-radius: var(--r-field);
-    background: var(--nil-panel);
-    box-shadow: var(--lift-2);
-    color: var(--nil-ink);
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-
-  .model-picker-label {
-    padding: 4px 6px 2px;
-    font: 600 var(--t-micro)/1 var(--font-ui);
-    letter-spacing: var(--track-tick);
-    text-transform: uppercase;
-    color: var(--nil-ink-3);
-  }
-
-  .model-picker-divider {
-    height: 1px;
-    background: var(--nil-line);
-    margin: 6px 2px;
-  }
-
-  .model-option {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: var(--s-2);
-    padding: 6px;
-    border: none;
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--nil-ink);
-    text-align: left;
-    cursor: pointer;
-    transition: background-color var(--dur-flip) var(--ease-out);
-  }
-
-  .model-option:hover {
-    background: var(--nil-raised);
-  }
-
-  .model-option.active {
-    color: var(--nil-ink);
-  }
-
-  .model-option-text {
-    display: flex;
-    flex-direction: column;
-    gap: 1px;
-    min-width: 0;
-  }
-
-  .model-option-name {
-    font: 500 var(--t-meta)/1.2 var(--font-ui);
-  }
-
-  .model-option-desc {
-    font: var(--t-micro)/1.2 var(--font-ui);
-    color: var(--nil-ink-3);
-  }
-
-  .effort-segment {
-    display: flex;
-    gap: 2px;
-    padding: 2px;
-    margin: 0 2px;
-    border-radius: var(--radius-control);
-    background: var(--nil-void);
-  }
-
-  .effort-option {
-    flex: 1;
-    height: 22px;
-    border: none;
-    border-radius: calc(var(--radius-control) - 2px);
-    background: transparent;
-    color: var(--nil-ink-2);
-    font: 500 var(--t-micro)/1 var(--font-ui);
-    cursor: pointer;
-    transition: background-color var(--dur-flip) var(--ease-out),
-                color var(--dur-flip) var(--ease-out);
-  }
-
-  .effort-option.active {
-    background: var(--nil-raised);
-    color: var(--nil-ink);
-    box-shadow: 0 0 0 1px var(--nil-line-hot) inset;
-  }
-
-  .model-more {
-    margin-top: 4px;
-    padding: 6px;
-    border: none;
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--nil-ink-3);
-    font: var(--t-meta)/1 var(--font-ui);
-    text-align: left;
-    cursor: not-allowed;
-  }
-
-  .chip-slot {
-    position: relative;
-    display: inline-flex;
-  }
-
-  /* Filtered background layer — the ONLY thing the goo surface touches. */
-  .chip-bg {
-    position: absolute;
-    inset: 0;
-    border: 1px solid transparent;
-    border-radius: var(--r-chip);
-    filter: url(#nil-goo-surface);
-    pointer-events: none;
-    transition: border-color var(--dur-flip) var(--ease-out),
-                background-color var(--dur-flip) var(--ease-out);
-  }
-  .chip-bg[data-on="true"] {
-    border-color: var(--nil-line-hot);
-    background: var(--nil-raised);
-  }
-
-  /* Labels sit above the filtered layer, unblurred. */
-  .chip {
-    position: relative;
-    height: 22px;
-    padding: 0 8px;
-    border: none;
-    background: transparent;
-    color: var(--nil-ink-2);
-    font: 500 var(--t-micro)/1 var(--font-ui);
-    letter-spacing: var(--track-tick);
-    text-transform: uppercase;
-    cursor: pointer;
-    transition: color var(--dur-flip) var(--ease-out),
-                transform var(--dur-flip) var(--ease-out);
-  }
-
-  .chip:active {
-    transform: scale(0.96); /* tactile micro-press */
-  }
-
-  .chip.on {
-    color: var(--nil-ink);
   }
 
   .row {
@@ -535,13 +562,6 @@
     align-items: flex-end;
     gap: var(--s-2);
   }
-
-  .gt {
-    font: var(--t-body)/1.6 var(--font-machine);
-    color: var(--nil-ink-3);
-    padding-block-end: 2px;
-  }
-
   textarea {
     flex: 1;
     min-height: 28px;
@@ -554,8 +574,20 @@
     resize: none;
     outline: none;
   }
-
   textarea:disabled { color: var(--nil-ink-3); }
+
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 28px;
+    height: 28px;
+    border: 0;
+    background: transparent;
+    color: var(--nil-ink-3);
+    cursor: pointer;
+    border-radius: var(--r-field);
+  }
+  .icon-btn:hover, .icon-btn[aria-pressed="true"] { color: var(--nil-ink); background: var(--nil-raised); }
 
   .send {
     display: inline-flex;
@@ -570,11 +602,157 @@
     font: 500 var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
   }
-
   .send:disabled { opacity: 0.4; cursor: not-allowed; }
+  .send kbd { font: var(--t-micro)/1 var(--font-machine); color: var(--nil-ink-2); }
 
-  .send kbd {
-    font: var(--t-micro)/1 var(--font-machine);
-    color: var(--nil-ink-2); /* AA on --nil-raised; hints are control information */
+  .mentions {
+    position: fixed;
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    border-radius: var(--r-card);
+    box-shadow: var(--lift-2);
+    z-index: var(--z-overlay);
+    max-height: 180px;
+    overflow: auto;
+    padding: 4px;
   }
+  .mention {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 6px 8px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    border-radius: var(--r-field);
+  }
+  .mention.on, .mention:hover { background: var(--nil-panel); }
+  .m-label { font: 500 var(--t-meta)/1 var(--font-ui); color: var(--nil-ink); }
+  .m-path { font: var(--t-micro)/1 var(--font-machine); color: var(--nil-ink-3); }
+  .empty { padding: 8px; font: var(--t-meta)/1 var(--font-ui); color: var(--nil-ink-3); }
+
+  .bar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-3);
+  }
+
+  .segment {
+    position: relative;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 168px;
+    height: 26px;
+    padding: 2px;
+    background: var(--nil-void);
+    border: 1px solid var(--nil-line);
+    border-radius: 999px;
+  }
+  .goo-defs {
+    position: absolute;
+    width: 0;
+    height: 0;
+    overflow: hidden;
+  }
+  .pill-track {
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: calc(50% - 2px);
+    height: calc(100% - 4px);
+    pointer-events: none;
+    transition: transform var(--dur-jelly) var(--ease-pop);
+  }
+  .pill {
+    display: block;
+    width: 100%;
+    height: 100%;
+    border-radius: 999px;
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    transform-origin: var(--jelly-origin, left center);
+    filter: url(#nil-goo-surface);
+  }
+  .seg {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    border: 0;
+    background: transparent;
+    color: var(--nil-ink-3);
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
+    border-radius: 999px;
+  }
+  .seg.on { color: var(--nil-ink); }
+  @media (prefers-reduced-motion: reduce) {
+    .pill { filter: none; }
+  }
+
+  .model-wrap { position: relative; }
+  .model {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    height: 24px;
+    padding: 0 8px;
+    border: 1px solid var(--nil-line);
+    border-radius: 999px;
+    background: transparent;
+    color: var(--nil-ink-2);
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
+  }
+  .picker {
+    position: fixed;
+    width: 260px;
+    max-height: min(360px, calc(100dvh - 8rem));
+    overflow: auto;
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    border-radius: var(--r-card);
+    box-shadow: var(--lift-3);
+    padding: 4px;
+    z-index: var(--z-overlay);
+  }
+  .pick {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    width: 100%;
+    padding: 8px 28px 8px 8px;
+    border: 0;
+    background: transparent;
+    text-align: left;
+    cursor: pointer;
+    border-radius: var(--r-field);
+  }
+  .pick:hover { background: var(--nil-panel); }
+  .pick-name { font: 500 var(--t-meta)/1 var(--font-ui); color: var(--nil-ink); }
+  .pick-desc { font: var(--t-micro)/1.3 var(--font-ui); color: var(--nil-ink-3); }
+  .check { position: absolute; right: 8px; top: 10px; color: var(--nil-ink); }
+  .divider { height: 1px; background: var(--nil-line); margin: 4px 0; }
+  .effort {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    padding: 6px 8px;
+    font: var(--t-micro)/1 var(--font-ui);
+    color: var(--nil-ink-3);
+  }
+  .eff {
+    border: 1px solid var(--nil-line);
+    background: transparent;
+    color: var(--nil-ink-2);
+    border-radius: var(--r-chip);
+    padding: 2px 6px;
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
+  }
+  .eff.on { color: var(--nil-ink); border-color: var(--nil-line-hot); background: var(--nil-panel); }
+  .more { color: var(--nil-ink-2); }
 </style>
