@@ -18,6 +18,18 @@
   let startWidth = 0;
   let resizing = $state(false);
 
+  // Rail mode: collapsed isn't just the tree squeezed into 48px anymore — it's
+  // a real icon rail (one destination per engagement), and clicking a
+  // destination pins the sidebar open, the way hovering a label then clicking
+  // it does in a Claude/Grok-style rail. `open` arrives one-way from the
+  // parent (appState.sidebarOpen); onToggle is a flip, so only call it while
+  // actually collapsed or this would re-collapse an already-open sidebar.
+  function selectEngagementFromRail(name: string) {
+    appState.activeEngagementId = name;
+    appState.activeTargetId = name;
+    if (collapsed) onToggle?.();
+  }
+
   function handleResizeStart(e: MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
@@ -65,23 +77,52 @@
   aria-label="Targets sidebar"
 >
   <div class="sidebar-header">
-    <div class="sidebar-title">Targets</div>
-    <div class="sidebar-actions">
-      <button class="icon-btn" aria-label="New target" title="New Target (Cmd+N)">
+    {#if collapsed}
+      <button class="icon-btn rail-new" aria-label="New target" title="New Target (Cmd+N)">
         <Icon icon="ph:plus-bold" width="16" height="16" />
       </button>
-      <button class="icon-btn" aria-label="Import scope" title="Import Scope">
-        <Icon icon="ph:import-bold" width="16" height="16" />
-      </button>
-      <button class="icon-btn" aria-label="Templates" title="Templates">
-        <Icon icon="ph:layout-bold" width="16" height="16" />
-      </button>
-    </div>
+    {:else}
+      <div class="sidebar-title">Targets</div>
+      <div class="sidebar-actions">
+        <button class="icon-btn" aria-label="New target" title="New Target (Cmd+N)">
+          <Icon icon="ph:plus-bold" width="16" height="16" />
+        </button>
+        <button class="icon-btn" aria-label="Import scope" title="Import Scope">
+          <Icon icon="ph:import-bold" width="16" height="16" />
+        </button>
+        <button class="icon-btn" aria-label="Templates" title="Templates">
+          <Icon icon="ph:layout-bold" width="16" height="16" />
+        </button>
+      </div>
+    {/if}
   </div>
 
   <div class="sidebar-divider"></div>
 
-  <TargetTree />
+  {#if collapsed}
+    <!-- Rail mode: one icon per engagement, not the full tree squeezed down.
+         Hover for the name (native title, matches the rest of the app),
+         click to select it AND pin the sidebar open. -->
+    <div class="rail-list" role="group" aria-label="Targets">
+      {#each appState.engagements as eng (eng.name)}
+        <button
+          class="rail-icon"
+          class:active={appState.activeEngagementId === eng.name}
+          type="button"
+          title={eng.name}
+          aria-label={eng.name}
+          onclick={() => selectEngagementFromRail(eng.name)}
+        >
+          <Icon icon="ph:briefcase-bold" width="16" height="16" />
+          {#if eng.findings_count > 0}
+            <span class="rail-badge" aria-hidden="true"></span>
+          {/if}
+        </button>
+      {/each}
+    </div>
+  {:else}
+    <TargetTree />
+  {/if}
 
   <div class="sidebar-divider"></div>
 
@@ -148,12 +189,9 @@
     gap: var(--space-2);
   }
 
-  .sidebar.collapsed .sidebar-title,
-  .sidebar.collapsed .sidebar-actions {
-    opacity: 0;
-    pointer-events: none;
-    width: 0;
-    overflow: hidden;
+  .sidebar.collapsed .sidebar-header {
+    justify-content: center;
+    padding: 0;
   }
 
   .sidebar-title {
@@ -208,6 +246,64 @@
   }
   .sidebar-footer-btn:active {
     transform: scale(0.9);
+  }
+
+  /* Rail mode — one icon per destination, hover for the name, click to
+     select it and pin the sidebar back open. */
+  .rail-list {
+    flex: 1;
+    overflow-y: auto;
+    overflow-x: hidden;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-2) 0;
+  }
+
+  .rail-new {
+    margin: 0;
+  }
+
+  .rail-icon {
+    position: relative;
+    display: grid;
+    place-items: center;
+    width: 32px;
+    height: 32px;
+    border: none;
+    border-radius: var(--r-field);
+    background: transparent;
+    color: var(--nil-ink-3);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--dur-flip) var(--ease-out),
+                background-color var(--dur-flip) var(--ease-out);
+  }
+
+  .rail-icon:hover {
+    color: var(--nil-ink);
+    background: var(--nil-raised);
+  }
+
+  .rail-icon.active {
+    color: var(--nil-ink);
+    background: var(--nil-void);
+    box-shadow: 0 0 0 1px var(--nil-line-hot) inset;
+  }
+
+  .rail-icon:active {
+    transform: scale(0.9);
+  }
+
+  .rail-badge {
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    min-width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--nil-ink-2);
   }
 
   .sidebar-resize-handle {
