@@ -26,6 +26,7 @@
   import { refreshProject } from '$lib/project.svelte.ts';
   import { connectBus } from '$lib/agent/bus';
   import ReportCover from '$lib/components/shell/ReportCover.svelte';
+  import AgentRunBar from '$lib/components/ui/AgentRunBar.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -94,6 +95,7 @@
         {/snippet}
       </MainWorkspace>
       <ToolDock />
+      <AgentRunBar />
       <StreamComposer bind:inputEl={composerInput} />
     </main>
 
