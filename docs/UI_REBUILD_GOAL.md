@@ -55,6 +55,10 @@ Rebuild `StreamComposer.svelte` to carry real state above the input, the way Cla
 - **@-mention**: typing `@` opens a filtered file/line picker inline, Tab or Enter inserts it as a chip-like token. This is new functionality — a real autocomplete against the target's file list, not a static demo.
 - Mic + a filled waveform icon for voice input (voice UI itself is out of scope for this pass — just the composer affordance).
 
+## Motion vocabulary is now the source of truth in `motion.css`
+
+`frontend/src/lib/styles/motion.css` already had a real, documented "primitives" system before this rebuild — durations named by job, a `--ease-spring` overshoot curve, ten named patterns (LIFT, PRESS, HALO, MAGNETIC, SCANLINE, TICK, REVEAL, SETTLE, TRACE, SCRAMBLE), each with an explicit usage rule. That system has now been **updated, not replaced**, to fold in the ideas below: `--ease-spring` is documented as the app's one general overshoot curve (was previously scoped to magnetic/popover only), a JS-keyframe equivalent `--ease-pop` was added for places `element.animate()` needs a cubic-bezier instead of `linear()`, and four new primitives were added — `JELLY` (the mode-segment pill), `DROPLET` (row hover water-fill, including the exact stacking-context footgun already hit and fixed once — read the comment before touching it), `HOLD` (press-and-hold to confirm), `MORPH` (copy/check confirmation). Read `motion.css` itself for the authoritative version of all of this — don't re-derive it from the wireframe file if the two ever disagree, `motion.css` wins now.
+
 ## Motion vocabulary — implement each of these as reusable primitives, not one-offs
 
 All of them are demonstrated live in the reference wireframe; the descriptions below are the "why," not a substitute for looking at the actual code there.
