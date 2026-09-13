@@ -5,6 +5,7 @@
     workspace,
     engagementFiles,
     type WorkstationMode,
+    type ContextFile,
   } from '$lib/stores/workspace.svelte.ts';
   import ApprovalBlock from '$lib/components/ui/ApprovalBlock.svelte';
   import NilIcon from '$lib/ui/NilIcon.svelte';
@@ -53,6 +54,16 @@
   const pending = $derived(agentRun.pendingApproval);
   const gated = $derived(Boolean(pending));
 
+  function mentionScore(file: ContextFile, q: string): number {
+    const label = file.label.toLowerCase();
+    const path = file.path.toLowerCase();
+    if (label === q || path === q) return 0;
+    if (label === `${q}.ts` || label === `${q}.py` || path.endsWith(`/${q}`)) return 1;
+    if (label.startsWith(q)) return 2;
+    if (label.includes(q)) return 3;
+    return 4;
+  }
+
   const placeholder = $derived(
     gated
       ? 'Allow or deny the pending command'
@@ -64,17 +75,20 @@
   );
 
   const files = $derived.by(() => {
-    const known = engagementFiles().filter((f) =>
-      mentionQuery
-        ? f.path.toLowerCase().includes(mentionQuery) || f.label.toLowerCase().includes(mentionQuery)
-        : true,
-    );
-    if (!mentionQuery) return known.slice(0, 40);
-    const exact = known.some((f) => f.path.toLowerCase() === mentionQuery);
+    const q = mentionQuery;
+    let known = engagementFiles();
+    if (q) {
+      known = known.filter((f) =>
+        f.path.toLowerCase().includes(q) || f.label.toLowerCase().includes(q),
+      );
+      known.sort((a, b) => mentionScore(a, q) - mentionScore(b, q) || a.path.length - b.path.length);
+    }
+    if (!q) return known.slice(0, 40);
+    const exact = known.some((f) => f.path.toLowerCase() === q || f.label.toLowerCase() === q);
     if (exact) return known.slice(0, 40);
     return [
       ...known.slice(0, 39),
-      { id: `pin:${mentionQuery}`, path: mentionQuery, label: mentionQuery },
+      { id: `pin:${q}`, path: q, label: q },
     ];
   });
 
@@ -394,6 +408,7 @@
     transition: border-color var(--dur-flip) var(--ease-out);
     position: relative;
     isolation: isolate;
+    z-index: var(--z-overlay);
   }
   .composer:focus-within { border-color: var(--nil-line-hot); }
 

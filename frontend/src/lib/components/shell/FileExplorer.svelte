@@ -98,7 +98,6 @@
                 onclick={() => pick(file)}
               >
                 <NilIcon name="file" size={16} />
-                <span class="name">{file.label}</span>
                 <span class="path">{file.path}</span>
               </button>
             </li>
@@ -167,7 +166,7 @@
   .list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
   .row {
     display: grid;
-    grid-template-columns: 16px minmax(0, 1fr) auto;
+    grid-template-columns: 16px minmax(0, 1fr);
     align-items: center;
     gap: var(--s-2);
     width: 100%;
@@ -181,19 +180,11 @@
     text-align: left;
   }
   .row.on { color: var(--nil-ink); }
-  .name {
-    min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-    font: 500 var(--t-meta)/1 var(--font-ui);
-  }
   .path {
     min-width: 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
     font: var(--t-micro)/1 var(--font-machine);
-    color: var(--nil-ink-3);
   }
 </style>

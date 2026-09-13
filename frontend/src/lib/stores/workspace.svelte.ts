@@ -120,6 +120,8 @@ function applyMode(next: WorkstationMode) {
     if (!pentestMode(appState.composerMode)) appState.composerMode = 'hunt';
     appState.rightSidebarOpen = true;
     clarifyIndex = null;
+    surface = 'stream';
+    tabsStore.showStream();
   }
 }
 

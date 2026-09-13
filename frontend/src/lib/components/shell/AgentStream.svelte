@@ -161,16 +161,18 @@
               {#if step.role === 'user'}
                 <span class="prompt">&gt;</span>
               {/if}
-              {#if step.role === 'assistant'}
-                <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}><AshText text={step.text} /></p>
-              {:else}
-                <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}>{step.text}</p>
-              {/if}
-              {#if step.interrupted}
-                <span class="flag">interrupted</span>
-              {:else if step.failed}
-                <span class="flag">failed</span>
-              {/if}
+              <div class="msg-body">
+                {#if step.role === 'assistant'}
+                  <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}><AshText text={step.text} /></p>
+                {:else}
+                  <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}>{step.text}</p>
+                {/if}
+                {#if step.interrupted}
+                  <span class="flag">interrupted</span>
+                {:else if step.failed}
+                  <span class="flag">failed</span>
+                {/if}
+              </div>
             </div>
           {:else if step.kind === 'thought'}
             <p class="thought">{step.text}</p>
@@ -373,6 +375,21 @@
     display: flex;
     align-items: flex-start;
     gap: var(--s-2);
+    min-width: 0;
+  }
+
+  .msg-body {
+    min-width: 0;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .msg-text {
+    margin: 0;
+    overflow-wrap: anywhere;
   }
 
   .msg[data-role="user"] .msg-text {
