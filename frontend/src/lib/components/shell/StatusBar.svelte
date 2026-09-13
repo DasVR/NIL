@@ -3,7 +3,7 @@
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { tabsStore } from '$lib/stores/tabsStore';
-  import { project } from '$lib/project.svelte.ts';
+  import { project, gitCiLabel } from '$lib/project.svelte.ts';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
   import { usageStore } from '$lib/usage/store.svelte.ts';
 
@@ -40,7 +40,7 @@
       <span class="mono">{project.git.branch}</span>
       {#if project.git.ci}
         <span class="div" aria-hidden="true"></span>
-        <span class="mono">{project.git.ci.conclusion || project.git.ci.status}</span>
+        <span class="mono">{gitCiLabel(project.git.ci)}</span>
       {/if}
     {/if}
     {#if activeTab}

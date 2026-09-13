@@ -264,7 +264,7 @@ function parseCi(raw: string | null, branch: string): { ci: {
     const hit = typed.find((row) => row.headBranch === branch) ?? typed[0];
     if (!hit) return { ci: null, ciLoaded: true };
     const name = typeof hit.name === 'string' && hit.name
-      ? hit.name
+      ? hit.name.split('/').pop()?.replace(/\.ya?ml$/i, '') || hit.name
       : (typeof hit.displayTitle === 'string' ? hit.displayTitle : 'CI');
     return {
       ciLoaded: true,

@@ -1,7 +1,7 @@
 <script lang="ts">
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import { droplet } from '$lib/motion/droplet';
-  import { project, type GitCi, type GitEntry } from '$lib/project.svelte.ts';
+  import { project, gitCiLabel, type GitCi, type GitEntry } from '$lib/project.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
 
   const git = $derived(project.git);
@@ -27,13 +27,7 @@
   }
 
   function ciWord(ci: GitCi): string {
-    if (ci.conclusion === 'success') return 'passed';
-    if (ci.conclusion === 'failure') return 'failed';
-    if (ci.conclusion === 'cancelled') return 'cancelled';
-    if (ci.conclusion === 'skipped') return 'skipped';
-    if (ci.status === 'in_progress') return 'in progress';
-    if (ci.status === 'queued' || ci.status === 'waiting' || ci.status === 'pending') return ci.status;
-    return ci.conclusion || ci.status || 'unknown';
+    return gitCiLabel(ci);
   }
 
   function openCi(ci: GitCi) {
@@ -73,7 +67,7 @@
           <dd>{git.ahead ?? 0} ahead · {git.behind ?? 0} behind</dd>
         </div>
       {/if}
-      <div>
+      <div class="ci-block">
         <dt>CI</dt>
         <dd>
           {#if git.ci}
@@ -136,6 +130,7 @@
   .name { font: 500 var(--t-body)/1 var(--font-machine); color: var(--nil-ink); }
   .stats { display: flex; flex-direction: column; gap: var(--s-2); margin: 0; }
   .stats div { display: flex; justify-content: space-between; gap: var(--s-3); }
+  .ci-block { flex-direction: column; align-items: flex-start; gap: 4px; }
   dt { font: var(--t-micro)/1 var(--font-ui); color: var(--nil-ink-3); }
   dd { margin: 0; font: var(--t-meta)/1 var(--font-ui); color: var(--nil-ink-2); }
   .ci {
@@ -145,7 +140,11 @@
     color: inherit;
     font: var(--t-meta)/1 var(--font-machine);
     cursor: pointer;
-    text-align: right;
+    text-align: left;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .ci:disabled { cursor: default; }
   .empty { font: var(--t-meta)/var(--lh-body) var(--font-ui); color: var(--nil-ink-3); margin: 0; }

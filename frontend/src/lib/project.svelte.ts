@@ -134,6 +134,16 @@ export async function refreshProject(): Promise<void> {
   loading = false;
 }
 
+export function gitCiLabel(ci: GitCi): string {
+  if (ci.conclusion === 'success') return 'passed';
+  if (ci.conclusion === 'failure') return 'failed';
+  if (ci.conclusion === 'cancelled') return 'cancelled';
+  if (ci.conclusion === 'skipped') return 'skipped';
+  if (ci.status === 'in_progress') return 'in progress';
+  if (ci.status === 'queued' || ci.status === 'waiting' || ci.status === 'pending') return ci.status;
+  return ci.conclusion || ci.status || 'unknown';
+}
+
 export const project = {
   get files() { return files; },
   get git() { return git; },
