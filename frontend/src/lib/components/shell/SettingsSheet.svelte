@@ -2,6 +2,7 @@
   import { fade } from 'svelte/transition';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { settle } from '$lib/motion/settle';
+  import { droplet } from '$lib/motion/droplet';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
   import SettingsGeneral from '$lib/components/shell/SettingsGeneral.svelte';
@@ -64,7 +65,7 @@
     <DitherWipe mode="dissolve" />
     <div class="settings-header">
       <h2>Settings</h2>
-      <button class="settings-close" onclick={appState.toggleSettings} aria-label="Close">
+      <button class="settings-close nil-halo" onclick={appState.toggleSettings} aria-label="Close">
         <NilIcon name="x" size={16} />
       </button>
     </div>
@@ -75,9 +76,10 @@
           {#each categories as cat}
             <li>
               <button
-                class="settings-category {activeCategory === cat.id ? 'active' : ''}"
+                class="settings-category nil-halo {activeCategory === cat.id ? 'active' : ''}"
                 onclick={() => activeCategory = cat.id}
                 aria-current={activeCategory === cat.id ? 'true' : undefined}
+                {@attach droplet}
                 data-cuelume-hover="tick"
               >
                 <NilIcon name={cat.icon} size={16} />
@@ -160,33 +162,31 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-4) var(--space-5);
-    border-bottom: 1px solid var(--surface-border);
+    padding: var(--s-4) var(--s-5);
+    border-bottom: 1px solid var(--nil-line);
     flex-shrink: 0;
   }
 
   .settings-header h2 {
-    font-size: var(--step-1);
-    font-weight: 600;
-    color: var(--text-primary);
+    font: 600 var(--t-lead)/var(--lh-tight) var(--font-ui);
+    color: var(--nil-ink);
   }
 
   .settings-close {
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border: none;
-    border-radius: var(--radius-control);
+    border-radius: var(--r-field);
     background: transparent;
-    color: var(--text-tertiary);
+    color: var(--nil-ink-3);
     cursor: pointer;
-    transition: all var(--spring-snappy);
   }
 
   .settings-close:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
+    background: var(--nil-raised);
+    color: var(--nil-ink);
   }
 
   .settings-body {
@@ -199,8 +199,8 @@
   .settings-sidebar {
     width: 220px;
     min-width: 220px;
-    border-right: 1px solid var(--surface-border);
-    padding: var(--space-4);
+    border-right: 1px solid var(--nil-line);
+    padding: var(--s-4);
     overflow-y: auto;
     flex-shrink: 0;
   }
@@ -221,23 +221,17 @@
     width: 100%;
     padding: 10px 12px;
     border: none;
-    border-radius: var(--radius-control);
+    border-radius: var(--r-field);
     background: transparent;
-    color: var(--text-secondary);
-    font-size: var(--font-xs);
-    font-weight: 500;
+    color: var(--nil-ink-2);
+    font: 500 var(--t-meta)/1 var(--font-ui);
     text-align: left;
     cursor: pointer;
-    transition: all var(--spring-snappy);
   }
 
-  .settings-category:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-  }
-
+  .settings-category:hover,
   .settings-category.active {
-    background: var(--accent-soft);
+    background: var(--nil-panel);
     color: var(--nil-ink);
   }
 
@@ -253,9 +247,9 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-5);
-    border-top: 1px solid var(--surface-border);
+    gap: var(--s-3);
+    padding: var(--s-4) var(--s-5);
+    border-top: 1px solid var(--nil-line);
     flex-shrink: 0;
   }
 
@@ -263,10 +257,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
-    border-radius: var(--radius-control);
-    font-size: var(--font-xs);
-    font-weight: 500;
+    padding: 0 12px;
+    height: 28px;
+    border-radius: var(--r-field);
+    font: 500 var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
     transition: border-color var(--dur-flip) var(--ease-out),
       background var(--dur-flip) var(--ease-out),

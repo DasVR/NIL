@@ -16,8 +16,10 @@
   >
     <header class="head">
       <span class="title">{job.title}</span>
-      <span class="kind">{job.kind}</span>
-      <span class="status">{job.status}</span>
+      {#if !isPty}
+        <span class="kind">{job.kind}</span>
+        <span class="status">{job.status}</span>
+      {/if}
       <button class="nil-halo close" type="button" aria-label="Hide tool output" onclick={() => workspace.closeDock()}>
         <NilIcon name="chevron-down" size={16} />
       </button>

@@ -4,15 +4,24 @@
 
   interface Props {
     active?: boolean;
+    available?: boolean;
   }
 
-  let { active = false }: Props = $props();
+  let { active = false, available = true }: Props = $props();
 </script>
 
 <p class="hint">
   <NilIcon name="lock" size={16} />
-  <span>Dictation runs on-device. Audio never leaves this machine.</span>
-  <DictationWave {active} />
+  <span>
+    {#if available}
+      Dictation runs on-device. Audio never leaves this machine.
+    {:else}
+      Voice capture is not available here. Type in the composer.
+    {/if}
+  </span>
+  {#if available}
+    <DictationWave {active} />
+  {/if}
 </p>
 
 <style>

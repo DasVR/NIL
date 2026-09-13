@@ -3,6 +3,7 @@
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace, type RailId } from '$lib/stores/workspace.svelte.ts';
   import TargetTree from '$lib/components/shell/TargetTree.svelte';
+  import FileExplorer from '$lib/components/shell/FileExplorer.svelte';
   import SourceControl from '$lib/components/shell/SourceControl.svelte';
   import GitHubPanel from '$lib/components/shell/GitHubPanel.svelte';
   import McpPanel from '$lib/components/shell/McpPanel.svelte';
@@ -116,27 +117,33 @@
     <div class="panel">
       <div class="panel-head">
         <div class="segs" role="tablist" aria-label="Sidebar panel">
-          <button class="seg" class:on={panel === 'targets'} type="button" onclick={() => (workspace.sidePanel = 'targets')}>Targets</button>
+          <button class="seg" class:on={panel === 'targets'} type="button" onclick={() => (workspace.sidePanel = 'targets')}>
+            {workspace.workstationMode === 'pentest' ? 'Targets' : 'Files'}
+          </button>
           <button class="seg" class:on={panel === 'scm'} type="button" onclick={() => (workspace.sidePanel = 'scm')}>Source</button>
           <button class="seg" class:on={panel === 'github'} type="button" onclick={() => (workspace.sidePanel = 'github')}>GitHub</button>
           <button class="seg" class:on={panel === 'mcp'} type="button" onclick={() => (workspace.sidePanel = 'mcp')}>MCP</button>
         </div>
       </div>
       {#if panel === 'targets'}
-        <TargetTree />
-        {#if appState.activeEngagementId}
-          <div class="danger">
-            <HoldConfirm
-              label="Delete target"
-              confirmLabel="Hold to delete"
-              ariaLabel="Hold to delete this target"
-              onConfirm={() => {
-                const name = appState.activeEngagementId;
-                if (!name) return;
-                void api.deleteEngagement(name).then(() => appState.refreshEngagements());
-              }}
-            />
-          </div>
+        {#if workspace.workstationMode === 'pentest'}
+          <TargetTree />
+          {#if appState.activeEngagementId}
+            <div class="danger">
+              <HoldConfirm
+                label="Delete target"
+                confirmLabel="Hold to delete"
+                ariaLabel="Hold to delete this target"
+                onConfirm={() => {
+                  const name = appState.activeEngagementId;
+                  if (!name) return;
+                  void api.deleteEngagement(name).then(() => appState.refreshEngagements());
+                }}
+              />
+            </div>
+          {/if}
+        {:else}
+          <FileExplorer />
         {/if}
       {:else if panel === 'scm'}
         <SourceControl />

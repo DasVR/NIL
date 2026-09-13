@@ -175,8 +175,8 @@
   }
 
   .palette-header {
-    padding: var(--space-3) var(--space-4);
-    border-bottom: 1px solid var(--surface-border);
+    padding: var(--s-3) var(--s-4);
+    border-bottom: 1px solid var(--nil-line);
   }
 
   .palette-search {
@@ -189,22 +189,22 @@
   .palette-search :global(svg) {
     position: absolute;
     left: 14px;
-    color: var(--text-tertiary);
+    color: var(--nil-ink-3);
     flex-shrink: 0;
     z-index: 1;
   }
 
   .palette-search input {
     width: 100%;
-    padding: 10px 14px 10px 42px;
-    border: 1px solid var(--surface-border);
-    border-radius: var(--radius-control);
-    background: var(--surface-input);
-    color: var(--input-text);
-    font-family: var(--font-sans);
-    font-size: var(--step-0);
+    height: 32px;
+    padding: 0 14px 0 42px;
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-field);
+    background: var(--nil-raised);
+    color: var(--nil-ink);
+    font: var(--t-body)/1 var(--font-ui);
     outline: none;
-    transition: border-color var(--spring-snappy);
+    transition: border-color var(--dur-flip) var(--ease-out);
   }
 
   .palette-search input:focus {
@@ -212,30 +212,28 @@
   }
 
   .palette-hint {
-    font-family: var(--font-mono);
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--nil-ink-3);
     padding: 2px 6px;
-    border-radius: 3px;
-    background: var(--surface-hover);
-    border: 1px solid var(--surface-border);
+    border-radius: var(--r-chip);
+    background: var(--nil-panel);
+    border: 1px solid var(--nil-line);
   }
 
   .palette-results {
     max-height: 480px;
     overflow-y: auto;
-    padding: var(--space-2);
+    padding: var(--s-2);
   }
 
   .palette-item {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    gap: var(--space-3);
-    padding: var(--space-2) var(--space-3);
-    border-radius: var(--radius-control);
+    gap: var(--s-3);
+    padding: var(--s-2) var(--s-3);
+    border-radius: var(--r-field);
     cursor: pointer;
-    transition: background var(--spring-snappy);
   }
 
   .palette-item:hover,
@@ -256,41 +254,38 @@
   }
 
   .palette-item-label {
-    font-size: var(--font-xs);
-    font-weight: 500;
-    color: var(--text-primary);
+    font: 500 var(--t-meta)/1 var(--font-ui);
+    color: var(--nil-ink);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
   }
 
   .palette-item-shortcut {
-    font-family: var(--font-mono);
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--nil-ink-3);
     padding: 2px 6px;
-    border-radius: 3px;
-    background: var(--surface-hover);
-    border: 1px solid var(--surface-border);
+    border-radius: var(--r-chip);
+    background: var(--nil-panel);
+    border: 1px solid var(--nil-line);
     white-space: nowrap;
     flex-shrink: 0;
   }
 
   .palette-section-header {
-    font-size: 10px;
-    font-weight: 600;
+    font: 600 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
-    color: var(--text-tertiary);
-    padding: var(--space-2) var(--space-3) var(--space-1);
+    color: var(--nil-ink-3);
+    padding: var(--s-2) var(--s-3) var(--s-1);
     pointer-events: none;
     user-select: none;
   }
 
   .palette-section-header:not(:first-child) {
-    margin-top: var(--space-2);
-    border-top: 1px solid var(--surface-border);
-    padding-top: var(--space-3);
+    margin-top: var(--s-2);
+    border-top: 1px solid var(--nil-line);
+    padding-top: var(--s-3);
   }
 
   .palette-empty {
@@ -298,19 +293,18 @@
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: var(--space-8);
-    gap: var(--space-2);
-    color: var(--text-tertiary);
+    padding: var(--s-8);
+    gap: var(--s-2);
+    color: var(--nil-ink-3);
     text-align: center;
   }
 
   .palette-empty p {
-    font-size: var(--font-xs);
-    font-weight: 500;
-    color: var(--text-secondary);
+    font: 500 var(--t-meta)/1 var(--font-ui);
+    color: var(--nil-ink-2);
   }
 
   .palette-empty span {
-    font-size: var(--font-2xs);
+    font: var(--t-micro)/1 var(--font-ui);
   }
 </style>

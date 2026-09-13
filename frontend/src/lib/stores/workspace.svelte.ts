@@ -334,6 +334,11 @@ export const workspace = {
   set sidePanel(v: SidePanel) { sidePanel = v; },
   get workstationMode() { return workstationMode; },
   set workstationMode(v: WorkstationMode) { applyMode(v); },
+  get sessionLabel() {
+    if (appState.activeEngagementId) return appState.activeEngagementId;
+    if (sessionStarted) return workstationMode === 'pentest' ? 'hunt' : 'build';
+    return 'nil';
+  },
   get sessionStarted() { return sessionStarted; },
   get surface() { return surface; },
   get diffText() { return diffText; },

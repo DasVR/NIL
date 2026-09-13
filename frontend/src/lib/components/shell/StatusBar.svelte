@@ -1,6 +1,7 @@
 <script lang="ts">
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { tabsStore } from '$lib/stores/tabsStore';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
   import { usageStore } from '$lib/usage/store.svelte.ts';
@@ -8,7 +9,7 @@
   let tabs = $derived($tabsStore);
   let activeTab = $derived(tabs.tabs.find(t => t.id === tabs.activeTabId));
   let backendStatus = $derived(appState.backendHealthy ? 'connected' : 'offline');
-  let engagementLabel = $derived(appState.activeEngagementId || 'no engagement');
+  let sessionLabel = $derived(workspace.sessionLabel);
 </script>
 
 <footer class="status-bar" role="status" aria-live="polite">
@@ -16,7 +17,9 @@
     <span class="dot" class:ok={appState.backendHealthy}></span>
     <span>{backendStatus}</span>
     <span class="div" aria-hidden="true"></span>
-    <span class="mono">{engagementLabel}</span>
+    <span class="mono">{sessionLabel}</span>
+    <span class="div" aria-hidden="true"></span>
+    <span>{workspace.workstationMode}</span>
     {#if agentRun.pendingApproval}
       <span class="div" aria-hidden="true"></span>
       <span>awaiting approval</span>

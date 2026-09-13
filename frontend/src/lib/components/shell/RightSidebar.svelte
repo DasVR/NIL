@@ -3,8 +3,12 @@
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import FindingRow from '$lib/components/ui/FindingRow.svelte';
   import { tabsStore } from '$lib/stores/tabsStore';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import { droplet } from '$lib/motion/droplet';
   import type { Finding } from '$lib/agent/types';
+
+  type InspectorTab = 'findings' | 'timeline' | 'evidence' | 'context';
 
   interface RightSidebarProps {
     open?: boolean;
@@ -15,13 +19,18 @@
 
   let { open = $bindable(true), width = $bindable(320), onToggle, onResize }: RightSidebarProps = $props();
 
-  let activeTab = $state<'findings' | 'timeline' | 'evidence' | 'context'>('findings');
+  let activeTab = $state<InspectorTab>('context');
   let dragStartX = 0;
   let startWidth = 0;
   let resizing = $state(false);
 
   let findings = $derived(agentRun.findings);
   let activeTabId = $derived($tabsStore.activeTabId);
+  let pentest = $derived(workspace.workstationMode === 'pentest');
+
+  $effect(() => {
+    activeTab = pentest ? 'findings' : 'context';
+  });
 
   function openFinding(finding: Finding) {
     tabsStore.addTab({
@@ -55,7 +64,6 @@
   function handleResizeKeydown(e: KeyboardEvent) {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
-      // Gutter is on the left edge: moving left grows the panel.
       setWidth(width + (e.key === 'ArrowLeft' ? 1 : -1) * 16);
     } else if (e.key === 'Home') {
       e.preventDefault();
@@ -68,9 +76,8 @@
 
   function handleResizeMove(e: MouseEvent) {
     if (!resizing) return;
-    const delta = dragStartX - e.clientX; // Right sidebar resizes opposite
-    const newWidth = startWidth + delta;
-    setWidth(newWidth);
+    const delta = dragStartX - e.clientX;
+    setWidth(startWidth + delta);
   }
 
   function handleResizeEnd() {
@@ -89,65 +96,68 @@
   });
 </script>
 
-<aside 
-  class="right-sidebar {open ? '' : 'collapsed'} {resizing ? 'resizing' : ''}" 
+<aside
+  class="right-sidebar {open ? '' : 'collapsed'} {resizing ? 'resizing' : ''}"
   style:width={open ? `${width}px` : '0px'}
   aria-label="Inspector"
 >
   <div class="right-sidebar-header">
     <div class="right-sidebar-tabs" role="tablist">
-      <button 
-        class="right-sidebar-tab {activeTab === 'findings' ? 'active' : ''}" 
-        role="tab" 
-        aria-selected={activeTab === 'findings'}
-        onclick={() => activeTab = 'findings'}
-      >
-        <NilIcon name="flag" size={16} />
-        <span>Findings</span>
-        <span class="tab-badge">{findings.length}</span>
-      </button>
-      <button 
-        class="right-sidebar-tab {activeTab === 'timeline' ? 'active' : ''}" 
-        role="tab" 
-        aria-selected={activeTab === 'timeline'}
-        onclick={() => activeTab = 'timeline'}
-      >
-        <NilIcon name="clock" size={16} />
-        <span>Timeline</span>
-      </button>
-      <button 
-        class="right-sidebar-tab {activeTab === 'evidence' ? 'active' : ''}" 
-        role="tab" 
-        aria-selected={activeTab === 'evidence'}
-        onclick={() => activeTab = 'evidence'}
-      >
-        <NilIcon name="folder" size={16} />
-        <span>Evidence</span>
-      </button>
-      <button 
-        class="right-sidebar-tab {activeTab === 'context' ? 'active' : ''}" 
-        role="tab" 
-        aria-selected={activeTab === 'context'}
-        onclick={() => activeTab = 'context'}
-      >
-        <NilIcon name="brain" size={16} />
-        <span>Context</span>
-      </button>
+      {#if pentest}
+        <button
+          class="right-sidebar-tab nil-halo"
+          class:active={activeTab === 'findings'}
+          role="tab"
+          aria-selected={activeTab === 'findings'}
+          onclick={() => (activeTab = 'findings')}
+        >
+          <NilIcon name="flag" size={16} />
+          <span>Findings</span>
+          <span class="tab-badge">{findings.length}</span>
+        </button>
+        <button
+          class="right-sidebar-tab nil-halo"
+          class:active={activeTab === 'timeline'}
+          role="tab"
+          aria-selected={activeTab === 'timeline'}
+          onclick={() => (activeTab = 'timeline')}
+        >
+          <NilIcon name="clock" size={16} />
+          <span>Timeline</span>
+        </button>
+        <button
+          class="right-sidebar-tab nil-halo"
+          class:active={activeTab === 'evidence'}
+          role="tab"
+          aria-selected={activeTab === 'evidence'}
+          onclick={() => (activeTab = 'evidence')}
+        >
+          <NilIcon name="folder" size={16} />
+          <span>Evidence</span>
+        </button>
+      {:else}
+        <button
+          class="right-sidebar-tab nil-halo"
+          class:active={activeTab === 'context'}
+          role="tab"
+          aria-selected={activeTab === 'context'}
+          onclick={() => (activeTab = 'context')}
+        >
+          <NilIcon name="paperclip" size={16} />
+          <span>Context</span>
+          <span class="tab-badge">{workspace.attached.length}</span>
+        </button>
+      {/if}
     </div>
-    <div class="right-sidebar-actions">
-      <button class="icon-btn" aria-label="Refresh" title="Refresh">
-        <NilIcon name="refresh-cw" size={16} />
+    {#if onToggle}
+      <button class="icon-btn nil-halo" type="button" aria-label="Hide inspector" onclick={onToggle}>
+        <NilIcon name="x" size={16} />
       </button>
-      <button class="icon-btn" aria-label="Filter" title="Filter">
-        <NilIcon name="filter" size={16} />
-      </button>
-    </div>
+    {/if}
   </div>
 
-  <div class="right-sidebar-divider"></div>
-
   <div class="right-sidebar-content">
-    {#if activeTab === 'findings'}
+    {#if pentest && activeTab === 'findings'}
       <div class="findings-list">
         {#each findings as finding (finding.id)}
           <FindingRow
@@ -164,39 +174,60 @@
           </div>
         {/if}
       </div>
-    {:else if activeTab === 'timeline'}
-      <div class="timeline-list">
-        <div class="timeline-empty">
-          <NilIcon name="clock" size={20} />
-          <p>No timeline events</p>
-          <span>Activity will appear here</span>
-        </div>
+    {:else if pentest && activeTab === 'timeline'}
+      <div class="empty-state">
+        <NilIcon name="clock" size={20} />
+        <p>No timeline events</p>
+        <span>Hunt activity lands here as the agent works.</span>
       </div>
-    {:else if activeTab === 'evidence'}
-      <div class="evidence-list">
-        <div class="timeline-empty">
-          <NilIcon name="folder" size={20} />
-          <p>No evidence collected</p>
-          <span>Artifacts from tool runs appear here</span>
-        </div>
+    {:else if pentest && activeTab === 'evidence'}
+      <div class="empty-state">
+        <NilIcon name="folder" size={20} />
+        <p>No evidence collected</p>
+        <span>Artifacts from tool runs appear here.</span>
       </div>
-    {:else if activeTab === 'context'}
-      <div class="context-view">
-        <div class="timeline-empty">
-          <NilIcon name="brain" size={20} />
-          <p>No context loaded</p>
-          <span>Select a target to load context</span>
-        </div>
+    {:else}
+      <div class="context">
+        <dl class="meta">
+          <div>
+            <dt>Model</dt>
+            <dd>{workspace.model?.name ?? 'Default'}</dd>
+          </div>
+          <div>
+            <dt>Effort</dt>
+            <dd>{workspace.effort}</dd>
+          </div>
+        </dl>
+        {#if workspace.attached.length === 0}
+          <div class="empty-state">
+            <NilIcon name="paperclip" size={20} />
+            <p>No files attached</p>
+            <span>Mention a path with @ in the composer to pin it here.</span>
+          </div>
+        {:else}
+          <ul class="files">
+            {#each workspace.attached as file (file.id)}
+              <li>
+                <button
+                  class="file nil-halo"
+                  type="button"
+                  {@attach droplet}
+                  onclick={() => workspace.detachFile(file.id)}
+                >
+                  <span class="file-path">{file.path}</span>
+                  <span class="file-x">Remove</span>
+                </button>
+              </li>
+            {/each}
+          </ul>
+        {/if}
       </div>
     {/if}
   </div>
 
-  <!-- WAI-ARIA APG "window splitter" pattern: a focusable separator with
-       aria-valuenow/min/max is the documented accessible shape for a resize
-       handle. The a11y linter doesn't special-case role="separator" as
-       interactive; this is a known false positive for that pattern. -->
   <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <div class="right-sidebar-resize-handle"
+  <div
+    class="right-sidebar-resize-handle"
     onmousedown={handleResizeStart}
     onkeydown={handleResizeKeydown}
     aria-label="Resize inspector"
@@ -212,9 +243,6 @@
 <style>
   .right-sidebar {
     position: relative;
-    top: auto;
-    right: auto;
-    bottom: auto;
     height: 100%;
     background: var(--nil-panel);
     border: 1px solid var(--nil-line);
@@ -230,21 +258,19 @@
 
   .right-sidebar.collapsed {
     width: 0 !important;
-    right: 0 !important;
-    border-left: none;
+    border: 0;
+    box-shadow: none;
   }
 
-  .right-sidebar.resizing {
-    transition: none;
-  }
+  .right-sidebar.resizing { transition: none; }
 
   .right-sidebar-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     height: 36px;
-    padding: 0 6px 0 var(--space-2);
-    border-bottom: 1px solid var(--sidebar-border);
+    padding: 0 6px 0 var(--s-2);
+    border-bottom: 1px solid var(--nil-line);
     flex-shrink: 0;
     gap: 4px;
   }
@@ -263,37 +289,19 @@
     align-items: center;
     gap: 5px;
     padding: 4px 8px;
-    border: none;
-    border-radius: var(--radius-control);
+    border: 0;
+    border-radius: var(--r-field);
     background: transparent;
-    color: var(--text-tertiary);
-    font-size: 11px;
-    font-weight: 400;
+    color: var(--nil-ink-3);
+    font: var(--t-micro)/1 var(--font-ui);
     cursor: pointer;
     white-space: nowrap;
-    transition: color var(--dur-fast) var(--spring-snappy),
-      background var(--dur-fast) var(--spring-snappy),
-      transform var(--dur-fast) var(--spring-snappy);
   }
 
-  .right-sidebar-tab:hover {
-    color: var(--text-primary);
-    background: var(--surface-hover);
-  }
-
-  .right-sidebar-tab:active {
-    transform: scale(0.95);
-  }
-
+  .right-sidebar-tab:hover,
   .right-sidebar-tab.active {
-    color: var(--text-primary);
-    background: var(--accent-soft);
-    font-weight: 500;
-  }
-
-  .right-sidebar-tab:focus-visible {
-    outline: 2px solid var(--nil-halo);
-    outline-offset: 2px;
+    color: var(--nil-ink);
+    background: var(--nil-raised);
   }
 
   .tab-badge {
@@ -303,67 +311,82 @@
     min-width: 16px;
     height: 16px;
     padding: 0 4px;
-    border-radius: var(--radius-badge);
+    border-radius: var(--r-chip);
     background: var(--nil-ink);
     color: var(--nil-void);
-    font-size: var(--font-2xs);
-    font-weight: 600;
+    font: 600 var(--t-micro)/1 var(--font-machine);
   }
 
-  .right-sidebar-tab.active .tab-badge {
-    background: var(--nil-ink-2);
+  .icon-btn {
+    display: grid;
+    place-items: center;
+    width: 24px;
+    height: 24px;
+    border: 0;
+    border-radius: var(--r-chip);
+    background: transparent;
+    color: var(--nil-ink-3);
+    cursor: pointer;
   }
-
-  .right-sidebar-actions {
-    display: flex;
-    gap: 2px;
-  }
-
-  .right-sidebar-divider {
-    height: 1px;
-    background: var(--sidebar-border);
-    margin: 0 var(--space-2);
-  }
+  .icon-btn:hover { color: var(--nil-ink); }
 
   .right-sidebar-content {
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: var(--space-2);
+    padding: var(--s-2);
   }
 
-  .findings-list {
+  .findings-list,
+  .files {
     display: flex;
     flex-direction: column;
     gap: 1px;
+    list-style: none;
+    margin: 0;
+    padding: 0;
   }
 
-  .timeline-empty,
+  .context { display: flex; flex-direction: column; gap: var(--s-3); }
+  .meta { margin: 0; display: flex; flex-direction: column; gap: var(--s-2); }
+  .meta div { display: flex; justify-content: space-between; gap: var(--s-3); }
+  dt { font: var(--t-micro)/1 var(--font-ui); color: var(--nil-ink-3); }
+  dd { margin: 0; font: var(--t-meta)/1 var(--font-machine); color: var(--nil-ink-2); }
+
+  .file {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    width: 100%;
+    height: var(--row-h);
+    padding: 0 var(--s-2);
+    border: 0;
+    border-radius: var(--r-field);
+    background: transparent;
+    color: var(--nil-ink-2);
+    cursor: pointer;
+  }
+  .file-path { font: var(--t-meta)/1 var(--font-machine); }
+  .file-x { font: var(--t-micro)/1 var(--font-ui); color: var(--nil-ink-3); }
+
   .empty-state {
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    height: 100%;
-    min-height: 200px;
-    gap: var(--space-2);
-    color: var(--text-tertiary);
+    min-height: 160px;
+    gap: var(--s-2);
+    color: var(--nil-ink-3);
     text-align: center;
-    padding: var(--space-6);
+    padding: var(--s-5);
   }
-
-  .timeline-empty p,
   .empty-state p {
-    font-size: var(--font-xs);
-    font-weight: 500;
-    color: var(--text-secondary);
+    margin: 0;
+    font: 500 var(--t-meta)/1 var(--font-ui);
+    color: var(--nil-ink-2);
   }
-
-  .timeline-empty span,
-  .empty-state span {
-    font-size: var(--font-2xs);
-    color: var(--text-tertiary);
-  }
+  .empty-state span { font: var(--t-micro)/var(--lh-body) var(--font-ui); }
 
   .right-sidebar-resize-handle {
     position: absolute;
@@ -375,8 +398,6 @@
     background: transparent;
     z-index: 10;
   }
-
-  /* Hairline, not a painted slab: the 8px strip is hit area only. */
   .right-sidebar-resize-handle::after {
     content: "";
     position: absolute;
@@ -386,12 +407,10 @@
     background: var(--nil-line);
     transition: background-color var(--dur-flip) var(--ease-out);
   }
-
   .right-sidebar-resize-handle:hover::after,
   .right-sidebar-resize-handle:focus-visible::after {
     background: var(--nil-line-hot);
   }
-
   .right-sidebar.resizing .right-sidebar-resize-handle::after {
     background: var(--nil-ink-2);
   }

@@ -39,7 +39,7 @@ let reducedMotion = $state(defaultState.reducedMotion);
 let activeTargetId = $state(defaultState.activeTargetId);
 let activeEngagementId = $state(defaultState.activeEngagementId);
 let yoloMode = $state(false);
-let composerMode = $state<ComposerMode>('hunt');
+let composerMode = $state<ComposerMode>('code');
 let composerFocus: () => void = () => {};
 
 let engagements = $state<Engagement[]>([]);

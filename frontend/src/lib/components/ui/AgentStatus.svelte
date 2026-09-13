@@ -9,7 +9,7 @@
     open?: boolean;
   }
 
-  let { summary, duration, tokens, hint = 'Almost done thinking…', open = $bindable(false) }: Props = $props();
+  let { summary, duration, tokens, hint = '', open = $bindable(false) }: Props = $props();
 </script>
 
 <div class="status">
@@ -17,7 +17,7 @@
     <span class="sum">{summary}</span>
     <span class="chev" class:open><NilIcon name="chevron-right" size={16} /></span>
   </button>
-  <p class="meta">{duration} · {tokens} tokens · {hint}</p>
+  <p class="meta">{duration} · {tokens} tokens{#if hint} · {hint}{/if}</p>
 </div>
 
 <style>

@@ -1,6 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte';
-  import { appState } from '$lib/stores/appState.svelte.ts';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
   import LiquidMetal from '$lib/components/ui/LiquidMetal.svelte';
   import WindowControls from '$lib/components/ui/WindowControls.svelte';
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
@@ -33,7 +33,7 @@
     };
   });
 
-  const engagement = $derived(appState.activeEngagementId || 'no-engagement');
+  const session = $derived(workspace.sessionLabel);
 </script>
 
 <!-- OS window-drag region: Tauri's dragMove() needs a plain mousedown listener
@@ -48,9 +48,9 @@
   <div class="titlebar-left titlebar-drag">
     <span class="brand">nil</span>
     <span class="sep" aria-hidden="true">──</span>
-    <span class="path">{engagement}</span>
+    <span class="path">{session}</span>
     <span class="copy-hit">
-      <CopyAffordance value={engagement} />
+      <CopyAffordance value={session} />
     </span>
   </div>
 

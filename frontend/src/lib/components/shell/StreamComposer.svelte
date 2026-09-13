@@ -11,7 +11,9 @@
   import OnDeviceHint from '$lib/components/ui/OnDeviceHint.svelte';
   import { jelly } from '$lib/motion/jelly.ts';
   import { droplet } from '$lib/motion/droplet';
+  import { listenSpeech, playDictation, speechAvailable } from '$lib/motion/dictation.ts';
   import { cubicIn } from 'svelte/easing';
+  import { untrack } from 'svelte';
 
   interface Props {
     inputEl?: HTMLTextAreaElement;
@@ -167,6 +169,28 @@
   function toggleDictation() {
     workspace.dictationActive = !workspace.dictationActive;
   }
+
+  $effect(() => {
+    if (!workspace.dictationActive) return;
+    const base = untrack(() => input);
+    let last = base;
+    let playAbort: AbortController | null = null;
+    const stop = listenSpeech((text) => {
+      const prefix = base.replace(/\s+$/, '');
+      const next = prefix ? `${prefix} ${text}` : text;
+      playAbort?.abort();
+      playAbort = new AbortController();
+      const from = last;
+      void playDictation(from, next, (v) => {
+        input = v;
+        last = v;
+      }, { signal: playAbort.signal });
+    });
+    return () => {
+      playAbort?.abort();
+      stop();
+    };
+  });
 </script>
 
 <div class="composer nil-scan" data-state={agentRun.running ? 'working' : undefined}>
@@ -198,6 +222,7 @@
       oninput={onInput}
       rows="1"
       aria-label="Agent input"
+      aria-live={workspace.dictationActive ? 'polite' : undefined}
       placeholder={placeholder}
       disabled={gated}
     ></textarea>
@@ -246,7 +271,7 @@
   {/if}
 
   {#if workspace.dictationActive}
-    <OnDeviceHint active />
+    <OnDeviceHint active available={speechAvailable()} />
   {/if}
 
   <div class="bar">

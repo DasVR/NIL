@@ -13,7 +13,6 @@
       <span class="name">{branch}</span>
       <CopyAffordance value={branch} />
     </div>
-    <p class="lede">Additions are ember — they change your files. Deletions stay dim.</p>
   </header>
   {#if diff}
     <InlineDiff {diff} variant="page" />
@@ -38,6 +37,5 @@
   .head { display: flex; flex-direction: column; gap: 6px; }
   .branch { display: flex; align-items: center; gap: 4px; }
   .name { font: 500 var(--t-body)/1 var(--font-machine); color: var(--nil-ink); }
-  .lede { margin: 0; font: var(--t-meta)/var(--lh-body) var(--font-ui); color: var(--nil-ink-3); }
   .empty { margin: 0; font: var(--t-body)/var(--lh-body) var(--font-ui); color: var(--nil-ink-2); }
 </style>

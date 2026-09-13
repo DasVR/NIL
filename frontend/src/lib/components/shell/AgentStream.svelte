@@ -131,12 +131,14 @@
                 <span class="prompt">&gt;</span>
               {/if}
               {#if step.role === 'assistant'}
-                <p class="msg-text" class:interrupted={step.interrupted}><AshText text={step.text} /></p>
+                <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}><AshText text={step.text} /></p>
               {:else}
-                <p class="msg-text" class:interrupted={step.interrupted}>{step.text}</p>
+                <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}>{step.text}</p>
               {/if}
               {#if step.interrupted}
                 <span class="flag">interrupted</span>
+              {:else if step.failed}
+                <span class="flag">failed</span>
               {/if}
             </div>
           {:else if step.kind === 'thought'}
@@ -171,6 +173,20 @@
             workspace.commitPendingMode();
           }}
           onCancel={() => workspace.cancelPendingMode()}
+        />
+      </div>
+    {:else if agentRun.interrupted && !agentRun.running}
+      <div class="prompt-card">
+        <ConfirmCard
+          title="Continue this run?"
+          body="The last turn was interrupted. Send another message to pick up from here."
+          confirmLabel="Continue"
+          cancelLabel="Dismiss"
+          onConfirm={() => {
+            agentRun.resume();
+            appState.focusComposer();
+          }}
+          onCancel={() => agentRun.resume()}
         />
       </div>
     {/if}
@@ -290,6 +306,11 @@
   .msg[data-role="assistant"] .msg-text {
     font: var(--t-body)/var(--lh-body) var(--font-ui);
     color: var(--nil-ink-2);
+  }
+
+  .msg[data-role="assistant"] .msg-text.failed,
+  .msg-text.interrupted {
+    color: var(--nil-ink-3);
   }
 
   .prompt {

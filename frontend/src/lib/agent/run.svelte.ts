@@ -90,6 +90,10 @@ export const agentRun = {
     }
   },
 
+  resume() {
+    interrupted = false;
+  },
+
   async sendMessage(input: string, engagement: string, mode: string) {
     interrupted = false;
     running = true;
@@ -174,6 +178,7 @@ export const agentRun = {
         id: `error-${Date.now()}`,
         role: 'assistant',
         text: message,
+        failed: true,
       }];
     } finally {
       running = false;

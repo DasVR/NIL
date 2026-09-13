@@ -41,7 +41,7 @@
     <div class="setting-row">
       <div class="setting-info">
         <span class="setting-label">Inspector width</span>
-        <span class="setting-desc">Findings rail width in pixels</span>
+        <span class="setting-desc">Right inspector width in pixels</span>
       </div>
       <div class="setting-control">
         <input

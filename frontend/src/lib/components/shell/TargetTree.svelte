@@ -255,7 +255,7 @@
     flex: 1;
     overflow-y: auto;
     overflow-x: hidden;
-    padding: var(--space-1) 0;
+    padding: var(--s-1) 0;
   }
 
   .tree-row {
@@ -264,8 +264,8 @@
     align-items: center;
     gap: 6px;
     height: var(--row-h); /* 28px workstation density */
-    padding: 0 var(--space-2) 0 calc(var(--space-2) + var(--indent) * var(--s-4));
-    border-radius: var(--radius-control);
+    padding: 0 var(--s-2) 0 calc(var(--s-2) + var(--indent) * var(--s-4));
+    border-radius: var(--r-field);
     cursor: pointer;
     contain: layout style; /* branch fold/unfold never recalculates the tree */
     transition: background-color var(--dur-flip) var(--ease-out),
