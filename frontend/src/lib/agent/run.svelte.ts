@@ -89,6 +89,21 @@ function scheduleHuntSettle() {
 
 function appendAssistant(text: string, usage?: TokenUsage, failed = false) {
   const t = text.trim();
+  const pending = [...steps].reverse().find(
+    (s): s is Extract<Step, { kind: 'message' }> => s.kind === 'message' && s.role === 'assistant' && Boolean(s.streaming),
+  );
+  if (pending) {
+    if (t) pending.text = t;
+    pending.streaming = false;
+    pending.failed = failed;
+    if (usage) pending.usage = usage;
+    if (!t && !failed) {
+      steps = steps.filter((s) => s.id !== pending.id);
+      return;
+    }
+    steps = [...steps];
+    return;
+  }
   if (!t) return;
   const last = steps[steps.length - 1];
   if (last?.kind === 'message' && last.role === 'assistant' && last.text === t) return;
@@ -266,6 +281,9 @@ export const agentRun = {
     const last = steps[steps.length - 1];
     if (last?.kind === 'message' && last.role === 'assistant') {
       last.interrupted = true;
+      last.streaming = false;
+      if (!last.text.trim()) last.text = 'Run interrupted.';
+      steps = [...steps];
     } else {
       steps = [...steps, {
         kind: 'message',
@@ -319,6 +337,12 @@ export const agentRun = {
       id: `user-${Date.now()}`,
       role: 'user',
       text: input,
+    }, {
+      kind: 'message',
+      id: `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+      role: 'assistant',
+      text: '',
+      streaming: true,
     }];
 
     try {
@@ -334,6 +358,7 @@ export const agentRun = {
       if (interrupted) return;
       if (res.status === 'hunt_started') {
         huntLoop = true;
+        appendAssistant('');
         return;
       }
       ingestHttpResult(res, engagement);

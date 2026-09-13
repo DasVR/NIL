@@ -14,6 +14,8 @@
     setValue: (v: string) => void;
     getValue: () => string;
     onDidChangeModelContent: (listener: () => void) => { dispose: () => void };
+    revealLineInCenter: (line: number) => void;
+    setPosition: (pos: { lineNumber: number; column: number }) => void;
   } | undefined;
   let status = $state('');
 
@@ -138,6 +140,11 @@
         tabsStore.patchData(tab.id, { path, content: text });
         tabsStore.markDirty(tab.id, false);
         status = '';
+        const line = typeof tab.data?.line === 'number' ? tab.data.line : null;
+        if (line && line > 0) {
+          editor.revealLineInCenter(line);
+          editor.setPosition({ lineNumber: line, column: 1 });
+        }
       } else {
         status = 'This path is not readable from the workstation yet.';
       }
@@ -151,11 +158,18 @@
         ? 'Saved'
         : 'Could not write this path from the workstation.';
     };
+    const onFlush = () => {
+      if (!editor) return;
+      const currentPath = typeof tab.data?.path === 'string' ? tab.data.path : tab.label;
+      tabsStore.patchData(tab.id, { path: currentPath, content: editor.getValue() });
+    };
     window.addEventListener('nil:file-saved', onSaved);
+    window.addEventListener('nil:flush-editors', onFlush);
 
     return () => {
       disposed = true;
       window.removeEventListener('nil:file-saved', onSaved);
+      window.removeEventListener('nil:flush-editors', onFlush);
       editor?.dispose();
     };
   });

@@ -27,7 +27,7 @@
     }
     const result: Group[] = [];
     for (const [name, list] of map) {
-      result.push({ name, files: list.slice(0, q ? 80 : 24) });
+      result.push({ name, files: list.slice(0, q ? 200 : 80) });
     }
     return result;
   });
@@ -35,7 +35,6 @@
   const shown = $derived(groups.reduce((n, g) => n + g.files.length, 0));
 
   function pick(file: ContextFile) {
-    workspace.attachFile(file);
     workspace.openFile(file.path);
   }
 

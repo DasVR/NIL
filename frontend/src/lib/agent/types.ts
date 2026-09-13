@@ -40,6 +40,7 @@ export interface MessageStep {
   text: string;
   interrupted?: boolean;
   failed?: boolean;
+  streaming?: boolean;
   usage?: TokenUsage;
 }
 

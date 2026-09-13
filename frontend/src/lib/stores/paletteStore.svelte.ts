@@ -2,6 +2,7 @@ import { appState } from '$lib/stores/appState.svelte.ts';
 import { workspace } from '$lib/stores/workspace.svelte.ts';
 import { refreshProject } from '$lib/project.svelte.ts';
 import { agentRun } from '$lib/agent/run.svelte.ts';
+import { tabsStore } from '$lib/stores/tabsStore';
 
 interface PaletteCommand {
   id: string;
@@ -110,7 +111,10 @@ const commands: PaletteCommand[] = [
     label: 'Show stream',
     section: 'View',
     icon: 'rows-3',
-    action: () => workspace.showStream(),
+    action: () => {
+      workspace.showStream();
+      tabsStore.showStream();
+    },
   },
   {
     id: 'show-diffs',

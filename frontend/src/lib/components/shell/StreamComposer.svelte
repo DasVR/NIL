@@ -55,6 +55,12 @@
   const pending = $derived(agentRun.pendingApproval);
   const gated = $derived(Boolean(pending));
 
+  function mentionQueryParts(raw: string): { needle: string; line: string | null } {
+    const m = raw.match(/^(.*):(\d+(?:-\d+)?)$/);
+    if (m && m[1]) return { needle: m[1], line: m[2] };
+    return { needle: raw, line: null };
+  }
+
   function mentionScore(file: ContextFile, q: string): number {
     const label = file.label.toLowerCase();
     const path = file.path.toLowerCase();
@@ -64,6 +70,8 @@
     if (label.includes(q)) return 3;
     return 4;
   }
+
+  const mentionParts = $derived(mentionQueryParts(mentionQuery));
 
   const placeholder = $derived(
     gated
@@ -95,7 +103,8 @@
   });
 
   const files = $derived.by(() => {
-    const q = mentionQuery;
+    const parsed = mentionParts;
+    const q = parsed.needle;
     let known = engagementFiles();
     if (q) {
       known = known.filter((f) =>
@@ -105,11 +114,17 @@
     }
     if (!q) return known.slice(0, 40);
     const exact = known.some((f) => f.path.toLowerCase() === q || f.label.toLowerCase() === q);
-    if (exact) return known.slice(0, 40);
-    return [
+    const list = exact ? known.slice(0, 40) : [
       ...known.slice(0, 39),
       { id: `pin:${q}`, path: q, label: q },
     ];
+    if (!parsed.line) return list;
+    return list.map((f) => ({
+      ...f,
+      id: `${f.id}:${parsed.line}`,
+      path: `${f.path}:${parsed.line}`,
+      label: `${f.label}:${parsed.line}`,
+    }));
   });
 
   function gateExit(node: HTMLElement) {
@@ -262,7 +277,7 @@
     <div class="chips" aria-label="Attached files">
       {#each workspace.attached as file (file.id)}
         <span class="chip" class:leaving={chipLeaving === file.id}>
-          <span class="chip-path">{file.path}</span>
+          <button class="chip-path nil-halo" type="button" onclick={() => workspace.openFile(file.path)}>{file.path}</button>
           <button class="chip-x nil-halo" type="button" aria-label={`Remove ${file.path}`} onclick={() => dismissChip(file.id)}>
             <NilIcon name="x" size={16} />
           </button>
@@ -496,7 +511,15 @@
                 opacity var(--dur-enter) var(--ease-out);
   }
   .chip.leaving { transform: scale(0.86); opacity: 0; }
-  .chip-path { font: var(--t-micro)/1 var(--font-machine); color: var(--nil-ink-2); }
+  .chip-path {
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--nil-ink-2);
+    border: 0;
+    background: transparent;
+    padding: 0;
+    cursor: pointer;
+  }
+  .chip-path:hover { color: var(--nil-ink); }
   .chip-x {
     display: grid;
     place-items: center;

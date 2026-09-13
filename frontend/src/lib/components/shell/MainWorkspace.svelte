@@ -1,5 +1,4 @@
 <script lang="ts">
-  import TerminalTab from '$lib/components/shell/TerminalTab.svelte';
   import EditorTab from '$lib/components/shell/EditorTab.svelte';
   import PreviewTab from '$lib/components/shell/PreviewTab.svelte';
   import FindingCard from '$lib/components/ui/FindingCard.svelte';
@@ -7,6 +6,7 @@
   import DiffSurface from '$lib/components/shell/DiffSurface.svelte';
   import { tabsStore, type Tab } from '$lib/stores/tabsStore';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
+  import { agentRun } from '$lib/agent/run.svelte.ts';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import type { Snippet } from 'svelte';
   import { explainFinding, draftFinding } from '$lib/findings/actions';
@@ -20,6 +20,16 @@
     store.tabs.filter((t) => t.type === 'editor' || t.type === 'preview' || t.type === 'finding'),
   );
   let activeFile = $derived(fileTabs.find((t) => t.id === activeTab) ?? null);
+  const sessionLive = $derived(
+    workspace.sessionStarted
+    || agentRun.running
+    || agentRun.steps.length > 0
+    || Boolean(workspace.clarify)
+    || Boolean(workspace.pendingMode),
+  );
+  const showEditor = $derived(Boolean(activeFile) && workspace.surface !== 'diff');
+  const showStream = $derived(workspace.surface !== 'diff' && (sessionLive || !activeFile));
+  const split = $derived(showStream && showEditor);
 
   function tabIcon(tab: Tab): string {
     switch (tab.type) {
@@ -84,31 +94,32 @@
     </div>
   {/if}
 
-  <div class="workspace-panels">
-    {#if activeFile}
-      <div class="workspace-panel active" role="tabpanel" aria-labelledby={`tab-${activeFile.id}`}>
-        {#if activeFile.type === 'editor'}
-          <EditorTab tab={activeFile} />
-        {:else if activeFile.type === 'preview'}
-          <PreviewTab tab={activeFile} />
-        {:else if activeFile.type === 'finding'}
-          <div class="finding-detail-host">
-            <FindingCard
-              finding={activeFile.data as Finding}
-              onExplain={() => explainFinding(activeFile.data as Finding)}
-              onDraft={() => draftFinding(activeFile.data as Finding)}
-            />
-          </div>
-        {/if}
-      </div>
-    {:else if workspace.surface === 'diff'}
+  <div class="workspace-panels" class:split>
+    {#if workspace.surface === 'diff'}
       <div class="workspace-panel active stream-host">
         <DiffSurface />
       </div>
     {:else}
-      <div class="workspace-panel active stream-host">
+      <div class="workspace-panel stream-host" class:hidden={!showStream}>
         <AgentStream {emptyState} />
       </div>
+      {#if showEditor && activeFile}
+        <div class="workspace-panel editor-host" role="tabpanel" aria-labelledby={`tab-${activeFile.id}`}>
+          {#if activeFile.type === 'editor'}
+            <EditorTab tab={activeFile} />
+          {:else if activeFile.type === 'preview'}
+            <PreviewTab tab={activeFile} />
+          {:else if activeFile.type === 'finding'}
+            <div class="finding-detail-host">
+              <FindingCard
+                finding={activeFile.data as Finding}
+                onExplain={() => explainFinding(activeFile.data as Finding)}
+                onDraft={() => draftFinding(activeFile.data as Finding)}
+              />
+            </div>
+          {/if}
+        </div>
+      {/if}
     {/if}
   </div>
 </div>
@@ -118,6 +129,13 @@
     display: flex;
     flex-direction: column;
     padding: var(--s-2);
+  }
+
+  .editor-host {
+    display: flex;
+    flex-direction: column;
+    border-inline-start: 1px solid var(--nil-line);
+    background: var(--nil-void);
   }
 
   .finding-detail-host {
@@ -213,14 +231,17 @@
     min-height: 0;
     position: relative;
     overflow: hidden;
+    display: flex;
+    flex-direction: row;
   }
 
   .workspace-panel {
-    position: absolute;
-    inset: 0;
+    flex: 1;
+    min-width: 0;
+    min-height: 0;
+    position: relative;
+    overflow: hidden;
   }
 
-  .workspace-panel.active {
-    z-index: 1;
-  }
+  .workspace-panel.hidden { display: none; }
 </style>

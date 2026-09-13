@@ -55,7 +55,6 @@
           section: 'Files',
           run: () => {
             workspace.openFile(file.path);
-            workspace.attachFile(file);
             paletteStore.closePalette();
           },
         });

@@ -147,12 +147,16 @@
                 <span class="prompt">&gt;</span>
               {/if}
               <div class="msg-body">
-                {#if step.role === 'assistant' && !step.failed && !step.interrupted}
+                {#if step.role === 'assistant' && step.streaming && !step.text}
+                  <p class="thought" data-state="working">Waiting on the model</p>
+                {:else if step.role === 'assistant' && !step.failed && !step.interrupted}
                   <p class="msg-text"><AshText text={step.text} /></p>
                 {:else}
                   <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}>{step.text}</p>
                 {/if}
-                {#if step.interrupted}
+                {#if step.streaming && step.text}
+                  <span class="flag">streaming</span>
+                {:else if step.interrupted}
                   <span class="flag">interrupted</span>
                 {:else if step.failed}
                   <span class="flag">failed</span>

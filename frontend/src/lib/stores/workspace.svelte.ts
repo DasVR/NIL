@@ -180,7 +180,6 @@ function applyMode(next: WorkstationMode) {
     appState.rightSidebarOpen = true;
     clarifyIndex = null;
     surface = 'stream';
-    tabsStore.showStream();
     if (appState.activeEngagementId) void agentRun.loadEngagement(appState.activeEngagementId);
   }
 }
@@ -332,7 +331,6 @@ function selectRail(id: RailId) {
         activeRail = 'diffs';
         surface = 'diff';
       }
-      tabsStore.showStream();
       break;
     case 'pentest':
       activeRail = 'pentest';
@@ -340,7 +338,6 @@ function selectRail(id: RailId) {
       appState.sidebarOpen = false;
       surface = 'stream';
       applyMode('pentest');
-      tabsStore.showStream();
       break;
     default: {
       const _n: never = id;
@@ -385,8 +382,16 @@ function detachFile(id: string) {
   attached = attached.filter((f) => f.id !== id);
 }
 
+function splitFileRef(raw: string): { path: string; line: number | null } {
+  const trimmed = raw.trim().replace(/^@/, '');
+  const match = trimmed.match(/^(.*):(\d+)(?:-\d+)?$/);
+  if (!match || !match[1] || match[1].endsWith(':')) return { path: trimmed, line: null };
+  return { path: match[1], line: Number.parseInt(match[2], 10) };
+}
+
 function openFile(path: string, content?: string) {
-  const trimmed = path.trim();
+  const ref = splitFileRef(path);
+  const trimmed = ref.path;
   if (!trimmed) return;
   const label = trimmed.split('/').pop() || trimmed;
   tabsStore.addTab({
@@ -394,7 +399,9 @@ function openFile(path: string, content?: string) {
     type: 'editor',
     label,
     dirty: false,
-    data: content !== undefined ? { path: trimmed, content } : { path: trimmed },
+    data: content !== undefined
+      ? { path: trimmed, content, line: ref.line }
+      : { path: trimmed, line: ref.line },
   });
 }
 
@@ -407,6 +414,10 @@ function pinPath(raw: string) {
 }
 
 async function saveActiveFile(): Promise<boolean> {
+  if (browser) {
+    window.dispatchEvent(new Event('nil:flush-editors'));
+    await new Promise<void>((resolve) => requestAnimationFrame(() => requestAnimationFrame(() => resolve())));
+  }
   const id = tabsStore.activeTabId;
   if (!id) return false;
   const tab = tabsStore.tabs.find((t) => t.id === id);
@@ -450,7 +461,6 @@ function beginSession(mode: WorkstationMode) {
     selectRail('pentest');
   } else {
     clarifyIndex = 0;
-    tabsStore.showStream();
   }
 }
 
@@ -462,7 +472,6 @@ function resumeSession(mode: WorkstationMode, label?: string) {
   clarifyIndex = null;
   rememberSession(mode, label);
   if (mode === 'pentest') selectRail('pentest');
-  else tabsStore.showStream();
 }
 
 function requestMode(next: WorkstationMode) {
@@ -472,7 +481,6 @@ function requestMode(next: WorkstationMode) {
   }
   pendingMode = next;
   surface = 'stream';
-  tabsStore.showStream();
 }
 
 function commitPendingMode() {
@@ -541,7 +549,6 @@ export const workspace = {
   setDiff(text: string) { diffText = text; },
   showStream() {
     surface = 'stream';
-    tabsStore.showStream();
   },
   get clarify() {
     if (clarifyIndex == null) return null;
