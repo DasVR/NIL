@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { fade } from 'svelte/transition';
   import { appState } from '$lib/stores/appState.svelte.ts';
-  import { settle } from '$lib/motion/settle';
   import { droplet } from '$lib/motion/droplet';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
@@ -26,18 +24,18 @@
   let { open = false, onToggle }: Props = $props();
 
   const activeCategory = $derived(appState.settingsCategory);
-  const categories: { id: SettingsCategory; label: string; icon: string }[] = [
-    { id: 'general', label: 'General', icon: 'settings' },
-    { id: 'appearance', label: 'Appearance', icon: 'palette' },
-    { id: 'editor', label: 'Editor', icon: 'code' },
-    { id: 'terminal', label: 'Terminal', icon: 'terminal' },
-    { id: 'ai', label: 'Agent', icon: 'cpu' },
-    { id: 'source', label: 'Source control', icon: 'git-branch' },
-    { id: 'github', label: 'GitHub', icon: 'github' },
-    { id: 'mcp', label: 'MCP tools', icon: 'plug' },
-    { id: 'plugins', label: 'Plugins', icon: 'puzzle' },
-    { id: 'shortcuts', label: 'Shortcuts', icon: 'keyboard' },
-    { id: 'advanced', label: 'Advanced', icon: 'wrench' },
+  const categories: { id: SettingsCategory; label: string }[] = [
+    { id: 'general', label: 'General' },
+    { id: 'appearance', label: 'Appearance' },
+    { id: 'editor', label: 'Editor' },
+    { id: 'terminal', label: 'Terminal' },
+    { id: 'ai', label: 'Agent' },
+    { id: 'source', label: 'Source control' },
+    { id: 'github', label: 'GitHub' },
+    { id: 'mcp', label: 'MCP tools' },
+    { id: 'plugins', label: 'Plugins' },
+    { id: 'shortcuts', label: 'Shortcuts' },
+    { id: 'advanced', label: 'Advanced' },
   ];
 
   function handleKeydown(e: KeyboardEvent) {
@@ -53,7 +51,6 @@
     class="settings-overlay"
     aria-label="Close settings"
     onclick={() => { if (onToggle) onToggle(false); }}
-    transition:fade={{ duration: 160 }}
   ></button>
   <div
     class="settings-sheet"
@@ -61,7 +58,6 @@
     aria-label="Settings"
     tabindex="-1"
     onkeydown={handleKeydown}
-    transition:settle={{ duration: 160, base: 'translate(-50%, -50%)' }}
   >
     <DitherWipe mode="dissolve" />
     <div class="settings-header">
@@ -82,10 +78,7 @@
                 aria-current={activeCategory === cat.id ? 'true' : undefined}
                 {@attach droplet}
                 data-cuelume-hover="tick"
-              >
-                <NilIcon name={cat.icon} size={16} />
-                <span>{cat.label}</span>
-              </button>
+              >{cat.label}</button>
             </li>
           {/each}
         </ul>
@@ -120,8 +113,7 @@
 
     <div class="settings-footer">
       <button class="settings-btn secondary nil-lift nil-halo" onclick={appState.toggleSettings}>
-        <NilIcon name="x" size={16} />
-        <span>Close</span>
+        Close
       </button>
     </div>
   </div>
@@ -218,9 +210,9 @@
   .settings-category {
     display: flex;
     align-items: center;
-    gap: 10px;
     width: 100%;
-    padding: 10px 12px;
+    height: var(--row-h);
+    padding: 0 10px;
     border: none;
     border-radius: var(--r-field);
     background: transparent;
@@ -257,7 +249,6 @@
   .settings-btn {
     display: flex;
     align-items: center;
-    gap: 8px;
     padding: 0 12px;
     height: 28px;
     border-radius: var(--r-field);

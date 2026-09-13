@@ -82,7 +82,10 @@
   </div>
 
   <section class="block">
-    <h4 class="eyebrow">Evidence</h4>
+    <div class="eyebrow-row">
+      <h4 class="eyebrow">Evidence</h4>
+      <CopyAffordance value={finding.evidence} />
+    </div>
     <pre class="evidence"><code>{finding.evidence}</code></pre>
   </section>
 
@@ -171,13 +174,22 @@
     color: var(--nil-ink);
   }
 
+  .eyebrow-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    margin-block-end: var(--s-1);
+  }
+
   .eyebrow {
     font: 600 var(--t-micro)/1 var(--font-ui);
     letter-spacing: var(--track-tick);
     text-transform: uppercase;
     color: var(--nil-ink-3);
-    margin-block-end: var(--s-1);
+    margin: 0;
   }
+  .block > .eyebrow { margin-block-end: var(--s-1); }
 
   .evidence {
     margin: 0;

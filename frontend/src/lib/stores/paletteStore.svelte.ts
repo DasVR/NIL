@@ -45,6 +45,20 @@ const commands: PaletteCommand[] = [
     },
   },
   {
+    id: 'mode-build',
+    label: 'Switch to Build',
+    section: 'Session',
+    icon: 'hammer',
+    action: () => { workspace.workstationMode = 'build'; },
+  },
+  {
+    id: 'mode-pentest',
+    label: 'Switch to Pentest',
+    section: 'Session',
+    icon: 'shield',
+    action: () => { workspace.workstationMode = 'pentest'; },
+  },
+  {
     id: 'open-files',
     label: 'Open files rail',
     section: 'View',

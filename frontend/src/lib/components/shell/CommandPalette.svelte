@@ -1,7 +1,5 @@
 <script lang="ts">
-  import { fade } from 'svelte/transition';
   import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
-  import { settle } from '$lib/motion/settle';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import { droplet } from '$lib/motion/droplet';
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
@@ -128,13 +126,11 @@
     class="palette-overlay"
     aria-label="Close command palette"
     onclick={() => { if (onToggle) onToggle(false); }}
-    transition:fade={{ duration: 160 }}
   ></button>
   <div
     class="palette-window"
     role="dialog"
     aria-label="Command Palette"
-    transition:settle={{ duration: 160, base: 'translateX(-50%)' }}
   >
     <DitherWipe mode="dissolve" />
     <div class="palette-header">
