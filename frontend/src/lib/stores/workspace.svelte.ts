@@ -118,6 +118,7 @@ function applyMode(next: WorkstationMode) {
   else {
     if (!pentestMode(appState.composerMode)) appState.composerMode = 'hunt';
     appState.rightSidebarOpen = true;
+    clarifyIndex = null;
   }
 }
 
