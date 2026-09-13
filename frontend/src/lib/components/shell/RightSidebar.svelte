@@ -102,6 +102,8 @@
   class="right-sidebar {open ? '' : 'collapsed'} {resizing ? 'resizing' : ''}"
   style:width={open ? `${width}px` : '0px'}
   aria-label="Inspector"
+  aria-hidden={!open}
+  inert={!open}
 >
   <div class="right-sidebar-header">
     <div class="right-sidebar-tabs" role="tablist">
@@ -206,6 +208,7 @@
                   class="file nil-halo"
                   type="button"
                   {@attach droplet}
+                  aria-label={`Open ${file.path}`}
                   onclick={() => workspace.openFile(file.path)}
                 >
                   <span class="file-path">{file.path}</span>
