@@ -1,6 +1,7 @@
 <script lang="ts">
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { soundStore } from '$lib/stores/soundStore.svelte.ts';
+  import ToggleRow from '$lib/ui/ToggleRow.svelte';
 </script>
 
 <div class="settings-pane">
@@ -36,38 +37,22 @@
 
   <div class="settings-group">
     <h4>Agent</h4>
-    <div class="setting-row">
-      <div class="setting-info">
-        <span class="setting-label">YOLO mode</span>
-        <span class="setting-desc">Auto-approve tool runs for this engagement</span>
-      </div>
-      <label class="toggle" data-cuelume-toggle="toggle">
-        <input
-          type="checkbox"
-          checked={appState.yoloMode}
-          onchange={() => appState.toggleYolo()}
-        />
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
+    <ToggleRow
+      label="YOLO mode"
+      description="Auto-approve tool runs for this engagement"
+      checked={appState.yoloMode}
+      onChange={() => { void appState.toggleYolo(); }}
+    />
   </div>
 
   <div class="settings-group">
     <h4>Sound</h4>
-    <div class="setting-row">
-      <div class="setting-info">
-        <span class="setting-label">Interaction sounds</span>
-        <span class="setting-desc">Synthesized cues on hover, press, and approve/deny</span>
-      </div>
-      <label class="toggle" data-cuelume-toggle="toggle">
-        <input
-          type="checkbox"
-          checked={soundStore.enabled}
-          onchange={(e) => soundStore.enabled = e.currentTarget.checked}
-        />
-        <span class="toggle-slider"></span>
-      </label>
-    </div>
+    <ToggleRow
+      label="Interaction sounds"
+      description="Synthesized cues on hover, press, and approve/deny"
+      checked={soundStore.enabled}
+      onChange={(on) => { soundStore.enabled = on; }}
+    />
     <div class="setting-row">
       <div class="setting-info">
         <span class="setting-label">Volume</span>
@@ -130,34 +115,6 @@
   .setting-label { font: 500 var(--t-meta)/1 var(--font-ui); color: var(--nil-ink); }
   .setting-desc { font: var(--t-micro)/1.4 var(--font-ui); color: var(--nil-ink-3); }
   .mono { font: var(--t-meta)/1 var(--font-machine); color: var(--nil-ink-2); }
-
-  .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    inset: 0;
-    background: var(--nil-line);
-    border-radius: 10px;
-    transition: background var(--dur-flip) var(--ease-out);
-  }
-  .toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background: var(--nil-ink-3);
-    border-radius: 50%;
-    transition: transform var(--dur-flip) var(--ease-out), background var(--dur-flip) var(--ease-out);
-  }
-  .toggle input:checked + .toggle-slider { background: var(--nil-ink-2); }
-  .toggle input:checked + .toggle-slider:before { transform: translateX(16px); background: var(--nil-void); }
-  .toggle input:focus-visible + .toggle-slider {
-    outline: 2px solid var(--nil-halo);
-    outline-offset: 2px;
-  }
 
   .volume-slider {
     width: 120px;

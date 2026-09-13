@@ -45,8 +45,14 @@ export const usageStore = {
   },
 
   recordTurn(usage: TokenUsage | null) {
+    if (!usage) return;
+    const same = lastTurn
+      && lastTurn.totalTokens === usage.totalTokens
+      && lastTurn.promptTokens === usage.promptTokens
+      && lastTurn.completionTokens === usage.completionTokens
+      && lastTurn.costUsd === usage.costUsd;
     lastTurn = usage;
-    if (!usage || !hasSpend(usage)) return;
+    if (same || !hasSpend(usage)) return;
     promptTokens += usage.promptTokens;
     completionTokens += usage.completionTokens;
     totalTokens += usage.totalTokens;

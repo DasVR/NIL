@@ -2,7 +2,9 @@
   import { fade } from 'svelte/transition';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { settle } from '$lib/motion/settle';
-  import Icon from '@iconify/svelte';
+  import { droplet } from '$lib/motion/droplet';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import DitherWipe from '$lib/ui/DitherWipe.svelte';
   import SettingsGeneral from '$lib/components/shell/SettingsGeneral.svelte';
   import SettingsAppearance from '$lib/components/shell/SettingsAppearance.svelte';
   import SettingsEditor from '$lib/components/shell/SettingsEditor.svelte';
@@ -11,6 +13,10 @@
   import SettingsPlugins from '$lib/components/shell/SettingsPlugins.svelte';
   import SettingsShortcuts from '$lib/components/shell/SettingsShortcuts.svelte';
   import SettingsAdvanced from '$lib/components/shell/SettingsAdvanced.svelte';
+  import SourceControl from '$lib/components/shell/SourceControl.svelte';
+  import GitHubPanel from '$lib/components/shell/GitHubPanel.svelte';
+  import McpPanel from '$lib/components/shell/McpPanel.svelte';
+  import type { SettingsCategory } from '$lib/stores/appState.svelte.ts';
 
   interface Props {
     open?: boolean;
@@ -19,17 +25,20 @@
 
   let { open = false, onToggle }: Props = $props();
 
-  let activeCategory = $state<'general' | 'appearance' | 'editor' | 'terminal' | 'ai' | 'plugins' | 'shortcuts' | 'advanced'>('general');
-  let categories = [
-    { id: 'general', label: 'General', icon: 'ph:gear-bold' },
-    { id: 'appearance', label: 'Appearance', icon: 'ph:paint-brush-broad-bold' },
-    { id: 'editor', label: 'Editor', icon: 'ph:code-bold' },
-    { id: 'terminal', label: 'Terminal', icon: 'ph:terminal-bold' },
-    { id: 'ai', label: 'Agent', icon: 'ph:cpu-bold' },
-    { id: 'plugins', label: 'Plugins', icon: 'ph:puzzle-piece-bold' },
-    { id: 'shortcuts', label: 'Shortcuts', icon: 'ph:keyboard-bold' },
-    { id: 'advanced', label: 'Advanced', icon: 'ph:wrench-bold' },
-  ] as const;
+  const activeCategory = $derived(appState.settingsCategory);
+  const categories: { id: SettingsCategory; label: string; icon: string }[] = [
+    { id: 'general', label: 'General', icon: 'settings' },
+    { id: 'appearance', label: 'Appearance', icon: 'palette' },
+    { id: 'editor', label: 'Editor', icon: 'code' },
+    { id: 'terminal', label: 'Terminal', icon: 'terminal' },
+    { id: 'ai', label: 'Agent', icon: 'cpu' },
+    { id: 'source', label: 'Source control', icon: 'git-branch' },
+    { id: 'github', label: 'GitHub', icon: 'github' },
+    { id: 'mcp', label: 'MCP tools', icon: 'plug' },
+    { id: 'plugins', label: 'Plugins', icon: 'puzzle' },
+    { id: 'shortcuts', label: 'Shortcuts', icon: 'keyboard' },
+    { id: 'advanced', label: 'Advanced', icon: 'wrench' },
+  ];
 
   function handleKeydown(e: KeyboardEvent) {
     if (e.key === 'Escape') {
@@ -54,10 +63,11 @@
     onkeydown={handleKeydown}
     transition:settle={{ duration: 160, base: 'translate(-50%, -50%)' }}
   >
+    <DitherWipe mode="dissolve" />
     <div class="settings-header">
       <h2>Settings</h2>
-      <button class="settings-close" onclick={appState.toggleSettings} aria-label="Close">
-        <Icon icon="ph:x-bold" width="20" height="20" />
+      <button class="settings-close nil-halo" onclick={appState.toggleSettings} aria-label="Close">
+        <NilIcon name="x" size={16} />
       </button>
     </div>
 
@@ -67,12 +77,13 @@
           {#each categories as cat}
             <li>
               <button
-                class="settings-category {activeCategory === cat.id ? 'active' : ''}"
-                onclick={() => activeCategory = cat.id}
+                class="settings-category nil-halo {activeCategory === cat.id ? 'active' : ''}"
+                onclick={() => (appState.settingsCategory = cat.id)}
                 aria-current={activeCategory === cat.id ? 'true' : undefined}
+                {@attach droplet}
                 data-cuelume-hover="tick"
               >
-                <Icon icon={cat.icon} width="16" height="16" />
+                <NilIcon name={cat.icon} size={16} />
                 <span>{cat.label}</span>
               </button>
             </li>
@@ -91,6 +102,12 @@
           <SettingsTerminal />
         {:else if activeCategory === 'ai'}
           <SettingsAI />
+        {:else if activeCategory === 'source'}
+          <SourceControl />
+        {:else if activeCategory === 'github'}
+          <GitHubPanel />
+        {:else if activeCategory === 'mcp'}
+          <McpPanel />
         {:else if activeCategory === 'plugins'}
           <SettingsPlugins />
         {:else if activeCategory === 'shortcuts'}
@@ -102,8 +119,8 @@
     </div>
 
     <div class="settings-footer">
-      <button class="settings-btn secondary" onclick={appState.toggleSettings}>
-        <Icon icon="ph:x-bold" width="14" height="14" />
+      <button class="settings-btn secondary nil-lift nil-halo" onclick={appState.toggleSettings}>
+        <NilIcon name="x" size={16} />
         <span>Close</span>
       </button>
     </div>
@@ -124,7 +141,7 @@
   }
 
   .settings-sheet {
-    position: fixed;
+    position: relative;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -146,33 +163,31 @@
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-4) var(--space-5);
-    border-bottom: 1px solid var(--surface-border);
+    padding: var(--s-4) var(--s-5);
+    border-bottom: 1px solid var(--nil-line);
     flex-shrink: 0;
   }
 
   .settings-header h2 {
-    font-size: var(--step-1);
-    font-weight: 600;
-    color: var(--text-primary);
+    font: 600 var(--t-lead)/var(--lh-tight) var(--font-ui);
+    color: var(--nil-ink);
   }
 
   .settings-close {
     display: grid;
     place-items: center;
-    width: 32px;
-    height: 32px;
+    width: 28px;
+    height: 28px;
     border: none;
-    border-radius: var(--radius-control);
+    border-radius: var(--r-field);
     background: transparent;
-    color: var(--text-tertiary);
+    color: var(--nil-ink-3);
     cursor: pointer;
-    transition: all var(--spring-snappy);
   }
 
   .settings-close:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
+    background: var(--nil-raised);
+    color: var(--nil-ink);
   }
 
   .settings-body {
@@ -185,8 +200,8 @@
   .settings-sidebar {
     width: 220px;
     min-width: 220px;
-    border-right: 1px solid var(--surface-border);
-    padding: var(--space-4);
+    border-right: 1px solid var(--nil-line);
+    padding: var(--s-4);
     overflow-y: auto;
     flex-shrink: 0;
   }
@@ -207,23 +222,17 @@
     width: 100%;
     padding: 10px 12px;
     border: none;
-    border-radius: var(--radius-control);
+    border-radius: var(--r-field);
     background: transparent;
-    color: var(--text-secondary);
-    font-size: var(--font-xs);
-    font-weight: 500;
+    color: var(--nil-ink-2);
+    font: 500 var(--t-meta)/1 var(--font-ui);
     text-align: left;
     cursor: pointer;
-    transition: all var(--spring-snappy);
   }
 
-  .settings-category:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-  }
-
+  .settings-category:hover,
   .settings-category.active {
-    background: var(--accent-soft);
+    background: var(--nil-panel);
     color: var(--nil-ink);
   }
 
@@ -239,9 +248,9 @@
     display: flex;
     align-items: center;
     justify-content: flex-end;
-    gap: var(--space-3);
-    padding: var(--space-4) var(--space-5);
-    border-top: 1px solid var(--surface-border);
+    gap: var(--s-3);
+    padding: var(--s-4) var(--s-5);
+    border-top: 1px solid var(--nil-line);
     flex-shrink: 0;
   }
 
@@ -249,10 +258,10 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 8px 16px;
-    border-radius: var(--radius-control);
-    font-size: var(--font-xs);
-    font-weight: 500;
+    padding: 0 12px;
+    height: 28px;
+    border-radius: var(--r-field);
+    font: 500 var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
     transition: border-color var(--dur-flip) var(--ease-out),
       background var(--dur-flip) var(--ease-out),

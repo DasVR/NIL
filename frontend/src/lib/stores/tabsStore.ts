@@ -41,6 +41,10 @@ function createTabsStore() {
       ...s,
       tabs: s.tabs.map(t => t.id === id ? { ...t, dirty } : t)
     })),
+    patchData: (id: string, data: Record<string, unknown>) => update(s => ({
+      ...s,
+      tabs: s.tabs.map(t => t.id === id ? { ...t, data: { ...(t.data ?? {}), ...data } } : t)
+    })),
   };
 }
 

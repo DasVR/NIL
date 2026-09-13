@@ -39,6 +39,8 @@ export interface MessageStep {
   role: 'user' | 'assistant';
   text: string;
   interrupted?: boolean;
+  failed?: boolean;
+  streaming?: boolean;
   usage?: TokenUsage;
 }
 

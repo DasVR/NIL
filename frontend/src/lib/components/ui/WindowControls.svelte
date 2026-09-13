@@ -2,13 +2,22 @@
   import { onMount } from 'svelte';
   import { browser } from '$app/environment';
 
+  interface TauriWindow {
+    minimize: () => void;
+    toggleMaximize: () => void;
+    close: () => void;
+    isMaximized: () => Promise<boolean>;
+    onMaximizedChanged: (cb: (event: { payload: boolean }) => void) => void;
+  }
+
   let minimizeBtn: HTMLButtonElement;
   let maximizeBtn: HTMLButtonElement;
   let closeBtn: HTMLButtonElement;
+  let maximized = $state(false);
 
   onMount(() => {
     if (!browser) return;
-    const tauri = (window as any).__TAURI__;
+    const tauri = (window as Window & { __TAURI__?: { appWindow?: TauriWindow } }).__TAURI__;
     if (!tauri?.appWindow) return;
 
     const appWindow = tauri.appWindow;
@@ -17,37 +26,19 @@
     maximizeBtn?.addEventListener('click', () => appWindow.toggleMaximize());
     closeBtn?.addEventListener('click', () => appWindow.close());
 
-    appWindow.isMaximized().then((maximized: boolean) => {
-      updateMaximizeIcon(maximized);
+    void appWindow.isMaximized().then((next) => {
+      maximized = next;
     });
 
-    appWindow.onMaximizedChanged((event: { payload: boolean }) => {
-      updateMaximizeIcon(event.payload);
+    appWindow.onMaximizedChanged((event) => {
+      maximized = event.payload;
     });
   });
-
-  function updateMaximizeIcon(maximized: boolean) {
-    if (!maximizeBtn) return;
-    maximizeBtn.innerHTML = maximized
-      ? '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 4h6a2 2 0 0 1 2 2v6"/><path d="M14 4h6a2 2 0 0 1 2 2v6"/><path d="M4 14h6a2 2 0 0 1 2 2v6"/><path d="M14 14h6a2 2 0 0 1 2 2v6"/></svg>'
-      : '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/></svg>';
-  }
-
-  function handleCloseHover(entering: boolean) {
-    if (!closeBtn) return;
-    if (entering) {
-      closeBtn.style.background = 'var(--color-danger)';
-      closeBtn.style.color = 'var(--color-abyss-0)';
-    } else {
-      closeBtn.style.background = 'transparent';
-      closeBtn.style.color = 'var(--text-tertiary)';
-    }
-  }
 </script>
 
 <div class="window-controls" role="group" aria-label="Window controls">
   <button
-    class="window-btn"
+    class="window-btn nil-halo"
     bind:this={minimizeBtn}
     aria-label="Minimize"
     title="Minimize (Cmd+M)"
@@ -58,23 +49,30 @@
   </button>
 
   <button
-    class="window-btn"
+    class="window-btn nil-halo"
     bind:this={maximizeBtn}
-    aria-label="Maximize"
+    aria-label={maximized ? 'Restore' : 'Maximize'}
     title="Maximize"
   >
-    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-      <rect x="3" y="3" width="18" height="18" rx="2"/>
-    </svg>
+    {#if maximized}
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <path d="M4 4h6a2 2 0 0 1 2 2v6"/>
+        <path d="M14 4h6a2 2 0 0 1 2 2v6"/>
+        <path d="M4 14h6a2 2 0 0 1 2 2v6"/>
+        <path d="M14 14h6a2 2 0 0 1 2 2v6"/>
+      </svg>
+    {:else}
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <rect x="3" y="3" width="18" height="18" rx="2"/>
+      </svg>
+    {/if}
   </button>
 
   <button
-    class="window-btn window-btn--close"
+    class="window-btn nil-halo"
     bind:this={closeBtn}
     aria-label="Close"
     title="Close (Cmd+W)"
-    onmouseenter={() => handleCloseHover(true)}
-    onmouseleave={() => handleCloseHover(false)}
   >
     <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
       <line x1="18" y1="6" x2="6" y2="18"/>
@@ -96,30 +94,15 @@
     width: 28px;
     height: 28px;
     border: none;
-    border-radius: var(--radius-control);
+    border-radius: var(--r-field);
     background: transparent;
-    color: var(--text-tertiary);
+    color: var(--nil-ink-3);
     cursor: pointer;
-    transition: background-color var(--spring-snappy), color var(--spring-snappy);
   }
 
   .window-btn:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-  }
-
-  .window-btn:focus-visible {
-    outline: 2px solid var(--accent-primary);
-    outline-offset: 2px;
-  }
-
-  .window-btn--close:hover {
-    background: var(--color-danger);
-    color: var(--color-abyss-0);
-  }
-
-  .window-btn--close:focus-visible {
-    outline-color: var(--color-danger);
+    background: var(--nil-raised);
+    color: var(--nil-ink);
   }
 
   @media (min-width: 0) {

@@ -1,4 +1,7 @@
 import { appState } from '$lib/stores/appState.svelte.ts';
+import { workspace } from '$lib/stores/workspace.svelte.ts';
+import { refreshProject } from '$lib/project.svelte.ts';
+import { agentRun } from '$lib/agent/run.svelte.ts';
 import { tabsStore } from '$lib/stores/tabsStore';
 
 interface PaletteCommand {
@@ -20,39 +23,120 @@ function newEngagementName(): string {
 
 const commands: PaletteCommand[] = [
   {
+    id: 'start-build',
+    label: 'Start building',
+    section: 'Session',
+    icon: 'hammer',
+    action: () => {
+      workspace.beginSession('build');
+      workspace.showStream();
+      appState.focusComposer();
+    },
+  },
+  {
+    id: 'start-hunt',
+    label: 'Start a hunt',
+    section: 'Session',
+    icon: 'shield',
+    action: () => {
+      workspace.beginSession('pentest');
+      workspace.showStream();
+      appState.focusComposer();
+    },
+  },
+  {
+    id: 'open-files',
+    label: 'Open files rail',
+    section: 'View',
+    icon: 'folder',
+    action: () => workspace.openSide('targets'),
+  },
+  {
+    id: 'refresh-workspace',
+    label: 'Refresh workspace files',
+    section: 'View',
+    icon: 'refresh-cw',
+    action: () => { void refreshProject(); },
+  },
+  {
+    id: 'open-source',
+    label: 'Open source control',
+    section: 'View',
+    icon: 'git-branch',
+    action: () => workspace.openSide('scm'),
+  },
+  {
+    id: 'open-github',
+    label: 'Open GitHub',
+    section: 'View',
+    icon: 'github',
+    action: () => workspace.openSide('github'),
+  },
+  {
+    id: 'open-mcp',
+    label: 'Open MCP tools',
+    section: 'View',
+    icon: 'plug',
+    action: () => workspace.openSide('mcp'),
+  },
+  {
+    id: 'export-report',
+    label: 'Export report',
+    section: 'Engagement',
+    icon: 'file-text',
+    action: () => { void workspace.exportReport(); },
+  },
+  {
+    id: 'refresh-findings',
+    label: 'Refresh findings',
+    section: 'Engagement',
+    icon: 'flag',
+    action: () => {
+      const id = appState.activeEngagementId;
+      if (id) void agentRun.loadEngagement(id);
+    },
+  },
+  {
     id: 'new-engagement',
     label: 'New engagement',
     shortcut: 'Cmd+N',
     section: 'Engagement',
-    icon: 'ph:plus-bold',
+    icon: 'plus',
     action: () => {
-      void appState.createEngagement(newEngagementName()).then(() => tabsStore.showStream());
+      void appState.createEngagement(newEngagementName()).then(() => workspace.showStream());
     },
   },
   {
     id: 'show-stream',
     label: 'Show stream',
     section: 'View',
-    icon: 'ph:rows-bold',
-    action: () => tabsStore.showStream(),
+    icon: 'rows-3',
+    action: () => {
+      workspace.showStream();
+      tabsStore.showStream();
+    },
+  },
+  {
+    id: 'show-diffs',
+    label: 'Show diffs',
+    section: 'View',
+    icon: 'git-compare',
+    action: () => workspace.selectRail('diffs'),
   },
   {
     id: 'new-terminal',
-    label: 'New terminal',
+    label: 'Open terminal',
     shortcut: 'Cmd+T',
     section: 'View',
-    icon: 'ph:terminal-bold',
-    action: () => {
-      const id = `terminal-${Date.now()}`;
-      tabsStore.addTab({ id, type: 'terminal', label: 'Terminal', dirty: false });
-    },
+    icon: 'terminal',
+    action: () => workspace.selectRail('terminal'),
   },
   {
     id: 'focus-composer',
     label: 'Focus composer',
     shortcut: 'Cmd+J',
     section: 'View',
-    icon: 'ph:text-aa-bold',
+    icon: 'type',
     action: () => appState.focusComposer(),
   },
   {
@@ -60,15 +144,15 @@ const commands: PaletteCommand[] = [
     label: 'Toggle sidebar',
     shortcut: 'Cmd+B',
     section: 'View',
-    icon: 'ph:sidebar-simple-bold',
-    action: () => appState.toggleSidebar(),
+    icon: 'panel-left',
+    action: () => workspace.togglePin(),
   },
   {
     id: 'toggle-inspector',
     label: 'Toggle inspector',
     shortcut: 'Cmd+\\',
     section: 'View',
-    icon: 'ph:sidebar-simple-bold',
+    icon: 'panel-right',
     action: () => appState.toggleRightSidebar(),
   },
   {
@@ -76,29 +160,45 @@ const commands: PaletteCommand[] = [
     label: 'Toggle YOLO mode',
     shortcut: 'Cmd+Y',
     section: 'Agent',
-    icon: 'ph:fast-forward-bold',
+    icon: 'fast-forward',
     action: () => { void appState.toggleYolo(); },
+  },
+  {
+    id: 'save-file',
+    label: 'Save file',
+    shortcut: 'Cmd+S',
+    section: 'View',
+    icon: 'save',
+    action: () => { void workspace.saveActiveFile(); },
   },
   {
     id: 'open-settings',
     label: 'Open settings',
     shortcut: 'Cmd+,',
     section: 'Settings',
-    icon: 'ph:gear-bold',
+    icon: 'settings',
     action: () => appState.toggleSettings(),
   },
 ];
 
 export const paletteStore = {
   get open() { return open; },
-  set open(v: boolean) { open = v; if (!v) query = ''; },
+  set open(v: boolean) {
+    open = v;
+    if (!v) query = '';
+    else void refreshProject();
+  },
   get query() { return query; },
   set query(v: string) { query = v; },
   get commands() { return commands; },
 
-  openPalette: () => { open = true; },
+  openPalette: () => { open = true; void refreshProject(); },
   closePalette: () => { open = false; query = ''; },
-  togglePalette: () => { open = !open; if (!open) query = ''; },
+  togglePalette: () => {
+    open = !open;
+    if (!open) query = '';
+    else void refreshProject();
+  },
 
   executeCommand: (id: string) => {
     const cmd = commands.find(c => c.id === id);

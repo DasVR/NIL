@@ -18,11 +18,14 @@
     if (!browser || !container) return;
 
     import('monaco-editor').then((monaco) => {
-      const voidC = token('--nil-void', '#08090a');
-      const ink = token('--nil-ink', '#e8e6e3');
-      const line = token('--nil-line', '#1c2022');
-      const criticalBg = 'rgba(229, 72, 77, 0.15)';
-      const lowBg = 'rgba(92, 158, 173, 0.15)';
+      const voidC = token('--nil-void', '#0a0908');
+      const ink = token('--nil-ink', '#efe9e0');
+      const line = token('--nil-line', '#2a2622');
+      const ember = token('--brand-ember-500', '#c2652f');
+      const dim = token('--nil-ink-3', '#736a5f');
+
+      const emberHex = ember.startsWith('#') ? ember.slice(0, 7) : '#c2652f';
+      const dimHex = dim.startsWith('#') ? dim.slice(0, 7) : '#736a5f';
 
       monaco.editor.defineTheme('nil-diff', {
         base: 'vs-dark',
@@ -31,8 +34,8 @@
         colors: {
           'editor.background': voidC,
           'editor.foreground': ink,
-          'diffEditor.insertedTextBackground': lowBg,
-          'diffEditor.removedTextBackground': criticalBg,
+          'diffEditor.insertedTextBackground': `${emberHex}26`,
+          'diffEditor.removedTextBackground': `${dimHex}33`,
           'diffEditor.border': line,
         },
       });

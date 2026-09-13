@@ -24,7 +24,7 @@ void main() {
     c.textAlign = 'center';
     c.textBaseline = 'middle';
     const size = Math.min(w * 0.26, h * 0.42);
-    c.font = `500 ${size}px "Inter Tight", Inter, system-ui, sans-serif`;
+    c.font = `500 ${size}px "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif`;
     c.fillText('NIL', w / 2, h * 0.46);
   }
 

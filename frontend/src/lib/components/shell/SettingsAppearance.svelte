@@ -1,5 +1,6 @@
 <script lang="ts">
   import { appState } from '$lib/stores/appState.svelte.ts';
+  import ToggleRow from '$lib/ui/ToggleRow.svelte';
 </script>
 
 <div class="settings-pane">
@@ -40,7 +41,7 @@
     <div class="setting-row">
       <div class="setting-info">
         <span class="setting-label">Inspector width</span>
-        <span class="setting-desc">Findings rail width in pixels</span>
+        <span class="setting-desc">Right inspector width in pixels</span>
       </div>
       <div class="setting-control">
         <input
@@ -57,26 +58,37 @@
 
   <div class="settings-group">
     <h4>Motion</h4>
-    <div class="setting-row">
-      <div class="setting-info">
-        <span class="setting-label">Reduced motion</span>
-        <span class="setting-desc">Skip springs and scanline. Instant state changes.</span>
-      </div>
-      <div class="setting-control">
-        <label class="toggle">
-          <input
-            type="checkbox"
-            checked={appState.reducedMotion}
-            onchange={(e) => appState.reducedMotion = (e.currentTarget as HTMLInputElement).checked}
-          />
-          <span class="toggle-slider"></span>
-        </label>
-      </div>
-    </div>
+    <ToggleRow
+      label="Reduced motion"
+      description="Skip springs and scanline. Instant state changes."
+      checked={appState.reducedMotion}
+      onChange={(on) => { appState.reducedMotion = on; }}
+    />
   </div>
 </div>
 
 <style>
+  .settings-pane { padding: var(--s-4) var(--s-5); }
+  .settings-pane > h3 { font: 600 var(--t-body)/var(--lh-tight) var(--font-ui); color: var(--nil-ink); margin-bottom: 4px; }
+  .settings-description { font: var(--t-meta)/var(--lh-body) var(--font-ui); color: var(--nil-ink-3); margin-bottom: var(--s-5); }
+  .settings-group { margin-bottom: var(--s-6); }
+  .settings-group h4 {
+    font: 600 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
+    text-transform: uppercase;
+    color: var(--nil-ink-3);
+    margin-bottom: var(--s-3);
+  }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--s-3) 0;
+    border-bottom: 1px solid var(--nil-line);
+  }
+  .setting-info { display: flex; flex-direction: column; gap: 2px; }
+  .setting-label { font: 500 var(--t-meta)/1 var(--font-ui); color: var(--nil-ink); }
+  .setting-desc { font: var(--t-micro)/1.4 var(--font-ui); color: var(--nil-ink-3); }
   .fixed {
     font: 500 var(--t-meta)/1 var(--font-ui);
     color: var(--nil-ink-2);
@@ -91,33 +103,5 @@
     color: var(--nil-ink);
     font-family: var(--font-machine);
     font-size: var(--t-meta);
-  }
-
-  .toggle { position: relative; display: inline-block; width: 36px; height: 20px; }
-  .toggle input { opacity: 0; width: 0; height: 0; }
-  .toggle-slider {
-    position: absolute;
-    cursor: pointer;
-    inset: 0;
-    background: var(--nil-line);
-    border-radius: 10px;
-    transition: background var(--dur-flip) var(--ease-out);
-  }
-  .toggle-slider:before {
-    position: absolute;
-    content: "";
-    height: 14px;
-    width: 14px;
-    left: 3px;
-    bottom: 3px;
-    background: var(--nil-ink-3);
-    border-radius: 50%;
-    transition: transform var(--dur-flip) var(--ease-out), background var(--dur-flip) var(--ease-out);
-  }
-  .toggle input:checked + .toggle-slider { background: var(--nil-ink-2); }
-  .toggle input:checked + .toggle-slider:before { transform: translateX(16px); background: var(--nil-void); }
-  .toggle input:focus-visible + .toggle-slider {
-    outline: 2px solid var(--nil-halo);
-    outline-offset: 2px;
   }
 </style>

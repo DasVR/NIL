@@ -2,12 +2,14 @@
   import '$lib/styles/tokens.css';
   import '$lib/styles/motion.css';
   import '../app.css';
-  import { onMount, type Snippet } from 'svelte';
+  import { onMount, untrack, type Snippet } from 'svelte';
   import Titlebar from '$lib/components/shell/Titlebar.svelte';
   import Sidebar from '$lib/components/shell/Sidebar.svelte';
   import MainWorkspace from '$lib/components/shell/MainWorkspace.svelte';
   import RightSidebar from '$lib/components/shell/RightSidebar.svelte';
   import StreamComposer from '$lib/components/shell/StreamComposer.svelte';
+  import ToolDock from '$lib/components/shell/ToolDock.svelte';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
   import StatusBar from '$lib/components/shell/StatusBar.svelte';
   import CommandPalette from '$lib/components/shell/CommandPalette.svelte';
   import SettingsSheet from '$lib/components/shell/SettingsSheet.svelte';
@@ -19,8 +21,12 @@
   import { setupTauriEvents } from '$lib/tauri-events';
   import { keymap } from '$lib/keymap.svelte.ts';
   import { browser } from '$app/environment';
-  import { agentRun } from '$lib/agent/run.svelte.ts';
+  import { agentRun, toolFilePath } from '$lib/agent/run.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
+  import { refreshProject } from '$lib/project.svelte.ts';
+  import { connectBus } from '$lib/agent/bus';
+  import ReportCover from '$lib/components/shell/ReportCover.svelte';
+  import AgentRunBar from '$lib/components/ui/AgentRunBar.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -32,11 +38,50 @@
     keymap.init();
     soundStore.init();
     appState.setComposerFocus(() => composerInput?.focus());
+    void refreshProject();
+    void workspace.refreshModels();
   });
 
   $effect(() => {
     if (!browser) return;
     void usageStore.refresh(appState.activeEngagementId);
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    const runningTool = agentRun.steps.find((s) => s.kind === 'tool' && s.state === 'running');
+    const current = untrack(() => workspace.dock);
+    if (runningTool && runningTool.kind === 'tool') {
+      if (current?.id === 'terminal' && current.kind === 'terminal') return;
+      const output = runningTool.output || runningTool.primaryArg;
+      untrack(() => {
+        if (current?.id === runningTool.id) {
+          if (current.output !== output || current.status !== 'running') {
+            workspace.updateDock({ output, status: 'running' });
+          }
+          return;
+        }
+        workspace.openDock({
+          id: runningTool.id,
+          title: runningTool.name,
+          kind: workspace.classifyDock(runningTool.name),
+          status: 'running',
+          output,
+          path: toolFilePath(runningTool) ?? undefined,
+        });
+      });
+      return;
+    }
+    if (current && current.kind !== 'terminal' && current.status === 'running') {
+      untrack(() => workspace.updateDock({ status: 'ok' }));
+    }
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    const id = appState.activeEngagementId;
+    connectBus(id || 'default');
+    if (id) void agentRun.loadEngagement(id);
   });
 </script>
 
@@ -50,7 +95,7 @@
     <Sidebar
       open={appState.sidebarOpen}
       width={appState.sidebarWidth}
-      onToggle={() => appState.sidebarOpen = !appState.sidebarOpen}
+      onToggle={() => workspace.togglePin()}
       onResize={(w) => appState.sidebarWidth = w}
     />
 
@@ -60,7 +105,11 @@
           {@render children()}
         {/snippet}
       </MainWorkspace>
-      <StreamComposer bind:inputEl={composerInput} />
+      <ToolDock />
+      <AgentRunBar />
+      {#if workspace.sessionStarted}
+        <StreamComposer bind:inputEl={composerInput} />
+      {/if}
     </main>
 
     <RightSidebar
@@ -75,6 +124,7 @@
 
   <CommandPalette open={paletteStore.open} onToggle={(o) => paletteStore.open = o} />
   <SettingsSheet open={appState.settingsOpen} onToggle={(o) => appState.settingsOpen = o} />
+  <ReportCover />
 </div>
 
 {#if browser && !booted}

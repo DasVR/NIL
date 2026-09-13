@@ -2,6 +2,11 @@
   import { untrack } from 'svelte';
   import type { ToolStep } from '$lib/agent/types';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
+  import InlineDiff from '$lib/ui/InlineDiff.svelte';
+  import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
+  import { toolFilePath } from '$lib/agent/run.svelte.ts';
 
   interface Props {
     step: ToolStep;
@@ -36,6 +41,13 @@
   let showAll = $state(false);
   const PREVIEW = 4000;
   const displayText = $derived(showAll || resultText.length <= PREVIEW ? resultText : resultText.slice(0, PREVIEW));
+  const isDiff = $derived(/^(diff --git |@@ |\+\+\+ |--- )/m.test(resultText));
+  const touchedFile = $derived(toolFilePath(step));
+  const copyValue = $derived(touchedFile || step.primaryArg);
+
+  $effect(() => {
+    if (isDiff && resultText) workspace.setDiff(resultText);
+  });
 
   const indexLabel = $derived(String(step.index).padStart(2, '0'));
 
@@ -51,6 +63,12 @@
     if (ms < 1000) return `${Math.round(ms)}ms`;
     if (ms < 60000) return `${(ms / 1000).toFixed(1)}s`;
     return `${Math.floor(ms / 60000)}m${String(Math.round((ms % 60000) / 1000)).padStart(2, '0')}s`;
+  }
+
+  function openTouched() {
+    const path = touchedFile;
+    if (!path) return;
+    workspace.openFile(path);
   }
 </script>
 
@@ -70,8 +88,25 @@
 
   <div class="body">
     <header class="head">
-      <span class="name">{step.name}</span>
-      <span class="arg">{step.primaryArg}</span>
+      <button
+        class="toggle nil-halo"
+        type="button"
+        aria-expanded={open}
+        onclick={() => (open = !open)}
+      >
+        <span class="chev" class:open><NilIcon name="chevron-right" size={16} /></span>
+        <span class="name">{step.name}</span>
+      </button>
+      <span class="arg-row">
+        {#if touchedFile}
+          <button class="arg link nil-halo" type="button" onclick={openTouched}>{touchedFile}</button>
+        {:else}
+          <span class="arg">{step.primaryArg}</span>
+        {/if}
+        {#if copyValue}
+          <CopyAffordance value={copyValue} />
+        {/if}
+      </span>
       <span class="state" data-state={step.state}>
         <span class="glyph">{stateGlyph}</span>
         <span class="label">{stateLabel}</span>
@@ -80,30 +115,26 @@
       <SpendMeter usage={step.usage} compact />
     </header>
 
-    {#if step.state === 'error' || step.output || step.state === 'ok'}
-      <button
-        class="toggle nil-halo"
-        type="button"
-        aria-expanded={open}
-        onclick={() => (open = !open)}
-      >
-        {open ? 'Hide output' : 'Show output'}
-        {#if resultBytes > 0}
-          <span class="bytes">{resultBytes} B</span>
-        {/if}
-      </button>
-      <div class="nil-reveal" data-open={open ? 'true' : 'false'}>
+    <div class="nil-reveal" data-open={open ? 'true' : 'false'}>
+      {#if step.state === 'error' || step.output || step.state === 'ok'}
         <div class="result">
           {#if step.state === 'error' && step.exitCode !== undefined}
             <p class="exit">exit {step.exitCode}</p>
           {/if}
-          <pre><code>{displayText}</code></pre>
+          {#if isDiff}
+            <InlineDiff diff={displayText} />
+          {:else}
+            <pre><code>{displayText}</code></pre>
+          {/if}
           {#if resultText.length > PREVIEW && !showAll}
             <button class="nil-halo show-all" type="button" onclick={() => (showAll = true)}>Show all</button>
           {/if}
+          {#if resultBytes > 0}
+            <span class="bytes">{resultBytes} B</span>
+          {/if}
         </div>
-      </div>
-    {/if}
+      {/if}
+    </div>
   </div>
 </article>
 
@@ -150,6 +181,13 @@
     color: var(--nil-ink);
   }
 
+  .arg-row {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 0;
+    max-width: 100%;
+  }
   .arg {
     font: var(--t-meta)/var(--lh-tight) var(--font-machine);
     color: var(--nil-ink-2);
@@ -158,6 +196,13 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .arg.link {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .arg.link:hover { color: var(--nil-ink); }
 
   .state {
     margin-inline-start: auto;
@@ -195,18 +240,24 @@
 
   .toggle {
     display: inline-flex;
-    align-items: center;
+    align-items: baseline;
     gap: var(--s-2);
-    height: 24px;
+    min-width: 0;
     padding: 0;
     border: 0;
     background: none;
-    color: var(--nil-ink-3);
-    font: var(--t-micro)/1 var(--font-ui);
-    letter-spacing: var(--track-tick);
-    text-transform: uppercase;
+    color: inherit;
     cursor: pointer;
+    text-align: left;
   }
+  .chev {
+    display: grid;
+    place-items: center;
+    color: var(--nil-ink-3);
+    transition: transform var(--dur-flip) var(--ease-out);
+    flex-shrink: 0;
+  }
+  .chev.open { transform: rotate(90deg); }
 
   .bytes {
     font-family: var(--font-machine);

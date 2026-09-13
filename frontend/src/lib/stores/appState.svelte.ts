@@ -4,28 +4,18 @@ import { browser } from '$app/environment';
 
 type Theme = 'dark';
 export type ComposerMode = 'hunt' | 'exploit' | 'chat' | 'code' | 'report';
-export type Effort = 'low' | 'medium' | 'high';
-
-export interface ContextChip {
-  id: string;
-  path: string;
-  line?: number;
-}
-
-export interface ModelOption {
-  id: string;
-  name: string;
-  description: string;
-}
-
-// UI-only for now — selecting a model doesn't change run_turn yet (no backend
-// route to carry it). This is the composer affordance the goal doc asks for;
-// wiring it to the agent call is a separate, backend-touching step.
-export const MODEL_OPTIONS: ModelOption[] = [
-  { id: 'claude-opus-5', name: 'Opus 5', description: 'Most capable, best for hard problems' },
-  { id: 'claude-sonnet-5', name: 'Sonnet 5', description: 'Balanced speed and capability' },
-  { id: 'claude-haiku-4-5', name: 'Haiku 4.5', description: 'Fastest, best for quick tasks' },
-];
+export type SettingsCategory =
+  | 'general'
+  | 'appearance'
+  | 'editor'
+  | 'terminal'
+  | 'ai'
+  | 'plugins'
+  | 'shortcuts'
+  | 'source'
+  | 'github'
+  | 'mcp'
+  | 'advanced';
 
 interface AppState {
   sidebarOpen: boolean;
@@ -40,9 +30,9 @@ interface AppState {
 }
 
 const defaultState: AppState = {
-  sidebarOpen: true,
+  sidebarOpen: false,
   sidebarWidth: 280,
-  rightSidebarOpen: true,
+  rightSidebarOpen: false,
   rightSidebarWidth: 320,
   settingsOpen: false,
   theme: 'dark',
@@ -56,16 +46,14 @@ let sidebarWidth = $state(defaultState.sidebarWidth);
 let rightSidebarOpen = $state(defaultState.rightSidebarOpen);
 let rightSidebarWidth = $state(defaultState.rightSidebarWidth);
 let settingsOpen = $state(defaultState.settingsOpen);
+let settingsCategory = $state<SettingsCategory>('general');
 let theme = $state<Theme>(defaultState.theme);
 let reducedMotion = $state(defaultState.reducedMotion);
 let activeTargetId = $state(defaultState.activeTargetId);
 let activeEngagementId = $state(defaultState.activeEngagementId);
 let yoloMode = $state(false);
-let composerMode = $state<ComposerMode>('hunt');
+let composerMode = $state<ComposerMode>('code');
 let composerFocus: () => void = () => {};
-let contextChips = $state<ContextChip[]>([]);
-let selectedModel = $state(MODEL_OPTIONS[1].id);
-let effort = $state<Effort>('medium');
 
 let engagements = $state<Engagement[]>([]);
 let backendHealthy = $state(false);
@@ -127,6 +115,8 @@ export const appState = {
   set rightSidebarWidth(v: number) { rightSidebarWidth = v; },
   get settingsOpen() { return settingsOpen; },
   set settingsOpen(v: boolean) { settingsOpen = v; },
+  get settingsCategory() { return settingsCategory; },
+  set settingsCategory(v: SettingsCategory) { settingsCategory = v; },
   get theme() { return theme; },
   get reducedMotion() { return reducedMotion; },
   set reducedMotion(v: boolean) {
@@ -142,22 +132,6 @@ export const appState = {
   get composerMode() { return composerMode; },
   set composerMode(v: ComposerMode) { composerMode = v; },
 
-  get contextChips() { return contextChips; },
-  addContextChip: (path: string, line?: number) => {
-    const id = line !== undefined ? `${path}:${line}` : path;
-    if (contextChips.some((c) => c.id === id)) return;
-    contextChips = [...contextChips, { id, path, line }];
-  },
-  removeContextChip: (id: string) => {
-    contextChips = contextChips.filter((c) => c.id !== id);
-  },
-  clearContextChips: () => { contextChips = []; },
-
-  get selectedModel() { return selectedModel; },
-  set selectedModel(v: string) { selectedModel = v; },
-  get effort() { return effort; },
-  set effort(v: Effort) { effort = v; },
-
   get engagements() { return engagements; },
   get backendHealthy() { return backendHealthy; },
   get backendVersion() { return backendVersion; },
@@ -167,6 +141,10 @@ export const appState = {
   toggleSidebar: () => { sidebarOpen = !sidebarOpen; },
   toggleRightSidebar: () => { rightSidebarOpen = !rightSidebarOpen; },
   toggleSettings: () => { settingsOpen = !settingsOpen; },
+  openSettings: (category?: SettingsCategory) => {
+    if (category) settingsCategory = category;
+    settingsOpen = true;
+  },
   toggleYolo,
   setComposerFocus: (fn: () => void) => { composerFocus = fn; },
   focusComposer: () => { composerFocus(); },

@@ -1,8 +1,17 @@
 <script lang="ts">
   import { onMount } from 'svelte';
   import { appState } from '$lib/stores/appState.svelte.ts';
+  import { workspace, type RailId } from '$lib/stores/workspace.svelte.ts';
+  import { agentRun } from '$lib/agent/run.svelte.ts';
   import TargetTree from '$lib/components/shell/TargetTree.svelte';
-  import Icon from '@iconify/svelte';
+  import FileExplorer from '$lib/components/shell/FileExplorer.svelte';
+  import SourceControl from '$lib/components/shell/SourceControl.svelte';
+  import GitHubPanel from '$lib/components/shell/GitHubPanel.svelte';
+  import McpPanel from '$lib/components/shell/McpPanel.svelte';
+  import HoldConfirm from '$lib/ui/HoldConfirm.svelte';
+  import api from '$lib/api';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import MatrixRain from '$lib/ui/MatrixRain.svelte';
 
   interface SidebarProps {
     open?: boolean;
@@ -11,23 +20,28 @@
     onResize?: (w: number) => void;
   }
 
-  let { open = $bindable(true), width = $bindable(280), onToggle, onResize }: SidebarProps = $props();
+  let { open = $bindable(false), width = $bindable(280), onToggle, onResize }: SidebarProps = $props();
 
-  let collapsed = $derived(!open);
   let dragStartX = 0;
   let startWidth = 0;
   let resizing = $state(false);
+  let panel = $derived(workspace.sidePanel);
 
-  // Rail mode: collapsed isn't just the tree squeezed into 48px anymore — it's
-  // a real icon rail (one destination per engagement), and clicking a
-  // destination pins the sidebar open, the way hovering a label then clicking
-  // it does in a Claude/Grok-style rail. `open` arrives one-way from the
-  // parent (appState.sidebarOpen); onToggle is a flip, so only call it while
-  // actually collapsed or this would re-collapse an already-open sidebar.
-  function selectEngagementFromRail(name: string) {
-    appState.activeEngagementId = name;
-    appState.activeTargetId = name;
-    if (collapsed) onToggle?.();
+  const RAIL = workspace.RAIL_WIDTH;
+  const pinned = $derived(open || workspace.railPinned);
+  const totalWidth = $derived(pinned ? RAIL + width : RAIL);
+
+  const items: { id: RailId; icon: string; label: string }[] = [
+    { id: 'files', icon: 'folder', label: 'Files' },
+    { id: 'terminal', icon: 'terminal', label: 'Terminal' },
+    { id: 'diffs', icon: 'git-compare', label: 'Diffs' },
+    { id: 'pentest', icon: 'shield', label: 'Pentest' },
+  ];
+
+  function clickRail(id: RailId) {
+    workspace.selectRail(id);
+    open = workspace.railPinned;
+    appState.sidebarOpen = workspace.railPinned;
   }
 
   function handleResizeStart(e: MouseEvent) {
@@ -55,9 +69,11 @@
   }
 
   function handleResizeKeydown(e: KeyboardEvent) {
-    if (e.key === 'Enter' || e.key === ' ') {
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
-      handleResizeStart(e as unknown as MouseEvent);
+      const next = Math.max(200, Math.min(400, width + (e.key === 'ArrowRight' ? 16 : -16)));
+      width = next;
+      if (onResize) onResize(next);
     }
   }
 
@@ -71,240 +87,201 @@
   });
 </script>
 
-<aside 
-  class="sidebar {collapsed ? 'collapsed' : ''} {resizing ? 'resizing' : ''}" 
-  style:width={width}px
-  aria-label="Targets sidebar"
+<aside
+  class="sidebar {pinned ? 'pinned' : 'collapsed'} {resizing ? 'resizing' : ''}"
+  style:width={`${totalWidth}px`}
+  aria-label="Workspace rail"
 >
-  <div class="sidebar-header">
-    {#if collapsed}
-      <button class="icon-btn rail-new" aria-label="New target" title="New Target (Cmd+N)">
-        <Icon icon="ph:plus-bold" width="16" height="16" />
+  <nav class="rail" aria-label="Primary">
+    {#each items as item}
+      {@const active = workspace.activeRail === item.id}
+      <button
+        class="rail-btn nil-halo nil-lift"
+        class:active
+        type="button"
+        aria-label={item.label}
+        aria-pressed={active}
+        data-tip={item.label}
+        onclick={() => clickRail(item.id)}
+      >
+        {#if item.id === 'pentest' && workspace.workstationMode === 'pentest' && agentRun.findings.length === 0 && agentRun.steps.length === 0}
+          <span class="rain-slot" aria-hidden="true">
+            <MatrixRain faint />
+          </span>
+        {/if}
+        <NilIcon name={item.icon} size={20} />
       </button>
-    {:else}
-      <div class="sidebar-title">Targets</div>
-      <div class="sidebar-actions">
-        <button class="icon-btn" aria-label="New target" title="New Target (Cmd+N)">
-          <Icon icon="ph:plus-bold" width="16" height="16" />
-        </button>
-        <button class="icon-btn" aria-label="Import scope" title="Import Scope">
-          <Icon icon="ph:import-bold" width="16" height="16" />
-        </button>
-        <button class="icon-btn" aria-label="Templates" title="Templates">
-          <Icon icon="ph:layout-bold" width="16" height="16" />
-        </button>
+    {/each}
+  </nav>
+
+  {#if pinned}
+    <div class="panel">
+      <div class="panel-head">
+        <div class="segs" role="tablist" aria-label="Sidebar panel">
+          <button class="seg nil-quiet" class:on={panel === 'targets'} type="button" onclick={() => (workspace.sidePanel = 'targets')}>
+            {workspace.workstationMode === 'pentest' ? 'Targets' : 'Files'}
+          </button>
+          <button class="seg nil-quiet" class:on={panel === 'scm'} type="button" onclick={() => (workspace.sidePanel = 'scm')}>Source</button>
+          <button class="seg nil-quiet" class:on={panel === 'github'} type="button" onclick={() => (workspace.sidePanel = 'github')}>GitHub</button>
+          <button class="seg nil-quiet" class:on={panel === 'mcp'} type="button" onclick={() => (workspace.sidePanel = 'mcp')}>MCP</button>
+        </div>
       </div>
-    {/if}
-  </div>
-
-  <div class="sidebar-divider"></div>
-
-  {#if collapsed}
-    <!-- Rail mode: one icon per engagement, not the full tree squeezed down.
-         Hover for the name (native title, matches the rest of the app),
-         click to select it AND pin the sidebar open. -->
-    <div class="rail-list" role="group" aria-label="Targets">
-      {#each appState.engagements as eng (eng.name)}
-        <button
-          class="rail-icon"
-          class:active={appState.activeEngagementId === eng.name}
-          type="button"
-          title={eng.name}
-          aria-label={eng.name}
-          onclick={() => selectEngagementFromRail(eng.name)}
-        >
-          <Icon icon="ph:briefcase-bold" width="16" height="16" />
-          {#if eng.findings_count > 0}
-            <span class="rail-badge" aria-hidden="true"></span>
+      {#if panel === 'targets'}
+        {#if workspace.workstationMode === 'pentest'}
+          <TargetTree />
+          {#if appState.activeEngagementId}
+            <div class="danger">
+              <HoldConfirm
+                label="Delete target"
+                confirmLabel="Hold to delete"
+                ariaLabel="Hold to delete this target"
+                onConfirm={() => {
+                  const name = appState.activeEngagementId;
+                  if (!name) return;
+                  void api.deleteEngagement(name).then(() => appState.refreshEngagements());
+                }}
+              />
+            </div>
           {/if}
-        </button>
-      {/each}
+        {:else}
+          <FileExplorer />
+        {/if}
+      {:else if panel === 'scm'}
+        <SourceControl />
+      {:else if panel === 'github'}
+        <GitHubPanel />
+      {:else if panel === 'mcp'}
+        <McpPanel />
+      {/if}
     </div>
-  {:else}
-    <TargetTree />
+
+    <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
+    <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
+    <div
+      class="sidebar-resize-handle"
+      onmousedown={handleResizeStart}
+      onkeydown={handleResizeKeydown}
+      aria-label="Resize sidebar"
+      role="separator"
+      aria-orientation="vertical"
+      aria-valuenow={width}
+      aria-valuemin={200}
+      aria-valuemax={400}
+      tabindex="0"
+    ></div>
   {/if}
-
-  <div class="sidebar-divider"></div>
-
-  <div class="sidebar-footer">
-    <button class="icon-btn sidebar-footer-btn" aria-label="Toggle sidebar" onclick={() => { if (onToggle) onToggle(); }}>
-      <Icon icon={collapsed ? 'ph:caret-right-bold' : 'ph:caret-left-bold'} width="16" height="16" />
-    </button>
-  </div>
-
-  <!-- WAI-ARIA APG "window splitter" pattern, matching RightSidebar's resize
-       handle: a focusable separator with aria-valuenow/min/max, not a button
-       (those value attributes aren't valid ARIA on role="button"). -->
-  <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
-  <!-- svelte-ignore a11y_no_noninteractive_tabindex -->
-  <div
-    class="sidebar-resize-handle"
-    onmousedown={handleResizeStart}
-    onkeydown={handleResizeKeydown}
-    aria-label="Resize sidebar"
-    role="separator"
-    aria-orientation="vertical"
-    aria-valuenow={width}
-    aria-valuemin={200}
-    aria-valuemax={400}
-    tabindex="0"
-  ></div>
 </aside>
 
 <style>
   .sidebar {
     position: relative;
-    top: auto;
-    left: auto;
-    bottom: auto;
     height: 100%;
+    display: flex;
+    flex-direction: row;
+    z-index: var(--z-rail);
+    transition: width var(--dur-panel) var(--ease-out);
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+  .sidebar.resizing { transition: none; }
+
+  .rail {
+    width: 48px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: var(--s-2) 0;
+    background: var(--nil-panel);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-panel);
+    box-shadow: var(--lift-2);
+  }
+
+  .rail-btn {
+    position: relative;
+    z-index: 0;
+    display: grid;
+    place-items: center;
+    width: 36px;
+    height: 36px;
+    border: 0;
+    border-radius: var(--r-field);
+    background: transparent;
+    color: var(--nil-ink-3);
+    cursor: pointer;
+    overflow: hidden;
+    transition: color var(--dur-flip) var(--ease-out),
+                background var(--dur-flip) var(--ease-out);
+  }
+  .rail-btn:hover { color: var(--nil-ink); background: var(--nil-raised); }
+  .rail-btn.active {
+    color: var(--nil-ink);
+    background: var(--nil-raised);
+    box-shadow: inset 0 0 0 1px var(--nil-line-hot);
+  }
+  .rail-btn[data-tip]:hover::after {
+    content: attr(data-tip);
+    position: absolute;
+    left: calc(100% + 8px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 4px 8px;
+    background: var(--nil-raised);
+    border: 1px solid var(--nil-line-hot);
+    border-radius: var(--r-chip);
+    color: var(--nil-ink);
+    font: 500 var(--t-meta)/1 var(--font-ui);
+    white-space: nowrap;
+    pointer-events: none;
+    z-index: var(--z-tooltip);
+    box-shadow: var(--lift-2);
+  }
+
+  .rain-slot {
+    position: absolute;
+    inset: 4px;
+    border-radius: inherit;
+    overflow: hidden;
+    z-index: -1;
+    pointer-events: none;
+  }
+
+  .panel {
+    flex: 1;
+    min-width: 0;
+    margin-left: var(--s-2);
     background: var(--nil-panel);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-panel);
     box-shadow: var(--lift-2);
     display: flex;
     flex-direction: column;
-    z-index: var(--z-rail);
-    transition: width var(--dur-panel) var(--ease-out);
     overflow: hidden;
+  }
+
+  .panel-head {
+    padding: var(--s-2);
+    border-bottom: 1px solid var(--nil-line);
     flex-shrink: 0;
   }
-
-  .sidebar.collapsed {
-    width: 48px !important;
-  }
-
-  .sidebar.resizing {
-    transition: none;
-  }
-
-  .sidebar-header {
+  .segs {
     display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 36px;
-    padding: 0 var(--space-2) 0 var(--space-3);
-    border-bottom: 1px solid var(--sidebar-border);
-    flex-shrink: 0;
-    gap: var(--space-2);
+    gap: 2px;
   }
-
-  .sidebar.collapsed .sidebar-header {
-    justify-content: center;
-    padding: 0;
-  }
-
-  .sidebar-title {
-    font-size: 10px;
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 0.1em;
-    color: var(--text-faint, var(--text-tertiary));
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
+  .seg {
     flex: 1;
-    transition: opacity var(--spring-snappy), width var(--spring-snappy);
-  }
-
-  .sidebar-actions {
-    display: flex;
-    gap: 4px;
-    transition: opacity var(--spring-snappy), width var(--spring-snappy);
-  }
-
-  .sidebar-divider {
-    height: 1px;
-    background: var(--sidebar-border);
-    margin: 0 var(--space-2);
-  }
-
-  .sidebar.collapsed .sidebar-divider {
-    margin: 0;
-  }
-
-  .sidebar-footer {
-    height: var(--row-h);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    padding: 0 var(--space-2);
-    border-top: 1px solid var(--sidebar-border);
-    flex-shrink: 0;
-  }
-
-  .sidebar-footer-btn {
-    color: var(--text-tertiary);
-    border-radius: var(--radius-control);
-    transition: color var(--dur-fast) var(--spring-snappy),
-      background var(--dur-fast) var(--spring-snappy),
-      transform var(--dur-fast) var(--spring-snappy);
-  }
-  .sidebar-footer-btn:hover {
-    color: var(--text-primary);
-    background: var(--surface-hover);
-  }
-  .sidebar-footer-btn:active {
-    transform: scale(0.9);
-  }
-
-  /* Rail mode — one icon per destination, hover for the name, click to
-     select it and pin the sidebar back open. */
-  .rail-list {
-    flex: 1;
-    overflow-y: auto;
-    overflow-x: hidden;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: var(--space-1);
-    padding: var(--space-2) 0;
-  }
-
-  .rail-new {
-    margin: 0;
-  }
-
-  .rail-icon {
-    position: relative;
-    display: grid;
-    place-items: center;
-    width: 32px;
-    height: 32px;
-    border: none;
-    border-radius: var(--r-field);
+    height: 24px;
+    border: 0;
+    border-radius: var(--r-chip);
     background: transparent;
     color: var(--nil-ink-3);
+    font: 500 var(--t-micro)/1 var(--font-ui);
     cursor: pointer;
-    flex-shrink: 0;
-    transition: color var(--dur-flip) var(--ease-out),
-                background-color var(--dur-flip) var(--ease-out);
   }
-
-  .rail-icon:hover {
-    color: var(--nil-ink);
-    background: var(--nil-raised);
-  }
-
-  .rail-icon.active {
-    color: var(--nil-ink);
-    background: var(--nil-void);
-    box-shadow: 0 0 0 1px var(--nil-line-hot) inset;
-  }
-
-  .rail-icon:active {
-    transform: scale(0.9);
-  }
-
-  .rail-badge {
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    min-width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--nil-ink-2);
-  }
+  .seg.on { color: var(--nil-ink); background: var(--nil-raised); }
+  .danger { padding: var(--s-2); border-top: 1px solid var(--nil-line); }
 
   .sidebar-resize-handle {
     position: absolute;
@@ -314,17 +291,7 @@
     width: 8px;
     cursor: col-resize;
     background: transparent;
-    border: none;
-    padding: 0;
     z-index: 10;
-    transition: background var(--spring-snappy);
   }
-
-  .sidebar-resize-handle:hover {
-    background: var(--accent-primary);
-  }
-
-  .sidebar.collapsed .sidebar-resize-handle {
-    right: -4px;
-  }
+  .sidebar-resize-handle:hover { background: var(--nil-line-hot); }
 </style>
