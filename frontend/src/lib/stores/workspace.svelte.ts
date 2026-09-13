@@ -67,6 +67,10 @@ const FALLBACK_MODELS: ModelOption[] = [
 
 const RAIL_WIDTH = 48;
 const RECENTS_KEY = 'nil.recent-sessions';
+const PREFS_KEY = 'nil.workstation-prefs';
+const SPLIT_MIN = 0.34;
+const SPLIT_MAX = 0.72;
+const SPLIT_DEFAULT = 0.56;
 
 function loadRecents(): RecentSession[] {
   if (!browser) return [];
@@ -131,6 +135,7 @@ let attached = $state<ContextFile[]>([]);
 let models = $state<ModelOption[]>(FALLBACK_MODELS);
 let modelId = $state('default');
 let effort = $state<'low' | 'medium' | 'high'>('medium');
+let splitPct = $state(SPLIT_DEFAULT);
 let dictationActive = $state(false);
 let dictationPaused = $state(false);
 let recents = $state<RecentSession[]>(loadRecents());
@@ -142,6 +147,34 @@ function persistRecents() {
   if (!browser) return;
   localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
 }
+
+function clampSplit(value: number): number {
+  if (!Number.isFinite(value)) return SPLIT_DEFAULT;
+  return Math.min(SPLIT_MAX, Math.max(SPLIT_MIN, value));
+}
+
+function persistPrefs() {
+  if (!browser) return;
+  localStorage.setItem(PREFS_KEY, JSON.stringify({ modelId, effort, splitPct }));
+}
+
+function loadPrefs() {
+  if (!browser) return;
+  try {
+    const raw = localStorage.getItem(PREFS_KEY);
+    if (!raw) return;
+    const parsed = JSON.parse(raw) as unknown;
+    if (!parsed || typeof parsed !== 'object') return;
+    const row = parsed as { modelId?: unknown; effort?: unknown; splitPct?: unknown };
+    if (typeof row.modelId === 'string' && row.modelId) modelId = row.modelId;
+    if (row.effort === 'low' || row.effort === 'medium' || row.effort === 'high') effort = row.effort;
+    if (typeof row.splitPct === 'number') splitPct = clampSplit(row.splitPct);
+  } catch {
+    // Keep defaults when prefs are missing or malformed.
+  }
+}
+
+loadPrefs();
 
 function rememberSession(mode: WorkstationMode, label?: string) {
   const name = label || (mode === 'pentest' ? 'hunt' : 'build');
@@ -201,12 +234,15 @@ function applyClarify(id: ClarifyId) {
       break;
     case 'small':
       effort = 'low';
+      persistPrefs();
       break;
     case 'broad':
       effort = 'high';
+      persistPrefs();
       break;
     case 'ask':
       effort = 'medium';
+      persistPrefs();
       break;
     case 'stream':
       tabsStore.showStream();
@@ -258,6 +294,7 @@ async function refreshModels() {
       description: [p.type, p.enabled ? 'on' : 'off'].filter(Boolean).join(' · '),
     }));
     if (!models.some((m) => m.id === modelId)) modelId = models[0]?.id ?? 'default';
+    persistPrefs();
   } catch {
     // Keep the fallback list when the API is down.
   }
@@ -560,9 +597,20 @@ export const workspace = {
   get attached() { return attached; },
   get models() { return models; },
   get modelId() { return modelId; },
-  set modelId(v: string) { modelId = v; },
+  set modelId(v: string) {
+    modelId = v;
+    persistPrefs();
+  },
   get effort() { return effort; },
-  set effort(v: 'low' | 'medium' | 'high') { effort = v; },
+  set effort(v: 'low' | 'medium' | 'high') {
+    effort = v;
+    persistPrefs();
+  },
+  get splitPct() { return splitPct; },
+  set splitPct(v: number) {
+    splitPct = clampSplit(v);
+    persistPrefs();
+  },
   get dictationActive() { return dictationActive; },
   set dictationActive(v: boolean) {
     dictationActive = v;

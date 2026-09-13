@@ -171,7 +171,7 @@
         {#if findings.length === 0}
           <div class="empty-state">
             <NilIcon name="flag" size={20} />
-            <p>No findings yet</p>
+            <p>No findings yet.</p>
             <span>Run a hunt to start collecting evidence.</span>
           </div>
         {/if}
@@ -201,16 +201,21 @@
         {:else}
           <ul class="files">
             {#each workspace.attached as file (file.id)}
-              <li>
+              <li class="file-row">
                 <button
                   class="file nil-halo"
                   type="button"
                   {@attach droplet}
-                  onclick={() => workspace.detachFile(file.id)}
+                  onclick={() => workspace.openFile(file.path)}
                 >
                   <span class="file-path">{file.path}</span>
-                  <span class="file-x">Remove</span>
                 </button>
+                <button
+                  class="file-x nil-halo"
+                  type="button"
+                  aria-label={`Detach ${file.path}`}
+                  onclick={() => workspace.detachFile(file.id)}
+                >Detach</button>
               </li>
             {/each}
           </ul>
@@ -347,12 +352,17 @@
   dt { font: var(--t-micro)/1 var(--font-ui); color: var(--nil-ink-3); }
   dd { margin: 0; font: var(--t-meta)/1 var(--font-machine); color: var(--nil-ink-2); }
 
+  .file-row {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
   .file {
     display: flex;
     align-items: center;
-    justify-content: space-between;
     gap: var(--s-2);
-    width: 100%;
+    min-width: 0;
+    flex: 1;
     height: var(--row-h);
     padding: 0 var(--s-2);
     border: 0;
@@ -360,9 +370,25 @@
     background: transparent;
     color: var(--nil-ink-2);
     cursor: pointer;
+    text-align: left;
   }
-  .file-path { font: var(--t-meta)/1 var(--font-machine); }
-  .file-x { font: var(--t-micro)/1 var(--font-ui); color: var(--nil-ink-3); }
+  .file-path {
+    font: var(--t-meta)/1 var(--font-machine);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .file-x {
+    height: 22px;
+    padding: 0 6px;
+    border: 0;
+    background: transparent;
+    font: var(--t-micro)/1 var(--font-ui);
+    color: var(--nil-ink-3);
+    cursor: pointer;
+    border-radius: var(--r-chip);
+    flex-shrink: 0;
+  }
 
   .empty-state {
     display: flex;

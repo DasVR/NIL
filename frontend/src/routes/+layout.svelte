@@ -2,7 +2,7 @@
   import '$lib/styles/tokens.css';
   import '$lib/styles/motion.css';
   import '../app.css';
-  import { onMount, type Snippet } from 'svelte';
+  import { onMount, untrack, type Snippet } from 'svelte';
   import Titlebar from '$lib/components/shell/Titlebar.svelte';
   import Sidebar from '$lib/components/shell/Sidebar.svelte';
   import MainWorkspace from '$lib/components/shell/MainWorkspace.svelte';
@@ -50,19 +50,29 @@
   $effect(() => {
     if (!browser) return;
     const runningTool = agentRun.steps.find((s) => s.kind === 'tool' && s.state === 'running');
+    const current = untrack(() => workspace.dock);
     if (runningTool && runningTool.kind === 'tool') {
-      if (workspace.dock?.kind === 'terminal') return;
-      workspace.openDock({
-        id: runningTool.id,
-        title: runningTool.name,
-        kind: workspace.classifyDock(runningTool.name),
-        status: 'running',
-        output: runningTool.output || runningTool.primaryArg,
+      if (current?.id === 'terminal' && current.kind === 'terminal') return;
+      const output = runningTool.output || runningTool.primaryArg;
+      untrack(() => {
+        if (current?.id === runningTool.id) {
+          if (current.output !== output || current.status !== 'running') {
+            workspace.updateDock({ output, status: 'running' });
+          }
+          return;
+        }
+        workspace.openDock({
+          id: runningTool.id,
+          title: runningTool.name,
+          kind: workspace.classifyDock(runningTool.name),
+          status: 'running',
+          output,
+        });
       });
       return;
     }
-    if (workspace.dock && workspace.dock.kind !== 'terminal' && workspace.dock.status === 'running') {
-      workspace.updateDock({ status: 'ok' });
+    if (current && current.kind !== 'terminal' && current.status === 'running') {
+      untrack(() => workspace.updateDock({ status: 'ok' }));
     }
   });
 

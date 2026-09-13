@@ -50,6 +50,41 @@
     tabsStore.closeTab(id);
   }
 
+  function onSplitPointer(e: PointerEvent) {
+    const handle = e.currentTarget as HTMLElement;
+    const host = handle.parentElement;
+    if (!host) return;
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    const move = (ev: PointerEvent) => {
+      const box = host.getBoundingClientRect();
+      if (box.width <= 0) return;
+      workspace.splitPct = (ev.clientX - box.left) / box.width;
+    };
+    const up = () => {
+      handle.removeEventListener('pointermove', move);
+      handle.removeEventListener('pointerup', up);
+    };
+    handle.addEventListener('pointermove', move);
+    handle.addEventListener('pointerup', up);
+  }
+
+  function onSplitKey(e: KeyboardEvent) {
+    if (e.key === 'ArrowLeft') {
+      e.preventDefault();
+      workspace.splitPct -= 0.03;
+    } else if (e.key === 'ArrowRight') {
+      e.preventDefault();
+      workspace.splitPct += 0.03;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      workspace.splitPct = 0.34;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      workspace.splitPct = 0.72;
+    }
+  }
+
   function handleTabKeydown(e: KeyboardEvent, tabId: string) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
@@ -94,7 +129,11 @@
     </div>
   {/if}
 
-  <div class="workspace-panels" class:split>
+  <div
+    class="workspace-panels"
+    class:split
+    style:--split-stream={split ? `${Math.round(workspace.splitPct * 1000) / 10}%` : '100%'}
+  >
     {#if workspace.surface === 'diff'}
       <div class="workspace-panel active stream-host">
         <DiffSurface />
@@ -103,6 +142,15 @@
       <div class="workspace-panel stream-host" class:hidden={!showStream}>
         <AgentStream {emptyState} />
       </div>
+      {#if split}
+        <button
+          type="button"
+          class="split-handle"
+          aria-label="Resize stream and files"
+          onpointerdown={onSplitPointer}
+          onkeydown={onSplitKey}
+        ></button>
+      {/if}
       {#if showEditor && activeFile}
         <div class="workspace-panel editor-host" role="tabpanel" aria-labelledby={`tab-${activeFile.id}`}>
           {#if activeFile.type === 'editor'}
@@ -136,6 +184,41 @@
     flex-direction: column;
     border-inline-start: 1px solid var(--nil-line);
     background: var(--nil-void);
+  }
+
+  .workspace-panels.split .stream-host {
+    flex: 0 0 var(--split-stream);
+    max-width: 72%;
+  }
+
+  .workspace-panels.split .editor-host {
+    flex: 1 1 0;
+    border-inline-start: 0;
+  }
+
+  .split-handle {
+    flex: 0 0 6px;
+    margin: 0 -1px;
+    padding: 0;
+    border: 0;
+    cursor: col-resize;
+    background: transparent;
+    position: relative;
+    z-index: 1;
+  }
+
+  .split-handle::after {
+    content: "";
+    position: absolute;
+    inset-block: 8px;
+    inset-inline: 2px;
+    border-radius: 1px;
+    background: var(--nil-line);
+  }
+
+  .split-handle:hover::after,
+  .split-handle:focus-visible::after {
+    background: var(--nil-line-hot);
   }
 
   .finding-detail-host {

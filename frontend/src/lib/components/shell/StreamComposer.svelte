@@ -278,7 +278,7 @@
       {#each workspace.attached as file (file.id)}
         <span class="chip" class:leaving={chipLeaving === file.id}>
           <button class="chip-path nil-halo" type="button" onclick={() => workspace.openFile(file.path)}>{file.path}</button>
-          <button class="chip-x nil-halo" type="button" aria-label={`Remove ${file.path}`} onclick={() => dismissChip(file.id)}>
+          <button class="chip-x nil-halo" type="button" aria-label={`Detach ${file.path}`} onclick={() => dismissChip(file.id)}>
             <NilIcon name="x" size={16} />
           </button>
         </span>
@@ -332,6 +332,7 @@
       type="button"
       onclick={send}
       disabled={!input.trim() || gated}
+      aria-label={agentRun.running ? 'Queue follow-up' : 'Send'}
       data-cuelume-press
       data-cuelume-release="whisper"
     >

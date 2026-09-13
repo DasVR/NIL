@@ -293,6 +293,11 @@ function handle(root: string, base: string, req: IncomingMessage, res: ServerRes
     return true;
   }
 
+  if (pathname === '/__nil/mcp') {
+    json(res, 200, { ok: true, mcp: true, servers: readMcpServers(root) });
+    return true;
+  }
+
   return false;
 }
 
@@ -331,6 +336,68 @@ function parseCi(raw: string | null, branch: string): { ci: {
 function parseGithubRepo(remote: string): string | null {
   const ssh = remote.match(/github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/);
   return ssh ? ssh[1] : null;
+}
+
+function mcpDescription(value: unknown): string {
+  if (!value || typeof value !== 'object') return '';
+  const rec = value as Record<string, unknown>;
+  if (typeof rec.url === 'string' && rec.url) return rec.url;
+  if (typeof rec.serverUrl === 'string' && rec.serverUrl) return rec.serverUrl;
+  if (typeof rec.command === 'string' && rec.command) {
+    const args = Array.isArray(rec.args) ? rec.args.filter((a) => typeof a === 'string').join(' ') : '';
+    return args ? `${rec.command} ${args}` : rec.command;
+  }
+  return '';
+}
+
+function serversFromMcpJson(raw: string, source: string): Array<{
+  id: string;
+  name: string;
+  description: string;
+  source: string;
+}> {
+  try {
+    const data = JSON.parse(raw) as unknown;
+    if (!data || typeof data !== 'object') return [];
+    const rec = data as Record<string, unknown>;
+    const bag = rec.mcpServers ?? rec.servers;
+    if (!bag || typeof bag !== 'object' || Array.isArray(bag)) return [];
+    return Object.entries(bag as Record<string, unknown>).map(([id, value]) => ({
+      id,
+      name: id,
+      description: mcpDescription(value) || source,
+      source,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+function readMcpServers(root: string): Array<{
+  id: string;
+  name: string;
+  description: string;
+  source: string;
+}> {
+  const sources = ['.cursor/mcp.json', '.mcp.json', 'mcp.json', '.vscode/mcp.json'];
+  const out: Array<{ id: string; name: string; description: string; source: string }> = [];
+  const seen = new Set<string>();
+  for (const rel of sources) {
+    const full = safePath(root, rel);
+    if (!full || !fs.existsSync(full) || !fs.statSync(full).isFile()) continue;
+    let raw = '';
+    try {
+      raw = fs.readFileSync(full, 'utf8');
+    } catch {
+      continue;
+    }
+    for (const server of serversFromMcpJson(raw, rel)) {
+      if (seen.has(server.id)) continue;
+      seen.add(server.id);
+      out.push(server);
+    }
+  }
+  return out;
 }
 
 function attach(server: ViteDevServer | PreviewServer, root: string, base: string): void {

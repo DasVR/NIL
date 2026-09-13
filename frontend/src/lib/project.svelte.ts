@@ -44,9 +44,17 @@ export interface GithubSnapshot {
   issues: GithubItem[] | null;
 }
 
+export interface McpServer {
+  id: string;
+  name: string;
+  description: string;
+  source: string;
+}
+
 let files = $state<ProjectFile[]>([]);
 let git = $state<GitSnapshot | null>(null);
 let github = $state<GithubSnapshot | null>(null);
+let mcp = $state<McpServer[] | null>(null);
 let bridge = $state(false);
 let loading = $state(false);
 
@@ -120,6 +128,7 @@ export async function refreshProject(): Promise<void> {
     files = [];
     git = null;
     github = null;
+    mcp = null;
     loading = false;
     return;
   }
@@ -169,6 +178,13 @@ export async function refreshProject(): Promise<void> {
         issues: ghRaw.issues ?? null,
       }
     : null;
+
+  const mcpRaw = await getJson<{
+    ok: boolean;
+    mcp?: boolean;
+    servers?: McpServer[];
+  }>('/mcp');
+  mcp = mcpRaw?.ok && mcpRaw.mcp && Array.isArray(mcpRaw.servers) ? mcpRaw.servers : [];
   loading = false;
 }
 
@@ -186,6 +202,7 @@ export const project = {
   get files() { return files; },
   get git() { return git; },
   get github() { return github; },
+  get mcp() { return mcp; },
   get bridge() { return bridge; },
   get loading() { return loading; },
 };

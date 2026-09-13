@@ -87,6 +87,26 @@ function scheduleHuntSettle() {
   settleTimer = setTimeout(settleIfIdle, 800);
 }
 
+function appendAssistantDelta(chunk: string) {
+  const t = chunk;
+  if (!t) return;
+  const pending = [...steps].reverse().find(
+    (s): s is Extract<Step, { kind: 'message' }> => s.kind === 'message' && s.role === 'assistant' && Boolean(s.streaming),
+  );
+  if (pending) {
+    pending.text += t;
+    steps = [...steps];
+    return;
+  }
+  steps = [...steps, {
+    kind: 'message',
+    id: `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    role: 'assistant',
+    text: t,
+    streaming: true,
+  }];
+}
+
 function appendAssistant(text: string, usage?: TokenUsage, failed = false) {
   const t = text.trim();
   const pending = [...steps].reverse().find(
@@ -381,6 +401,15 @@ export const agentRun = {
       case 'chat.message': {
         appendAssistant(typeof event.content === 'string' ? event.content : '');
         if (huntLoop) scheduleHuntSettle();
+        return;
+      }
+      case 'chat.delta':
+      case 'chat.token': {
+        const chunk = typeof event.content === 'string'
+          ? event.content
+          : (typeof event.delta === 'string' ? event.delta : '');
+        appendAssistantDelta(chunk);
+        markRunning();
         return;
       }
       case 'chat.command': {

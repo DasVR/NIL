@@ -98,7 +98,7 @@
   </ol>
 
   <textarea class="reply" bind:value={reply} rows="2" placeholder="Reply directly" aria-label="Reply directly"></textarea>
-  <button class="nil-lift nil-halo send" type="button" onclick={submit}>Send</button>
+  <button class="nil-lift nil-halo send" type="button" onclick={submit}>Reply</button>
   <p class="hint">↑↓ to navigate · ↵ to select</p>
 </div>
 
