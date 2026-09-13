@@ -9,6 +9,7 @@
   import TaskList from '$lib/components/ui/TaskList.svelte';
   import AshText from '$lib/ui/AshText.svelte';
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
+  import NilMonogram from '$lib/components/ui/NilMonogram.svelte';
   import PentestEmpty from '$lib/components/shell/PentestEmpty.svelte';
   import BuildEmpty from '$lib/components/shell/BuildEmpty.svelte';
   import DictationWave from '$lib/components/ui/DictationWave.svelte';
@@ -121,7 +122,10 @@
   {#key workspace.handoff}
     {#if workspace.handoff > 0}
       <div class="handoff" aria-hidden="true">
-        <DitherWipe mode="wipe" />
+        <DitherWipe mode="wipe" tone="ember" />
+        <div class="handoff-mark">
+          <NilMonogram state="active" size={32} />
+        </div>
       </div>
     {/if}
   {/key}
@@ -313,6 +317,12 @@
     inset: 0;
     z-index: 4;
     pointer-events: none;
+  }
+  .handoff-mark {
+    position: absolute;
+    inset: 0;
+    display: grid;
+    place-items: center;
   }
 
   .log {

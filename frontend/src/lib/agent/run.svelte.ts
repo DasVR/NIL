@@ -1,4 +1,4 @@
-import api, { type ChatRequest, type ToolApprove, type ToolRun } from '$lib/api';
+import api, { type ChatRequest, type ChatResponse, type ToolApprove, type ToolRun } from '$lib/api';
 import type { ApprovalGrant, Finding, Step, TokenUsage, ToolState, ToolStep } from './types';
 import { fromListedFinding, type ListedFinding } from '$lib/findings/display';
 import { fromApiUsage } from '$lib/usage/format';
@@ -20,6 +20,10 @@ let startedAt = $state<number | null>(null);
 let toolIndex = 0;
 let queued = $state<QueuedTurn[]>([]);
 let engagementLog = $state<string[]>([]);
+let huntLoop = $state(false);
+let lastEngagement = $state<string | null>(null);
+let httpInFlight = false;
+let settleTimer: ReturnType<typeof setTimeout> | null = null;
 
 function markRunning() {
   if (!running) startedAt = Date.now();
@@ -61,8 +65,131 @@ function stripFences(text: string): string {
   return text.replace(/```[\s\S]*?```/g, ' ').replace(/\s+/g, ' ').trim();
 }
 
-function chatText(res: { response?: string; text?: string }): string {
-  return res.response || res.text || '';
+function chatText(res: { response?: string; text?: string; content?: string }): string {
+  return res.response || res.text || res.content || '';
+}
+
+function toolsBusy(): boolean {
+  return steps.some((s) => s.kind === 'tool' && (s.state === 'running' || s.state === 'pending'));
+}
+
+function settleIfIdle() {
+  if (httpInFlight || interrupted) return;
+  if (toolsBusy()) return;
+  huntLoop = false;
+  running = false;
+  agentRun.drainFollowup();
+}
+
+function scheduleHuntSettle() {
+  if (!huntLoop) return;
+  if (settleTimer) clearTimeout(settleTimer);
+  settleTimer = setTimeout(settleIfIdle, 800);
+}
+
+function appendAssistant(text: string, usage?: TokenUsage, failed = false) {
+  const t = text.trim();
+  if (!t) return;
+  const last = steps[steps.length - 1];
+  if (last?.kind === 'message' && last.role === 'assistant' && last.text === t) return;
+  steps = [...steps, {
+    kind: 'message',
+    id: `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    role: 'assistant',
+    text: t,
+    failed,
+    usage,
+  }];
+}
+
+function appendThought(text: string) {
+  const t = text.trim();
+  if (!t) return;
+  steps = [...steps, {
+    kind: 'thought',
+    id: `thought-${Date.now()}`,
+    text: t,
+  }];
+}
+
+function upsertToolFromRun(run: ToolRun, reason?: string, usage?: TokenUsage) {
+  const id = runId(run) || `tool-${run.tool || 'run'}-${run.command || ''}`;
+  const existing = steps.find((s): s is ToolStep => s.kind === 'tool' && s.id === id);
+  if (existing) {
+    existing.state = mapRunState(run);
+    existing.output = runOutput(run) ?? existing.output;
+    existing.error = run.error ?? existing.error;
+    existing.exitCode = run.exit_code ?? run.returncode ?? existing.exitCode;
+    existing.primaryArg = run.command || existing.primaryArg;
+    existing.name = run.tool || existing.name;
+    if (reason) existing.reason = reason;
+    if (existing.state === 'running' && existing.startTime == null) existing.startTime = Date.now();
+    if (existing.state === 'ok' || existing.state === 'error') existing.endTime = Date.now();
+    steps = [...steps];
+    return;
+  }
+  toolIndex += 1;
+  const state = mapRunState(run);
+  steps = [...steps, {
+    kind: 'tool',
+    id,
+    index: toolIndex,
+    name: run.tool || 'run_command',
+    primaryArg: run.command,
+    args: { command: run.command },
+    state,
+    output: runOutput(run),
+    error: run.error,
+    exitCode: run.exit_code ?? run.returncode,
+    safetyLevel: run.safety_level,
+    reason,
+    usage,
+    startTime: state === 'running' ? Date.now() : undefined,
+    endTime: state === 'ok' || state === 'error' ? Date.now() : undefined,
+  }];
+}
+
+function asRun(value: unknown): ToolRun | null {
+  if (!value || typeof value !== 'object') return null;
+  const rec = value as ToolRun;
+  if (!rec.tool && !rec.command && !rec.id && !rec.run_id) return null;
+  return rec;
+}
+
+function ingestHttpResult(res: ChatResponse, engagement?: string) {
+  if (res.session_id) sessionId = res.session_id;
+  const usage: TokenUsage | null = fromApiUsage(res.usage);
+  if (usage) usageStore.recordTurn(usage);
+  if (engagement) void usageStore.refresh(engagement);
+
+  const assistantText = chatText(res);
+  appendAssistant(assistantText, usage ?? undefined);
+
+  for (const raw of res.findings || []) {
+    const title = raw.title || 'Finding';
+    if (findings.some((f) => f.title === title)) continue;
+    agentRun.addFinding(fromListedFinding({
+      ...raw,
+      id: `finding-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    }));
+  }
+
+  const reason = stripFences(assistantText).slice(0, 280);
+  for (const run of res.runs || []) {
+    upsertToolFromRun(run, reason, usage ?? undefined);
+  }
+  if (res.tool_call) {
+    const tc = res.tool_call;
+    upsertToolFromRun({
+      run_id: tc.run_id,
+      tool: tc.tool || 'run_command',
+      command: primaryArg(tc.args, ''),
+      engagement: engagement || lastEngagement || '',
+      status: 'pending',
+      approval: 'pending',
+      safety_level: tc.safety_level,
+    }, reason, usage ?? undefined);
+  }
 }
 
 export function toolFilePath(step: ToolStep): string | null {
@@ -84,6 +211,7 @@ export const agentRun = {
   get startedAt() { return startedAt; },
   get queued() { return queued; },
   get engagementLog() { return engagementLog; },
+  get huntLoop() { return huntLoop; },
   get pendingApproval() {
     return steps.find((s): s is ToolStep => s.kind === 'tool' && s.state === 'pending') ?? null;
   },
@@ -98,11 +226,18 @@ export const agentRun = {
     toolIndex = 0;
     queued = [];
     engagementLog = [];
+    huntLoop = false;
+    httpInFlight = false;
+    if (settleTimer) {
+      clearTimeout(settleTimer);
+      settleTimer = null;
+    }
   },
 
   async loadEngagement(name: string) {
     const trimmed = name.trim();
     if (!trimmed) return;
+    lastEngagement = trimmed;
     try {
       const [listed, timeline] = await Promise.all([
         api.listFindings(trimmed),
@@ -119,8 +254,15 @@ export const agentRun = {
   },
 
   stop() {
+    huntLoop = false;
+    httpInFlight = false;
     running = false;
     interrupted = true;
+    if (settleTimer) {
+      clearTimeout(settleTimer);
+      settleTimer = null;
+    }
+    if (lastEngagement) void api.stopHunt(lastEngagement).catch(() => undefined);
     const last = steps[steps.length - 1];
     if (last?.kind === 'message' && last.role === 'assistant') {
       last.interrupted = true;
@@ -161,7 +303,7 @@ export const agentRun = {
   },
 
   drainFollowup() {
-    if (running || interrupted) return;
+    if (running || interrupted || huntLoop) return;
     const next = queued[0];
     if (!next) return;
     queued = queued.slice(1);
@@ -169,7 +311,9 @@ export const agentRun = {
   },
 
   async sendMessage(input: string, engagement: string, mode: string) {
+    lastEngagement = engagement;
     markRunning();
+    httpInFlight = true;
     steps = [...steps, {
       kind: 'message',
       id: `user-${Date.now()}`,
@@ -178,108 +322,114 @@ export const agentRun = {
     }];
 
     try {
-      const body: ChatRequest = { engagement, message: input, mode: mode as ChatRequest['mode'], stream: false };
+      const body: ChatRequest = {
+        engagement,
+        message: input,
+        mode: mode as ChatRequest['mode'],
+        session_id: sessionId || undefined,
+        hunt: mode === 'hunt',
+      };
       const res = await api.chat(body);
       sessionId = res.session_id;
       if (interrupted) return;
-
-      const usage: TokenUsage | null = fromApiUsage(res.usage);
-      usageStore.recordTurn(usage);
-      void usageStore.refresh(engagement);
-
-      const assistantText = chatText(res);
-      steps = [...steps, {
-        kind: 'message',
-        id: `assistant-${Date.now()}`,
-        role: 'assistant',
-        text: assistantText,
-        usage: usage ?? undefined,
-      }];
-
-      for (const raw of res.findings || []) {
-        agentRun.addFinding(fromListedFinding({
-          ...raw,
-          id: `finding-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        }));
+      if (res.status === 'hunt_started') {
+        huntLoop = true;
+        return;
       }
+      ingestHttpResult(res, engagement);
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : 'Request failed';
+      appendAssistant(message, undefined, true);
+    } finally {
+      httpInFlight = false;
+      if (huntLoop) scheduleHuntSettle();
+      else {
+        running = false;
+        if (!interrupted) agentRun.drainFollowup();
+      }
+    }
+  },
 
-      const reason = stripFences(assistantText).slice(0, 280);
-      const pendingRuns = (res.runs || []).filter((run) => run.approval === 'pending');
-      const toolCalls = res.tool_call ? [res.tool_call] : [];
-      if (pendingRuns.length === 0 && toolCalls.length === 0) {
-        for (const run of res.runs || []) {
-          if (run.approval === 'pending') continue;
-          toolIndex += 1;
-          const tool: ToolStep = {
-            kind: 'tool',
-            id: runId(run),
-            index: toolIndex,
-            name: run.tool || 'run_command',
-            primaryArg: run.command,
-            args: { command: run.command },
-            state: mapRunState(run),
-            output: runOutput(run),
-            error: run.error,
-            exitCode: run.exit_code ?? run.returncode,
-            safetyLevel: run.safety_level,
-            usage: usage ?? undefined,
-          };
-          steps = [...steps, tool];
+  applyEvent(event: Record<string, unknown>) {
+    const type = typeof event.type === 'string' ? event.type : '';
+    switch (type) {
+      case 'chat.message': {
+        appendAssistant(typeof event.content === 'string' ? event.content : '');
+        if (huntLoop) scheduleHuntSettle();
+        return;
+      }
+      case 'chat.command': {
+        markRunning();
+        upsertToolFromRun({
+          tool: typeof event.tool === 'string' ? event.tool : 'run_command',
+          command: typeof event.command === 'string' ? event.command : '',
+          engagement: lastEngagement || '',
+          status: 'pending',
+          approval: 'pending',
+          safety_level: typeof event.safety_level === 'string' ? event.safety_level : undefined,
+        });
+        return;
+      }
+      case 'chat.result': {
+        ingestHttpResult(event as unknown as ChatResponse, lastEngagement || undefined);
+        scheduleHuntSettle();
+        return;
+      }
+      case 'tool.started': {
+        const run = asRun(event.run);
+        if (run) upsertToolFromRun({ ...run, status: 'running' });
+        markRunning();
+        return;
+      }
+      case 'tool.completed':
+      case 'tool.error': {
+        const run = asRun(event.run);
+        if (run) upsertToolFromRun(run);
+        scheduleHuntSettle();
+        return;
+      }
+      case 'approval.rejected': {
+        const id = typeof event.run_id === 'string' ? event.run_id : '';
+        const step = steps.find((s): s is ToolStep => s.kind === 'tool' && s.id === id);
+        if (step) {
+          step.state = 'error';
+          step.error = 'Denied';
+          steps = [...steps];
         }
         return;
       }
-
-      if (res.tool_call) {
-        const tc = res.tool_call;
-        toolIndex += 1;
-        const command = primaryArg(tc.args, '');
-        const tool: ToolStep = {
-          kind: 'tool',
-          id: tc.run_id || `tool-${Date.now()}`,
-          index: toolIndex,
-          name: tc.tool || 'run_command',
-          primaryArg: command,
-          args: tc.args || {},
-          state: 'pending',
-          safetyLevel: tc.safety_level,
-          reason,
-          usage: usage ?? undefined,
-        };
-        steps = [...steps, tool];
+      case 'hunt.doom.halt': {
+        const command = typeof event.command === 'string' ? event.command : 'Hunt halted';
+        appendThought(command);
+        huntLoop = false;
+        if (!httpInFlight) settleIfIdle();
+        return;
       }
-    } catch (err: unknown) {
-      const message = err instanceof Error ? err.message : 'Request failed';
-      steps = [...steps, {
-        kind: 'message',
-        id: `error-${Date.now()}`,
-        role: 'assistant',
-        text: message,
-        failed: true,
-      }];
-    } finally {
-      running = false;
-      if (!interrupted) agentRun.drainFollowup();
+      case 'hunt.doom.warn': {
+        const command = typeof event.command === 'string' ? event.command : 'Repeated command';
+        appendThought(command);
+        return;
+      }
+      case 'hunt.started':
+        huntLoop = true;
+        markRunning();
+        return;
+      case 'usage.turn':
+      case 'approval.granted':
+      case 'approval.approved':
+      case 'yolo.toggled':
+        return;
+      default:
+        return;
     }
   },
 
   async proposeTool(engagement: string, tool: string, command: string, safety_level: 'safe' | 'unsafe' | 'dangerous' = 'safe') {
+    lastEngagement = engagement;
     markRunning();
     try {
       const run = await api.proposeTool({ engagement, tool, command, safety_level });
-      toolIndex += 1;
-      const step: ToolStep = {
-        kind: 'tool',
-        id: runId(run),
-        index: toolIndex,
-        name: run.tool,
-        primaryArg: run.command,
-        args: { command: run.command },
-        state: mapRunState(run),
-        output: runOutput(run),
-        error: run.error,
-        safetyLevel: run.safety_level,
-      };
-      steps = [...steps, step];
+      upsertToolFromRun(run);
       return run;
     } finally {
       running = false;
@@ -298,17 +448,11 @@ export const agentRun = {
       const body: ToolApprove = { run_id: id, grant, execute: true };
       const run = await api.approveTool(body);
       if (interrupted) return;
-      step.state = mapRunState(run);
-      if (step.state === 'pending' || run.status === 'approved') {
-        step.state = run.error ? 'error' : 'ok';
-      }
-      step.endTime = Date.now();
-      step.output = runOutput(run);
-      step.error = run.error;
-      step.exitCode = run.exit_code ?? run.returncode;
+      upsertToolFromRun(run);
     } catch (err: unknown) {
       step.state = 'error';
       step.error = err instanceof Error ? err.message : 'Approve failed';
+      steps = [...steps];
     } finally {
       running = false;
       if (!interrupted) agentRun.drainFollowup();
@@ -321,10 +465,12 @@ export const agentRun = {
     if (step) {
       step.state = 'error';
       step.error = 'Denied';
+      steps = [...steps];
     }
   },
 
   addFinding(finding: Finding) {
+    if (findings.some((f) => f.id === finding.id || f.title === finding.title)) return;
     findings = [...findings, finding];
     steps = [...steps, {
       kind: 'finding',

@@ -53,6 +53,12 @@ export interface RecentSession {
   at: number;
 }
 
+export interface ReportCover {
+  title: string;
+  status: 'writing' | 'ready' | 'error';
+  error?: string;
+}
+
 const FALLBACK_MODELS: ModelOption[] = [
   { id: 'default', name: 'Default', description: 'Whatever the harness is configured to use' },
   { id: 'fast', name: 'Fast', description: 'Lower latency, lighter reasoning' },
@@ -130,6 +136,7 @@ let dictationPaused = $state(false);
 let recents = $state<RecentSession[]>(loadRecents());
 let diffText = $state('');
 let handoff = $state(0);
+let reportCover = $state<ReportCover | null>(null);
 
 function persistRecents() {
   if (!browser) return;
@@ -254,6 +261,36 @@ async function refreshModels() {
     if (!models.some((m) => m.id === modelId)) modelId = models[0]?.id ?? 'default';
   } catch {
     // Keep the fallback list when the API is down.
+  }
+}
+
+function dismissReportCover() {
+  reportCover = null;
+}
+
+async function exportReport() {
+  const name = appState.activeEngagementId;
+  if (!name) {
+    reportCover = {
+      title: 'No target',
+      status: 'error',
+      error: 'Load a target, then export a report.',
+    };
+    return;
+  }
+  reportCover = { title: name, status: 'writing' };
+  applyMode('pentest');
+  try {
+    const res = await api.generateReport(name, 'markdown');
+    const md = typeof res.report === 'string' ? res.report : '';
+    reportCover = { title: name, status: 'ready' };
+    openFile(`${name}/report.md`, md);
+  } catch (err: unknown) {
+    reportCover = {
+      title: name,
+      status: 'error',
+      error: err instanceof Error ? err.message : 'Report export failed.',
+    };
   }
 }
 
@@ -506,6 +543,7 @@ export const workspace = {
   set dictationPaused(v: boolean) { dictationPaused = v; },
   get recents() { return recents; },
   get handoff() { return handoff; },
+  get reportCover() { return reportCover; },
   get model() { return models.find((m) => m.id === modelId) ?? models[0]; },
   selectRail,
   togglePin,
@@ -528,6 +566,8 @@ export const workspace = {
   pinPath,
   refreshModels,
   classifyDock,
+  exportReport,
+  dismissReportCover,
 };
 
 export function engagementFiles(): ContextFile[] {

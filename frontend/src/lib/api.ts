@@ -80,9 +80,10 @@ export interface TokenUsagePayload {
 
 export interface ChatResponse {
   session_id: string;
-  response: string;
+  response?: string;
   text?: string;
-  mode: string;
+  mode?: string;
+  status?: string;
   tool_call?: {
     run_id?: string;
     tool?: string;
@@ -219,6 +220,15 @@ export const api = {
     `/findings?engagement=${encodeURIComponent(engagement)}`,
   ),
   getTimeline: (engagement: string) => apiFetch<{ timeline: string }>(`/timeline/${encodeURIComponent(engagement)}`),
+  stopHunt: (engagement: string) => apiFetch<{ stopped: boolean; engagement: string }>(
+    `/hunt/stop?engagement=${encodeURIComponent(engagement)}`,
+    { method: 'POST' },
+  ),
+  generateReport: (engagement: string, format: 'markdown' | 'json' = 'markdown') =>
+    apiFetch<{ format: string; report: string; files?: unknown }>(
+      '/reports/generate',
+      { method: 'POST', body: { engagement, format } },
+    ),
 };
 
 export default api;

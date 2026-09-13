@@ -79,6 +79,13 @@ const commands: PaletteCommand[] = [
     action: () => workspace.openSide('mcp'),
   },
   {
+    id: 'export-report',
+    label: 'Export report',
+    section: 'Engagement',
+    icon: 'file-text',
+    action: () => { void workspace.exportReport(); },
+  },
+  {
     id: 'refresh-findings',
     label: 'Refresh findings',
     section: 'Engagement',

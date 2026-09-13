@@ -5,16 +5,19 @@
   interface Props {
     play?: boolean;
     mode?: DitherMode;
+    tone?: 'panel' | 'ember';
     onDone?: () => void;
   }
 
-  let { play = true, mode = 'dissolve', onDone }: Props = $props();
+  let { play = true, mode = 'dissolve', tone = 'panel', onDone }: Props = $props();
   let canvas: HTMLCanvasElement | undefined = $state();
   let done = $state(false);
 
   onMount(() => {
     if (!play || !canvas) return;
-    const color = tokenColor('--nil-panel', '#141210');
+    const color = tone === 'ember'
+      ? tokenColor('--brand-ember-900', '#3a1c15')
+      : tokenColor('--nil-panel', '#141210');
     void playDither(canvas, { mode, color }).finally(() => {
       done = true;
       onDone?.();

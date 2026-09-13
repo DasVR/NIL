@@ -24,6 +24,8 @@
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
   import { refreshProject } from '$lib/project.svelte.ts';
+  import { connectBus } from '$lib/agent/bus';
+  import ReportCover from '$lib/components/shell/ReportCover.svelte';
 
   let { children }: { children: Snippet } = $props();
 
@@ -66,8 +68,8 @@
   $effect(() => {
     if (!browser) return;
     const id = appState.activeEngagementId;
-    if (!id) return;
-    void agentRun.loadEngagement(id);
+    connectBus(id || 'default');
+    if (id) void agentRun.loadEngagement(id);
   });
 </script>
 
@@ -107,6 +109,7 @@
 
   <CommandPalette open={paletteStore.open} onToggle={(o) => paletteStore.open = o} />
   <SettingsSheet open={appState.settingsOpen} onToggle={(o) => appState.settingsOpen = o} />
+  <ReportCover />
 </div>
 
 {#if browser && !booted}
