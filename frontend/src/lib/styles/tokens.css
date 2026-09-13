@@ -9,7 +9,10 @@
    ============================================================ */
 
 :root {
-  /* -- surfaces: a "well" with panels floating in it (macOS inset sidebar) -- */
+  /* -- surfaces: a "well" with panels floating in it (macOS inset sidebar) --
+        Nudged warmer across the board — a few degrees toward ember instead of
+        neutral charcoal, so the chrome and the identity color feel like one
+        family instead of a cool grey with a warm accent dropped on top. */
   --nil-void:      #0a0908;  /* app background / the well */
   --nil-panel:     #141210;  /* floating panel */
   --nil-raised:    #1c1916;  /* input, hovered row, tool card */
@@ -20,7 +23,7 @@
   --nil-ink:       #efe9e0;
   --nil-ink-2:     #a39a8e;  /* secondary label */
   --nil-ink-3:     #736a5f;  /* dim / metadata / disabled */
-  --nil-ink-4:     #4a443c;  /* placeholder, inactive tick */
+  --nil-ink-4:     #4a453c;  /* placeholder, inactive tick */
 
   /* -- brand ember: the ONE named exception to "color means risk," and it is
         narrow on purpose. Reserved for Zone A identity moments only (cold open,

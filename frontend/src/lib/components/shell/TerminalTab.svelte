@@ -41,7 +41,7 @@
     const ink = token('--nil-ink', '#efe9e0');
     const ink2 = token('--nil-ink-2', '#a39a8e');
     const ink3 = token('--nil-ink-3', '#736a5f');
-    const ink4 = token('--nil-ink-4', '#4a443c');
+    const ink4 = token('--nil-ink-4', '#4a453c');
     const critical = token('--sev-critical', '#e5484d');
     const high = token('--sev-high', '#e8833a');
     const medium = token('--sev-medium', '#d9b341');

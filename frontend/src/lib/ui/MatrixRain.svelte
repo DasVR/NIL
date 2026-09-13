@@ -34,7 +34,7 @@
       }
     }
 
-    const ink = tokenColor('--nil-ink-4', '#4a443c');
+    const ink = tokenColor('--nil-ink-4', '#4a453c');
     const tick = () => {
       if (!canvas || !ctx) return;
       fit();

@@ -96,6 +96,8 @@
    ------------------------------------------------------------ */
 .nil-jelly {
   transform-origin: var(--jelly-origin, center);
+  /* component JS: el.animate([...], { duration: getComputedStyle(el)
+     .getPropertyValue('--dur-jelly') , easing: 'var(--ease-pop)' }) */
 }
 
 /* ------------------------------------------------------------
@@ -129,6 +131,8 @@
 .nil-hold-fill {
   position: absolute; inset: 0; width: 0%; z-index: 0;
   background: color-mix(in oklab, var(--brand-ember-500) 55%, var(--nil-raised));
+  /* component JS drives width 0% -> 100% over --dur-hold; on release
+     before completion, transition width back to 0% over --dur-enter */
 }
 .nil-hold > :not(.nil-hold-fill) { position: relative; z-index: 1; }
 
