@@ -1,6 +1,7 @@
 <script lang="ts">
   import { agentRun } from '$lib/agent/run.svelte.ts';
-  import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
+  import { appState, MODEL_OPTIONS, type ComposerMode, type Effort } from '$lib/stores/appState.svelte.ts';
+  import Icon from '@iconify/svelte';
   import ApprovalBlock from '$lib/components/ui/ApprovalBlock.svelte';
   import { cubicIn } from 'svelte/easing';
 
@@ -18,6 +19,30 @@
     { id: 'code', label: 'code' },
     { id: 'report', label: 'report' },
   ];
+  const efforts: { id: Effort; label: string }[] = [
+    { id: 'low', label: 'Low' },
+    { id: 'medium', label: 'Medium' },
+    { id: 'high', label: 'High' },
+  ];
+
+  let modelMenuOpen = $state(false);
+  let modelWrap: HTMLElement | undefined = $state();
+  const activeModel = $derived(MODEL_OPTIONS.find((m) => m.id === appState.selectedModel) ?? MODEL_OPTIONS[0]);
+
+  function pickModel(id: string) {
+    appState.selectedModel = id;
+    modelMenuOpen = false;
+  }
+
+  function onDocClick(e: MouseEvent) {
+    if (modelMenuOpen && modelWrap && !modelWrap.contains(e.target as Node)) {
+      modelMenuOpen = false;
+    }
+  }
+
+  function onDocKeydown(e: KeyboardEvent) {
+    if (e.key === 'Escape' && modelMenuOpen) modelMenuOpen = false;
+  }
 
   const pending = $derived(agentRun.pendingApproval);
   const gated = $derived(Boolean(pending));
@@ -44,6 +69,16 @@
     };
   }
 
+  // Chip dismissal: shrink + fade together, never an instant disappearance.
+  function chipExit(node: HTMLElement) {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return {
+      duration: reduced ? 80 : 140,
+      easing: cubicIn,
+      css: (t: number) => `opacity: ${t}; transform: scale(${0.85 + t * 0.15});`,
+    };
+  }
+
   function send() {
     const text = input.trim();
     if (!text || gated) return;
@@ -59,6 +94,8 @@
   }
 </script>
 
+<svelte:window onclick={onDocClick} onkeydown={onDocKeydown} />
+
 <div class="composer nil-scan" data-state={agentRun.running ? 'working' : undefined}>
   <!-- Charter amendment 2026-09-07: Law 3 exception. The goo surface applies ONLY
        to chip background layers (.chip-bg). Labels live in the buttons above the
@@ -73,21 +110,89 @@
       </filter>
     </defs>
   </svg>
-  <div class="modes" role="group" aria-label="Agent mode">
-    {#each modes as m}
-      {@const active = appState.composerMode === m.id}
-      <span class="chip-slot">
-        <i class="chip-bg" data-on={active} aria-hidden="true"></i>
-        <button
-          type="button"
-          class="nil-halo chip"
-          class:on={active}
-          aria-pressed={active}
-          data-cuelume-toggle="tick"
-          onclick={() => (appState.composerMode = m.id)}
-        >{m.label}</button>
-      </span>
-    {/each}
+  {#if appState.contextChips.length > 0}
+    <div class="context-chips" role="group" aria-label="Attached context">
+      {#each appState.contextChips as chip (chip.id)}
+        <span class="context-chip" out:chipExit>
+          <Icon icon="ph:file-bold" width="11" height="11" />
+          <span class="context-chip-label">{chip.path}{chip.line ? `:${chip.line}` : ''}</span>
+          <button
+            type="button"
+            class="context-chip-remove"
+            aria-label={`Remove ${chip.path} from context`}
+            onclick={() => appState.removeContextChip(chip.id)}
+          >
+            <Icon icon="ph:x-bold" width="9" height="9" />
+          </button>
+        </span>
+      {/each}
+    </div>
+  {/if}
+  <div class="toolbar">
+    <div class="modes" role="group" aria-label="Agent mode">
+      {#each modes as m}
+        {@const active = appState.composerMode === m.id}
+        <span class="chip-slot">
+          <i class="chip-bg" data-on={active} aria-hidden="true"></i>
+          <button
+            type="button"
+            class="nil-halo chip"
+            class:on={active}
+            aria-pressed={active}
+            data-cuelume-toggle="tick"
+            onclick={() => (appState.composerMode = m.id)}
+          >{m.label}</button>
+        </span>
+      {/each}
+    </div>
+
+    <div class="model-wrap" bind:this={modelWrap}>
+      <button
+        type="button"
+        class="nil-lift nil-halo model-chip"
+        aria-haspopup="menu"
+        aria-expanded={modelMenuOpen}
+        aria-label={`Model: ${activeModel.name}. Open model picker`}
+        onclick={() => (modelMenuOpen = !modelMenuOpen)}
+      >
+        <Icon icon="ph:cpu-bold" width="12" height="12" />
+        {activeModel.name}
+        <Icon icon="ph:caret-down-bold" width="10" height="10" />
+      </button>
+
+      {#if modelMenuOpen}
+        <div class="model-picker" role="menu">
+          <div class="model-picker-label">Model</div>
+          {#each MODEL_OPTIONS as m}
+            {@const active = m.id === appState.selectedModel}
+            <button type="button" class="model-option" class:active role="menuitem" onclick={() => pickModel(m.id)}>
+              <span class="model-option-text">
+                <span class="model-option-name">{m.name}</span>
+                <span class="model-option-desc">{m.description}</span>
+              </span>
+              {#if active}<Icon icon="ph:check-bold" width="13" height="13" />{/if}
+            </button>
+          {/each}
+          <div class="model-picker-divider"></div>
+          <div class="model-picker-label">Effort</div>
+          <div class="effort-segment" role="group" aria-label="Effort">
+            {#each efforts as e}
+              {@const active = appState.effort === e.id}
+              <button
+                type="button"
+                class="effort-option"
+                class:active
+                aria-pressed={active}
+                onclick={() => (appState.effort = e.id)}
+              >{e.label}</button>
+            {/each}
+          </div>
+          <button type="button" class="model-more" disabled title="More models — coming soon">
+            More models
+          </button>
+        </div>
+      {/if}
+    </div>
   </div>
   {#if pending}
     <div class="gate-host" out:gateExit>
@@ -106,6 +211,15 @@
       placeholder={placeholder}
       disabled={gated}
     ></textarea>
+    <button
+      type="button"
+      class="nil-lift nil-halo mic"
+      disabled
+      aria-label="Voice input (coming soon)"
+      title="Voice input — coming soon"
+    >
+      <Icon icon="ph:waveform-bold" width="14" height="14" />
+    </button>
     <button
       class="nil-lift nil-halo send"
       type="button"
@@ -178,9 +292,197 @@
     .composer::before { animation: none; } /* static ring; focus stays legible */
   }
 
+  .context-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .context-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 6px 0 8px;
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-chip);
+    background: var(--nil-raised);
+    color: var(--nil-ink-2);
+    font: 500 var(--t-micro)/1 var(--font-machine);
+  }
+
+  .context-chip-label {
+    max-width: 22ch;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .context-chip-remove {
+    display: grid;
+    place-items: center;
+    width: 14px;
+    height: 14px;
+    border: none;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--nil-ink-3);
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: color var(--dur-flip) var(--ease-out),
+                background-color var(--dur-flip) var(--ease-out);
+  }
+
+  .context-chip-remove:hover {
+    color: var(--nil-ink);
+    background: var(--nil-void);
+  }
+
+  .toolbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+  }
+
   .modes {
     display: flex;
     gap: 4px;
+  }
+
+  .model-wrap {
+    position: relative;
+  }
+
+  .model-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    height: 22px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: var(--r-chip);
+    background: transparent;
+    color: var(--nil-ink-2);
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
+    transition: color var(--dur-flip) var(--ease-out),
+                background-color var(--dur-flip) var(--ease-out);
+  }
+
+  .model-chip:hover {
+    color: var(--nil-ink);
+    background: var(--nil-raised);
+  }
+
+  .model-picker {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    right: 0;
+    z-index: var(--z-overlay);
+    width: 240px;
+    padding: var(--s-2);
+    border: 1px solid var(--nil-line);
+    border-radius: var(--r-field);
+    background: var(--nil-panel);
+    box-shadow: var(--lift-2);
+    color: var(--nil-ink);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .model-picker-label {
+    padding: 4px 6px 2px;
+    font: 600 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
+    text-transform: uppercase;
+    color: var(--nil-ink-3);
+  }
+
+  .model-picker-divider {
+    height: 1px;
+    background: var(--nil-line);
+    margin: 6px 2px;
+  }
+
+  .model-option {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--s-2);
+    padding: 6px;
+    border: none;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--nil-ink);
+    text-align: left;
+    cursor: pointer;
+    transition: background-color var(--dur-flip) var(--ease-out);
+  }
+
+  .model-option:hover {
+    background: var(--nil-raised);
+  }
+
+  .model-option.active {
+    color: var(--nil-ink);
+  }
+
+  .model-option-text {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    min-width: 0;
+  }
+
+  .model-option-name {
+    font: 500 var(--t-meta)/1.2 var(--font-ui);
+  }
+
+  .model-option-desc {
+    font: var(--t-micro)/1.2 var(--font-ui);
+    color: var(--nil-ink-3);
+  }
+
+  .effort-segment {
+    display: flex;
+    gap: 2px;
+    padding: 2px;
+    margin: 0 2px;
+    border-radius: var(--radius-control);
+    background: var(--nil-void);
+  }
+
+  .effort-option {
+    flex: 1;
+    height: 22px;
+    border: none;
+    border-radius: calc(var(--radius-control) - 2px);
+    background: transparent;
+    color: var(--nil-ink-2);
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
+    transition: background-color var(--dur-flip) var(--ease-out),
+                color var(--dur-flip) var(--ease-out);
+  }
+
+  .effort-option.active {
+    background: var(--nil-raised);
+    color: var(--nil-ink);
+    box-shadow: 0 0 0 1px var(--nil-line-hot) inset;
+  }
+
+  .model-more {
+    margin-top: 4px;
+    padding: 6px;
+    border: none;
+    border-radius: var(--radius-control);
+    background: transparent;
+    color: var(--nil-ink-3);
+    font: var(--t-meta)/1 var(--font-ui);
+    text-align: left;
+    cursor: not-allowed;
   }
 
   .chip-slot {
