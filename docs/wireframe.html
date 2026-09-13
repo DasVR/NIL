@@ -1,0 +1,1578 @@
+<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1"><style>:root{color-scheme:light}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#faf9f5;color:#141413}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
+<title>NIL Agent OS</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&family=Space+Mono:wght@400;700&display=swap">
+<style>
+:root{
+  --void:#0a0908; --panel:#141210; --raised:#1c1916; --line:#2a2622; --line-hot:#3c352e;
+  --ink:#efe9e0; --ink-2:#a39a8e; --ink-3:#736a5f;
+  --ember-900:#3a1c15; --ember-700:#7a3320; --ember-500:#c2652f; --ember-300:#e6a35c;
+  --font-ui:"Plus Jakarta Sans",ui-sans-serif,-apple-system,system-ui,sans-serif;
+  --font-mono:"JetBrains Mono","SF Mono",ui-monospace,Menlo,monospace;
+}
+*{box-sizing:border-box;}
+.icon{width:16px; height:16px; display:inline-block; flex:none; vertical-align:-3px;}
+.icon svg{width:100%; height:100%; display:block; fill:none; stroke:currentColor; stroke-width:1.75; stroke-linecap:round; stroke-linejoin:round;}
+.icon.icon-lg{width:19px; height:19px;}
+.icon.icon-fill svg{fill:currentColor; stroke:none;}
+.icon.icon-sm{width:13px; height:13px;}
+body{background:var(--void); color:var(--ink); font-family:var(--font-ui); padding:0 20px; margin:0;}
+.wrap{max-width:1000px; margin:0 auto; padding-block:64px 96px;}
+h1,h2,h3{text-wrap:balance; margin:0;}
+p{line-height:1.6; color:var(--ink-2); margin:0;}
+code{font-family:var(--font-mono); font-size:0.92em; color:var(--ink-2);}
+
+.hero{display:flex; flex-direction:column; gap:18px; padding-bottom:44px; border-bottom:1px solid var(--line);}
+.eyebrow{font-family:var(--font-mono); font-size:11px; letter-spacing:0.14em; text-transform:uppercase; color:var(--ember-300); display:flex; align-items:center; gap:8px;}
+.eyebrow::before{content:""; width:6px; height:6px; border-radius:50%; background:var(--ember-500); box-shadow:0 0 0 3px var(--ember-900);}
+.hero h1{font-size:clamp(1.9rem,4.2vw,2.8rem); font-weight:600; letter-spacing:-0.02em; line-height:1.1;}
+.hero h1 em{font-style:normal; color:var(--ember-300);}
+.hero .sub{font-size:1.02rem; max-width:660px;}
+.changelog{display:flex; flex-direction:column; gap:6px; margin-top:6px; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-3);}
+.changelog b{color:var(--ink-2); font-weight:500;}
+
+section{padding-block:52px; border-bottom:1px solid var(--line);}
+section:last-of-type{border-bottom:none;}
+.section-head{display:flex; align-items:baseline; justify-content:space-between; gap:16px; margin-bottom:24px; flex-wrap:wrap;}
+.section-head h2{font-size:1.35rem; font-weight:600; letter-spacing:-0.01em;}
+.tag{font-family:var(--font-mono); font-size:11px; color:var(--ink-3); letter-spacing:0.06em; text-transform:uppercase;}
+.lede{margin-bottom:20px; max-width:660px;}
+
+/* ---- shell v2: single rail, hover-revealed terminal, disclosure tool cards ---- */
+.shell{
+  border:1px solid var(--line); border-radius:12px; overflow:hidden;
+  box-shadow:0 24px 64px -24px rgb(0 0 0 / 0.7); background:var(--panel);
+}
+.shell-top{display:flex; align-items:center; gap:10px; padding:9px 12px; border-bottom:1px solid var(--line); background:var(--raised);}
+.dots{display:flex; gap:6px;}
+.dots span{width:9px; height:9px; border-radius:50%; background:var(--line-hot);}
+.mode-pill{
+  margin-left:6px; font-family:var(--font-mono); font-size:10px; letter-spacing:0.06em; text-transform:uppercase;
+  color:var(--ink-2); background:var(--void); border:1px solid var(--line-hot); border-radius:20px; padding:3px 10px;
+  display:flex; align-items:center; gap:6px;
+}
+.mode-pill .sw{width:6px; height:6px; border-radius:50%; background:var(--ink-3);}
+.mode-pill.active .sw{background:var(--ember-300);}
+.branch{
+  margin-left:auto; font-family:var(--font-mono); font-size:11px; color:var(--ink-3); display:flex; align-items:center; gap:6px;
+  padding:3px 8px; border-radius:6px; cursor:default; position:relative;
+}
+.branch:hover{background:var(--void); color:var(--ink-2);}
+.branch .copy{display:inline-flex; align-items:center; gap:5px; opacity:0; transform:scale(.7); transition:opacity .15s ease, transform .2s cubic-bezier(.34,1.56,.64,1); cursor:pointer;}
+.branch:hover .copy{opacity:1; transform:scale(1);}
+.branch .copy:active{transform:scale(.85);}
+.branch .copy .copied-label{font-family:var(--font-mono); font-size:9px; color:var(--ember-300); max-width:0; overflow:hidden; white-space:nowrap; opacity:0; transition:max-width .25s ease, opacity .2s ease;}
+.branch .copy.copied .copied-label{max-width:50px; opacity:1;}
+.branch .copy.copied{transform:scale(1.08);}
+
+.shell-body{display:grid; grid-template-columns:44px 1fr; min-height:420px;}
+.rail{background:var(--raised); border-right:1px solid var(--line); display:flex; flex-direction:column; align-items:center; padding:12px 0; gap:14px;}
+.rail .ic{width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; color:var(--ink-3); font-family:var(--font-mono); font-size:12px; cursor:default;}
+.rail .ic.active{background:var(--void); color:var(--ink); box-shadow:0 0 0 1px var(--line-hot) inset;}
+.rail .ic:hover{color:var(--ink-2);}
+
+.main{display:flex; flex-direction:column; min-height:0;}
+.stream{padding:18px 20px; display:flex; flex-direction:column; gap:12px; font-size:13px; flex:1;}
+.msg{color:var(--ink-2); line-height:1.55;}
+.msg b{color:var(--ink); font-weight:500;}
+
+.disclosure{background:var(--void); border:1px solid var(--line); border-radius:9px; overflow:hidden;}
+.disclosure .row{
+  display:flex; align-items:center; gap:8px; padding:9px 12px; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-2); cursor:default;
+  position:relative; z-index:0; overflow:hidden;
+}
+.row-ripple{position:absolute; top:0; left:0; border-radius:50%; background:var(--raised); transform:scale(0); pointer-events:none; z-index:-1; transition:transform .48s cubic-bezier(.22,.61,.36,1);}
+.disclosure .row .caret{color:var(--ink-3); transform:rotate(0deg); transition:transform .15s ease;}
+.disclosure .row .caret.open{transform:rotate(90deg);}
+.disclosure .row .file{color:var(--ink);}
+.disclosure .row .stat{margin-left:auto; display:flex; gap:8px; font-size:10.5px;}
+.disclosure .row .stat .a{color:var(--ember-300);}
+.disclosure .row .stat .d{color:var(--ink-3);}
+.diff{border-top:1px solid var(--line); font-family:var(--font-mono); font-size:11px; line-height:1.7; transition:background-color .4s cubic-bezier(.22,.61,.36,1);}
+.diff .ln{padding:0 12px 0 34px; white-space:pre; position:relative;}
+.diff .ln::before{position:absolute; left:12px; width:14px; text-align:center;}
+.diff .ln.add{background:color-mix(in oklab, var(--ember-300) 10%, transparent); color:var(--ink);}
+.diff .ln.add::before{content:"+"; color:var(--ember-300);}
+.diff .ln.del{color:var(--ink-3); text-decoration:line-through; text-decoration-color:var(--line-hot);}
+.diff .ln.del::before{content:"–"; color:var(--ink-3);}
+.diff .ln.ctx{color:var(--ink-3);}
+.diff .ln.ctx::before{content:" ";}
+.diff .ln.focus{background:color-mix(in oklab, var(--ember-300) 16%, transparent);}
+
+.composer{position:relative; margin:0 20px 18px; background:var(--void); border:1px solid var(--line-hot); border-radius:14px; overflow:visible; box-shadow:0 1px 0 color-mix(in oklab, #fff 4%, transparent) inset;}
+.composer .ctx-row{display:flex; align-items:center; gap:6px; padding:10px 14px 0; flex-wrap:wrap;}
+.chip{display:flex; align-items:center; gap:5px; font-family:var(--font-mono); font-size:10px; color:var(--ink-2); background:var(--raised); border:1px solid var(--line); border-radius:6px; padding:3px 8px;
+  transition:opacity .2s ease, transform .2s ease, max-width .2s ease, padding .2s ease, margin .2s ease; max-width:200px; overflow:hidden; white-space:nowrap;}
+.chip.dismissed{opacity:0; transform:scale(.85); max-width:0; padding-left:0; padding-right:0; margin:0; border-width:0;}
+.chip .x{cursor:pointer;}
+.chip .x{color:var(--ink-3); margin-left:2px;}
+.composer .input-row{padding:12px 14px 6px; font-size:14px; color:var(--ink-3); min-height:1.4em;}
+.live-input{width:100%; background:none; border:none; outline:none; font:inherit; color:var(--ink); padding:0;}
+.live-input::placeholder{color:var(--ink-3);}
+.mention-pop{
+  margin:0 20px 8px; background:var(--panel); border:1px solid var(--line-hot); border-radius:9px; padding:5px;
+  box-shadow:0 16px 40px -16px rgb(0 0 0 / 0.6); font-size:12px;
+}
+.mention-pop .mp-hint{font-family:var(--font-mono); font-size:9.5px; color:var(--ink-3); padding:5px 9px 6px; border-bottom:1px solid var(--line); margin-bottom:3px;}
+.mention-pop .mp-hint b{color:var(--ink-2); font-weight:500;}
+.mention-pop .mp-row{padding:6px 9px; border-radius:6px; color:var(--ink-2); font-family:var(--font-mono);}
+.mention-pop .mp-row.sel{background:var(--raised); color:var(--ink);}
+.composer .input-row .caret{display:inline-block; width:1px; height:1em; background:var(--ink); vertical-align:-2px; margin-left:1px; animation:caretblink 1s steps(1) infinite;}
+@keyframes caretblink{50%{opacity:0;}}
+.composer .tool-row{display:flex; align-items:center; gap:8px; padding:8px 10px 12px 12px;}
+.composer .tool-row .ic-btn{width:26px; height:26px; border-radius:7px; display:flex; align-items:center; justify-content:center; color:var(--ink-3); font-size:14px; cursor:default;}
+.composer .tool-row .ic-btn:hover{background:var(--raised); color:var(--ink-2);}
+.seg{display:flex; background:var(--raised); border:1px solid var(--line); border-radius:8px; padding:2px; font-size:11.5px;}
+.seg button{position:relative; z-index:1; flex:1; display:inline-flex; align-items:center; justify-content:center; font-family:inherit; font-size:inherit; line-height:1; color:var(--ink-3); background:none; border:none; border-radius:6px; padding:6px 10px; cursor:default; transition:color .2s ease;}
+.seg button.active{color:var(--ink);}
+.seg:not(#slideSeg) button.active{background:var(--void); box-shadow:0 1px 0 color-mix(in oklab, #fff 5%, transparent) inset, 0 1px 2px rgb(0 0 0 / .4);}
+.seg-thumb{position:absolute; top:2px; left:2px; width:calc(50% - 2px); height:calc(100% - 4px); background:var(--void); border-radius:6px; box-shadow:0 1px 0 color-mix(in oklab, #fff 5%, transparent) inset, 0 1px 2px rgb(0 0 0 / .4); will-change:transform;}
+
+@keyframes shakeX{
+  0%,100%{transform:translateX(0);}
+  20%{transform:translateX(-6px);}
+  40%{transform:translateX(5px);}
+  60%{transform:translateX(-3px);}
+  80%{transform:translateX(2px);}
+}
+.shaking{animation:shakeX .38s cubic-bezier(.36,.07,.19,.97); border-color:var(--ember-500) !important;}
+.composer .spacer{flex:1;}
+.model-chip{display:flex; align-items:center; gap:6px; font-size:12px; color:var(--ink-2); cursor:default; padding:4px 6px; border-radius:7px;}
+.model-chip:hover{background:var(--raised);}
+.model-chip .eff{color:var(--ink-3);}
+.composer .send{font-family:var(--font-mono); font-size:10px; color:var(--ink-3); border:1px solid var(--line-hot); border-radius:5px; padding:3px 7px;}
+
+/* ---- model picker popover — Claude-style, riffing on your screenshots ---- */
+.model-pop-wrap{display:flex; align-items:flex-start; gap:12px; margin-top:16px;}
+.model-pop-wrap .tag{margin-top:8px;}
+.model-pop{
+  width:270px; max-width:100%;
+  background:var(--panel); border:1px solid var(--line-hot); border-radius:12px; padding:8px;
+  box-shadow:0 24px 48px -16px rgb(0 0 0 / 0.6); font-size:13px;
+}
+.model-pop .opt{display:flex; align-items:flex-start; justify-content:space-between; gap:8px; padding:8px 10px; border-radius:8px;}
+.model-pop .opt:hover{background:var(--raised);}
+.model-pop .opt .nm{color:var(--ink); font-weight:500; display:flex; align-items:center; gap:6px;}
+.model-pop .opt .ds{color:var(--ink-3); font-size:11.5px; margin-top:2px;}
+.model-pop .opt .ck{color:var(--ember-300); font-size:13px;}
+.model-pop hr{border:none; border-top:1px solid var(--line); margin:6px 4px;}
+.model-pop .row{display:flex; align-items:center; justify-content:space-between; padding:8px 10px; border-radius:8px; color:var(--ink-2); font-size:12.5px;}
+.model-pop .row:hover{background:var(--raised);}
+.model-pop .row .v{color:var(--ink-3);}
+
+.term-slide{
+  margin:0 20px 18px; background:#0a0b0c; border:1px solid var(--line); border-radius:9px; overflow:hidden;
+  font-family:var(--font-mono); font-size:10.5px; color:var(--ink-3); max-height:96px;
+}
+.term-slide .th{display:flex; align-items:center; gap:8px; padding:7px 12px; border-bottom:1px solid var(--line); color:var(--ink-2);}
+.term-slide .th .live{font-family:var(--font-mono); font-size:11px; color:var(--ink); width:1.2em; display:inline-block;}
+.term-slide .th .hint{margin-left:auto; font-size:9.5px; color:var(--ink-3);}
+.term-slide pre{margin:0; padding:8px 12px; line-height:1.6;}
+@keyframes pulse{0%,100%{opacity:.35;}50%{opacity:1;}}
+
+.spin-wrap span:first-child{display:inline-block; text-shadow:0 0 0 transparent; animation:spinglow 1.2s ease-in-out infinite;}
+@keyframes spinglow{0%,100%{text-shadow:0 0 0 transparent; color:var(--ink);}50%{text-shadow:0 0 6px color-mix(in oklab, var(--ember-300) 70%, transparent); color:var(--ember-300);}}
+
+.callouts{display:flex; gap:16px; margin-top:20px; flex-wrap:wrap;}
+.callout{flex:1 1 220px; display:flex; gap:10px;}
+.callout .n{font-family:var(--font-mono); font-size:11px; color:var(--ember-300); padding-top:2px;}
+.callout p{font-size:12.5px; color:var(--ink-3);}
+.callout b{color:var(--ink-2); font-weight:500;}
+
+/* ---- font system ---- */
+.font-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(280px,1fr)); gap:16px;}
+.font-card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px; display:flex; flex-direction:column; gap:14px;}
+.font-card.picked{border-color:var(--ember-700); box-shadow:0 0 0 1px var(--ember-900) inset;}
+.font-card .fc-head{display:flex; justify-content:space-between; align-items:center;}
+.font-card .fc-head b{font-size:12px; color:var(--ink); letter-spacing:0.02em;}
+.font-card .fc-head .pick{font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.08em; text-transform:uppercase; color:var(--ember-300);}
+.font-card .sample-h{font-size:1.5rem; font-weight:600; letter-spacing:-0.015em; line-height:1.15;}
+.font-card .sample-b{font-size:13px; color:var(--ink-2); line-height:1.55;}
+.font-card .sample-m{font-family:var(--font-mono); font-size:11px; color:var(--ink-3); background:var(--void); border:1px solid var(--line); border-radius:6px; padding:8px 10px;}
+.f-jakarta .sample-h, .f-jakarta .fc-head b{font-family:"Plus Jakarta Sans",sans-serif;}
+.f-jakarta .sample-b{font-family:"Plus Jakarta Sans",sans-serif;}
+.f-jakarta .sample-m{font-family:"JetBrains Mono",monospace;}
+.f-inter .sample-h, .f-inter .fc-head b{font-family:"Inter",sans-serif;}
+.f-inter .sample-b{font-family:"Inter",sans-serif;}
+.f-inter .sample-m{font-family:"JetBrains Mono",monospace;}
+.f-manrope .sample-h, .f-manrope .fc-head b{font-family:"Manrope",sans-serif;}
+.f-manrope .sample-b{font-family:"Manrope",sans-serif;}
+.f-manrope .sample-m{font-family:"Space Mono",monospace;}
+
+/* ---- glanceable status glyphs — Cursor-style: a character, not a badge ---- */
+.glyph-row{display:grid; grid-template-columns:repeat(auto-fit,minmax(140px,1fr)); gap:1px; background:var(--line); border:1px solid var(--line); border-radius:10px; overflow:hidden;}
+.glyph-card{background:var(--panel); padding:16px 14px; display:flex; align-items:center; gap:10px; text-align:left;}
+.glyph{font-family:var(--font-mono); font-size:15px; color:var(--ink-2); width:1.4em; text-align:center; flex:none;}
+.glyph.edit{color:var(--ember-300);}
+.glyph-card .label{display:flex; flex-direction:column; gap:1px;}
+.glyph-card .label b{font-size:12.5px; color:var(--ink); font-weight:500;}
+.glyph-card .label span{font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3);}
+.spin-ring{width:16px; height:16px; border-radius:50%; flex:none;
+  background:conic-gradient(from 0deg, transparent 0%, var(--ember-300) 35%, transparent 60%);
+  -webkit-mask:radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));
+  mask:radial-gradient(farthest-side, transparent calc(100% - 2.5px), #000 calc(100% - 2.5px));
+  animation:spin 1s linear infinite;
+}
+@keyframes spin{to{transform:rotate(360deg);}}
+
+/* ---- dither demo (compact rerun) ---- */
+.dither-rig{display:flex; gap:24px; align-items:flex-start; flex-wrap:wrap;}
+.dither-stage{position:relative; width:360px; max-width:100%; aspect-ratio:16/10; border-radius:10px; overflow:hidden; border:1px solid var(--line); box-shadow:0 24px 64px -24px rgb(0 0 0 / 0.7); background:#000;}
+.dither-stage canvas{width:100%; height:100%; display:block; image-rendering:pixelated;}
+.dither-controls{display:flex; flex-direction:column; gap:12px; min-width:220px;}
+button.trigger{font-family:var(--font-mono); font-size:12px; color:var(--ink); background:var(--raised); border:1px solid var(--line-hot); border-radius:7px; padding:10px 14px; cursor:pointer; text-align:left;
+  transform:translateY(0) scale(1); transition:background .15s ease, border-color .15s ease, box-shadow .2s ease, transform .32s cubic-bezier(.34,1.56,.64,1);}
+button.trigger:hover{background:#1e2224; border-color:var(--ember-700); transform:translateY(-1px); box-shadow:0 6px 16px -10px rgb(0 0 0 / 0.6);}
+button.trigger:active{transform:scale(.955) translateY(0); transition:transform .07s ease-out;}
+button.trigger:focus-visible{outline:2px solid var(--ember-500); outline-offset:2px;}
+
+/* ---- other surfaces: settings + pentest empty state ---- */
+.other-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(260px,1fr)); gap:16px;}
+.other-card{display:flex; flex-direction:column; gap:8px;}
+.oc-label{font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3);}
+.settings-panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px 4px; box-shadow:0 24px 64px -32px rgb(0 0 0 / 0.6);}
+.sp-group{font-family:var(--font-mono); font-size:10px; letter-spacing:0.06em; text-transform:uppercase; color:var(--ink-3); padding:10px 12px 4px;}
+.sp-row{display:flex; align-items:center; justify-content:space-between; gap:12px; padding:9px 12px; border-radius:7px;}
+.sp-row > span:first-child{font-size:12.5px; color:var(--ink-3); transition:color .2s ease, font-size .2s ease, font-weight .2s ease;}
+.sp-row:has(.sw-toggle.on) > span:first-child{color:var(--ink); font-size:13px; font-weight:500;}
+.sp-row:hover{background:var(--raised);}
+.sp-chevron{color:var(--ink-3);}
+.sw-toggle{width:30px; height:17px; border-radius:20px; background:var(--raised); border:1px solid var(--line-hot); position:relative; flex:none;}
+.sw-toggle i{position:absolute; top:1px; left:1px; width:13px; height:13px; border-radius:50%; background:var(--ink-3); transition:transform .18s cubic-bezier(.22,.61,.36,1), background .18s ease;}
+.sw-toggle.on{background:color-mix(in oklab, var(--ember-300) 30%, var(--raised)); border-color:var(--ember-700);}
+.sw-toggle.on i{transform:translateX(13px); background:var(--ember-300);}
+.empty-state{position:relative; border:1px solid var(--line); border-radius:10px; overflow:hidden; box-shadow:0 24px 64px -32px rgb(0 0 0 / 0.6);}
+.empty-state canvas{display:block; width:100%; height:auto; image-rendering:pixelated;}
+.es-overlay{position:absolute; inset:0; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:8px; text-align:center; background:color-mix(in oklab, var(--void) 55%, transparent);}
+.es-title{font-size:14px; color:var(--ink); font-weight:500;}
+.es-sub{font-size:11.5px; color:var(--ink-3); max-width:200px;}
+
+/* ---- glowing edge — for confirmations that deserve a little more weight ---- */
+.glow-edge{position:relative;}
+.glow-edge::after{content:""; position:absolute; inset:-2px; border-radius:inherit; border:1.5px solid var(--ember-500); opacity:.15; pointer-events:none; animation:edgeGlow 1.8s ease-in-out infinite;}
+@keyframes edgeGlow{0%,100%{opacity:.15;}50%{opacity:.7;}}
+
+/* ---- the full clarifying-question card, off the real screenshots ---- */
+.qc-status{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--ink-2); margin-bottom:6px;}
+.qc-progress{display:flex; align-items:center; gap:7px; font-family:var(--font-mono); font-size:11.5px; color:var(--ink-3); margin-bottom:14px;}
+.qcard{display:flex; flex-direction:column; gap:10px;}
+.qbox{background:var(--panel); border:1px solid var(--line-hot); border-radius:12px; padding:18px 20px; box-shadow:0 24px 64px -32px rgb(0 0 0 / 0.6);}
+.qb-head{display:flex; align-items:flex-start; justify-content:space-between; gap:16px; margin-bottom:14px;}
+.qb-title{font-size:14.5px; color:var(--ink); line-height:1.4;}
+.qb-nav{display:flex; align-items:center; gap:6px; color:var(--ink-3); font-family:var(--font-mono); font-size:11.5px; flex:none;}
+.qb-opt{display:flex; align-items:center; gap:14px; padding:12px 4px; border-top:1px solid var(--line); cursor:pointer;}
+.qb-opt:first-of-type{border-top:none;}
+.qb-opt:hover{color:var(--ink);}
+.qb-num{width:26px; height:26px; border-radius:7px; background:var(--raised); color:var(--ink-3); display:flex; align-items:center; justify-content:center; font-family:var(--font-mono); font-size:12px; flex:none;}
+.qb-opt:hover .qb-num{background:var(--line-hot); color:var(--ink);}
+.qb-else{justify-content:space-between; color:var(--ink-3);}
+.qb-else-view{display:flex; align-items:center; gap:10px;}
+.qb-skip{font-family:var(--font-mono); font-size:11px; color:var(--ink-3); background:var(--raised); border:1px solid var(--line-hot); border-radius:6px; padding:5px 10px; cursor:pointer;}
+.qb-else-input{display:none; flex:1; align-items:center; gap:8px;}
+.qb-else.editing .qb-else-view, .qb-else.editing .qb-skip{display:none;}
+.qb-else.editing .qb-else-input{display:flex;}
+.qb-else-input input{flex:1; background:none; border:none; outline:none; font:inherit; color:var(--ink); border-bottom:1px dotted var(--line-hot); padding-bottom:2px;}
+.qb-else-submit{width:28px; height:28px; border-radius:7px; background:var(--ink); color:var(--void); display:flex; align-items:center; justify-content:center; flex:none; cursor:pointer;}
+.qreply{display:flex; align-items:center; gap:10px; background:var(--void); border:1px solid var(--line-hot); border-radius:11px; padding:11px 14px; color:var(--ink-3);}
+.qreply-ph{font-size:13px;}
+.qfoot{display:flex; justify-content:space-between; font-family:var(--font-mono); font-size:10.5px; color:var(--ink-3); padding:0 4px;}
+.qfoot b{color:var(--ink-2); font-weight:500;}
+
+/* ---- conversation states ---- */
+.convo-panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; font-size:12.5px; box-shadow:0 24px 64px -32px rgb(0 0 0 / 0.6); display:flex; flex-direction:column;}
+.convo-user{align-self:flex-start; background:var(--raised); color:var(--ink-2); padding:7px 11px; border-radius:9px; max-width:90%;}
+.convo-agent{color:var(--ink); line-height:1.5;}
+.listen-bars{display:flex; align-items:flex-end; gap:3px; height:26px;}
+.listen-bars i{width:3px; border-radius:2px; background:var(--ember-300); display:block; height:20%; transition:height .11s ease-out;}
+.convo-dictation{margin-top:10px; font-size:13.5px; color:var(--ink);}
+
+.palette{background:var(--panel); border:1px solid var(--line-hot); border-radius:10px; padding:6px; box-shadow:0 24px 64px -32px rgb(0 0 0 / 0.6);}
+.pal-input{display:flex; align-items:center; font-size:12.5px; color:var(--ink-3); padding:9px 10px; border-bottom:1px solid var(--line); margin-bottom:4px;}
+.pal-input input{flex:1; background:none; border:none; outline:none; font:inherit; color:var(--ink);}
+.pal-input input::placeholder{color:var(--ink-3);}
+.pal-row{display:flex; align-items:center; gap:8px; padding:8px 10px; border-radius:7px; font-size:12px; color:var(--ink-2); cursor:default;}
+.pal-row.active{background:var(--raised); color:var(--ink);}
+.pal-row.ran{background:color-mix(in oklab, var(--ember-300) 16%, var(--raised));}
+.pal-ic{font-family:var(--font-mono); font-size:11px; color:var(--ink-3); width:1.4em; text-align:center;}
+
+.findings-panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:6px; box-shadow:0 24px 64px -32px rgb(0 0 0 / 0.6);}
+.find-row{display:flex; align-items:center; gap:10px; padding:9px 10px; border-radius:7px; cursor:default;}
+.find-row:hover{background:var(--raised);}
+.find-detail{max-height:0; overflow:hidden; font-size:11.5px; color:var(--ink-3); padding:0 10px; border-radius:7px; transition:max-height .25s cubic-bezier(.22,.61,.36,1), padding .25s ease;}
+.find-detail.open{max-height:60px; padding:0 10px 10px;}
+.find-row div{display:flex; flex-direction:column; gap:1px;}
+.find-row b{font-size:12px; color:var(--ink); font-weight:500;}
+.find-row span{font-family:var(--font-mono); font-size:10px; color:var(--ink-3);}
+.find-sev{width:8px; height:8px; border-radius:50%; flex:none;}
+.find-sev.crit{background:#e5484d;}
+.find-sev.high{background:#e8833a;}
+.find-sev.med{background:#d9b341;}
+.find-sev.low{background:#5c9ead;}
+
+.welcome-mock{position:relative; display:flex; flex-direction:column; align-items:center; gap:20px; padding:56px 20px; background:var(--void); border:1px solid var(--line); border-radius:14px; overflow:hidden;}
+.welcome-mock > #welcomeDither{position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; z-index:0;}
+.welcome-mock > #welcomeScrim{position:absolute; inset:0; z-index:0; pointer-events:none; background:linear-gradient(to bottom, color-mix(in oklab, var(--void) 35%, transparent) 0%, transparent 22%, transparent 55%, var(--void) 92%);}
+.welcome-mock > *:not(#welcomeDither):not(#welcomeScrim){position:relative; z-index:1;}
+.wm-mark canvas{width:88px; height:88px; image-rendering:pixelated; display:block;}
+.wm-greet{font-size:1.6rem; font-weight:600; letter-spacing:-0.015em;}
+.wm-recent{width:100%; max-width:520px; display:flex; flex-direction:column; gap:2px;}
+.wm-recent-row{display:flex; justify-content:space-between; font-size:12px; color:var(--ink-3); padding:7px 10px; border-radius:7px;}
+.wm-recent-row:hover{background:var(--raised); color:var(--ink-2);}
+.wm-time{font-family:var(--font-mono); font-size:10.5px;}
+
+.micro-grid{display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:16px;}
+.micro-card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:16px; display:flex; flex-direction:column; gap:10px;}
+.mc-label{font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3);}
+.micro-card p{font-size:12px;}
+.mc-tooltip-wrap{display:flex;}
+.mc-tooltip{position:absolute; left:50%; top:-30px; transform:translateX(-50%); background:var(--raised); border:1px solid var(--line-hot); color:var(--ink-2); font-size:10.5px; padding:4px 8px; border-radius:6px; white-space:nowrap; opacity:0; pointer-events:none; transition:opacity .2s ease .2s;}
+.rail .ic:hover .mc-tooltip{opacity:1;}
+
+/* ---- generic tooltip — used everywhere now, not just the one demo ---- */
+[data-tt]{position:relative;}
+[data-tt]::after{
+  content:attr(data-tt); position:absolute; left:50%; bottom:calc(100% + 7px); transform:translateX(-50%) translateY(2px);
+  background:var(--raised); border:1px solid var(--line-hot); color:var(--ink-2); font-size:11.5px; font-family:var(--font-ui); font-weight:500;
+  padding:5px 9px; border-radius:7px; white-space:nowrap; opacity:0; pointer-events:none; z-index:20;
+  transition:opacity .15s ease .35s, transform .15s ease .35s;
+}
+[data-tt]:hover::after{opacity:1; transform:translateX(-50%) translateY(0);}
+.hold-confirm{position:relative; overflow:hidden;}
+.hold-fill{position:absolute; inset:0; width:0%; background:color-mix(in oklab, var(--ember-500) 55%, var(--raised)); z-index:0;}
+.hold-label{position:relative; z-index:1;}
+.mc-focus-demo{font:inherit; font-size:13px; color:var(--ink); background:var(--void); border:1px solid var(--line-hot); border-radius:8px; padding:8px 12px; width:100%; outline:none; transform:scale(1); transition:box-shadow .3s cubic-bezier(.34,1.56,.64,1), border-color .2s ease, transform .3s cubic-bezier(.34,1.56,.64,1);}
+.mc-focus-demo::placeholder{color:var(--ink-3); transition:opacity .15s ease;}
+.mc-focus-demo:focus::placeholder{opacity:.5;}
+.mc-focus-demo:focus{border-color:var(--ember-700); box-shadow:0 0 0 4px color-mix(in oklab, var(--ember-500) 25%, transparent); transform:scale(1.015);}
+
+/* ---- rebuild plan ---- */
+.decisions{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:20px 22px; display:flex; flex-direction:column; gap:14px;}
+.decisions h3{font-size:13px; color:var(--ember-300); font-weight:600;}
+.decisions ul{margin:0; padding-left:18px; display:flex; flex-direction:column; gap:6px;}
+.decisions li{font-size:13px; color:var(--ink-2); line-height:1.5;}
+.decisions li b{color:var(--ink);}
+.md-sample{font-family:var(--font-mono); font-size:11px; color:var(--ink-3); background:var(--void); border:1px solid var(--line); border-radius:8px; padding:14px 16px; line-height:1.7; white-space:pre-wrap;}
+.md-sample .h{color:var(--ink-2);}
+
+footer{padding-top:40px; font-family:var(--font-mono); font-size:11px; color:var(--ink-3);}
+
+@media (max-width:640px){
+  .shell-body{grid-template-columns:36px 1fr;}
+}
+</style>
+
+<div class="wrap">
+
+  <div class="hero">
+    <div class="eyebrow">Working name · NIL Agent OS — rev. 15</div>
+    <h1>Your screenshots landed. <em>Second pass on everything.</em></h1>
+    <p class="sub">Went through your list again in order. Two real bugs this round, not just polish: the row hover was only covering part of a wide row and stacking under text (fixed — sized dynamically to the farthest corner now, z-index made explicit), and the welcome waterfall was stretched because a fixed 100×60 canvas was scaling to whatever size the card rendered at (fixed — sized to the real box, direction reversed, a scrim added so text never sits on dense dither). "Waiting on you" is the big new thing: your screenshots are now a real component, not a placeholder.</p>
+    <div class="changelog">
+      <div><b>Fixed:</b> row hover ripple now sizes itself to always cover the whole row, and text sits above it with an explicit z-index — it was leaving corners uncovered and, in some rows, sitting under the ripple.</div>
+      <div><b>Fixed:</b> welcome waterfall was rendering at a fixed 100×60 resolution stretched to the card's real size — that's the "super stretched" look. Now sized to the actual box, falls downward (was reversed), and a scrim keeps text off dense dither.</div>
+      <div><b>New:</b> "Waiting on you" (section 6) is now the full clarifying-question component from your screenshots — numbered options, pager, "something else" that becomes a real text field, a reply bar, the status/thinking line above it. The old binary confirm stays for genuine yes/no moments, now with a glowing edge on the committing button.</div>
+      <div><b>Dictation:</b> the retraction now targets the specific clause that changed ("default it to system" → backs up to "default it to" → "light"), not the whole sentence — closer to how a person actually self-corrects.</div>
+      <div><b>Mode-segment pill:</b> centering fixed (button content is properly flexed/centered now), and it jellies against whichever wall it's arriving at instead of a flat slide.</div>
+      <div><b>Settings:</b> only the label brightens and grows slightly on — the whole row doesn't tint anymore.</div>
+      <div><b>Buttons, everywhere:</b> a real press-and-release physics pass — quick down, "back"-eased bounce up, hover lift — not just the one demo.</div>
+      <div><b>Dither-in panel:</b> no more random flicker — one flat overlay color dissolving away, per your note.</div>
+      <div><b>Tooltips:</b> switched to the UI typeface instead of mono — reads friendlier.</div>
+      <div><b>New surfaces:</b> source control, GitHub, and MCP tools (section 5) — the three highest-value screens from your list.</div>
+    </div>
+  </div>
+
+  <section>
+    <div class="section-head">
+      <h2>1 · The shell — one rail, not three panes</h2>
+      <span class="tag">desktop · Claude/Grok-style single sidebar</span>
+    </div>
+    <p class="lede">The file tree and target list collapse into a thin icon rail (hover to expand a label, click to pin it open) — closer to Claude and Grok than the old three-column layout. The terminal isn't a permanent pane anymore: it slides in under the composer only while a command is actually running, and folds away the moment it's idle. Tool calls are disclosure rows you open on demand, and opening one that touched a file shows the actual diff, not a description of it.</p>
+    <div class="shell">
+      <div class="shell-top">
+        <div class="dots"><span></span><span></span><span></span></div>
+        <div class="branch">feat/auth-refactor <span class="copy" id="branchCopy"><span class="icon icon-sm" data-icon="copy"></span><span class="copied-label">Copied</span></span></div>
+      </div>
+      <div class="shell-body">
+        <div class="rail">
+          <div class="ic active" data-tt="Files"><span class="icon icon-lg" data-icon="panels"></span></div>
+          <div class="ic" data-tt="Terminal"><span class="icon icon-lg" data-icon="terminal"></span></div>
+          <div class="ic" data-tt="Diffs"><span class="icon icon-lg" data-icon="diff"></span></div>
+          <div class="ic" data-tt="Pentest"><span class="icon icon-lg" data-icon="flag"></span></div>
+        </div>
+        <div class="main">
+          <div class="stream">
+            <div class="msg">"Wire the login form up to the auth endpoint."</div>
+            <div class="disclosure">
+              <div class="row"><span class="caret icon icon-sm" data-icon="chevron"></span> reading <span class="file">src/routes/login/+page.svelte</span></div>
+            </div>
+            <div class="disclosure" id="editRow">
+              <div class="row"><span class="caret icon icon-sm open" data-icon="chevron"></span> editing <span class="file">src/lib/auth.ts</span> <span class="stat"><span class="a" data-tt="8 additions">+8</span><span class="d" data-tt="2 deletions">−2</span></span></div>
+              <div class="diff">
+                <div class="ln ctx">export async function login(email: string, password: string) {</div>
+                <div class="ln del">  return fetch('/api/login', { method: 'POST' });</div>
+                <div class="ln add" id="focusLine">  return fetch('/api/login', {</div>
+                <div class="ln add">    method: 'POST',</div>
+                <div class="ln add">    body: JSON.stringify({ email, password }),</div>
+                <div class="ln add">  });</div>
+                <div class="ln ctx">}</div>
+              </div>
+            </div>
+            <div class="msg">Starting the dev server to confirm the form posts correctly.</div>
+          </div>
+          <div class="term-slide">
+            <div class="th spin-wrap"><span class="live" id="termSpinner">⠋</span> npm run dev <span class="hint">closes when idle</span></div>
+            <pre>VITE ready in 312ms
+➜  Local: http://localhost:5173
+$ curl -X POST /api/login → 200 { "ok": true }</pre>
+          </div>
+          <div class="composer">
+            <div class="ctx-row">
+              <div class="chip">⌥ auth.ts <span class="x">×</span></div>
+              <div class="chip">⌥ +page.svelte <span class="x">×</span></div>
+            </div>
+            <div class="input-row" style="padding-bottom:2px;"><input class="live-input" id="liveInput" type="text" placeholder="Ask NIL to build something… try typing @" autocomplete="off"></div>
+            <div class="mention-pop" id="mentionPop" hidden>
+              <div class="mp-hint">type to filter · <b>tab</b> or <b>enter</b> to insert</div>
+              <div class="mp-row" data-file="src/lib/auth.ts:1">src/lib/auth.ts</div>
+              <div class="mp-row" data-file="src/routes/login/+page.svelte:1">src/routes/login/+page.svelte</div>
+              <div class="mp-row" data-file="src/lib/api.ts:1">src/lib/api.ts</div>
+              <div class="mp-row" data-file="tests/test_auth.ts:1">tests/test_auth.ts</div>
+            </div>
+            <div class="tool-row">
+              <div class="ic-btn" data-tt="Attach file"><span class="icon" data-icon="plus"></span></div>
+              <div class="seg"><button class="active">Build</button><button>Pentest</button></div>
+              <div class="spacer"></div>
+              <div class="model-chip">Sonnet 5 <span class="eff">Medium</span></div>
+              <div class="ic-btn" data-tt="Dictate"><span class="icon" data-icon="mic"></span></div>
+              <div class="ic-btn" data-tt="Voice mode"><span class="icon icon-fill" data-icon="waveform"></span></div>
+            </div>
+          </div>
+          <p style="font-size:11.5px; color:var(--ink-3); margin:0 20px 4px;">↑ live — click into the composer and type <code>@</code> to see file/line mentions with tab-completion.</p>
+        </div>
+      </div>
+    </div>
+    <div class="model-pop-wrap">
+      <div class="model-pop">
+        <div class="opt"><div><div class="nm">Opus 5</div><div class="ds">For complex tasks</div></div></div>
+        <div class="opt"><div><div class="nm">Sonnet 5</div><div class="ds">Most efficient for everyday tasks</div></div><span class="ck icon icon-sm" data-icon="check"></span></div>
+        <div class="opt"><div><div class="nm">Haiku 4.5</div><div class="ds">Fastest for quick answers</div></div></div>
+        <hr>
+        <div class="row"><span>Effort</span><span class="v">Medium <span class="icon icon-sm" data-icon="chevron"></span></span></div>
+        <div class="row"><span>More models</span><span class="icon icon-sm" data-icon="chevron"></span></div>
+      </div>
+      <p style="font-size:12.5px; max-width:340px;">What the model chip opens into — pulled straight from your screenshots, just retextured to NIL's tokens. Same idea for a future "Pentest ruleset" picker off the mode segment.</p>
+    </div>
+    <div class="callouts">
+      <div class="callout"><span class="n">01</span><p><b>Mode moved into the composer.</b> Matched your screenshots — Build/Pentest is a segmented control down by the input, not a separate pill row in the chrome above.</p></div>
+      <div class="callout"><span class="n">02</span><p><b>Terminal earns its space.</b> Slides in under the composer only while something's running; gone the instant it's not. No permanent third column eating width.</p></div>
+      <div class="callout"><span class="n">03</span><p><b>Hover reveals, click commits.</b> The branch name is inert until you hover it — then a copy affordance appears. That's the "everything's one hover away" habit you're after.</p></div>
+      <div class="callout"><span class="n">04</span><p><b>Diffs are back to one accent.</b> Pulled the sage/rust hues out — additions tint ember (same rule as "this is changing your files"), deletions just go dim with a strikethrough. No new colors, just ember and grayscale, same as the rain.</p></div>
+      <div class="callout"><span class="n">05</span><p><b>The model chip opens into a real picker.</b> Riffed on the popover from your screenshots — name, one-line description, a check on the active one, Effort and More models below a divider. Sat above the composer here just to show it open.</p></div>
+      <div class="callout"><span class="n">06</span><p><b>Hover the row, watch the change.</b> New — hover "editing auth.ts" below and the exact changed line lights up in the diff, on the same cubic ease as everything else. In the real thing this is also where it'd scroll a live code view to that line as it streams in.</p></div>
+      <div class="callout"><span class="n">07</span><p><b>Every tool gets the terminal's manners.</b> The "appears while running, folds away when idle" behavior isn't special-cased to the terminal — it's the rule for anything that needs temporary space: a running test suite, a build log, a lint pass all open and close the same way, so the stream never permanently loses width to a tool that finished ten minutes ago.</p></div>
+      <div class="callout"><span class="n">08</span><p><b>Icons swapped, layout untouched.</b> The rail, carets, and composer buttons here now use the real icon set from below — this doesn't reopen the frozen layout, it's the same system-wide pass hitting every screen.</p></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>2 · Font system — decided</h2>
+      <span class="tag">Plus Jakarta Sans + JetBrains Mono, locked</span>
+    </div>
+    <p class="lede">Confirmed — this whole page has been running on it since the top. The other two stay below only as a record of what was considered, not live options anymore.</p>
+    <div class="font-grid">
+      <div class="font-card f-jakarta picked">
+        <div class="fc-head"><b>Plus Jakarta Sans + JetBrains Mono</b><span class="pick"><span class="icon icon-sm" data-icon="check"></span> locked in</span></div>
+        <div class="sample-h">Wire the login form up.</div>
+        <div class="sample-b">Rounded terminals, slightly wide counters — reads warm and human at UI sizes without losing precision in dense rows.</div>
+        <div class="sample-m">const session = await auth.login(email, pw);</div>
+      </div>
+      <div class="font-card f-inter" style="opacity:.45;">
+        <div class="fc-head"><b>Inter + JetBrains Mono</b><span class="pick" style="color:var(--ink-3);">considered, not used</span></div>
+        <div class="sample-h">Wire the login form up.</div>
+        <div class="sample-b">Neutral, dense, screen-optimized — what NIL used before this pass.</div>
+        <div class="sample-m">const session = await auth.login(email, pw);</div>
+      </div>
+      <div class="font-card f-manrope" style="opacity:.45;">
+        <div class="fc-head"><b>Manrope + Space Mono</b><span class="pick" style="color:var(--ink-3);">considered, not used</span></div>
+        <div class="sample-h">Wire the login form up.</div>
+        <div class="sample-b">Rounder and friendlier, but a bigger swing than this pass needed.</div>
+        <div class="sample-m">const session = await auth.login(email, pw);</div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>3 · Glanceable status</h2>
+      <span class="tag">a character, not a mascot</span>
+    </div>
+    <p class="lede">Two open questions here, not final answers. Pulled binary back out of "running" — you weren't sold — and put in a placeholder matrix-cycle instead until you've had a chance to look at dedicated icon/spinner tools (a few worth trying below). "Needs you" gets a real proposal this time: a thin ring with a bright arc spinning around it, nonstop, like a loading indicator that's actually waiting on a person instead of a process.</p>
+    <div class="glyph-row">
+      <div class="glyph-card"><div class="glyph">·</div><div class="label"><b>Idle</b><span>Nothing running</span></div></div>
+      <div class="glyph-card"><div class="glyph" id="thinkGlyph">⋯</div><div class="label"><b>Thinking</b><span>Reading, deciding</span></div></div>
+      <div class="glyph-card"><div class="glyph edit">±</div><div class="label"><b>Editing files</b><span>Ember, always</span></div></div>
+      <div class="glyph-card"><div class="glyph" id="runGlyph" style="font-size:20px; line-height:1; display:flex; align-items:center; justify-content:center;">⠿</div><div class="label"><b>Running</b><span>Placeholder — see below</span></div></div>
+      <div class="glyph-card"><div class="spin-ring"></div><div class="label"><b>Needs you</b><span>Spinning ring, new proposal</span></div></div>
+    </div>
+    <p style="margin-top:16px; font-size:12.5px; max-width:660px;">On finding/customizing icons: sounds like svg-spinners.com either didn't load cleanly for you or wasn't what you expected — dropping it as a firm recommendation. <a href="https://lottiefiles.com" target="_blank" rel="noopener">LottieFiles</a> is the more reliable option if you want to browse and customize animations rather than hand-code them. Worth revisiting this properly once we're actually building the running-state icon rather than guessing at sources now.</p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>4 · Motion vocabulary — alive, not blinking</h2>
+      <span class="tag">a different gesture for each state, on purpose</span>
+    </div>
+    <p class="lede">Six more added, all live and clickable below, not just described. Dictation now runs on a real backspace/type engine rather than swapping strings — it actually erases characters back to where two passes diverge, then types forward. That's what lets it handle a full "oh wait, never mind" the same way a person would: not a jump-cut to the corrected sentence, an actual retraction on screen (see the fuller version of this in section 6's listening card). The lock icon is the point: on-device means that whole correction loop never leaves your machine.</p>
+    <div class="glyph-row" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr)); background:none; border:none; gap:14px;">
+      <div class="glyph-card" style="flex-direction:column; align-items:stretch; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px;">
+        <span style="font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px;">Streaming text — ash builds one letter at a time</span>
+        <canvas id="ashCanvas" width="280" height="44" style="width:100%; height:44px;"></canvas>
+      </div>
+      <div class="glyph-card" style="flex-direction:column; align-items:stretch; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px;">
+        <span style="font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px;">Running process</span>
+        <div class="sample-m spin-wrap" style="display:flex; align-items:center; gap:8px;"><span id="spinnerDemo" style="width:1.2em;">⠋</span> npm test</div>
+      </div>
+      <div class="glyph-card" style="flex-direction:column; align-items:stretch; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px;">
+        <span style="font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px;">Pentest mode, idle — see placement note ↓</span>
+        <div class="dither-stage" style="width:100%; aspect-ratio:3/2; margin:0;"><canvas id="rainCanvas" width="120" height="80"></canvas></div>
+      </div>
+      <div class="glyph-card" style="flex-direction:column; align-items:stretch; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px;">
+        <span style="font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px;">Dictation — corrects itself, on-device</span>
+        <div class="sample-m" style="display:flex; align-items:center; gap:8px; min-height:1.6em;"><span class="icon icon-sm" data-icon="lock"></span><span id="dictationDemo" style="flex:1;"></span></div>
+      </div>
+      <div class="glyph-card" style="flex-direction:column; align-items:stretch; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px;">
+        <span style="font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px;">Task complete — draws in, doesn't pop</span>
+        <div class="sample-m" style="display:flex; align-items:center; gap:8px;"><svg id="checkDraw" width="18" height="18" viewBox="0 0 24 24" style="flex:none;"><polyline points="4,13 9,18 20,6" fill="none" stroke="#e6a35c" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/></svg> Migration applied</div>
+      </div>
+      <div class="glyph-card" style="flex-direction:column; align-items:stretch; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px;">
+        <span style="font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px;">Invalid — shakes, doesn't just redden</span>
+        <button class="trigger" id="shakeDemo" style="width:100%;">Click to trigger</button>
+      </div>
+      <div class="glyph-card" style="flex-direction:column; align-items:stretch; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px;">
+        <span style="font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px;">Copy — icon confirms, doesn't just toast</span>
+        <button class="trigger" id="copyDemo" style="width:100%; display:flex; align-items:center; gap:8px;"><span class="icon icon-sm" id="copyDemoIcon" data-icon="copy"></span> Copy branch name</button>
+      </div>
+      <div class="glyph-card" style="flex-direction:column; align-items:stretch; text-align:left; background:var(--panel); border:1px solid var(--line); border-radius:10px;">
+        <span style="font-family:var(--font-mono); font-size:9.5px; letter-spacing:0.04em; text-transform:uppercase; color:var(--ink-3); margin-bottom:8px;">Mode switch — jellies against the wall it hits</span>
+        <div class="seg" id="slideSeg" style="position:relative; align-self:flex-start;">
+          <div class="seg-thumb" id="segThumb"></div>
+          <button class="active" data-i="0">Build</button><button data-i="1">Pentest</button>
+        </div>
+      </div>
+    </div>
+    <div class="decisions" style="margin-top:16px;">
+      <h3>Where the pentest-idle rain actually lives</h3>
+      <ul>
+        <li>It's the background wash for the <b>empty state</b> when Pentest mode is selected and no target's loaded yet — replaces the current static empty-state screenshot in <code>frontend/screenshots/empty-state.png</code> with something that moves.</li>
+        <li>A much fainter version (slower, sparser) sits behind the rail icon for Pentest mode while it's the active mode but idle — just enough to read as "this mode is alive," not enough to be distracting next to real work.</li>
+        <li>It does <b>not</b> run behind active findings or scan output — once real content is on screen, the rain has done its job and gets out of the way.</li>
+      </ul>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>5 · Other surfaces</h2>
+      <span class="tag">not just the composer screen</span>
+    </div>
+    <p class="lede">Seven surfaces now — settings, the pentest empty state, command palette, findings, and three new ones: source control, GitHub, and MCP tools. First passes, not locked.</p>
+    <div class="other-grid">
+      <div class="other-card">
+        <div class="oc-label">Settings</div>
+        <div class="settings-panel">
+          <div class="sp-group">General</div>
+          <div class="sp-row"><span>Confirm before running shell commands</span><div class="sw-toggle on"><i></i></div></div>
+          <div class="sp-row"><span>Auto-save on file edit</span><div class="sw-toggle on"><i></i></div></div>
+          <div class="sp-group">Appearance</div>
+          <div class="sp-row"><span>Reduce motion</span><div class="sw-toggle"><i></i></div></div>
+          <div class="sp-row"><span>Keyboard shortcuts</span><span class="sp-chevron icon icon-sm" data-icon="chevron"></span></div>
+        </div>
+      </div>
+      <div class="other-card">
+        <div class="oc-label">Pentest mode, no target loaded</div>
+        <div class="empty-state">
+          <canvas id="rainCanvas2" width="200" height="140"></canvas>
+          <div class="es-overlay">
+            <div class="es-title">No target loaded</div>
+            <div class="es-sub">Point NIL at a host or import scope to start</div>
+            <button class="trigger" style="padding:6px 12px; font-size:11px; display:inline-flex; align-items:center; gap:6px;"><span class="icon icon-sm" data-icon="target"></span> New target</button>
+          </div>
+        </div>
+      </div>
+      <div class="other-card">
+        <div class="oc-label">Command palette — ⌘K, live</div>
+        <div class="palette" id="palDemo">
+          <div class="pal-input"><span class="icon icon-sm" data-icon="search" style="margin-right:6px;"></span><input id="palInput" type="text" placeholder="Search files, run a command…" autocomplete="off"></div>
+          <div class="pal-row active" data-k="open src lib auth.ts panels"><span class="pal-ic icon icon-sm" data-icon="panels"></span> Open src/lib/auth.ts</div>
+          <div class="pal-row" data-k="run npm test terminal"><span class="pal-ic icon icon-sm" data-icon="terminal"></span> Run: npm test</div>
+          <div class="pal-row" data-k="switch pentest mode flag"><span class="pal-ic icon icon-sm" data-icon="flag"></span> Switch to Pentest mode</div>
+          <div class="pal-row" data-k="show diff auth.ts"><span class="pal-ic icon icon-sm" data-icon="diff"></span> Show diff for auth.ts</div>
+        </div>
+      </div>
+      <div class="other-card">
+        <div class="oc-label">Findings — click a row to expand</div>
+        <div class="findings-panel" id="findDemo">
+          <div class="find-row" data-note="Sanitize the redirect param server-side; don't trust client-supplied URLs."><span class="find-sev crit" data-tt="Critical"></span><div><b>Reflected XSS</b><span>login.php · param "redirect"</span></div></div>
+          <div class="find-row" data-note="Disable TLS 1.0/1.1 and weak cipher suites at the load balancer."><span class="find-sev high" data-tt="High"></span><div><b>Outdated TLS cipher</b><span>api.target.com:443</span></div></div>
+          <div class="find-row" data-note="Turn off debug/stack-trace output outside local development."><span class="find-sev med" data-tt="Medium"></span><div><b>Verbose error output</b><span>/admin/debug</span></div></div>
+          <div class="find-row" data-note="Add CSP, X-Frame-Options, and HSTS across the affected endpoints."><span class="find-sev low" data-tt="Low"></span><div><b>Missing security headers</b><span>3 endpoints</span></div></div>
+        </div>
+      </div>
+      <div class="other-card">
+        <div class="oc-label">Source control</div>
+        <div class="findings-panel">
+          <div class="find-row"><span class="icon icon-sm" data-icon="git-branch" style="color:var(--ink-3);"></span><div><b>feat/auth-refactor</b><span>3 commits ahead of main</span></div></div>
+          <div class="find-row"><span class="icon icon-sm" data-icon="diff" style="color:var(--ember-300);"></span><div><b>2 files changed</b><span>+34 −11, uncommitted</span></div></div>
+          <div class="find-row"><span class="icon icon-sm" data-icon="check" style="color:var(--ink-3);"></span><div><b>CI passing</b><span>last run 4m ago</span></div></div>
+        </div>
+      </div>
+      <div class="other-card">
+        <div class="oc-label">GitHub</div>
+        <div class="findings-panel">
+          <div class="find-row"><span class="icon icon-sm" data-icon="target" style="color:var(--ink-3);"></span><div><b>PR #142 — auth refactor</b><span>2 approvals · CI green</span></div></div>
+          <div class="find-row"><span class="icon icon-sm" data-icon="chevron" style="color:var(--ink-3); transform:rotate(90deg);"></span><div><b>Issue #88 assigned to you</b><span>"Flaky token refresh test"</span></div></div>
+          <div class="find-row"><span class="icon icon-sm" data-icon="check" style="color:var(--ink-3);"></span><div><b>Connected as dasvr/nil</b><span>read + write scope</span></div></div>
+        </div>
+      </div>
+      <div class="other-card">
+        <div class="oc-label">MCP tools</div>
+        <div class="settings-panel">
+          <div class="sp-row"><span><span class="icon icon-sm" data-icon="plug" style="margin-right:8px; color:var(--ink-3);"></span>Filesystem</span><div class="sw-toggle on"><i></i></div></div>
+          <div class="sp-row"><span><span class="icon icon-sm" data-icon="plug" style="margin-right:8px; color:var(--ink-3);"></span>Postgres (read-only)</span><div class="sw-toggle on"><i></i></div></div>
+          <div class="sp-row"><span><span class="icon icon-sm" data-icon="plug" style="margin-right:8px; color:var(--ink-3);"></span>Browser</span><div class="sw-toggle"><i></i></div></div>
+          <div class="sp-row"><span>Add a server</span><span class="sp-chevron icon icon-sm" data-icon="chevron"></span></div>
+        </div>
+      </div>
+    </div>
+    <p style="margin-top:16px; font-size:12.5px; max-width:660px;">Findings reintroduce the severity ramp on purpose — that's the one place in the whole system where color carries meaning beyond ember, per the original rule: "color means risk." Everywhere else stays grayscale-and-ember; here, severity is the point. Palette and findings are both live now — type in the palette to filter, click a finding to expand it. Source control, GitHub, and MCP tools are the three highest-value new screens from your list — settings and pentest already had a first pass, so I didn't duplicate those.</p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>6 · Conversation states</h2>
+      <span class="tag">what it looks like mid-conversation, not just at rest</span>
+    </div>
+    <p class="lede">Your screenshots landed, so "waiting on you" gets the full treatment now, not just a placeholder — a real clarifying-question card (numbered options, pager, "something else" that turns into a text field, a reply bar underneath) plus the status line above it ("Searched code, read 2 files, ran a command" / "3m 19s · 169 tokens · Almost done thinking…"), reused on the "agent responding" card too since that's clearly the same pattern. The simple binary confirm stays as its own thing for genuinely yes/no moments, now with a glowing edge on the committing action.</p>
+    <div class="other-grid">
+      <div class="other-card">
+        <div class="oc-label">Agent responding</div>
+        <div class="convo-panel">
+          <div class="convo-user">Fix the flaky auth test.</div>
+          <div class="qc-status" style="margin:0 0 6px;">Searched code, read 2 files, ran a command <span class="icon icon-sm" data-icon="chevron" style="transform:rotate(90deg);"></span></div>
+          <div class="qc-progress"><span class="icon icon-sm icon-fill" data-icon="sparkle" style="color:var(--ember-300);"></span> 3m 19s · 169 tokens · Almost done thinking…</div>
+          <div class="disclosure" style="margin:8px 0;">
+            <div class="row spin-wrap"><span class="icon icon-sm" data-icon="terminal"></span> running <span class="file">npm test -- auth</span> <span class="live" id="convoSpinner" style="margin-left:auto; width:1.2em;">⠋</span></div>
+          </div>
+          <div class="convo-agent">Found it — a race condition in the token refresh. Fixing now.</div>
+        </div>
+      </div>
+      <div class="other-card">
+        <div class="oc-label">You're talking, it's listening</div>
+        <div class="convo-panel" style="align-items:center; text-align:center;">
+          <div class="listen-bars" id="listenBars"><i></i><i></i><i></i><i></i><i></i></div>
+          <div class="convo-dictation" id="convoDictation">build the login form</div>
+          <div class="hint" style="margin-top:2px;">listening — on-device</div>
+        </div>
+      </div>
+      <div class="other-card">
+        <div class="oc-label">Waiting on you</div>
+        <div class="convo-panel">
+          <div style="display:flex; gap:10px; align-items:flex-start;">
+            <div class="spin-ring" style="margin-top:2px;"></div>
+            <div>This will delete 40 test users from the staging database. Continue?</div>
+          </div>
+          <div style="display:flex; gap:8px; margin-top:14px;">
+            <button class="trigger" style="flex:1; text-align:center;">Cancel</button>
+            <button class="trigger glow-edge" style="flex:1; text-align:center; background:color-mix(in oklab, var(--ember-500) 22%, var(--raised)); border-color:var(--ember-700);">Continue</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <p style="margin-top:20px; font-size:12.5px; max-width:660px;">And the fuller version, off your screenshots — this is the shape a real clarifying question takes, not just a yes/no.</p>
+    <div class="qcard">
+      <div class="qc-status">Searched code, read 2 files, ran a command <span class="icon icon-sm" data-icon="chevron" style="transform:rotate(90deg);"></span></div>
+      <div class="qc-progress"><span class="icon icon-sm icon-fill" data-icon="sparkle" style="color:var(--ember-300);"></span> 3m 19s · 169 tokens · Almost done thinking…</div>
+      <div class="qbox">
+        <div class="qb-head">
+          <div class="qb-title">Where's the findings panel (CVSS, evidence, remediation) at right now?</div>
+          <div class="qb-nav">
+            <span class="icon icon-sm" data-icon="chevron" style="transform:rotate(180deg); opacity:.35;"></span>
+            <span>1 of 3</span>
+            <span class="icon icon-sm" data-icon="chevron"></span>
+            <span class="icon icon-sm" data-icon="close" style="margin-left:6px; cursor:pointer;"></span>
+          </div>
+        </div>
+        <div class="qb-opt"><span class="qb-num">1</span> Fully wired up</div>
+        <div class="qb-opt"><span class="qb-num">2</span> Still mocked/placeholder</div>
+        <div class="qb-opt"><span class="qb-num">3</span> Not started yet</div>
+        <div class="qb-opt qb-else" id="qbElse">
+          <span class="qb-else-view"><span class="icon icon-sm" data-icon="pencil"></span> Something else</span>
+          <div class="qb-else-input"><span class="icon icon-sm" data-icon="pencil"></span><input type="text" id="qbElseInput" placeholder="Type your answer…"><span class="qb-else-submit"><span class="icon icon-sm" data-icon="chevron"></span></span></div>
+          <button class="qb-skip">Skip</button>
+        </div>
+      </div>
+      <div class="qreply">
+        <span class="icon" data-icon="plus"></span>
+        <span class="qreply-ph">Or reply directly…</span>
+        <span class="icon" data-icon="mic" style="margin-left:auto;"></span>
+        <span class="icon icon-fill" data-icon="waveform"></span>
+        <span class="icon icon-sm" data-icon="chevron" style="transform:rotate(90deg);"></span>
+      </div>
+      <div class="qfoot"><span>↑↓ to navigate · ↵ to select · or type below</span><span>Sonnet 5 <b>Medium</b></span></div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>7 · Welcome</h2>
+      <span class="tag">cold open, Zone A</span>
+    </div>
+    <p class="lede">Two real bugs fixed in the waterfall: the canvas was a fixed 100×60 grid stretched to whatever size the card actually rendered at — wrong aspect ratio, which is exactly the "super stretched" look you were seeing. It's now sized to the real box at draw time, ~5px per cell regardless of the box's dimensions. It was also drifting the wrong way; reversed so it actually falls. Added a scrim behind the greeting and the lower content so nothing sits on top of dense dither or blends into flat void — text stays legible either way now.</p>
+    <div class="welcome-mock">
+      <canvas id="welcomeDither" width="100" height="60"></canvas>
+      <div id="welcomeScrim"></div>
+      <div class="wm-mark"><canvas id="monogramCanvas" width="88" height="88"></canvas></div>
+      <div class="wm-greet">Evening, builder.</div>
+      <div class="composer" style="margin:0; max-width:520px;">
+        <div class="input-row">Ask NIL to build something…<span class="caret"></span></div>
+        <div class="tool-row">
+          <div class="ic-btn"><span class="icon" data-icon="plus"></span></div>
+          <div class="seg"><button class="active">Build</button><button>Pentest</button></div>
+          <div class="spacer"></div>
+          <div class="model-chip">Sonnet 5 <span class="eff">Medium</span></div>
+        </div>
+      </div>
+      <div class="wm-recent">
+        <div class="wm-recent-row"><span>feat/auth-refactor</span><span class="wm-time">2h ago</span></div>
+        <div class="wm-recent-row"><span>pentest: api.target.com</span><span class="wm-time">yesterday</span></div>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>8 · Micro-interactions</h2>
+      <span class="tag">the small stuff, catalogued</span>
+    </div>
+    <p class="lede">Grown past the first four, as asked — three more below, all interactive. Hover, click, or focus each one.</p>
+    <div class="micro-grid">
+      <div class="micro-card">
+        <div class="mc-label">Copy affordance</div>
+        <div class="branch" style="margin:0;">feat/auth-refactor <span class="copy" id="mcCopy"><span class="icon icon-sm" data-icon="copy"></span><span class="copied-label">Copied</span></span></div>
+        <p>Icon only now, no "copy" label — friendlier to click, less to read. Click it: it pops, morphs to a check, and "Copied" slides out next to it before everything settles back.</p>
+      </div>
+      <div class="micro-card">
+        <div class="mc-label">Toggle, pressed</div>
+        <div class="sw-toggle on mc-toggle"><i></i></div>
+        <p>13px thumb, 18px cubic-bezier slide. Same easing as the dither wipe — one motion vocabulary, not a settings-specific one.</p>
+      </div>
+      <div class="micro-card">
+        <div class="mc-label">Tooltip, delayed</div>
+        <div class="mc-tooltip-wrap"><span class="rail" style="display:inline-flex; padding:0;"><span class="ic active" style="position:relative;"><span class="icon icon-lg" data-icon="panels"></span><span class="mc-tooltip">Files</span></span></span></div>
+        <p>Now used everywhere, not just here — the rail icons, composer buttons, diff stats, and severity dots all carry one. 350ms delay so scanning the rail doesn't trigger a flood of labels.</p>
+      </div>
+      <div class="micro-card">
+        <div class="mc-label">Row, on hover</div>
+        <div class="disclosure" style="margin:0;"><div class="row" style="cursor:default;"><span class="caret icon icon-sm" data-icon="chevron"></span> reading <span class="file">config.ts</span></div></div>
+        <p>Rebuilt as a water-droplet fill — the highlight grows from wherever your cursor enters, and when you leave, it shrinks back toward wherever you exited, instead of an instant background swap. Move your mouse across it slowly to feel it.</p>
+      </div>
+      <div class="micro-card">
+        <div class="mc-label">Button, pressed</div>
+        <button class="trigger mc-press" style="cursor:pointer;">Hold me down</button>
+        <p>Rebuilt as the default for every button now, not just this demo: a quick 70ms press down, a lift + soft shadow on hover, and a bouncy "back" ease back up on release — same overshoot curve as the mode-segment pill.</p>
+      </div>
+      <div class="micro-card">
+        <div class="mc-label">Hold to confirm — for anything destructive</div>
+        <button class="trigger hold-confirm" id="holdConfirm" style="width:100%; text-align:center; cursor:pointer;">
+          <span class="hold-fill" id="holdFill"></span>
+          <span class="hold-label" id="holdLabel">Hold to delete 40 test users</span>
+        </button>
+        <p>No click-then-confirm-dialog. Hold it — the fill has to complete before anything happens, and letting go early cancels cleanly. Try releasing early.</p>
+      </div>
+      <div class="micro-card">
+        <div class="mc-label">Chip, dismissed</div>
+        <div class="chip mc-chip" id="mcChip">⌥ auth.ts <span class="x">×</span></div>
+        <p>Click the × — it shrinks and fades together, not one after the other. Refreshes itself after a beat so you can try it again.</p>
+      </div>
+      <div class="micro-card">
+        <div class="mc-label">Input, focused</div>
+        <input class="mc-focus-demo" type="text" placeholder="Click in here">
+        <p>More alive now — a small overshoot bounce on the box itself, not just the ring fading in. Same "back" easing as the mode-segment slide, so it feels like one motion language rather than a fade tacked on.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>9 · The dithering wipe</h2>
+      <span class="tag">unchanged shape, refined easing</span>
+    </div>
+    <p class="lede">You called this one perfect, so the wipe itself is untouched — the only change is timing: it now eases in and out on a cubic curve instead of running at a flat linear rate, so it settles instead of stopping abruptly. That same curve is now the standard for anything in this system that moves.</p>
+    <div class="dither-rig">
+      <div class="dither-stage"><canvas id="ditherCanvas" width="160" height="100"></canvas></div>
+      <div class="dither-controls">
+        <button class="trigger" id="ditherBtn" style="display:inline-flex; align-items:center; gap:8px;"><span class="icon icon-sm icon-fill" data-icon="play"></span> Run the wipe</button>
+        <p>Reserved for moments that deserve a flourish — not routine tab switches.</p>
+      </div>
+    </div>
+    <p class="lede" style="margin-top:28px;">Toned down, per your note — no random flicker at the start. It's a single flat overlay color (a darker version of the panel background) dithering away uniformly to reveal the content, not TV static resolving into a picture.</p>
+    <div class="dither-rig">
+      <div class="dither-stage" style="position:relative; background:var(--panel); aspect-ratio:16/11;">
+        <div class="settings-panel" style="border:none; box-shadow:none; height:100%; padding-top:14px;">
+          <div class="sp-group">Appearance</div>
+          <div class="sp-row"><span>Compact density</span><div class="sw-toggle on"><i></i></div></div>
+          <div class="sp-row"><span>Reduce motion</span><div class="sw-toggle"><i></i></div></div>
+        </div>
+        <canvas id="ditherInCanvas" width="160" height="110" style="position:absolute; inset:0; width:100%; height:100%; image-rendering:pixelated; pointer-events:none;"></canvas>
+      </div>
+      <div class="dither-controls">
+        <button class="trigger" id="ditherInBtn" style="display:inline-flex; align-items:center; gap:8px;"><span class="icon icon-sm icon-fill" data-icon="play"></span> Open the panel</button>
+        <p>For settings sheets, popovers, anything that appears rather than being navigated to.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>10 · Mobile</h2>
+      <span class="tag">shelved</span>
+    </div>
+    <p class="lede">Parked for now, at your call — the desktop shell, composer, and motion vocabulary are worth settling first. Waiting on your reference (buzzkit.dev screenshots, animation inspiration for "here's the plan" / "watch it build") before designing this properly instead of guessing again.</p>
+  </section>
+
+  <section>
+    <div class="section-head">
+      <h2>11 · The rebuild itself</h2>
+      <span class="tag">before code moves</span>
+    </div>
+    <div class="decisions">
+      <h3>What "wipe and revamp" means in practice</h3>
+      <ul>
+        <li><b>finn_pentest/ survives as-is</b> — it's the engine, not the UI, and you want it for your own security work. Everything under <code>frontend/</code> is what gets rebuilt.</li>
+        <li><b>On React packages:</b> you don't need to move the whole app to React to get them. Svelte can mount a React component directly — a thin wrapper calls <code>ReactDOM.createRoot()</code> inside a Svelte component's lifecycle, so a specific package (say, a Twitter-ecosystem chart or gesture lib with no Svelte equivalent) runs in its own island while everything else stays Svelte. A full React rewrite is only worth it if most of what you want turns out to live there — tell me which packages specifically and I'll check whether they need the island approach or have a native Svelte equivalent already.</li>
+        <li><b>New codebase, same stack unless the above changes that</b> — Svelte + the same tool integrations (xterm, Monaco) so the pentest backend doesn't need touching, just a new frontend built to this rev.</li>
+        <li><b>On sv-agentation:</b> checked the npm registry directly — it's real, MIT-licensed, actively published (v0.4.0 as of this check). It's a dev-mode Svelte inspector: click an element in the running app, it annotates that DOM node and maps it back to the source file, which is genuinely useful context to feed an AI coding session. It's a build-time dev dependency, not something end users of NIL would see — worth adding when we're actually writing the new frontend, not part of the UI itself.</li>
+        <li><b>Design docs stay loose on purpose.</b> Not a rules file an agent has to obey line-by-line — just enough to keep a session honest about direction. Something like:</li>
+      </ul>
+      <div class="md-sample"><span class="h"># DESIGN.md</span>
+
+One rail, not panes. Terminal appears, then leaves.
+Warm dark, ember only for "this is changing your files."
+Every action has a one-line "why" under it.
+When unsure, look more like Claude than like a dashboard.</div>
+      <ul>
+        <li><b>Sequencing:</b> shell + font are locked (sections 1–2). Next up is settings/diffs/pentest-mode screens on desktop; mobile is deliberately parked until you bring reference for it.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>NIL Agent OS — rev. 15 wireframe · tell me what to change</footer>
+</div>
+
+<script>
+// ---- icon system: hand-built line icons, one family, one grid ----
+// Not a font, not an icon-font CDN — inline SVG so weight/size/color are
+// exactly controlled, the way Claude's chrome icons are. 24x24 grid, 1.75
+// stroke, round joins throughout, one filled family for solid marks.
+(function(){
+  var ICONS = {
+    panels: '<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="9" y1="4" x2="9" y2="20"/>',
+    terminal: '<rect x="3" y="4" width="18" height="16" rx="2"/><polyline points="7,9 10,12 7,15"/><line x1="12" y1="15" x2="16" y2="15"/>',
+    diff: '<rect x="3" y="4" width="8" height="16" rx="2"/><rect x="13" y="4" width="8" height="16" rx="2"/>',
+    flag: '<line x1="5" y1="3" x2="5" y2="21"/><path d="M5,4 L18,4 L14,8.5 L18,13 L5,13 Z"/>',
+    plus: '<line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>',
+    mic: '<rect x="9" y="3" width="6" height="11" rx="3"/><path d="M6,11 a6,6 0 0 0 12,0"/><line x1="12" y1="17" x2="12" y2="21"/><line x1="8" y1="21" x2="16" y2="21"/>',
+    waveform: '<rect x="5" y="9" width="2" height="6" rx="1"/><rect x="9" y="4" width="2" height="16" rx="1"/><rect x="13" y="7" width="2" height="10" rx="1"/><rect x="17" y="10" width="2" height="4" rx="1"/>',
+    chevron: '<polyline points="9,6 15,12 9,18"/>',
+    'chevron-down': '<polyline points="6,9 12,15 18,9"/>',
+    copy: '<rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5,15 L5,7 a2,2 0 0 1 2,-2 L15,5"/>',
+    check: '<polyline points="5,13 9,17 19,7"/>',
+    sliders: '<line x1="4" y1="7" x2="20" y2="7"/><circle cx="14" cy="7" r="2"/><line x1="4" y1="13" x2="20" y2="13"/><circle cx="8" cy="13" r="2"/><line x1="4" y1="19" x2="20" y2="19"/><circle cx="16" cy="19" r="2"/>',
+    close: '<line x1="6" y1="6" x2="18" y2="18"/><line x1="18" y1="6" x2="6" y2="18"/>',
+    target: '<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="4"/>',
+    search: '<circle cx="10" cy="10" r="6"/><line x1="14.5" y1="14.5" x2="20" y2="20"/>',
+    sparkle: '<path d="M12,2 L13.6,9.4 L21,11 L13.6,12.6 L12,20 L10.4,12.6 L3,11 L10.4,9.4 Z"/>',
+    play: '<path d="M7,4 L19,12 L7,20 Z"/>',
+    lock: '<rect x="5" y="11" width="14" height="9" rx="2"/><path d="M8,11 V8 a4,4 0 0 1 8,0 V11"/>',
+    pencil: '<path d="M4,20 L4,16 L15,5 a2.1,2.1 0 0 1 3,3 L7,19 Z"/><line x1="13" y1="7" x2="17" y2="11"/>',
+    plug: '<path d="M9,2 V8 M15,2 V8 M6,8 H18 V12 a6,6 0 0 1 -12,0 Z"/><line x1="12" y1="18" x2="12" y2="22"/>',
+    'git-branch': '<circle cx="6" cy="6" r="2.4"/><circle cx="6" cy="18" r="2.4"/><circle cx="18" cy="10" r="2.4"/><path d="M6,8.4 V15.6 M6,8.4 a7,7 0 0 0 9.6,3.6"/>'
+  };
+  document.querySelectorAll('[data-icon]').forEach(function(el){
+    var name = el.getAttribute('data-icon');
+    var d = ICONS[name];
+    if(!d) return;
+    el.innerHTML = '<svg viewBox="0 0 24 24">'+d+'</svg>';
+  });
+})();
+
+(function(){
+  var canvas = document.getElementById('ditherCanvas');
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var bayer8 = [0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21].map(function(v){return v/64;});
+  function drawSceneA(w,h){var c=document.createElement('canvas');c.width=w;c.height=h;var g=c.getContext('2d');g.fillStyle='#e7e3dc';g.fillRect(0,0,w,h);g.fillStyle='#c9c4ba';g.fillRect(0,0,w,18);g.fillStyle='#a9a49a';for(var i=0;i<4;i++)g.fillRect(8+i*20,6,12,6);g.fillStyle='#b7b2a7';for(var y=26;y<h-8;y+=14)g.fillRect(10,y,w-20,8);return g.getImageData(0,0,w,h);}
+  function drawSceneB(w,h){var c=document.createElement('canvas');c.width=w;c.height=h;var g=c.getContext('2d');g.fillStyle='#0b0c0d';g.fillRect(0,0,w,h);g.fillStyle='#151819';g.fillRect(0,0,w,18);g.fillStyle='#c2652f';g.beginPath();g.arc(9,9,3,0,7);g.fill();g.fillStyle='#3a4043';for(var y=26;y<h-8;y+=10)g.fillRect(10,y,Math.max(20,w-20-(y%40)),6);g.fillStyle='#6b7175';g.fillRect(10,h-14,w-20,8);return g.getImageData(0,0,w,h);}
+  var a=drawSceneA(W,H), b=drawSceneB(W,H);
+  var out=ctx.createImageData(W,H);
+  var running=false, start=0, DUR=900;
+  function render(progress){
+    for(var y=0;y<H;y++){for(var x=0;x<W;x++){
+      var idx=(y*W+x); var pos=((x/W)+(y/H))/2; var t=bayer8[(y%8)*8+(x%8)];
+      var edge=pos*1.15-0.075; var reveal=progress>(edge+(t-0.5)*0.32)?1:0;
+      var src=reveal?b:a; var o=idx*4;
+      out.data[o]=src.data[o]; out.data[o+1]=src.data[o+1]; out.data[o+2]=src.data[o+2]; out.data[o+3]=255;
+    }}
+    ctx.putImageData(out,0,0);
+  }
+  render(0);
+  function easeInOutCubic(x){ return x<0.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
+  function tick(ts){ if(!start) start=ts; var p=Math.min(1,(ts-start)/DUR); render(easeInOutCubic(p)); if(p<1) requestAnimationFrame(tick); else running=false; }
+  document.getElementById('ditherBtn').addEventListener('click', function(){
+    if(running) return; running=true; start=0;
+    var reduced=window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduced){ render(1); running=false; return; }
+    requestAnimationFrame(tick);
+  });
+})();
+
+// dither-in — a panel resolves out of static uniformly (no wipe direction),
+// using the same bayer matrix and easing as the wipe above.
+(function(){
+  var canvas = document.getElementById('ditherInCanvas');
+  if(!canvas) return;
+  var ctx = canvas.getContext('2d');
+  var W = canvas.width, H = canvas.height;
+  var bayer8 = [0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21].map(function(v){return v/64;});
+  function easeInOutCubic(x){ return x<0.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
+  // one flat overlay color (a darker version of the panel background), no
+  // per-frame flicker — it's a dither *fill*, not TV static
+  var OVERLAY = '#1a1815';
+  function render(progress){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle = OVERLAY;
+    for(var y=0;y<H;y++){
+      for(var x=0;x<W;x++){
+        var th = bayer8[(y%8)*8+(x%8)];
+        if(progress <= th) ctx.fillRect(x, y, 1, 1);
+      }
+    }
+  }
+  var running = false, start = 0, DUR = 700;
+  render(0);
+  function tick(ts){
+    if(!start) start = ts;
+    var p = Math.min(1, (ts-start)/DUR);
+    render(easeInOutCubic(p));
+    if(p < 1) requestAnimationFrame(tick); else running = false;
+  }
+  var btn = document.getElementById('ditherInBtn');
+  if(btn) btn.addEventListener('click', function(){
+    if(running) return; running = true; start = 0;
+    var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if(reduced){ ctx.clearRect(0,0,W,H); running = false; return; }
+    render(0);
+    requestAnimationFrame(tick);
+  });
+})();
+
+(function(){
+  var reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function easeInOutCubic(x){ return x<0.5 ? 4*x*x*x : 1-Math.pow(-2*x+2,3)/2; }
+
+  // hover an editing row, the exact changed line lights up (stand-in for scrolling a live code view to it)
+  var editRow = document.getElementById('editRow');
+  var focusLine = document.getElementById('focusLine');
+  if(editRow && focusLine){
+    editRow.addEventListener('mouseenter', function(){ focusLine.classList.add('focus'); });
+    editRow.addEventListener('mouseleave', function(){ focusLine.classList.remove('focus'); });
+  }
+
+  // @-mention, live — type @ then a few characters to filter, tab/enter to insert
+  var liveInput = document.getElementById('liveInput');
+  var mentionPop = document.getElementById('mentionPop');
+  if(liveInput && mentionPop){
+    var rows = Array.prototype.slice.call(mentionPop.querySelectorAll('.mp-row'));
+    var selIdx = 0, activeMatch = null;
+
+    function currentMention(){
+      var v = liveInput.value, caret = liveInput.selectionStart;
+      var head = v.slice(0, caret);
+      var m = head.match(/@([\w./-]*)$/);
+      return m ? { query: m[1], start: caret - m[0].length, end: caret } : null;
+    }
+    function refresh(){
+      var mention = currentMention();
+      activeMatch = mention;
+      if(!mention){ mentionPop.hidden = true; return; }
+      var q = mention.query.toLowerCase();
+      var visible = 0;
+      rows.forEach(function(r, i){
+        var show = r.textContent.toLowerCase().indexOf(q) !== -1;
+        r.style.display = show ? '' : 'none';
+        r.classList.remove('sel');
+        if(show) visible++;
+      });
+      var shown = rows.filter(function(r){ return r.style.display !== 'none'; });
+      selIdx = 0;
+      if(shown[0]) shown[0].classList.add('sel');
+      mentionPop.hidden = visible === 0;
+    }
+    function insertSelected(){
+      var shown = rows.filter(function(r){ return r.style.display !== 'none'; });
+      var chosen = shown[selIdx] || shown[0];
+      if(!chosen || !activeMatch) return;
+      var file = chosen.getAttribute('data-file');
+      var v = liveInput.value;
+      var next = v.slice(0, activeMatch.start) + '@' + file + ' ' + v.slice(activeMatch.end);
+      liveInput.value = next;
+      var caretPos = activeMatch.start + file.length + 2;
+      liveInput.setSelectionRange(caretPos, caretPos);
+      mentionPop.hidden = true;
+    }
+    liveInput.addEventListener('input', refresh);
+    liveInput.addEventListener('keyup', function(e){
+      if(['ArrowLeft','ArrowRight','Home','End'].indexOf(e.key) !== -1) refresh();
+    });
+    liveInput.addEventListener('keydown', function(e){
+      if(mentionPop.hidden) return;
+      var shown = rows.filter(function(r){ return r.style.display !== 'none'; });
+      if(e.key === 'Tab' || e.key === 'Enter'){ e.preventDefault(); insertSelected(); }
+      else if(e.key === 'Escape'){ mentionPop.hidden = true; }
+      else if(e.key === 'ArrowDown'){ e.preventDefault(); selIdx = Math.min(selIdx+1, shown.length-1); shown.forEach(function(r,i){ r.classList.toggle('sel', i===selIdx); }); }
+      else if(e.key === 'ArrowUp'){ e.preventDefault(); selIdx = Math.max(selIdx-1, 0); shown.forEach(function(r,i){ r.classList.toggle('sel', i===selIdx); }); }
+    });
+    liveInput.addEventListener('blur', function(){ setTimeout(function(){ mentionPop.hidden = true; }, 150); });
+    rows.forEach(function(r){ r.addEventListener('mousedown', function(e){ e.preventDefault(); insertSelected(); }); });
+    mentionPop.hidden = true;
+  }
+
+  // braille spinner — shared frame set, used for "running" states
+  var spinFrames = ['⠋','⠙','⠹','⠸','⠼','⠴','⠦','⠧','⠇','⠏'];
+  var spinEls = [document.getElementById('termSpinner'), document.getElementById('spinnerDemo'), document.getElementById('convoSpinner')];
+  if(!reduced){
+    var si = 0;
+    setInterval(function(){
+      si = (si+1) % spinFrames.length;
+      spinEls.forEach(function(el){ if(el) el.textContent = spinFrames[si]; });
+    }, 90);
+  }
+
+  // resolving character-scramble — used for "thinking" glyph
+  var thinkGlyph = document.getElementById('thinkGlyph');
+  var thinkFrames = ['·','∴','⋮','∷','⋯','⁘'];
+  if(thinkGlyph && !reduced){
+    var ti = 0;
+    setInterval(function(){ ti=(ti+1)%thinkFrames.length; thinkGlyph.textContent = thinkFrames[ti]; }, 140);
+  } else if(thinkGlyph){ thinkGlyph.textContent = '⋮'; }
+
+  // "running" placeholder — a small block-cycle, standing in until a real icon is picked
+  var runGlyph = document.getElementById('runGlyph');
+  var runFrames = ['⠿','⠷','⠟','⠻','⠽','⠾'];
+  if(runGlyph && !reduced){
+    var ri = 0;
+    setInterval(function(){ ri=(ri+1)%runFrames.length; runGlyph.textContent = runFrames[ri]; }, 160);
+  } else if(runGlyph){ runGlyph.textContent = '⠿'; }
+
+  // dictation — a real backspace/type engine, not a string swap. Between two
+  // states it deletes back to their common prefix, then types forward, so a
+  // full "oh wait, never mind" retraction actually erases on screen instead
+  // of just cutting to the corrected sentence.
+  function initDictation(id, states, holdMs){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var cur = '';
+    var si = 0;
+    function commonPrefixLen(a,b){ var i=0; while(i<a.length && i<b.length && a[i]===b[i]) i++; return i; }
+    function playTransition(target, done){
+      var keep = commonPrefixLen(cur, target);
+      function backspace(){
+        if(cur.length > keep){ cur = cur.slice(0,-1); el.textContent = cur; setTimeout(backspace, 16); }
+        else typeForward();
+      }
+      function typeForward(){
+        if(cur.length < target.length){ cur = target.slice(0, cur.length+1); el.textContent = cur; setTimeout(typeForward, 32); }
+        else done();
+      }
+      backspace();
+    }
+    function next(){
+      var target = states[si];
+      si = (si+1) % states.length;
+      playTransition(target, function(){ setTimeout(next, reduced ? 0 : (si===0 ? holdMs*2.4 : holdMs)); });
+    }
+    if(reduced){ el.textContent = states[states.length-1]; } else { next(); }
+  }
+  initDictation('dictationDemo', ['bild the', 'build the', 'build the loggin form', 'build the login form.'], 500);
+  initDictation('convoDictation', [
+    'add a dark mode toggle to settings, default it to system',
+    'add a dark mode toggle to settings, default it to',
+    'add a dark mode toggle to settings, default it to oh wait, never mind',
+    'add a dark mode toggle to settings, default it to',
+    'add a dark mode toggle to settings, default it to light'
+  ], 700);
+
+  // waveform bars — reactive to whether text is actually changing right now,
+  // not a fixed decorative loop. Watches the dictation text length; moving
+  // text means "loud," a held pause (the "never mind" beat) means quiet.
+  var listenBars = document.getElementById('listenBars');
+  var convoDict = document.getElementById('convoDictation');
+  if(listenBars && convoDict){
+    var bars = listenBars.querySelectorAll('i');
+    var lastLen = 0, intensity = 0.3;
+    setInterval(function(){
+      var len = convoDict.textContent.length;
+      intensity = len !== lastLen ? 0.75 + Math.random()*0.25 : Math.max(0.12, intensity*0.6);
+      lastLen = len;
+      bars.forEach(function(b, i){
+        var jitter = reduced ? 0 : (Math.random()-0.5)*0.3;
+        b.style.height = Math.max(10, Math.min(100, (intensity+jitter)*100)) + '%';
+      });
+    }, reduced ? 1000 : 110);
+  }
+
+  // task-complete check — draws in via stroke-dashoffset, then gives the
+  // little confirming pop copy got, so the two "confirmation" moments feel
+  // like the same personality instead of two different tricks
+  var checkSvg = document.getElementById('checkDraw');
+  if(checkSvg){
+    var poly = checkSvg.querySelector('polyline');
+    var len = poly.getTotalLength();
+    checkSvg.style.transition = 'transform .22s cubic-bezier(.34,1.56,.64,1)';
+    function runCheck(){
+      poly.style.strokeDasharray = len;
+      poly.style.strokeDashoffset = reduced ? 0 : len;
+      poly.style.transition = 'none';
+      checkSvg.style.transform = 'scale(1)';
+      requestAnimationFrame(function(){
+        poly.style.transition = 'stroke-dashoffset .5s cubic-bezier(.22,.61,.36,1)';
+        poly.style.strokeDashoffset = 0;
+        setTimeout(function(){
+          checkSvg.style.transform = 'scale(1.25)';
+          setTimeout(function(){ checkSvg.style.transform = 'scale(1)'; }, 220);
+        }, 480);
+      });
+    }
+    runCheck();
+    if(!reduced) setInterval(runCheck, 2600);
+  }
+
+  // shake — click to trigger, same physical language as an invalid form field
+  var shakeBtn = document.getElementById('shakeDemo');
+  if(shakeBtn){
+    shakeBtn.addEventListener('click', function(){
+      if(reduced) return;
+      shakeBtn.classList.remove('shaking'); void shakeBtn.offsetWidth;
+      shakeBtn.classList.add('shaking');
+      setTimeout(function(){ shakeBtn.classList.remove('shaking'); }, 500);
+    });
+  }
+
+  // copy — icon morphs to a check for a beat, then reverts, instead of a toast
+  var copyBtn = document.getElementById('copyDemo');
+  var copyIcon = document.getElementById('copyDemoIcon');
+  if(copyBtn && copyIcon){
+    copyBtn.addEventListener('click', function(){
+      copyIcon.setAttribute('data-icon', 'check');
+      copyIcon.innerHTML = '<svg viewBox="0 0 24 24">'+
+        '<polyline points="5,13 9,17 19,7"/></svg>';
+      setTimeout(function(){
+        copyIcon.setAttribute('data-icon', 'copy');
+        copyIcon.innerHTML = '<svg viewBox="0 0 24 24">'+
+          '<rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5,15 L5,7 a2,2 0 0 1 2,-2 L15,5"/></svg>';
+      }, 1400);
+    });
+  }
+
+  // "something else" — clicking the row swaps it into a text field, matching
+  // the reference screenshots. Skip and clicking elsewhere revert it.
+  var qbElse = document.getElementById('qbElse');
+  if(qbElse){
+    var qbInput = document.getElementById('qbElseInput');
+    qbElse.querySelector('.qb-else-view').addEventListener('click', function(){
+      qbElse.classList.add('editing');
+      qbInput.focus();
+    });
+    qbElse.querySelector('.qb-skip').addEventListener('click', function(e){ e.stopPropagation(); qbElse.classList.remove('editing'); });
+    qbInput.addEventListener('click', function(e){ e.stopPropagation(); });
+  }
+
+  // hold-to-confirm — fill has to complete before anything happens; letting
+  // go early cancels instead of committing to a half-held state
+  var holdBtn = document.getElementById('holdConfirm');
+  var holdFill = document.getElementById('holdFill');
+  var holdLabel = document.getElementById('holdLabel');
+  if(holdBtn){
+    var holdStart = null, holdRaf = null, HOLD_MS = 850, holdCompleted = false;
+    function holdTick(ts){
+      if(!holdStart) holdStart = ts;
+      var pct = Math.min(100, ((ts-holdStart)/HOLD_MS)*100);
+      holdFill.style.transition = 'none';
+      holdFill.style.width = pct + '%';
+      if(pct >= 100){
+        holdCompleted = true;
+        holdLabel.textContent = 'Deleted';
+        setTimeout(function(){
+          holdFill.style.transition = 'width .25s ease-out';
+          holdFill.style.width = '0%';
+          holdLabel.textContent = 'Hold to delete 40 test users';
+          holdCompleted = false;
+        }, 700);
+      } else { holdRaf = requestAnimationFrame(holdTick); }
+    }
+    function cancelHold(){
+      if(holdCompleted) return;
+      if(holdRaf) cancelAnimationFrame(holdRaf);
+      holdRaf = null; holdStart = null;
+      holdFill.style.transition = 'width .25s ease-out';
+      holdFill.style.width = '0%';
+    }
+    holdBtn.addEventListener('mousedown', function(){ holdStart = null; holdRaf = requestAnimationFrame(holdTick); });
+    holdBtn.addEventListener('mouseup', cancelHold);
+    holdBtn.addEventListener('mouseleave', cancelHold);
+  }
+
+  // row hover, water-droplet fill — grows from wherever the cursor enters,
+  // and when it leaves, shrinks back toward wherever the cursor exited.
+  // Sized per-event to the farthest corner from the cursor, so it always
+  // covers the whole row regardless of where you entered — a fixed-size
+  // circle was leaving corners uncovered on wider rows.
+  document.querySelectorAll('.disclosure .row').forEach(function(row){
+    var ripple = document.createElement('div');
+    ripple.className = 'row-ripple';
+    row.insertBefore(ripple, row.firstChild);
+    function centerAt(cx, cy){ ripple.style.left = cx+'px'; ripple.style.top = cy+'px'; }
+    function growFrom(e){
+      var r = row.getBoundingClientRect();
+      var cx = e.clientX - r.left, cy = e.clientY - r.top;
+      var corners = [[0,0],[r.width,0],[0,r.height],[r.width,r.height]];
+      var maxDist = 0;
+      corners.forEach(function(c){ maxDist = Math.max(maxDist, Math.hypot(c[0]-cx, c[1]-cy)); });
+      var d = maxDist * 2.15;
+      ripple.style.width = d+'px'; ripple.style.height = d+'px';
+      ripple.style.marginLeft = (-d/2)+'px'; ripple.style.marginTop = (-d/2)+'px';
+      centerAt(cx, cy);
+    }
+    row.addEventListener('mouseenter', function(e){
+      ripple.style.transition = 'none';
+      growFrom(e);
+      ripple.style.transform = 'scale(0)';
+      void ripple.offsetWidth;
+      ripple.style.transition = '';
+      ripple.style.transform = 'scale(1)';
+    });
+    row.addEventListener('mouseleave', function(e){
+      var r = row.getBoundingClientRect();
+      centerAt(e.clientX - r.left, e.clientY - r.top); // width/height stay as-is — just re-anchor, so it shrinks toward the exit point without jumping
+      ripple.style.transform = 'scale(0)';
+    });
+  });
+
+  // copy affordance — icon pops, morphs to a check, "Copied" label slides out
+  // next to it, then everything settles back. More than just an icon swap.
+  function wireCopy(id){
+    var el = document.getElementById(id);
+    if(!el) return;
+    var iconEl = el.querySelector('.icon');
+    el.addEventListener('click', function(){
+      el.classList.add('copied');
+      iconEl.setAttribute('data-icon', 'check');
+      iconEl.innerHTML = '<svg viewBox="0 0 24 24"><polyline points="5,13 9,17 19,7"/></svg>';
+      setTimeout(function(){
+        el.classList.remove('copied');
+        iconEl.setAttribute('data-icon', 'copy');
+        iconEl.innerHTML = '<svg viewBox="0 0 24 24"><rect x="8" y="8" width="11" height="11" rx="2"/><path d="M5,15 L5,7 a2,2 0 0 1 2,-2 L15,5"/></svg>';
+      }, 1300);
+    });
+  }
+  wireCopy('branchCopy');
+  wireCopy('mcCopy');
+
+  // chip dismiss — now used everywhere a chip appears, not just the one demo.
+  // The demo chip (mcChip) resets itself so it's repeatable; every other chip
+  // (composer context chips, welcome screen, etc.) actually goes away.
+  document.querySelectorAll('.chip .x').forEach(function(x){
+    var chip = x.closest('.chip');
+    x.addEventListener('click', function(e){
+      e.stopPropagation();
+      chip.classList.add('dismissed');
+      if(chip.id === 'mcChip'){
+        setTimeout(function(){ chip.classList.remove('dismissed'); }, 900);
+      }
+    });
+  });
+
+  // settings — toggles actually toggle
+  document.querySelectorAll('.sw-toggle').forEach(function(t){
+    t.addEventListener('click', function(){ t.classList.toggle('on'); });
+  });
+
+  // command palette — live filter as you type, arrow keys move selection,
+  // enter "runs" the row (a brief flash stands in for the real action)
+  var palDemo = document.getElementById('palDemo');
+  if(palDemo){
+    var palInput = document.getElementById('palInput');
+    var palRows = Array.prototype.slice.call(palDemo.querySelectorAll('.pal-row'));
+    var palSel = 0;
+    function palVisible(){ return palRows.filter(function(r){ return r.style.display !== 'none'; }); }
+    function palRender(){
+      var q = palInput.value.toLowerCase();
+      palRows.forEach(function(r){ r.style.display = r.getAttribute('data-k').indexOf(q) !== -1 ? '' : 'none'; });
+      var vis = palVisible();
+      palSel = Math.min(palSel, Math.max(0, vis.length-1));
+      palRows.forEach(function(r){ r.classList.remove('active'); });
+      if(vis[palSel]) vis[palSel].classList.add('active');
+    }
+    palInput.addEventListener('input', function(){ palSel = 0; palRender(); });
+    palInput.addEventListener('keydown', function(e){
+      var vis = palVisible();
+      if(e.key === 'ArrowDown'){ e.preventDefault(); palSel = Math.min(palSel+1, vis.length-1); palRender(); }
+      else if(e.key === 'ArrowUp'){ e.preventDefault(); palSel = Math.max(palSel-1, 0); palRender(); }
+      else if(e.key === 'Enter'){ e.preventDefault(); var row = vis[palSel]; if(row){ row.classList.add('ran'); setTimeout(function(){ row.classList.remove('ran'); }, 500); } }
+    });
+    palRows.forEach(function(r){
+      r.addEventListener('click', function(){
+        r.classList.add('ran'); setTimeout(function(){ r.classList.remove('ran'); }, 500);
+      });
+    });
+  }
+
+  // findings — click a row to expand a one-line remediation note, accordion-style
+  var findDemo = document.getElementById('findDemo');
+  if(findDemo){
+    findDemo.querySelectorAll('.find-row').forEach(function(row){
+      var detail = document.createElement('div');
+      detail.className = 'find-detail';
+      detail.textContent = row.getAttribute('data-note');
+      row.parentNode.insertBefore(detail, row.nextSibling);
+      row.addEventListener('click', function(){
+        var wasOpen = detail.classList.contains('open');
+        findDemo.querySelectorAll('.find-detail.open').forEach(function(d){ d.classList.remove('open'); });
+        if(!wasOpen) detail.classList.add('open');
+      });
+    });
+  }
+
+  // mode segment — the pill doesn't just slide, it jellies against the wall
+  // it's arriving at: the leading edge snaps solid, the trailing edge
+  // overshoots and wobbles back, like it physically hit the side.
+  var slideSeg = document.getElementById('slideSeg');
+  var segThumb = document.getElementById('segThumb');
+  if(slideSeg && segThumb){
+    var curPos = 0; // 0 or 1
+    slideSeg.querySelectorAll('button').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        var toRight = btn.getAttribute('data-i') === '1';
+        if((toRight ? 1 : 0) === curPos) return;
+        slideSeg.querySelectorAll('button').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        curPos = toRight ? 1 : 0;
+        var target = toRight ? 100 : 0;
+        segThumb.style.transformOrigin = toRight ? 'left center' : 'right center';
+        if(reduced){ segThumb.style.transform = 'translateX('+target+'%)'; return; }
+        segThumb.animate([
+          { transform: 'translateX('+(toRight?0:100)+'%) scaleX(1)' },
+          { transform: 'translateX('+target+'%) scaleX(1.22)', offset: 0.5 },
+          { transform: 'translateX('+target+'%) scaleX(0.93)', offset: 0.74 },
+          { transform: 'translateX('+target+'%) scaleX(1.04)', offset: 0.89 },
+          { transform: 'translateX('+target+'%) scaleX(1)' }
+        ], { duration: 460, easing: 'cubic-bezier(.22,.61,.36,1)', fill: 'forwards' });
+      });
+    });
+  }
+
+  // streaming text — ash builds the word one letter at a time. Each letter gets
+  // a small burst of particles (not a full glyph sample — cheap, fixed count)
+  // that converge on its position, then that letter pops in and stays; the next
+  // letter starts its own burst right after. No global scatter-then-crossfade.
+  var ashCanvas = document.getElementById('ashCanvas');
+  if(ashCanvas){
+    var actx = ashCanvas.getContext('2d');
+    var AW = ashCanvas.width, AH = ashCanvas.height;
+    var word = 'assembled.';
+    actx.font = '600 20px "Plus Jakarta Sans", sans-serif';
+    var letterX = [], cursor = 6;
+    for(var i=0;i<word.length;i++){ letterX.push(cursor); cursor += actx.measureText(word[i]).width; }
+    var STEP = 90, BURST = 260, HOLD_TXT = 1500, FADE_OUT = 260;
+    var totalBuild = (word.length-1)*STEP + BURST;
+    var CYCLE = totalBuild + HOLD_TXT + FADE_OUT + 450;
+    var PARTICLES_PER_LETTER = 4;
+    function easeInCubic(x){ return x*x*x; }
+    function makeAsh(){
+      var particles = [];
+      for(var i=0;i<word.length;i++){
+        for(var j=0;j<PARTICLES_PER_LETTER;j++){
+          var ang = Math.random()*Math.PI*2, rad = 8+Math.random()*10;
+          particles.push({
+            letter: i,
+            x0: letterX[i] + Math.cos(ang)*rad, y0: AH/2 + Math.sin(ang)*rad,
+            tx: letterX[i] + 2, ty: AH/2,
+            r: 1+Math.random()*1.1
+          });
+        }
+      }
+      return particles;
+    }
+    var ash = makeAsh();
+    var aStart = 0, lastCycle = 0;
+    function renderText(ts){
+      if(!aStart) aStart = ts;
+      var cycleIdx = Math.floor((ts - aStart) / CYCLE);
+      if(cycleIdx !== lastCycle){ ash = makeAsh(); lastCycle = cycleIdx; }
+      var elapsed = (ts - aStart) % CYCLE;
+      actx.clearRect(0,0,AW,AH);
+      actx.font = '600 20px "Plus Jakarta Sans", sans-serif';
+      actx.textBaseline = 'middle';
+
+      var wordFade = 1;
+      if(elapsed > totalBuild + HOLD_TXT){
+        wordFade = 1 - easeInOutCubic(Math.min(1, (elapsed - totalBuild - HOLD_TXT)/FADE_OUT));
+      }
+
+      for(var i=0;i<word.length;i++){
+        var start = i*STEP;
+        var lp = Math.max(0, Math.min(1, (elapsed - start)/BURST));
+        if(lp <= 0) continue;
+        var e = easeInCubic(lp);
+        actx.globalAlpha = wordFade * (lp >= 1 ? 1 : e*0.9);
+        actx.fillStyle = '#efe9e0';
+        actx.fillText(word[i], letterX[i], AH/2);
+      }
+
+      for(var k=0;k<ash.length;k++){
+        var p = ash[k];
+        var start2 = p.letter*STEP;
+        var lp2 = Math.max(0, Math.min(1, (elapsed - start2)/BURST));
+        if(lp2 <= 0 || lp2 >= 1) continue;
+        var e2 = easeInCubic(lp2);
+        var x = p.x0 + (p.tx - p.x0)*e2, y = p.y0 + (p.ty - p.y0)*e2;
+        actx.globalAlpha = wordFade * (1 - e2) * 0.9;
+        actx.fillStyle = '#e6a35c';
+        actx.fillRect(x, y, p.r, p.r);
+      }
+      actx.globalAlpha = 1;
+      requestAnimationFrame(renderText);
+    }
+    if(reduced){
+      actx.fillStyle = '#efe9e0'; actx.textBaseline = 'middle';
+      actx.fillText(word, 6, AH/2);
+    } else {
+      requestAnimationFrame(renderText);
+    }
+  }
+
+  // matrix rain — pentest-mode identity moment, distinct from build-mode motion language.
+  // Same effect drives both the section-4 swatch and the empty-state background in section 5.
+  function initRain(id){
+    var rc = document.getElementById(id);
+    if(!rc) return;
+    var rctx = rc.getContext('2d');
+    var RW = rc.width, RH = rc.height, cell = 6, cols = Math.floor(RW/cell);
+    var drops = new Array(cols).fill(0).map(function(){ return Math.random()*RH/cell; });
+    var glyphs = '01アイウエオカキクケコ';
+    function drawRain(){
+      rctx.fillStyle = 'rgba(11,12,13,0.25)';
+      rctx.fillRect(0,0,RW,RH);
+      rctx.font = cell+'px monospace';
+      for(var c=0;c<cols;c++){
+        var ch = glyphs[Math.floor(Math.random()*glyphs.length)];
+        var y = drops[c]*cell;
+        rctx.fillStyle = Math.random()>0.92 ? '#e6a35c' : 'rgba(154,160,164,0.55)';
+        rctx.fillText(ch, c*cell, y);
+        if(y > RH && Math.random() > 0.975) drops[c] = 0;
+        drops[c] += 0.35;
+      }
+    }
+    rctx.fillStyle = '#0b0c0d'; rctx.fillRect(0,0,RW,RH);
+    if(!reduced){ setInterval(drawRain, 60); } else { drawRain(); }
+  }
+  initRain('rainCanvas');
+  initRain('rainCanvas2');
+
+  // welcome screen — 8x8 ordered-dither waterfall. Two bugs fixed: the canvas
+  // was a fixed 100x60 stretched to whatever size the card actually rendered
+  // at (wrong aspect ratio → visibly stretched blocks), and the drift read as
+  // climbing upward instead of falling. Sized to the real box now, and the
+  // sample direction is reversed so it actually falls.
+  var wd = document.getElementById('welcomeDither');
+  if(wd){
+    var CELL_PX = 5; // ~5 device px per dither cell, regardless of box size
+    var box = wd.getBoundingClientRect();
+    var WW = Math.max(20, Math.round(box.width / CELL_PX));
+    var WH = Math.max(20, Math.round(box.height / CELL_PX));
+    wd.width = WW; wd.height = WH;
+    var wctx = wd.getContext('2d');
+    var bayer8b = [0,32,8,40,2,34,10,42,48,16,56,24,50,18,58,26,12,44,4,36,14,46,6,38,60,28,52,20,62,30,54,22,3,35,11,43,1,33,9,41,51,19,59,27,49,17,57,25,15,47,7,39,13,45,5,37,63,31,55,23,61,29,53,21].map(function(v){return v/64;});
+    function drawWelcome(t){
+      var oy = (8000000 - Math.floor(t/700)) % 8; // decreasing sample offset = falls downward, not climbs
+      var breathe = reduced ? 0 : Math.sin(t/4000)*0.05;
+      for(var y=0;y<WH;y++){
+        var density = Math.max(0, 1 - y/(WH*0.62)) + breathe;
+        for(var x=0;x<WW;x++){
+          var th = bayer8b[((y+oy)%8)*8+(x%8)];
+          wctx.fillStyle = density > th ? '#3a1c15' : '#0a0908';
+          wctx.fillRect(x, y, 1, 1);
+        }
+      }
+    }
+    if(reduced){ drawWelcome(0); } else { setInterval(function(){ drawWelcome(performance.now()); }, 700); drawWelcome(0); }
+  }
+
+  // monogram v4 — same as v3, but the wave-brackets are now computed once and
+  // mirrored, not calculated twice from two separate formulas. That's what
+  // was causing the asymmetry/gap: two independent trig passes can drift by
+  // a pixel from each other; a mirror can't.
+  var mono = document.getElementById('monogramCanvas');
+  if(mono){
+    var mctx = mono.getContext('2d');
+    var G = 22;                       // logical grid, 22x22 cells
+    var CELL = 4;                     // device px per cell
+    var SIZE = G * CELL;
+    mono.width = SIZE; mono.height = SIZE;
+    mctx.clearRect(0,0,SIZE,SIZE);
+    var grid = [];
+    for(var gy=0; gy<G; gy++){ grid.push(new Array(G).fill(false)); }
+    function mark(col,row){ if(col>=0 && col<G && row>=0 && row<G) grid[row][col]=true; }
+
+    // the N: two bars + a diagonal, built on the grid rather than a font glyph
+    var top=4, bottom=17, leftCol=7, rightCol=13;
+    for(var r=top; r<=bottom; r++){ mark(leftCol,r); mark(leftCol+1,r); mark(rightCol,r); mark(rightCol+1,r); }
+    for(var r2=top; r2<=bottom; r2++){
+      var t = (r2-top)/(bottom-top);
+      var dx = Math.round((leftCol+1) + t*((rightCol)-(leftCol+1)));
+      mark(dx, r2); mark(dx+1, r2);
+    }
+
+    // signal-wave brackets — computed once for the left side, then mirrored
+    // onto the right so the two sides can never drift out of sync or leave a
+    // one-sided gap. Tolerance widened slightly to close any rasterization holes.
+    var cy = (top+bottom)/2;
+    [6, 11].forEach(function(rad){
+      for(var y=0; y<G; y++){
+        for(var x=0; x<G; x++){
+          var dxL = x-(-2.5), dyL = (y-cy);
+          var distL = Math.sqrt(dxL*dxL + dyL*dyL);
+          var angL = Math.atan2(dyL, dxL);
+          if(Math.abs(distL-rad) < 0.8 && Math.abs(angL) < 0.85){
+            mark(x, y);
+            mark(G-1-x, y); // mirror across the vertical center — guarantees symmetry
+          }
+        }
+      }
+    });
+
+    mctx.fillStyle = '#e6a35c';
+    for(var y2=0; y2<G; y2++){
+      for(var x2=0; x2<G; x2++){
+        if(!grid[y2][x2]) continue;
+        var px = x2*CELL, py = y2*CELL;
+        if(mctx.roundRect){ mctx.beginPath(); mctx.roundRect(px, py, CELL, CELL, 1.4); mctx.fill(); }
+        else { mctx.fillRect(px, py, CELL, CELL); }
+      }
+    }
+  }
+})();
+</script>
+
+</body></html>

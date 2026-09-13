@@ -16,7 +16,7 @@ Turn NIL into a general-purpose AI coding agent workstation that happens to also
 
 ## Source of truth for the visual design
 
-A full interactive wireframe exists and is the spec for every visual/motion decision below — colors, spacing, exact animation curves, copy tone. It's a single self-contained HTML file (no build step) you can open directly in a browser to see and interact with every pattern described here: hover states, the command palette filtering, the dictation demo, the dither wipe, all of it. Ask the person driving this for that file if it isn't already sitting in the repo or chat history — do not guess at a color, easing curve, or copy line that's specified there when you could just open it and look.
+A full interactive wireframe exists at **`docs/wireframe.html`** and is the spec for every visual/motion decision below — colors, spacing, exact animation curves, copy tone. It's a single self-contained HTML file (no build step) you can open directly in a browser to see and interact with every pattern described here: hover states, the command palette filtering, the dictation demo, the dither wipe, all of it. Do not guess at a color, easing curve, or copy line that's specified there when you could just open the file and look. (Note: it's rev. 15 of an iterative design session — read it alongside `motion.css`, which is the authoritative version wherever the two disagree, per the note below.)
 
 ## Design tokens — already updated, this is the target state
 
