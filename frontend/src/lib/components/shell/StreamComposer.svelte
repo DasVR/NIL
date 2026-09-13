@@ -361,11 +361,15 @@
   <div class="bar">
     <div class="segment" role="group" aria-label="Workstation mode">
       <span
-        class="pill nil-jelly"
-        bind:this={pillEl}
-        style:--jelly-origin={lastMode === 'pentest' ? 'right center' : 'left center'}
+        class="pill-track"
         style:transform={workspace.workstationMode === 'pentest' ? 'translateX(100%)' : 'translateX(0)'}
-      ></span>
+      >
+        <span
+          class="pill nil-jelly"
+          bind:this={pillEl}
+          style:--jelly-origin={lastMode === 'pentest' ? 'right center' : 'left center'}
+        ></span>
+      </span>
       <button
         class="seg nil-halo"
         class:on={workspace.workstationMode === 'build'}
@@ -582,17 +586,23 @@
     border: 1px solid var(--nil-line);
     border-radius: 999px;
   }
-  .pill {
+  .pill-track {
     position: absolute;
     top: 2px;
     left: 2px;
     width: calc(50% - 2px);
     height: calc(100% - 4px);
+    pointer-events: none;
+    transition: transform var(--dur-jelly) var(--ease-pop);
+  }
+  .pill {
+    display: block;
+    width: 100%;
+    height: 100%;
     border-radius: 999px;
     background: var(--nil-raised);
     border: 1px solid var(--nil-line-hot);
-    pointer-events: none;
-    transition: transform var(--dur-jelly) var(--ease-pop);
+    transform-origin: var(--jelly-origin, left center);
   }
   .seg {
     position: relative;
