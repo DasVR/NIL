@@ -6,9 +6,10 @@
 
   interface Props {
     diff: string;
+    variant?: 'card' | 'page';
   }
 
-  let { diff }: Props = $props();
+  let { diff, variant = 'card' }: Props = $props();
 
   const hunks = $derived(parseDiff(diff));
 
@@ -28,7 +29,7 @@
   }
 </script>
 
-<pre class="diff" aria-label="File diff"><code>
+<pre class="diff" class:page={variant === 'page'} aria-label="File diff"><code>
 {#each hunks as h}
 <span class={h.type}>{h.text}</span>
 {/each}
@@ -46,6 +47,7 @@
     font: var(--t-meta)/var(--lh-body) var(--font-machine);
     color: var(--nil-ink-2);
   }
+  .diff.page { max-block-size: none; flex: 1; }
   .add {
     display: block;
     color: var(--brand-ember-300);

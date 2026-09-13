@@ -1,5 +1,4 @@
 import { appState } from '$lib/stores/appState.svelte.ts';
-import { tabsStore } from '$lib/stores/tabsStore';
 import { workspace } from '$lib/stores/workspace.svelte.ts';
 
 interface PaletteCommand {
@@ -27,7 +26,7 @@ const commands: PaletteCommand[] = [
     icon: 'hammer',
     action: () => {
       workspace.beginSession('build');
-      tabsStore.showStream();
+      workspace.showStream();
       appState.focusComposer();
     },
   },
@@ -38,7 +37,7 @@ const commands: PaletteCommand[] = [
     icon: 'shield',
     action: () => {
       workspace.beginSession('pentest');
-      tabsStore.showStream();
+      workspace.showStream();
       appState.focusComposer();
     },
   },
@@ -70,7 +69,7 @@ const commands: PaletteCommand[] = [
     section: 'Engagement',
     icon: 'plus',
     action: () => {
-      void appState.createEngagement(newEngagementName()).then(() => tabsStore.showStream());
+      void appState.createEngagement(newEngagementName()).then(() => workspace.showStream());
     },
   },
   {
@@ -78,18 +77,22 @@ const commands: PaletteCommand[] = [
     label: 'Show stream',
     section: 'View',
     icon: 'rows-3',
-    action: () => tabsStore.showStream(),
+    action: () => workspace.showStream(),
+  },
+  {
+    id: 'show-diffs',
+    label: 'Show diffs',
+    section: 'View',
+    icon: 'git-compare',
+    action: () => workspace.selectRail('diffs'),
   },
   {
     id: 'new-terminal',
-    label: 'New terminal',
+    label: 'Open terminal',
     shortcut: 'Cmd+T',
     section: 'View',
     icon: 'terminal',
-    action: () => {
-      const id = `terminal-${Date.now()}`;
-      tabsStore.addTab({ id, type: 'terminal', label: 'Terminal', dirty: false });
-    },
+    action: () => workspace.selectRail('terminal'),
   },
   {
     id: 'focus-composer',

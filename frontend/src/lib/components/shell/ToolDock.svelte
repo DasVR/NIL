@@ -1,12 +1,19 @@
 <script lang="ts">
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import TerminalTab from '$lib/components/shell/TerminalTab.svelte';
 
   const job = $derived(workspace.dock);
+  const isPty = $derived(job?.kind === 'terminal');
 </script>
 
 {#if job}
-  <section class="dock nil-scan" data-state={job.status === 'running' ? 'working' : undefined} aria-label={job.title}>
+  <section
+    class="dock nil-scan"
+    class:pty={isPty}
+    data-state={job.status === 'running' ? 'working' : undefined}
+    aria-label={job.title}
+  >
     <header class="head">
       <span class="title">{job.title}</span>
       <span class="kind">{job.kind}</span>
@@ -15,7 +22,16 @@
         <NilIcon name="chevron-down" size={16} />
       </button>
     </header>
-    <pre class="out"><code>{job.output || 'Waiting for output…'}</code></pre>
+    {#if isPty}
+      <div class="pty-host">
+        <TerminalTab
+          tab={{ id: 'dock-term', type: 'terminal', label: 'Terminal', dirty: false }}
+          focusOnMount
+        />
+      </div>
+    {:else}
+      <pre class="out"><code>{job.output || 'Waiting for output…'}</code></pre>
+    {/if}
   </section>
 {/if}
 
@@ -31,6 +47,7 @@
     box-shadow: var(--lift-1);
     overflow: hidden;
   }
+  .dock.pty { max-height: 240px; }
   .head {
     display: flex;
     align-items: center;
@@ -59,5 +76,10 @@
     padding: var(--s-2) var(--s-3);
     font: var(--t-meta)/var(--lh-body) var(--font-machine);
     color: var(--nil-ink-2);
+  }
+  .pty-host {
+    flex: 1;
+    min-height: 160px;
+    background: var(--nil-void);
   }
 </style>

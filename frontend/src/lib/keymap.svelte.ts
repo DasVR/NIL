@@ -71,14 +71,15 @@ function handleKeydown(e: KeyboardEvent) {
 
   if (mod && e.key === 't') {
     e.preventDefault();
-    const id = `terminal-${Date.now()}`;
-    tabsStore.addTab({ id, type: 'terminal', label: 'Terminal', dirty: false });
+    workspace.selectRail('terminal');
     return;
   }
 
   if (mod && e.key === 'w') {
     e.preventDefault();
-    if (tabsStore.activeTabId) {
+    if (workspace.dock) {
+      workspace.closeDock();
+    } else if (tabsStore.activeTabId) {
       tabsStore.closeTab(tabsStore.activeTabId);
     }
     return;

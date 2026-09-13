@@ -1,7 +1,6 @@
 <script lang="ts">
   import { magnetic } from '$lib/motion/magnetic.svelte.ts';
   import { droplet } from '$lib/motion/droplet';
-  import { tabsStore } from '$lib/stores/tabsStore';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import DitherWaterfall from '$lib/ui/DitherWaterfall.svelte';
@@ -14,14 +13,14 @@
 
   function start(mode: 'build' | 'pentest') {
     workspace.beginSession(mode);
-    tabsStore.showStream();
+    workspace.showStream();
     appState.focusComposer();
   }
 
   function openEngagement(name: string) {
     appState.activeEngagementId = name;
     appState.activeTargetId = name;
-    tabsStore.showStream();
+    workspace.showStream();
     appState.focusComposer();
   }
 </script>

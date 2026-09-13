@@ -4,6 +4,7 @@ import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
 export type RailId = 'files' | 'terminal' | 'diffs' | 'pentest';
 export type WorkstationMode = 'build' | 'pentest';
 export type SidePanel = 'targets' | 'scm' | 'github' | 'mcp';
+export type WorkspaceSurface = 'stream' | 'diff';
 export type ClarifyId =
   | 'files'
   | 'task'
@@ -80,6 +81,7 @@ let activeRail = $state<RailId>('files');
 let railPinned = $state(false);
 let sidePanel = $state<SidePanel>('targets');
 let workstationMode = $state<WorkstationMode>('build');
+let surface = $state<WorkspaceSurface>('stream');
 let sessionStarted = $state(false);
 let clarifyIndex = $state<number | null>(null);
 let pendingMode = $state<WorkstationMode | null>(null);
@@ -89,6 +91,7 @@ let attached = $state<ContextFile[]>([]);
 let modelId = $state('default');
 let effort = $state<'low' | 'medium' | 'high'>('medium');
 let dictationActive = $state(false);
+let diffText = $state('');
 
 function pentestMode(mode: ComposerMode): boolean {
   switch (mode) {
@@ -185,35 +188,36 @@ function selectRail(id: RailId) {
       activeRail = 'terminal';
       railPinned = false;
       appState.sidebarOpen = false;
-      openDock({
-        id: `term-${Date.now()}`,
-        title: 'Terminal',
-        kind: 'terminal',
-        status: 'running',
-        output: '',
-      });
-      tabsStore.addTab({
-        id: `terminal-${Date.now()}`,
-        type: 'terminal',
-        label: 'Terminal',
-        dirty: false,
-      });
+      if (dock?.id === 'terminal') {
+        closeDock();
+        activeRail = 'files';
+      } else {
+        openDock({
+          id: 'terminal',
+          title: 'Terminal',
+          kind: 'terminal',
+          status: 'running',
+          output: '',
+        });
+      }
       break;
     case 'diffs':
-      activeRail = 'diffs';
       railPinned = false;
       appState.sidebarOpen = false;
-      tabsStore.addTab({
-        id: 'diffs',
-        type: 'diff',
-        label: 'Diffs',
-        dirty: false,
-      });
+      if (surface === 'diff') {
+        surface = 'stream';
+        activeRail = 'files';
+      } else {
+        activeRail = 'diffs';
+        surface = 'diff';
+      }
+      tabsStore.showStream();
       break;
     case 'pentest':
       activeRail = 'pentest';
       railPinned = false;
       appState.sidebarOpen = false;
+      surface = 'stream';
       applyMode('pentest');
       tabsStore.showStream();
       break;
@@ -275,6 +279,7 @@ function openSide(panel: SidePanel) {
 
 function beginSession(mode: WorkstationMode) {
   sessionStarted = true;
+  surface = 'stream';
   applyMode(mode);
   pendingMode = null;
   if (mode === 'pentest') {
@@ -330,6 +335,13 @@ export const workspace = {
   get workstationMode() { return workstationMode; },
   set workstationMode(v: WorkstationMode) { applyMode(v); },
   get sessionStarted() { return sessionStarted; },
+  get surface() { return surface; },
+  get diffText() { return diffText; },
+  setDiff(text: string) { diffText = text; },
+  showStream() {
+    surface = 'stream';
+    tabsStore.showStream();
+  },
   get clarify() {
     if (clarifyIndex == null) return null;
     const q = ONBOARD[clarifyIndex];

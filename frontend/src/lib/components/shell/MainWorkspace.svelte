@@ -1,28 +1,37 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import TerminalTab from '$lib/components/shell/TerminalTab.svelte';
   import EditorTab from '$lib/components/shell/EditorTab.svelte';
   import PreviewTab from '$lib/components/shell/PreviewTab.svelte';
-  import DiffTab from '$lib/components/shell/DiffTab.svelte';
-  import AgentStream from '$lib/components/shell/AgentStream.svelte';
   import FindingCard from '$lib/components/ui/FindingCard.svelte';
-  import { tabsStore } from '$lib/stores/tabsStore';
+  import AgentStream from '$lib/components/shell/AgentStream.svelte';
+  import DiffSurface from '$lib/components/shell/DiffSurface.svelte';
+  import { tabsStore, type Tab } from '$lib/stores/tabsStore';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
+  import NilIcon from '$lib/ui/NilIcon.svelte';
   import type { Snippet } from 'svelte';
 
   let { emptyState }: { emptyState?: Snippet } = $props();
 
   let store = $derived($tabsStore);
   let activeTab = $derived(store.activeTabId);
-  let tabs = $derived(store.tabs);
+  let fileTabs = $derived(
+    store.tabs.filter((t) => t.type === 'editor' || t.type === 'preview' || t.type === 'finding'),
+  );
+  let activeFile = $derived(fileTabs.find((t) => t.id === activeTab) ?? null);
 
-  function setActiveTab(id: string) {
-    tabsStore.switchTab(id);
-  }
-
-  function newTab(type: 'terminal' | 'editor' | 'preview' | 'diff' = 'terminal') {
-    const id = `${type}-${Date.now()}`;
-    const label = type[0].toUpperCase() + type.slice(1);
-    tabsStore.addTab({ id, type, label, dirty: false });
+  function tabIcon(tab: Tab): string {
+    switch (tab.type) {
+      case 'editor': return 'file';
+      case 'preview': return 'app-window';
+      case 'finding': return 'flag';
+      case 'terminal':
+      case 'diff':
+        return 'file';
+      default: {
+        const _n: never = tab.type;
+        return _n;
+      }
+    }
   }
 
   function closeTab(id: string) {
@@ -32,7 +41,7 @@
   function handleTabKeydown(e: KeyboardEvent, tabId: string) {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
-      setActiveTab(tabId);
+      tabsStore.switchTab(tabId);
     } else if (e.key === 'Delete' || e.key === 'Backspace') {
       e.preventDefault();
       closeTab(tabId);
@@ -41,80 +50,56 @@
 </script>
 
 <div class="main-workspace" role="main">
-  <div class="workspace-tabs" role="tablist" aria-label="Workspace tabs">
-    <button
-      type="button"
-      class="workspace-tab {!activeTab ? 'active' : ''}"
-      role="tab"
-      aria-selected={!activeTab}
-      onclick={() => tabsStore.showStream()}
-    >
-      <span class="workspace-tab-label">Stream</span>
-    </button>
-    {#each tabs as tab}
-      <div
-        class="workspace-tab {tab.id === activeTab ? 'active' : ''}"
-        role="tab"
-        aria-selected={tab.id === activeTab}
-        aria-controls={`panel-${tab.id}`}
-        id={`tab-${tab.id}`}
-        tabindex={tab.id === activeTab ? 0 : -1}
-        onclick={() => setActiveTab(tab.id)}
-        onkeydown={(e) => handleTabKeydown(e, tab.id)}
-      >
-        <span class="workspace-tab-icon" data-type={tab.type}></span>
-        <span class="workspace-tab-label">{tab.label}</span>
-        {#if tab.dirty}
-          <span class="workspace-tab-dirty" aria-label="Unsaved changes"></span>
-        {/if}
-        <button
-          type="button"
-          class="workspace-tab-close"
-          onclick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
-          aria-label="Close tab"
-          tabindex="-1"
+  {#if fileTabs.length > 0}
+    <div class="workspace-tabs" role="tablist" aria-label="Open files">
+      {#each fileTabs as tab (tab.id)}
+        <div
+          class="workspace-tab"
+          class:active={tab.id === activeTab}
+          role="tab"
+          aria-selected={tab.id === activeTab}
+          id={`tab-${tab.id}`}
+          tabindex={tab.id === activeTab ? 0 : -1}
+          onclick={() => tabsStore.switchTab(tab.id)}
+          onkeydown={(e) => handleTabKeydown(e, tab.id)}
         >
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18"/>
-            <line x1="6" y1="6" x2="18" y2="18"/>
-          </svg>
-        </button>
-      </div>
-    {/each}
-
-    <button class="workspace-tab-new" onclick={() => newTab()} aria-label="New tab (Cmd+T)">
-      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <line x1="12" y1="5" x2="12" y2="19"/>
-        <line x1="5" y1="12" x2="19" y2="12"/>
-      </svg>
-    </button>
-  </div>
+          <NilIcon name={tabIcon(tab)} size={16} />
+          <span class="workspace-tab-label">{tab.label}</span>
+          {#if tab.dirty}
+            <span class="workspace-tab-dirty" aria-label="Unsaved changes"></span>
+          {/if}
+          <button
+            type="button"
+            class="workspace-tab-close nil-halo"
+            onclick={(e) => { e.stopPropagation(); closeTab(tab.id); }}
+            aria-label="Close"
+            tabindex="-1"
+          >
+            <NilIcon name="x" size={16} />
+          </button>
+        </div>
+      {/each}
+    </div>
+  {/if}
 
   <div class="workspace-panels">
-    {#each tabs as tab}
-      <div
-        id="panel-{tab.id}"
-        class="workspace-panel {tab.id === activeTab ? 'active' : ''}"
-        role="tabpanel"
-        aria-labelledby={`tab-${tab.id}`}
-        hidden={tab.id !== activeTab}
-      >
-        {#if tab.type === 'terminal'}
-          <TerminalTab {tab} />
-        {:else if tab.type === 'editor'}
-          <EditorTab {tab} />
-        {:else if tab.type === 'preview'}
-          <PreviewTab {tab} />
-        {:else if tab.type === 'diff'}
-          <DiffTab {tab} />
-        {:else if tab.type === 'finding'}
+    {#if activeFile}
+      <div class="workspace-panel active" role="tabpanel" aria-labelledby={`tab-${activeFile.id}`}>
+        {#if activeFile.type === 'editor'}
+          <EditorTab tab={activeFile} />
+        {:else if activeFile.type === 'preview'}
+          <PreviewTab tab={activeFile} />
+        {:else if activeFile.type === 'finding'}
           <div class="finding-detail-host">
-            <FindingCard finding={tab.data} />
+            <FindingCard finding={activeFile.data} />
           </div>
         {/if}
       </div>
-    {/each}
-    {#if !activeTab}
+    {:else if workspace.surface === 'diff'}
+      <div class="workspace-panel active stream-host">
+        <DiffSurface />
+      </div>
+    {:else}
       <div class="workspace-panel active stream-host">
         <AgentStream {emptyState} />
       </div>
@@ -132,7 +117,7 @@
   .finding-detail-host {
     height: 100%;
     overflow-y: auto;
-    padding: var(--s-6) var(--s-6) var(--s-6);
+    padding: var(--s-6);
     display: flex;
     justify-content: center;
   }
@@ -158,7 +143,7 @@
     height: 32px;
     background: transparent;
     border-bottom: 1px solid var(--nil-line);
-    padding: 0 8px;
+    padding: 0 var(--s-2);
     gap: 2px;
     flex-shrink: 0;
     overflow-x: auto;
@@ -169,52 +154,30 @@
     align-items: center;
     gap: 6px;
     padding: 0 10px;
-    min-width: 120px;
+    min-width: 0;
     max-width: 200px;
     height: 26px;
     margin-top: 3px;
     border: none;
-    border-radius: var(--radius-control) var(--radius-control) 0 0;
+    border-radius: var(--r-field) var(--r-field) 0 0;
     background: transparent;
     color: var(--nil-ink-2);
-    font-size: var(--font-xs);
-    font-weight: 400;
+    font: var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
-    transition: background var(--spring-snappy), color var(--spring-snappy);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
   }
 
-  .workspace-tab:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-  }
-
+  .workspace-tab:hover,
   .workspace-tab.active {
     background: var(--nil-panel);
     color: var(--nil-ink);
-    border-bottom: 1px solid var(--nil-ink-2);
-    margin-top: 1px;
-    height: 28px;
   }
 
-  .workspace-tab-icon {
-    width: 14px;
-    height: 14px;
-    flex-shrink: 0;
-    color: var(--text-tertiary);
+  .workspace-tab-label {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
-
-  .workspace-tab.active .workspace-tab-icon {
-    color: var(--nil-ink);
-  }
-
-  .workspace-tab-icon[data-type="terminal"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M8 9h8'/%3E%3Cpath d='M8 15h6'/%3E%3C/svg%3E") center/contain no-repeat; }
-  .workspace-tab-icon[data-type="editor"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7'/%3E%3Cpath d='M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z'/%3E%3C/svg%3E") center/contain no-repeat; }
-  .workspace-tab-icon[data-type="preview"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Crect x='2' y='3' width='20' height='14' rx='2'/%3E%3Cpath d='M8 21h8'/%3E%3Cpath d='M12 17v4'/%3E%3C/svg%3E") center/contain no-repeat; }
-  .workspace-tab-icon[data-type="diff"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M12 3v18'/%3E%3Cpath d='M3 12h18'/%3E%3C/svg%3E") center/contain no-repeat; }
-  .workspace-tab-icon[data-type="finding"] { background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='14' height='14' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'%3E%3Cpath d='M4 22V4a1 1 0 0 1 1-1h9l5 5v6'/%3E%3Cpath d='M4 15s1-1 3-1 3 1 5 1 3-1 3-1'/%3E%3C/svg%3E") center/contain no-repeat; }
 
   .workspace-tab-dirty {
     width: 6px;
@@ -230,44 +193,14 @@
     width: 20px;
     height: 20px;
     border: none;
-    border-radius: 4px;
+    border-radius: var(--r-chip);
     background: transparent;
-    color: var(--text-tertiary);
+    color: var(--nil-ink-3);
     cursor: pointer;
-    opacity: 0;
-    transition: opacity var(--spring-snappy), background var(--spring-snappy), color var(--spring-snappy);
     flex-shrink: 0;
   }
 
-  .workspace-tab:hover .workspace-tab-close,
-  .workspace-tab.active .workspace-tab-close {
-    opacity: 1;
-  }
-
-  .workspace-tab-close:hover {
-    background: var(--surface-hover);
-    color: var(--text-primary);
-  }
-
-  .workspace-tab-new {
-    display: grid;
-    place-items: center;
-    width: 28px;
-    height: 26px;
-    margin-top: 3px;
-    border: none;
-    border-radius: var(--radius-control);
-    background: transparent;
-    color: var(--text-tertiary);
-    cursor: pointer;
-    transition: color var(--spring-snappy), background var(--spring-snappy);
-    flex-shrink: 0;
-  }
-
-  .workspace-tab-new:hover {
-    color: var(--nil-ink);
-    background: var(--nil-raised);
-  }
+  .workspace-tab-close:hover { color: var(--nil-ink); }
 
   .workspace-panels {
     flex: 1;
@@ -279,17 +212,9 @@
   .workspace-panel {
     position: absolute;
     inset: 0;
-    opacity: 0;
-    visibility: hidden;
-    transition: opacity var(--spring-smooth), visibility 0s linear var(--spring-smooth);
-    pointer-events: none;
   }
 
   .workspace-panel.active {
-    opacity: 1;
-    visibility: visible;
-    transition: opacity var(--spring-smooth);
-    pointer-events: auto;
     z-index: 1;
   }
 </style>

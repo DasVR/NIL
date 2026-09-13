@@ -4,6 +4,7 @@
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
   import InlineDiff from '$lib/ui/InlineDiff.svelte';
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import { workspace } from '$lib/stores/workspace.svelte.ts';
 
   interface Props {
     step: ToolStep;
@@ -40,6 +41,10 @@
   const displayText = $derived(showAll || resultText.length <= PREVIEW ? resultText : resultText.slice(0, PREVIEW));
   const isDiff = $derived(/^(diff --git |@@ |\+\+\+ |--- )/m.test(resultText));
   const touchedFile = $derived(fileFrom(step));
+
+  $effect(() => {
+    if (isDiff && resultText) workspace.setDiff(resultText);
+  });
 
   const indexLabel = $derived(String(step.index).padStart(2, '0'));
 

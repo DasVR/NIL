@@ -8,9 +8,10 @@
 
   interface Props {
     tab: { id: string; type: string; label: string; dirty: boolean };
+    focusOnMount?: boolean;
   }
 
-  let { tab }: Props = $props();
+  let { tab, focusOnMount = false }: Props = $props();
 
   let container: HTMLDivElement;
   let terminal: XtermTerminal | undefined;
@@ -146,7 +147,7 @@
   }
 
   $effect(() => {
-    if (tabsStore.activeTabId === tab.id && terminal) {
+    if ((focusOnMount || tabsStore.activeTabId === tab.id) && terminal) {
       terminal.focus();
     }
   });
