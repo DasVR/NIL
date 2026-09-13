@@ -1,5 +1,6 @@
 import { tabsStore } from '$lib/stores/tabsStore';
 import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
+import { agentRun, toolFilePath } from '$lib/agent/run.svelte.ts';
 
 export type RailId = 'files' | 'terminal' | 'diffs' | 'pentest';
 export type WorkstationMode = 'build' | 'pentest';
@@ -92,6 +93,7 @@ let modelId = $state('default');
 let effort = $state<'low' | 'medium' | 'high'>('medium');
 let dictationActive = $state(false);
 let diffText = $state('');
+let handoff = $state(0);
 
 function pentestMode(mode: ComposerMode): boolean {
   switch (mode) {
@@ -110,6 +112,7 @@ function pentestMode(mode: ComposerMode): boolean {
 }
 
 function applyMode(next: WorkstationMode) {
+  if (next !== workstationMode && sessionStarted) handoff += 1;
   workstationMode = next;
   if (next === 'build') appState.composerMode = 'code';
   else {
@@ -362,6 +365,7 @@ export const workspace = {
   set effort(v: 'low' | 'medium' | 'high') { effort = v; },
   get dictationActive() { return dictationActive; },
   set dictationActive(v: boolean) { dictationActive = v; },
+  get handoff() { return handoff; },
   get model() { return MODELS.find((m) => m.id === modelId) ?? MODELS[0]; },
   selectRail,
   togglePin,
@@ -392,6 +396,15 @@ export function engagementFiles(): ContextFile[] {
     if (tab.type === 'editor') {
       list.push({ id: `tab:${tab.id}`, path: tab.label, label: tab.label });
     }
+  }
+  const seen = new Set(list.map((f) => f.path));
+  for (const step of agentRun.steps) {
+    if (step.kind !== 'tool') continue;
+    const path = toolFilePath(step);
+    if (!path || seen.has(path)) continue;
+    seen.add(path);
+    const label = path.split('/').pop() || path;
+    list.push({ id: `tool:${step.id}`, path, label });
   }
   return list;
 }

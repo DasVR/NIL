@@ -5,6 +5,8 @@
   import InlineDiff from '$lib/ui/InlineDiff.svelte';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
+  import { tabsStore } from '$lib/stores/tabsStore';
+  import { toolFilePath } from '$lib/agent/run.svelte.ts';
 
   interface Props {
     step: ToolStep;
@@ -40,7 +42,7 @@
   const PREVIEW = 4000;
   const displayText = $derived(showAll || resultText.length <= PREVIEW ? resultText : resultText.slice(0, PREVIEW));
   const isDiff = $derived(/^(diff --git |@@ |\+\+\+ |--- )/m.test(resultText));
-  const touchedFile = $derived(fileFrom(step));
+  const touchedFile = $derived(toolFilePath(step));
 
   $effect(() => {
     if (isDiff && resultText) workspace.setDiff(resultText);
@@ -62,14 +64,17 @@
     return `${Math.floor(ms / 60000)}m${String(Math.round((ms % 60000) / 1000)).padStart(2, '0')}s`;
   }
 
-  function fileFrom(s: ToolStep): string | null {
-    if (s.args && typeof s.args === 'object') {
-      const rec = s.args as Record<string, unknown>;
-      const v = rec.path ?? rec.file ?? rec.filename;
-      if (typeof v === 'string' && v.length) return v;
-    }
-    if (/\.[a-z0-9]{1,8}$/i.test(s.primaryArg) || s.primaryArg.includes('/')) return s.primaryArg;
-    return null;
+  function openTouched() {
+    const path = touchedFile;
+    if (!path) return;
+    const name = path.split('/').pop() || path;
+    tabsStore.addTab({
+      id: `editor:${path}`,
+      type: 'editor',
+      label: name,
+      dirty: false,
+      data: { path },
+    });
   }
 </script>
 
@@ -97,8 +102,12 @@
       >
         <span class="chev" class:open><NilIcon name="chevron-right" size={16} /></span>
         <span class="name">{step.name}</span>
-        <span class="arg">{touchedFile || step.primaryArg}</span>
       </button>
+      {#if touchedFile}
+        <button class="arg link nil-halo" type="button" onclick={openTouched}>{touchedFile}</button>
+      {:else}
+        <span class="arg">{step.primaryArg}</span>
+      {/if}
       <span class="state" data-state={step.state}>
         <span class="glyph">{stateGlyph}</span>
         <span class="label">{stateLabel}</span>
@@ -181,6 +190,13 @@
     text-overflow: ellipsis;
     white-space: nowrap;
   }
+  .arg.link {
+    border: 0;
+    padding: 0;
+    background: transparent;
+    cursor: pointer;
+  }
+  .arg.link:hover { color: var(--nil-ink); }
 
   .state {
     margin-inline-start: auto;

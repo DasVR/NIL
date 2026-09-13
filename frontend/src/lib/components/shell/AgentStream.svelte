@@ -6,7 +6,9 @@
   import AgentStatus from '$lib/components/ui/AgentStatus.svelte';
   import ClarifyCard from '$lib/components/ui/ClarifyCard.svelte';
   import ConfirmCard from '$lib/components/ui/ConfirmCard.svelte';
+  import TaskList from '$lib/components/ui/TaskList.svelte';
   import AshText from '$lib/ui/AshText.svelte';
+  import DitherWipe from '$lib/ui/DitherWipe.svelte';
   import PentestEmpty from '$lib/components/shell/PentestEmpty.svelte';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
@@ -54,6 +56,22 @@
     agentRun.steps.reduce((n, s) => n + (('usage' in s && s.usage?.totalTokens) ? s.usage.totalTokens : 0), 0),
   );
 
+  const tasks = $derived(
+    agentRun.steps
+      .filter((s): s is Extract<typeof s, { kind: 'tool' }> => s.kind === 'tool')
+      .map((s) => ({
+        id: s.id,
+        label: s.name,
+        detail: s.primaryArg,
+        status: s.state,
+      })),
+  );
+
+  function jumpToStep(id: string) {
+    const node = scroller?.querySelector(`[data-step-id="${CSS.escape(id)}"]`);
+    if (node instanceof HTMLElement) node.scrollIntoView({ block: 'nearest' });
+  }
+
   // Receipt time: stamped once per step id at first render (logger time, not
   // emitter time — terminal convention). Fixed HH:MM:SS width keeps the time
   // column from ever nudging content on re-render.
@@ -81,6 +99,13 @@
 </script>
 
 <section class="stream" aria-label="Agent stream">
+  {#key workspace.handoff}
+    {#if workspace.handoff > 0}
+      <div class="handoff" aria-hidden="true">
+        <DitherWipe mode="wipe" />
+      </div>
+    {/if}
+  {/key}
   <div
     class="log"
     bind:this={scroller}
@@ -105,10 +130,16 @@
       </div>
     {/if}
 
+    {#if tasks.length > 0}
+      <div class="plan-host">
+        <TaskList {tasks} onPick={jumpToStep} />
+      </div>
+    {/if}
+
     {#each agentRun.steps as step (step.id)}
       <!-- Row shell: fixed 8ch time column + isolated content cell.
            contain: content keeps an append from relayouting the document. -->
-      <div class="row" class:tick={step.kind === 'thought'}>
+      <div class="row" class:tick={step.kind === 'thought'} data-step-id={step.id}>
         <span class="time">{receiptTime(step.id)}</span>
         <div class="cell">
           {#if step.kind === 'tool'}
@@ -147,6 +178,16 @@
         </div>
       </div>
     {/each}
+
+    {#if agentRun.queued.length}
+      {#each agentRun.queued as item (item.id)}
+        <div class="queued">
+          <span class="flag">queued</span>
+          <p class="queued-text">{item.text}</p>
+          <button class="nil-halo drop" type="button" onclick={() => agentRun.dropFollowup(item.id)}>Remove</button>
+        </div>
+      {/each}
+    {/if}
 
     {#if workspace.clarify}
       <div class="prompt-card">
@@ -229,6 +270,13 @@
     overflow: hidden;
   }
 
+  .handoff {
+    position: absolute;
+    inset: 0;
+    z-index: 4;
+    pointer-events: none;
+  }
+
   .log {
     flex: 1;
     min-height: 0;
@@ -278,6 +326,35 @@
   .prompt-card {
     padding: var(--s-3) 0;
     max-width: 36rem;
+  }
+
+  .plan-host { max-width: 40rem; }
+
+  .queued {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: var(--s-2);
+    padding-block: var(--s-2);
+    border-block-start: 1px solid var(--nil-line);
+    max-width: 40rem;
+  }
+  .queued-text {
+    margin: 0;
+    font: var(--t-body)/var(--lh-body) var(--font-machine);
+    color: var(--nil-ink-3);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .drop {
+    height: 22px;
+    padding: 0 var(--s-2);
+    border: 0;
+    background: transparent;
+    color: var(--nil-ink-3);
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
   }
 
   .idle-title {

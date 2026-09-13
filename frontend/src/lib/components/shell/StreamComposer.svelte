@@ -56,9 +56,11 @@
   const placeholder = $derived(
     gated
       ? 'Allow or deny the pending command'
-      : workspace.workstationMode === 'pentest'
-        ? 'Describe the next hunt step'
-        : 'Ask NIL to build, edit, or inspect files',
+      : agentRun.running
+        ? 'Queue a follow-up'
+        : workspace.workstationMode === 'pentest'
+          ? 'Describe the next hunt step'
+          : 'Ask NIL to build, edit, or inspect files',
   );
 
   const files = $derived(
@@ -84,7 +86,12 @@
     const text = input.trim();
     if (!text || gated) return;
     const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
-    agentRun.sendMessage(text, appState.activeEngagementId || 'default', mode);
+    const engagement = appState.activeEngagementId || 'default';
+    if (agentRun.running) {
+      agentRun.queueFollowup(text, engagement, mode);
+    } else {
+      agentRun.sendMessage(text, engagement, mode);
+    }
     input = '';
     mentionOpen = false;
   }
@@ -207,6 +214,19 @@
     </div>
   {/if}
 
+  {#if agentRun.queued.length}
+    <div class="chips" aria-label="Queued follow-ups">
+      {#each agentRun.queued as item (item.id)}
+        <span class="chip">
+          <span class="chip-path">queued · {item.text}</span>
+          <button class="chip-x nil-halo" type="button" aria-label="Remove queued follow-up" onclick={() => agentRun.dropFollowup(item.id)}>
+            <NilIcon name="x" size={16} />
+          </button>
+        </span>
+      {/each}
+    </div>
+  {/if}
+
   {#if pending}
     <div class="gate-host" out:gateExit>
       <ApprovalBlock step={pending} />
@@ -239,11 +259,11 @@
       class="nil-lift nil-halo send"
       type="button"
       onclick={send}
-      disabled={!input.trim() || agentRun.running || gated}
+      disabled={!input.trim() || gated}
       data-cuelume-press
       data-cuelume-release="whisper"
     >
-      Send <kbd aria-hidden="true">↵</kbd>
+      {agentRun.running ? 'Queue' : 'Send'} <kbd aria-hidden="true">↵</kbd>
     </button>
   </div>
 

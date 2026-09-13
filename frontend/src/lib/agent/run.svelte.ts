@@ -3,12 +3,20 @@ import type { ApprovalGrant, Finding, FindingSeverity, FindingStatus, Step, Toke
 import { fromApiUsage } from '$lib/usage/format';
 import { usageStore } from '$lib/usage/store.svelte.ts';
 
+export interface QueuedTurn {
+  id: string;
+  text: string;
+  engagement: string;
+  mode: string;
+}
+
 let steps = $state<Step[]>([]);
 let findings = $state<Finding[]>([]);
 let running = $state(false);
 let interrupted = $state(false);
 let sessionId = $state<string | null>(null);
 let toolIndex = 0;
+let queued = $state<QueuedTurn[]>([]);
 
 function primaryArg(args: unknown, fallback: string): string {
   if (args && typeof args === 'object') {
@@ -48,12 +56,23 @@ function chatText(res: { response?: string; text?: string }): string {
   return res.response || res.text || '';
 }
 
+export function toolFilePath(step: ToolStep): string | null {
+  if (step.args && typeof step.args === 'object') {
+    const rec = step.args as Record<string, unknown>;
+    const v = rec.path ?? rec.file ?? rec.filename;
+    if (typeof v === 'string' && v.length) return v;
+  }
+  if (/\.[a-z0-9]{1,8}$/i.test(step.primaryArg) || step.primaryArg.includes('/')) return step.primaryArg;
+  return null;
+}
+
 export const agentRun = {
   get steps() { return steps; },
   get findings() { return findings; },
   get running() { return running; },
   get interrupted() { return interrupted; },
   get sessionId() { return sessionId; },
+  get queued() { return queued; },
   get pendingApproval() {
     return steps.find((s): s is ToolStep => s.kind === 'tool' && s.state === 'pending') ?? null;
   },
@@ -65,6 +84,7 @@ export const agentRun = {
     interrupted = false;
     sessionId = null;
     toolIndex = 0;
+    queued = [];
   },
 
   stop() {
@@ -92,6 +112,29 @@ export const agentRun = {
 
   resume() {
     interrupted = false;
+  },
+
+  queueFollowup(text: string, engagement: string, mode: string) {
+    const trimmed = text.trim();
+    if (!trimmed) return;
+    queued = [...queued, {
+      id: `queued-${Date.now()}-${queued.length}`,
+      text: trimmed,
+      engagement,
+      mode,
+    }];
+  },
+
+  dropFollowup(id: string) {
+    queued = queued.filter((item) => item.id !== id);
+  },
+
+  drainFollowup() {
+    if (running || interrupted) return;
+    const next = queued[0];
+    if (!next) return;
+    queued = queued.slice(1);
+    void agentRun.sendMessage(next.text, next.engagement, next.mode);
   },
 
   async sendMessage(input: string, engagement: string, mode: string) {
@@ -182,6 +225,7 @@ export const agentRun = {
       }];
     } finally {
       running = false;
+      if (!interrupted) agentRun.drainFollowup();
     }
   },
 
@@ -207,6 +251,7 @@ export const agentRun = {
       return run;
     } finally {
       running = false;
+      if (!interrupted) agentRun.drainFollowup();
     }
   },
 
@@ -235,6 +280,7 @@ export const agentRun = {
       step.error = err instanceof Error ? err.message : 'Approve failed';
     } finally {
       running = false;
+      if (!interrupted) agentRun.drainFollowup();
     }
   },
 
