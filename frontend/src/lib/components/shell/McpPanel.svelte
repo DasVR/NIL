@@ -59,7 +59,9 @@
   <header class="head">
     <span class="eyebrow">MCP tools</span>
     <p class="lede">
-      {#if listed && listed.length > 0}
+      {#if empty}
+        Declare servers in this workspace when you have them. Toggles stay on this machine.
+      {:else if listed && listed.length > 0}
         Servers declared in this workspace. Toggles stay on this machine and do not start or stop a process.
       {:else}
         Servers the agent can call. Toggle one off without disconnecting the rest. These toggles stay on this machine.
