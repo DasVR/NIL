@@ -131,11 +131,11 @@ function handleKeydown(e: KeyboardEvent) {
 }
 
 function init() {
-  document.addEventListener('keydown', handleKeydown);
+  shortcutsEnabled = true;
 }
 
 function destroy() {
-  document.removeEventListener('keydown', handleKeydown);
+  shortcutsEnabled = false;
 }
 
 export const keymap = {

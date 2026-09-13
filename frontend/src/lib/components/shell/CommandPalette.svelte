@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { fade } from 'svelte/transition';
   import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
   import { settle } from '$lib/motion/settle';
@@ -65,9 +64,10 @@
     selectedIndex = 0;
   }
 
-  onMount(() => {
-    inputRef?.focus();
+  $effect(() => {
+    if (!open) return;
     selectedIndex = 0;
+    queueMicrotask(() => inputRef?.focus());
   });
 </script>
 
