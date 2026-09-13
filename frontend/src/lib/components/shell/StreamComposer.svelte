@@ -127,6 +127,9 @@
     const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
     const engagement = appState.activeEngagementId || 'default';
     const payload = composeTurn(text);
+    workspace.dismissClarify();
+    workspace.dictationActive = false;
+    workspace.dictationPaused = false;
     if (agentRun.running) {
       agentRun.queueFollowup(payload, engagement, mode);
     } else {
@@ -214,11 +217,16 @@
   }
 
   function toggleDictation() {
+    if (workspace.dictationPaused) {
+      workspace.dictationPaused = false;
+      workspace.dictationActive = true;
+      return;
+    }
     workspace.dictationActive = !workspace.dictationActive;
   }
 
   $effect(() => {
-    if (!workspace.dictationActive) return;
+    if (!workspace.dictationActive || workspace.dictationPaused) return;
     const base = untrack(() => input);
     let last = base;
     let playAbort: AbortController | null = null;
@@ -337,8 +345,8 @@
     </div>
   {/if}
 
-  {#if workspace.dictationActive}
-    <OnDeviceHint active available={speechAvailable()} />
+    {#if workspace.dictationActive}
+    <OnDeviceHint active={!workspace.dictationPaused} available={speechAvailable()} />
   {/if}
 
   <div class="bar">

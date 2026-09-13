@@ -10,6 +10,8 @@
   import AshText from '$lib/ui/AshText.svelte';
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
   import PentestEmpty from '$lib/components/shell/PentestEmpty.svelte';
+  import BuildEmpty from '$lib/components/shell/BuildEmpty.svelte';
+  import DictationWave from '$lib/components/ui/DictationWave.svelte';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import type { Snippet } from 'svelte';
@@ -29,6 +31,16 @@
 
   let scroller: HTMLElement | undefined = $state();
   let statusOpen = $state(false);
+  let now = $state(Date.now());
+
+  $effect(() => {
+    if (!agentRun.running) return;
+    now = Date.now();
+    const id = setInterval(() => {
+      now = Date.now();
+    }, 1000);
+    return () => clearInterval(id);
+  });
 
   const runningSummary = $derived.by(() => {
     const tools = agentRun.steps.filter((s) => s.kind === 'tool');
@@ -36,17 +48,23 @@
     const cmds = tools.filter((s) => s.kind === 'tool' && s.state !== 'pending').length;
     if (cmds === 0 && reads === 0) return 'Working';
     const bits: string[] = [];
-    if (reads) bits.push(`read ${reads} file${reads === 1 ? '' : 's'}`);
-    if (cmds) bits.push(`ran a command`);
+    if (reads) bits.push(`Searched code, read ${reads} file${reads === 1 ? '' : 's'}`);
+    else if (cmds) bits.push('Ran a command');
+    if (reads && cmds) bits.push('ran a command');
     return bits.join(', ').replace(/^./, (c) => c.toUpperCase());
   });
 
+  const statusItems = $derived(
+    agentRun.steps
+      .filter((s): s is Extract<typeof s, { kind: 'tool' }> => s.kind === 'tool')
+      .map((s) => [s.name, s.primaryArg].filter(Boolean).join(' · ')),
+  );
+
   const runDuration = $derived.by(() => {
-    const starts = agentRun.steps
-      .filter((s): s is Extract<typeof s, { startTime?: number }> => 'startTime' in s && typeof s.startTime === 'number')
-      .map((s) => s.startTime as number);
-    if (starts.length === 0) return '0s';
-    const ms = Date.now() - Math.min(...starts);
+    now;
+    const start = agentRun.startedAt;
+    if (!start) return '0s';
+    const ms = Math.max(0, now - start);
     const m = Math.floor(ms / 60000);
     const s = Math.floor((ms % 60000) / 1000);
     return m > 0 ? `${m}m ${s}s` : `${s}s`;
@@ -121,8 +139,7 @@
         {:else if emptyState && !workspace.sessionStarted}
           {@render emptyState()}
         {:else if workspace.workstationMode === 'build'}
-          <p class="idle-title">Build</p>
-          <p class="idle-copy">Describe a task in the composer, or pin Files to open a project.</p>
+          <BuildEmpty />
         {:else}
           <p class="idle-title">/Stream(01)</p>
           <p class="idle-copy">No findings yet. Run a hunt to start collecting evidence.</p>
@@ -191,14 +208,29 @@
       {/each}
     {/if}
 
-    {#if workspace.clarify}
+    {#if workspace.dictationActive && workspace.sessionStarted}
+      <div class="row tick" data-step-id="dictation">
+        <span class="time">{receiptTime('dictation')}</span>
+        <div class="cell listen">
+          <DictationWave active={!workspace.dictationPaused} />
+          <span class="flag">{workspace.dictationPaused ? 'paused' : 'listening'}</span>
+          <button
+            class="nil-halo listen-btn"
+            type="button"
+            onclick={() => (workspace.dictationPaused = !workspace.dictationPaused)}
+          >{workspace.dictationPaused ? 'Resume' : 'Pause'}</button>
+        </div>
+      </div>
+    {/if}
+
+    {#if workspace.clarify && agentRun.steps.length === 0}
       <div class="prompt-card">
         <ClarifyCard
           title={workspace.clarify.title}
           index={workspace.clarify.index}
           total={workspace.clarify.total}
           options={workspace.clarify.options}
-          onSelect={(id) => workspace.answerClarify(id)}
+          onSelect={(id, other) => workspace.answerClarify(id, other)}
           onPrev={() => workspace.prevClarify()}
           onNext={() => workspace.nextClarify()}
         />
@@ -252,6 +284,8 @@
         summary={runningSummary}
         duration={runDuration}
         tokens={runTokens}
+        hint="Almost done thinking…"
+        items={statusItems}
       />
       <button class="nil-halo stop" type="button" onclick={() => agentRun.stop()}>Stop</button>
     </div>
@@ -369,6 +403,21 @@
   .idle-copy {
     font: var(--t-body)/var(--lh-body) var(--font-ui);
     color: var(--nil-ink-2);
+  }
+
+  .listen {
+    display: flex;
+    align-items: center;
+    gap: var(--s-2);
+  }
+  .listen-btn {
+    height: 22px;
+    padding: 0 var(--s-2);
+    border: 0;
+    background: transparent;
+    color: var(--nil-ink-3);
+    font: 500 var(--t-micro)/1 var(--font-ui);
+    cursor: pointer;
   }
 
   .msg {

@@ -1,3 +1,4 @@
+import { browser } from '$app/environment';
 import { tabsStore } from '$lib/stores/tabsStore';
 import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
 import { agentRun, toolFilePath } from '$lib/agent/run.svelte.ts';
@@ -44,6 +45,13 @@ export interface ModelOption {
   description: string;
 }
 
+export interface RecentSession {
+  id: string;
+  label: string;
+  mode: WorkstationMode;
+  at: number;
+}
+
 const MODELS: ModelOption[] = [
   { id: 'default', name: 'Default', description: 'Whatever the harness is configured to use' },
   { id: 'fast', name: 'Fast', description: 'Lower latency, lighter reasoning' },
@@ -51,6 +59,29 @@ const MODELS: ModelOption[] = [
 ];
 
 const RAIL_WIDTH = 48;
+const RECENTS_KEY = 'nil.recent-sessions';
+
+function loadRecents(): RecentSession[] {
+  if (!browser) return [];
+  try {
+    const raw = localStorage.getItem(RECENTS_KEY);
+    if (!raw) return [];
+    const parsed = JSON.parse(raw) as unknown;
+    if (!Array.isArray(parsed)) return [];
+    return parsed
+      .filter((row): row is RecentSession => {
+        if (!row || typeof row !== 'object') return false;
+        const r = row as RecentSession;
+        return typeof r.id === 'string'
+          && typeof r.label === 'string'
+          && (r.mode === 'build' || r.mode === 'pentest')
+          && typeof r.at === 'number';
+      })
+      .slice(0, 5);
+  } catch {
+    return [];
+  }
+}
 
 const ONBOARD: ClarifyQuestion[] = [
   {
@@ -93,8 +124,27 @@ let attached = $state<ContextFile[]>([]);
 let modelId = $state('default');
 let effort = $state<'low' | 'medium' | 'high'>('medium');
 let dictationActive = $state(false);
+let dictationPaused = $state(false);
+let recents = $state<RecentSession[]>(loadRecents());
 let diffText = $state('');
 let handoff = $state(0);
+
+function persistRecents() {
+  if (!browser) return;
+  localStorage.setItem(RECENTS_KEY, JSON.stringify(recents));
+}
+
+function rememberSession(mode: WorkstationMode, label?: string) {
+  const name = label || (mode === 'pentest' ? 'hunt' : 'build');
+  const entry: RecentSession = {
+    id: `${mode}:${name}`,
+    label: name,
+    mode,
+    at: Date.now(),
+  };
+  recents = [entry, ...recents.filter((r) => r.id !== entry.id)].slice(0, 5);
+  persistRecents();
+}
 
 function pentestMode(mode: ComposerMode): boolean {
   switch (mode) {
@@ -310,6 +360,7 @@ function beginSession(mode: WorkstationMode) {
   surface = 'stream';
   applyMode(mode);
   pendingMode = null;
+  rememberSession(mode, appState.activeEngagementId || undefined);
   if (mode === 'pentest') {
     clarifyIndex = null;
     selectRail('pentest');
@@ -317,6 +368,17 @@ function beginSession(mode: WorkstationMode) {
     clarifyIndex = 0;
     tabsStore.showStream();
   }
+}
+
+function resumeSession(mode: WorkstationMode, label?: string) {
+  sessionStarted = true;
+  surface = 'stream';
+  applyMode(mode);
+  pendingMode = null;
+  clarifyIndex = null;
+  rememberSession(mode, label);
+  if (mode === 'pentest') selectRail('pentest');
+  else tabsStore.showStream();
 }
 
 function requestMode(next: WorkstationMode) {
@@ -336,7 +398,27 @@ function cancelPendingMode() {
   pendingMode = null;
 }
 
-function answerClarify(id: string) {
+function dismissClarify() {
+  clarifyIndex = null;
+}
+
+function sendClarifyTurn(text: string) {
+  clarifyIndex = null;
+  const mode: ComposerMode = workstationMode === 'build' ? 'code' : appState.composerMode;
+  const engagement = appState.activeEngagementId || 'default';
+  void agentRun.sendMessage(text, engagement, mode);
+}
+
+function answerClarify(id: string, other?: string) {
+  const extra = other?.trim();
+  if ((id === 'reply' || id === 'other') && extra) {
+    sendClarifyTurn(extra);
+    return;
+  }
+  if (id === 'reply') {
+    appState.focusComposer();
+    return;
+  }
   applyClarify(parseClarify(id));
   if (clarifyIndex == null) return;
   if (clarifyIndex < ONBOARD.length - 1) clarifyIndex += 1;
@@ -389,17 +471,25 @@ export const workspace = {
   get effort() { return effort; },
   set effort(v: 'low' | 'medium' | 'high') { effort = v; },
   get dictationActive() { return dictationActive; },
-  set dictationActive(v: boolean) { dictationActive = v; },
+  set dictationActive(v: boolean) {
+    dictationActive = v;
+    if (v) dictationPaused = false;
+  },
+  get dictationPaused() { return dictationPaused; },
+  set dictationPaused(v: boolean) { dictationPaused = v; },
+  get recents() { return recents; },
   get handoff() { return handoff; },
   get model() { return MODELS.find((m) => m.id === modelId) ?? MODELS[0]; },
   selectRail,
   togglePin,
   openSide,
   beginSession,
+  resumeSession,
   requestMode,
   commitPendingMode,
   cancelPendingMode,
   answerClarify,
+  dismissClarify,
   prevClarify,
   nextClarify,
   openDock,

@@ -15,8 +15,15 @@ let findings = $state<Finding[]>([]);
 let running = $state(false);
 let interrupted = $state(false);
 let sessionId = $state<string | null>(null);
+let startedAt = $state<number | null>(null);
 let toolIndex = 0;
 let queued = $state<QueuedTurn[]>([]);
+
+function markRunning() {
+  if (!running) startedAt = Date.now();
+  running = true;
+  interrupted = false;
+}
 
 function primaryArg(args: unknown, fallback: string): string {
   if (args && typeof args === 'object') {
@@ -72,6 +79,7 @@ export const agentRun = {
   get running() { return running; },
   get interrupted() { return interrupted; },
   get sessionId() { return sessionId; },
+  get startedAt() { return startedAt; },
   get queued() { return queued; },
   get pendingApproval() {
     return steps.find((s): s is ToolStep => s.kind === 'tool' && s.state === 'pending') ?? null;
@@ -83,6 +91,7 @@ export const agentRun = {
     running = false;
     interrupted = false;
     sessionId = null;
+    startedAt = null;
     toolIndex = 0;
     queued = [];
   },
@@ -138,8 +147,7 @@ export const agentRun = {
   },
 
   async sendMessage(input: string, engagement: string, mode: string) {
-    interrupted = false;
-    running = true;
+    markRunning();
     steps = [...steps, {
       kind: 'message',
       id: `user-${Date.now()}`,
@@ -230,8 +238,7 @@ export const agentRun = {
   },
 
   async proposeTool(engagement: string, tool: string, command: string, safety_level: 'safe' | 'unsafe' | 'dangerous' = 'safe') {
-    running = true;
-    interrupted = false;
+    markRunning();
     try {
       const run = await api.proposeTool({ engagement, tool, command, safety_level });
       toolIndex += 1;
@@ -260,8 +267,7 @@ export const agentRun = {
     if (!step) return;
     step.state = 'running';
     step.startTime = Date.now();
-    running = true;
-    interrupted = false;
+    markRunning();
 
     try {
       const body: ToolApprove = { run_id: id, grant, execute: true };

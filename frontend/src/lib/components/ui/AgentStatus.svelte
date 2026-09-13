@@ -7,9 +7,10 @@
     tokens: number;
     hint?: string;
     open?: boolean;
+    items?: string[];
   }
 
-  let { summary, duration, tokens, hint = '', open = $bindable(false) }: Props = $props();
+  let { summary, duration, tokens, hint = '', open = $bindable(false), items = [] }: Props = $props();
 </script>
 
 <div class="status">
@@ -18,6 +19,13 @@
     <span class="chev" class:open><NilIcon name="chevron-right" size={16} /></span>
   </button>
   <p class="meta">{duration} · {tokens} tokens{#if hint} · {hint}{/if}</p>
+  {#if open && items.length}
+    <ul class="items">
+      {#each items as item, i (`${i}:${item}`)}
+        <li>{item}</li>
+      {/each}
+    </ul>
+  {/if}
 </div>
 
 <style>
@@ -39,4 +47,16 @@
   .chev { color: var(--nil-ink-3); display: grid; place-items: center; transition: transform var(--dur-flip) var(--ease-out); }
   .chev.open { transform: rotate(90deg); }
   .meta { margin: 0; font: var(--t-micro)/1.4 var(--font-machine); color: var(--nil-ink-3); }
+  .items {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+  .items li {
+    font: var(--t-micro)/1.4 var(--font-machine);
+    color: var(--nil-ink-3);
+  }
 </style>

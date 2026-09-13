@@ -6,10 +6,40 @@
   import DitherWaterfall from '$lib/ui/DitherWaterfall.svelte';
   import NilIcon from '$lib/ui/NilIcon.svelte';
 
+  interface RecentRow {
+    id: string;
+    label: string;
+    mode: 'build' | 'pentest';
+    meta: string;
+  }
+
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
-  const recent = $derived(appState.engagements.slice(0, 5));
+  const recent = $derived.by(() => {
+    const seen = new Set<string>();
+    const out: RecentRow[] = [];
+    for (const eng of appState.engagements.slice(0, 5)) {
+      seen.add(eng.name);
+      out.push({
+        id: `eng:${eng.name}`,
+        label: eng.name,
+        mode: 'pentest',
+        meta: `${eng.findings_count} findings`,
+      });
+    }
+    for (const r of workspace.recents) {
+      if (seen.has(r.label) || out.length >= 5) continue;
+      seen.add(r.label);
+      out.push({
+        id: r.id,
+        label: r.label,
+        mode: r.mode,
+        meta: r.mode === 'pentest' ? 'Hunt' : 'Build',
+      });
+    }
+    return out;
+  });
 
   function start(mode: 'build' | 'pentest') {
     workspace.beginSession(mode);
@@ -17,9 +47,12 @@
     appState.focusComposer();
   }
 
-  function openEngagement(name: string) {
-    appState.activeEngagementId = name;
-    appState.activeTargetId = name;
+  function openRecent(item: RecentRow) {
+    if (item.id.startsWith('eng:')) {
+      appState.activeEngagementId = item.label;
+      appState.activeTargetId = item.label;
+    }
+    workspace.resumeSession(item.mode, item.label);
     workspace.showStream();
     appState.focusComposer();
   }
@@ -56,10 +89,10 @@
     {#if recent.length > 0}
       <div class="recent">
         <p class="eyebrow">Recent sessions</p>
-        {#each recent as eng (eng.name)}
-          <button class="session nil-halo" type="button" {@attach droplet} onclick={() => openEngagement(eng.name)}>
-            <span class="s-name">{eng.name}</span>
-            <span class="s-meta">{eng.findings_count} findings</span>
+        {#each recent as item (item.id)}
+          <button class="session nil-halo" type="button" {@attach droplet} onclick={() => openRecent(item)}>
+            <span class="s-name">{item.label}</span>
+            <span class="s-meta">{item.meta}</span>
           </button>
         {/each}
       </div>
