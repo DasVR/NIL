@@ -34,7 +34,8 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
     if (typeof fromJson === 'string' && /econnrefused|econnreset|proxy error/i.test(fromJson)) {
       throw new Error(`Backend unavailable (HTTP ${res.status}). Start the API, then send again.`);
     }
-    throw new Error(typeof detail === 'string' ? detail : fromJson || `HTTP ${res.status}`);
+    const message = typeof detail === 'string' ? detail.trim() : (typeof fromJson === 'string' ? fromJson : '');
+    throw new Error(message || `Backend unavailable (HTTP ${res.status}). Start the API, then send again.`);
   }
 
   return res.json() as Promise<T>;
