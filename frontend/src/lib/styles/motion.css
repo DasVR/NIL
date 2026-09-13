@@ -8,8 +8,13 @@
    The cold open, lock screen, and idle field are WebGL2 and live
    in src/lib/gl/. See .cursor/rules/40-nil-gpu.mdc for that policy.
 
-   Ten primitives. Every micro-interaction in NIL is one of these
-   or a composition of two. If you need an eleventh, it goes in
+   REV 2 — the primitive list grew and one rule changed on purpose:
+   --ease-spring used to be reserved for magnetic-pull and popover-
+   settle only. It's now the app's one overshoot curve, full stop —
+   press-release, the mode-segment pill, and anything else that
+   should land with a little weight all use it. One spring, used
+   everywhere something "settles," beats a different bounce per
+   component. If you need a primitive that isn't here, it goes in
    this file with a name — it does not get inlined in a component.
    ============================================================ */
 
@@ -20,6 +25,8 @@
   --dur-panel:  260ms;  /* a region resizing, a rail sliding */
   --dur-stage:  420ms;  /* orchestrated view change — one per interaction, max */
   --dur-decode: 520ms;  /* scramble settle */
+  --dur-jelly:  460ms;  /* a pill/segment landing against a wall */
+  --dur-hold:   850ms;  /* press-and-hold to confirm */
 
   /* easing */
   --ease-out:   cubic-bezier(0.16, 1, 0.3, 1);       /* macOS decel — the default */
@@ -29,7 +36,11 @@
     0, 0.006, 0.025 2.8%, 0.101 6.1%, 0.539 18.9%, 0.721 25.3%,
     0.849 31.5%, 0.937 38.1%, 0.968 41.8%, 0.991 45.7%,
     1.006 50.1%, 1.015 55%, 1.017 63.9%, 1.001
-  ); /* overshoots ~1.7% — magnetic return and popover settle only */
+  ); /* overshoots ~1.7% — the one overshoot curve in the app: press-release,
+        magnetic return, popover settle, the mode-segment pill, all of it */
+  --ease-pop:   cubic-bezier(0.34, 1.56, 0.64, 1);   /* a heavier overshoot for
+        JS-driven keyframes (element.animate()) where --ease-spring's linear()
+        syntax isn't accepted — same job, same feel, different property type */
 
   /* required for REVEAL (see primitive 07) */
   interpolate-size: allow-keywords;
@@ -40,7 +51,7 @@
    Border brightens, surface rises 1px. Never a drop shadow swap.
    ------------------------------------------------------------ */
 .nil-lift {
-  transition: transform var(--dur-flip) var(--ease-out),
+  transition: transform var(--dur-panel) var(--ease-spring),
               border-color var(--dur-flip) var(--ease-out),
               background-color var(--dur-flip) var(--ease-out);
   will-change: transform;
@@ -48,9 +59,82 @@
 .nil-lift:hover { transform: translateY(-1px); border-color: var(--nil-line-hot); }
 
 /* ------------------------------------------------------------
-   02 · PRESS — always paired with LIFT, never used alone
+   02 · PRESS — always paired with LIFT, never used alone.
+   Down is quick and flat (no overshoot — that would read as lag,
+   and overrides LIFT's spring duration for just this state).
+   Release falls back to LIFT's own transition, which is where the
+   spring lives — it settles with a little weight, not a hard snap.
    ------------------------------------------------------------ */
-.nil-lift:active { transform: scale(0.985) translateY(0); transition-duration: 40ms; }
+.nil-lift:active { transform: scale(0.955) translateY(0); transition-duration: 70ms; transition-timing-function: var(--ease-out); }
+
+/* ------------------------------------------------------------
+   11 · JELLY — a pill/segment arriving at a new position doesn't
+   just translate, it lands against whichever side it's arriving
+   at: set --jelly-origin to the landing edge ("left center" moving
+   right, "right center" moving left) before triggering the class,
+   so the leading edge snaps solid and the trailing edge overshoots
+   and settles. CSS alone can't reverse transform-origin mid-
+   transition, so the actual keyframes are driven by
+   element.animate() at the component level; this class only
+   documents the shape and the shared token everything should read
+   from (--dur-jelly / --ease-pop), never a bespoke duration per use.
+   ------------------------------------------------------------ */
+.nil-jelly {
+  transform-origin: var(--jelly-origin, center);
+  /* component JS: el.animate([...], { duration: getComputedStyle(el)
+     .getPropertyValue('--dur-jelly') , easing: 'var(--ease-pop)' }) */
+}
+
+/* ------------------------------------------------------------
+   12 · DROPLET — row hover as a water-fill instead of an instant
+   background swap. Grows from wherever the cursor enters, sized
+   to the row's farthest corner (set via JS on pointerenter) so it
+   always covers the row regardless of entry point; on pointerleave
+   it re-anchors to the exit point and shrinks back toward it.
+   Two footguns already hit once, don't reintroduce them:
+     - the ROW needs `position: relative; z-index: 0` (not just
+       relative) so this fill's negative z-index is contained in
+       the row's own stacking context — otherwise it either paints
+       over unpositioned text, or escapes and sinks behind the
+       whole parent panel and disappears.
+   ------------------------------------------------------------ */
+.nil-row-host { position: relative; z-index: 0; overflow: hidden; }
+.nil-droplet {
+  position: absolute; top: 0; left: 0; border-radius: 50%;
+  background: var(--nil-raised);
+  transform: scale(0); pointer-events: none; z-index: -1;
+  transition: transform var(--dur-panel) var(--ease-out);
+}
+
+/* ------------------------------------------------------------
+   13 · HOLD — press-and-hold to confirm, for destructive actions.
+   A fill (width or a ring) has to complete over --dur-hold before
+   anything happens; releasing early cancels cleanly with no
+   half-committed state. Replaces click-then-confirm-dialog.
+   ------------------------------------------------------------ */
+.nil-hold { position: relative; overflow: hidden; }
+.nil-hold-fill {
+  position: absolute; inset: 0; width: 0%; z-index: 0;
+  background: color-mix(in oklab, var(--brand-ember-500) 55%, var(--nil-raised));
+  /* component JS drives width 0% -> 100% over --dur-hold; on release
+     before completion, transition width back to 0% over --dur-enter */
+}
+.nil-hold > :not(.nil-hold-fill) { position: relative; z-index: 1; }
+
+/* ------------------------------------------------------------
+   14 · MORPH — a confirming action (copy, in particular) pops,
+   swaps its icon for a checkmark, and flashes a small label next
+   to it before both revert. Not a toast — the control itself
+   confirms.
+   ------------------------------------------------------------ */
+.nil-morph { transform: scale(1); transition: transform var(--dur-panel) var(--ease-spring); }
+.nil-morph[data-confirmed="true"] { transform: scale(1.12); }
+.nil-morph-label {
+  max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0;
+  color: var(--brand-ember-300);
+  transition: max-width var(--dur-enter) var(--ease-out), opacity var(--dur-flip) var(--ease-out);
+}
+.nil-morph[data-confirmed="true"] .nil-morph-label { max-width: 50px; opacity: 1; }
 
 /* ------------------------------------------------------------
    03 · HALO — keyboard focus. :focus-visible only, never :focus.
@@ -181,4 +265,7 @@ dialog[open]::backdrop {
   .nil-scan[data-state="working"]::after { animation: none; background: var(--nil-ink-3); }
   [popover], dialog { transform: none; }
   .nil-trace path { stroke-dashoffset: 0; animation: none; }
+  .nil-jelly { transition: none !important; }
+  .nil-droplet { transition-duration: 0.01ms !important; }
+  .nil-morph, .nil-morph[data-confirmed="true"] { transform: none; }
 }
