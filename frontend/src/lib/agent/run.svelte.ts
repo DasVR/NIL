@@ -1,5 +1,6 @@
-import api, { type ChatRequest, type ChatResponse, type ToolApprove, type ToolRun } from '$lib/api';
-import type { ApprovalGrant, Finding, FindingSeverity, FindingStatus, Step, TokenUsage, ToolState, ToolStep } from './types';
+import api, { type ChatRequest, type ToolApprove, type ToolRun } from '$lib/api';
+import type { ApprovalGrant, Finding, Step, TokenUsage, ToolState, ToolStep } from './types';
+import { fromListedFinding, type ListedFinding } from '$lib/findings/display';
 import { fromApiUsage } from '$lib/usage/format';
 import { usageStore } from '$lib/usage/store.svelte.ts';
 
@@ -18,6 +19,7 @@ let sessionId = $state<string | null>(null);
 let startedAt = $state<number | null>(null);
 let toolIndex = 0;
 let queued = $state<QueuedTurn[]>([]);
+let engagementLog = $state<string[]>([]);
 
 function markRunning() {
   if (!running) startedAt = Date.now();
@@ -81,6 +83,7 @@ export const agentRun = {
   get sessionId() { return sessionId; },
   get startedAt() { return startedAt; },
   get queued() { return queued; },
+  get engagementLog() { return engagementLog; },
   get pendingApproval() {
     return steps.find((s): s is ToolStep => s.kind === 'tool' && s.state === 'pending') ?? null;
   },
@@ -94,6 +97,25 @@ export const agentRun = {
     startedAt = null;
     toolIndex = 0;
     queued = [];
+    engagementLog = [];
+  },
+
+  async loadEngagement(name: string) {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    try {
+      const [listed, timeline] = await Promise.all([
+        api.listFindings(trimmed),
+        api.getTimeline(trimmed),
+      ]);
+      const mapped = (listed.findings || []).map((row) => fromListedFinding(row as ListedFinding));
+      const live = findings.filter((f) => f.id.startsWith('finding-'));
+      const liveTitles = new Set(live.map((f) => f.title));
+      findings = [...mapped.filter((f) => !liveTitles.has(f.title)), ...live];
+      engagementLog = (timeline.timeline || '').split('\n').map((line) => line.trim()).filter(Boolean).slice(-80);
+    } catch {
+      // Backend down — keep whatever the current session already has.
+    }
   },
 
   stop() {
@@ -175,7 +197,10 @@ export const agentRun = {
       }];
 
       for (const raw of res.findings || []) {
-        agentRun.addFinding(fromApiFinding(raw));
+        agentRun.addFinding(fromListedFinding({
+          ...raw,
+          id: `finding-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        }));
       }
 
       const reason = stripFences(assistantText).slice(0, 280);
@@ -315,43 +340,3 @@ export const agentRun = {
     }];
   },
 };
-
-function fromApiFinding(raw: NonNullable<ChatResponse['findings']>[number]): Finding {
-  const severity = normalizeSeverity(raw.severity);
-  const status = normalizeStatus(raw.status);
-  return {
-    id: `finding-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-    title: raw.title || 'Finding',
-    severity,
-    status,
-    cvss: raw.cvss ?? null,
-    vector: raw.vector,
-    evidence: raw.evidence || '',
-    assessment: raw.assessment || '',
-    remediation: raw.remediation || '',
-  };
-}
-
-function normalizeSeverity(value: string | undefined): FindingSeverity {
-  switch (value) {
-    case 'critical':
-    case 'high':
-    case 'medium':
-    case 'low':
-    case 'info':
-      return value;
-    default:
-      return 'info';
-  }
-}
-
-function normalizeStatus(value: string | undefined): FindingStatus {
-  switch (value) {
-    case 'lead':
-    case 'confirmed':
-    case 'ruled_out':
-      return value;
-    default:
-      return 'lead';
-  }
-}

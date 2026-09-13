@@ -36,6 +36,7 @@
     soundStore.init();
     appState.setComposerFocus(() => composerInput?.focus());
     void refreshProject();
+    void workspace.refreshModels();
   });
 
   $effect(() => {
@@ -47,18 +48,26 @@
     if (!browser) return;
     const runningTool = agentRun.steps.find((s) => s.kind === 'tool' && s.state === 'running');
     if (runningTool && runningTool.kind === 'tool') {
+      if (workspace.dock?.kind === 'terminal') return;
       workspace.openDock({
         id: runningTool.id,
         title: runningTool.name,
-        kind: 'command',
+        kind: workspace.classifyDock(runningTool.name),
         status: 'running',
         output: runningTool.output || runningTool.primaryArg,
       });
       return;
     }
-    if (workspace.dock?.kind === 'command' && workspace.dock.status === 'running') {
+    if (workspace.dock && workspace.dock.kind !== 'terminal' && workspace.dock.status === 'running') {
       workspace.updateDock({ status: 'ok' });
     }
+  });
+
+  $effect(() => {
+    if (!browser) return;
+    const id = appState.activeEngagementId;
+    if (!id) return;
+    void agentRun.loadEngagement(id);
   });
 </script>
 

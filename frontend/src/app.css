@@ -224,7 +224,7 @@ body {
   cursor: pointer;
   transition: color var(--dur-flip) var(--ease-out),
     background var(--dur-flip) var(--ease-out),
-    transform 40ms var(--ease-out);
+    transform 70ms var(--ease-out);
   flex-shrink: 0;
 }
 .icon-btn:hover {
@@ -232,7 +232,8 @@ body {
   background: var(--nil-raised);
 }
 .icon-btn:active {
-  transform: scale(0.985);
+  transform: scale(0.955);
+  transition-duration: 70ms;
 }
 
 .btn-primary {
@@ -249,12 +250,23 @@ body {
   font-size: var(--t-meta);
   font-weight: 500;
   cursor: pointer;
-  transition: border-color var(--dur-flip) var(--ease-out),
-    background var(--dur-flip) var(--ease-out),
-    transform 40ms var(--ease-out);
+  transition: transform var(--dur-panel) var(--ease-spring),
+    border-color var(--dur-flip) var(--ease-out),
+    background-color var(--dur-flip) var(--ease-out),
+    box-shadow var(--dur-flip) var(--ease-out);
 }
-.btn-primary:hover { border-color: var(--nil-ink-3); background: var(--nil-panel); }
-.btn-primary:active { transform: scale(0.985); }
+.btn-primary:hover {
+  transform: translateY(-1px);
+  border-color: var(--nil-ink-3);
+  background: var(--nil-panel);
+  box-shadow: var(--lift-1);
+}
+.btn-primary:active {
+  transform: scale(0.955) translateY(0);
+  transition-duration: 70ms;
+  transition-timing-function: var(--ease-out);
+  box-shadow: none;
+}
 .btn-primary:disabled { opacity: 0.4; cursor: not-allowed; }
 
 .btn-ghost {
@@ -271,11 +283,60 @@ body {
   font-size: var(--t-meta);
   font-weight: 500;
   cursor: pointer;
-  transition: border-color var(--dur-flip) var(--ease-out),
-    background var(--dur-flip) var(--ease-out),
-    color var(--dur-flip) var(--ease-out);
+  transition: transform var(--dur-panel) var(--ease-spring),
+    border-color var(--dur-flip) var(--ease-out),
+    background-color var(--dur-flip) var(--ease-out),
+    color var(--dur-flip) var(--ease-out),
+    box-shadow var(--dur-flip) var(--ease-out);
 }
-.btn-ghost:hover { border-color: var(--nil-line-hot); color: var(--nil-ink); background: var(--nil-raised); }
+.btn-ghost:hover {
+  transform: translateY(-1px);
+  border-color: var(--nil-line-hot);
+  color: var(--nil-ink);
+  background: var(--nil-raised);
+  box-shadow: var(--lift-1);
+}
+.btn-ghost:active {
+  transform: scale(0.955) translateY(0);
+  transition-duration: 70ms;
+  transition-timing-function: var(--ease-out);
+  box-shadow: none;
+}
+
+@property --prism-angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+/* Composer focus ring — Law 1 exception (command deck only). Hex lives here
+   so svelte components stay token-clean; this is not a named palette color. */
+.nil-composer::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: var(--r-panel);
+  padding: 1px;
+  background: conic-gradient(from var(--prism-angle),
+    #00f0ff, #7000ff, #ffaa00, #4d7cff, #00f0ff);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  opacity: 0;
+  transition: opacity var(--dur-flip) var(--ease-out);
+  animation: nil-prism-spin 6s linear infinite;
+  animation-play-state: paused;
+  pointer-events: none;
+}
+.nil-composer:focus-within::before {
+  opacity: 1;
+  animation-play-state: running;
+}
+@keyframes nil-prism-spin { to { --prism-angle: 360deg; } }
+@media (prefers-reduced-motion: reduce) {
+  .nil-composer::before { animation: none; }
+}
 
 .shell-panel {
   display: flex;

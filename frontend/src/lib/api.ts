@@ -159,6 +159,14 @@ export interface UsageSummary {
   }>;
 }
 
+export interface ProviderInfo {
+  name: string;
+  model: string;
+  base_url: string;
+  enabled: boolean;
+  type: string;
+}
+
 export interface YoloToggle {
   engagement: string;
   enabled: boolean;
@@ -206,7 +214,10 @@ export const api = {
     engagement ? `/usage?engagement=${encodeURIComponent(engagement)}` : '/usage'
   ),
 
-  listFindings: () => apiFetch<{ findings: any[] }>('/findings'),
+  getProviders: () => apiFetch<{ resolved: ProviderInfo[] }>('/providers'),
+  listFindings: (engagement: string) => apiFetch<{ findings: Array<Record<string, unknown>> }>(
+    `/findings?engagement=${encodeURIComponent(engagement)}`,
+  ),
   getTimeline: (engagement: string) => apiFetch<{ timeline: string }>(`/timeline/${encodeURIComponent(engagement)}`),
 };
 

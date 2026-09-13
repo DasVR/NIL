@@ -52,7 +52,23 @@
     return out;
   }
 
-  const artifacts = $derived(artifactsFrom(agentRun.steps));
+  const artifacts = $derived.by(() => {
+    const fromSteps = artifactsFrom(agentRun.steps);
+    const seen = new Set(fromSteps.map((a) => a.id));
+    const extra: Artifact[] = [];
+    for (const finding of agentRun.findings) {
+      if (seen.has(finding.id)) continue;
+      const evidence = finding.evidence.trim();
+      if (!evidence) continue;
+      extra.push({
+        id: finding.id,
+        name: finding.title,
+        detail: evidence.slice(0, 160),
+        path: null,
+      });
+    }
+    return [...fromSteps, ...extra];
+  });
 
   function open(item: Artifact) {
     if (item.path) workspace.openFile(item.path);

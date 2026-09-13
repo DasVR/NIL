@@ -1,6 +1,7 @@
 import { appState } from '$lib/stores/appState.svelte.ts';
 import { workspace } from '$lib/stores/workspace.svelte.ts';
 import { refreshProject } from '$lib/project.svelte.ts';
+import { agentRun } from '$lib/agent/run.svelte.ts';
 
 interface PaletteCommand {
   id: string;
@@ -76,6 +77,16 @@ const commands: PaletteCommand[] = [
     section: 'View',
     icon: 'plug',
     action: () => workspace.openSide('mcp'),
+  },
+  {
+    id: 'refresh-findings',
+    label: 'Refresh findings',
+    section: 'Engagement',
+    icon: 'flag',
+    action: () => {
+      const id = appState.activeEngagementId;
+      if (id) void agentRun.loadEngagement(id);
+    },
   },
   {
     id: 'new-engagement',

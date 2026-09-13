@@ -6,7 +6,7 @@
 
   interface EventRow {
     id: string;
-    kind: 'you' | 'nil' | 'tool' | 'finding' | 'thought';
+    kind: 'you' | 'nil' | 'tool' | 'finding' | 'thought' | 'log';
     label: string;
   }
 
@@ -43,7 +43,15 @@
     }
   }
 
-  const events = $derived(agentRun.steps.map(rowFromStep));
+  const events = $derived.by(() => {
+    const fromSteps = agentRun.steps.map(rowFromStep);
+    if (fromSteps.length > 0) return fromSteps;
+    return agentRun.engagementLog.map((line, i) => ({
+      id: `log-${i}`,
+      kind: 'log' as const,
+      label: line,
+    }));
+  });
 
   function kindLabel(kind: EventRow['kind']): string {
     switch (kind) {
@@ -52,6 +60,7 @@
       case 'tool': return 'tool';
       case 'finding': return 'find';
       case 'thought': return 'tick';
+      case 'log': return 'log';
       default: {
         const _n: never = kind;
         return _n;
@@ -73,7 +82,7 @@
         <li>
           <div class="row nil-row-host" {@attach droplet}>
             <span class="kind">{kindLabel(ev.kind)}</span>
-            <span class="label" class:machine={ev.kind === 'tool'}>{ev.label}</span>
+            <span class="label" class:machine={ev.kind === 'tool' || ev.kind === 'log'}>{ev.label}</span>
           </div>
         </li>
       {/each}

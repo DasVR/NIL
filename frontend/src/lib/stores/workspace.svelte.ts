@@ -3,6 +3,7 @@ import { tabsStore } from '$lib/stores/tabsStore';
 import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
 import { agentRun, toolFilePath } from '$lib/agent/run.svelte.ts';
 import { project } from '$lib/project.svelte.ts';
+import api from '$lib/api';
 
 export type RailId = 'files' | 'terminal' | 'diffs' | 'pentest';
 export type WorkstationMode = 'build' | 'pentest';
@@ -52,7 +53,7 @@ export interface RecentSession {
   at: number;
 }
 
-const MODELS: ModelOption[] = [
+const FALLBACK_MODELS: ModelOption[] = [
   { id: 'default', name: 'Default', description: 'Whatever the harness is configured to use' },
   { id: 'fast', name: 'Fast', description: 'Lower latency, lighter reasoning' },
   { id: 'strong', name: 'Strong', description: 'Deeper reasoning for hard hunts and refactors' },
@@ -121,6 +122,7 @@ let pendingMode = $state<WorkstationMode | null>(null);
 let dock = $state<DockJob | null>(null);
 let dockLinger: ReturnType<typeof setTimeout> | null = null;
 let attached = $state<ContextFile[]>([]);
+let models = $state<ModelOption[]>(FALLBACK_MODELS);
 let modelId = $state('default');
 let effort = $state<'low' | 'medium' | 'high'>('medium');
 let dictationActive = $state(false);
@@ -172,6 +174,7 @@ function applyMode(next: WorkstationMode) {
     clarifyIndex = null;
     surface = 'stream';
     tabsStore.showStream();
+    if (appState.activeEngagementId) void agentRun.loadEngagement(appState.activeEngagementId);
   }
 }
 
@@ -227,6 +230,30 @@ function parseClarify(id: string): ClarifyId {
       return id;
     default:
       return 'other';
+  }
+}
+
+function classifyDock(name: string): DockJob['kind'] {
+  const n = name.toLowerCase();
+  if (/(^|[^a-z])(test|pytest|vitest|jest)([^a-z]|$)/.test(n)) return 'test';
+  if (/(build|compile|vite|webpack|cargo)/.test(n)) return 'build';
+  if (/(lint|ruff|eslint|clippy)/.test(n)) return 'lint';
+  return 'command';
+}
+
+async function refreshModels() {
+  try {
+    const res = await api.getProviders();
+    const resolved = res.resolved || [];
+    if (resolved.length === 0) return;
+    models = resolved.map((p) => ({
+      id: p.name,
+      name: p.model || p.name,
+      description: [p.type, p.enabled ? 'on' : 'off'].filter(Boolean).join(' · '),
+    }));
+    if (!models.some((m) => m.id === modelId)) modelId = models[0]?.id ?? 'default';
+  } catch {
+    // Keep the fallback list when the API is down.
   }
 }
 
@@ -465,7 +492,7 @@ export const workspace = {
   get pendingMode() { return pendingMode; },
   get dock() { return dock; },
   get attached() { return attached; },
-  get models() { return MODELS; },
+  get models() { return models; },
   get modelId() { return modelId; },
   set modelId(v: string) { modelId = v; },
   get effort() { return effort; },
@@ -479,7 +506,7 @@ export const workspace = {
   set dictationPaused(v: boolean) { dictationPaused = v; },
   get recents() { return recents; },
   get handoff() { return handoff; },
-  get model() { return MODELS.find((m) => m.id === modelId) ?? MODELS[0]; },
+  get model() { return models.find((m) => m.id === modelId) ?? models[0]; },
   selectRail,
   togglePin,
   openSide,
@@ -499,6 +526,8 @@ export const workspace = {
   detachFile,
   openFile,
   pinPath,
+  refreshModels,
+  classifyDock,
 };
 
 export function engagementFiles(): ContextFile[] {

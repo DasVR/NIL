@@ -248,7 +248,7 @@
   });
 </script>
 
-<div class="composer nil-scan" bind:this={composerEl} data-state={agentRun.running ? 'working' : undefined}>
+<div class="composer nil-scan nil-composer" bind:this={composerEl} data-state={agentRun.running ? 'working' : undefined}>
   {#if workspace.attached.length}
     <div class="chips" aria-label="Attached files">
       {#each workspace.attached as file (file.id)}
@@ -437,38 +437,6 @@
     z-index: var(--z-overlay);
   }
   .composer:focus-within { border-color: var(--nil-line-hot); }
-
-  @property --prism-angle {
-    syntax: "<angle>";
-    initial-value: 0deg;
-    inherits: false;
-  }
-  .composer::before {
-    content: "";
-    position: absolute;
-    inset: 0;
-    border-radius: var(--r-panel);
-    padding: 1px;
-    background: conic-gradient(from var(--prism-angle),
-      #00f0ff, #7000ff, #ffaa00, #4d7cff, #00f0ff);
-    -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    -webkit-mask-composite: xor;
-    mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
-    mask-composite: exclude;
-    opacity: 0;
-    transition: opacity var(--dur-flip) var(--ease-out);
-    animation: nil-prism-spin 6s linear infinite;
-    animation-play-state: paused;
-    pointer-events: none;
-  }
-  .composer:focus-within::before {
-    opacity: 1;
-    animation-play-state: running;
-  }
-  @keyframes nil-prism-spin { to { --prism-angle: 360deg; } }
-  @media (prefers-reduced-motion: reduce) {
-    .composer::before { animation: none; }
-  }
 
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {

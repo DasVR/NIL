@@ -9,6 +9,8 @@
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import type { Snippet } from 'svelte';
+  import { explainFinding, draftFinding } from '$lib/findings/actions';
+  import type { Finding } from '$lib/agent/types';
 
   let { emptyState }: { emptyState?: Snippet } = $props();
 
@@ -91,7 +93,11 @@
           <PreviewTab tab={activeFile} />
         {:else if activeFile.type === 'finding'}
           <div class="finding-detail-host">
-            <FindingCard finding={activeFile.data} />
+            <FindingCard
+              finding={activeFile.data as Finding}
+              onExplain={() => explainFinding(activeFile.data as Finding)}
+              onDraft={() => draftFinding(activeFile.data as Finding)}
+            />
           </div>
         {/if}
       </div>

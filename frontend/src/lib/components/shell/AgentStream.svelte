@@ -15,6 +15,7 @@
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import type { Snippet } from 'svelte';
+  import { explainFinding, draftFinding } from '$lib/findings/actions';
 
   let { emptyState }: { emptyState?: Snippet } = $props();
 
@@ -162,7 +163,7 @@
           {#if step.kind === 'tool'}
             <ToolBlock {step} />
           {:else if step.kind === 'finding'}
-            <FindingCard finding={{
+            {@const finding = {
               id: step.id,
               title: step.title,
               severity: step.severity,
@@ -172,7 +173,8 @@
               evidence: step.evidence,
               assessment: step.assessment,
               remediation: step.remediation,
-            }} />
+            }}
+            <FindingCard {finding} onExplain={() => explainFinding(finding)} onDraft={() => draftFinding(finding)} />
           {:else if step.kind === 'message'}
             <div class="msg" data-role={step.role}>
               {#if step.role === 'user'}
@@ -287,7 +289,7 @@
         hint="Almost done thinking…"
         items={statusItems}
       />
-      <button class="nil-halo stop" type="button" onclick={() => agentRun.stop()}>Stop</button>
+      <button class="nil-lift nil-halo stop" type="button" onclick={() => agentRun.stop()}>Stop</button>
     </div>
   {/if}
 </section>

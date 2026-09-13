@@ -351,6 +351,8 @@ dialog[open]::backdrop {
     scroll-behavior: auto !important;
   }
   .nil-lift:hover, .nil-lift:active, .nil-magnetic { transform: none; }
+  .btn-primary:hover, .btn-primary:active,
+  .btn-ghost:hover, .btn-ghost:active { transform: none; }
   .nil-scan[data-state="working"]::after { animation: none; background: var(--nil-ink-3); }
   [popover], dialog { transform: none; }
   .nil-trace path { stroke-dashoffset: 0; animation: none; }
