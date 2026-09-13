@@ -146,7 +146,7 @@
         <button
           type="button"
           class="split-handle"
-          aria-label="Resize stream and files"
+          aria-label="Resize agent and editor"
           onpointerdown={onSplitPointer}
           onkeydown={onSplitKey}
         ></button>

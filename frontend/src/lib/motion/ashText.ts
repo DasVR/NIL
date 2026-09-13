@@ -61,8 +61,8 @@ export function attachAsh(host: HTMLElement): AshHandle {
       shown = text;
       return;
     }
-    if (remaining > 120) {
-      const cut = text.length - 48;
+    if (remaining > 32) {
+      const cut = text.length - 24;
       host.textContent = text.slice(0, cut);
       shown = text.slice(0, cut);
     }
@@ -100,7 +100,7 @@ export function attachAsh(host: HTMLElement): AshHandle {
       }
       letter.style.color = color;
       const t0 = performance.now();
-      const D = 160;
+      const D = 90;
       const tick = (now: number) => {
         if (cancelled) {
           bits.forEach((b) => b.remove());
