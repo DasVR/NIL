@@ -179,14 +179,22 @@ const commands: PaletteCommand[] = [
 
 export const paletteStore = {
   get open() { return open; },
-  set open(v: boolean) { open = v; if (!v) query = ''; },
+  set open(v: boolean) {
+    open = v;
+    if (!v) query = '';
+    else void refreshProject();
+  },
   get query() { return query; },
   set query(v: string) { query = v; },
   get commands() { return commands; },
 
-  openPalette: () => { open = true; },
+  openPalette: () => { open = true; void refreshProject(); },
   closePalette: () => { open = false; query = ''; },
-  togglePalette: () => { open = !open; if (!open) query = ''; },
+  togglePalette: () => {
+    open = !open;
+    if (!open) query = '';
+    else void refreshProject();
+  },
 
   executeCommand: (id: string) => {
     const cmd = commands.find(c => c.id === id);
