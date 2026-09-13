@@ -85,6 +85,15 @@
     };
   });
 
+  const pickerAnchor = $derived.by(() => {
+    if (!modelOpen || !modelWrap) return null;
+    const r = modelWrap.getBoundingClientRect();
+    return {
+      right: `${Math.round(window.innerWidth - r.right)}px`,
+      bottom: `${Math.round(window.innerHeight - r.top + 6)}px`,
+    };
+  });
+
   const files = $derived.by(() => {
     const q = mentionQuery;
     let known = engagementFiles();
@@ -384,8 +393,14 @@
         {workspace.model.name}
         <NilIcon name="chevron-down" size={16} />
       </button>
-      {#if modelOpen}
-        <div class="picker" role="listbox" aria-label="Model">
+      {#if modelOpen && pickerAnchor}
+        <div
+          class="picker"
+          role="listbox"
+          aria-label="Model"
+          style:right={pickerAnchor.right}
+          style:bottom={pickerAnchor.bottom}
+        >
           {#each workspace.models as m (m.id)}
             <button
               class="pick"
@@ -599,10 +614,10 @@
     cursor: pointer;
   }
   .picker {
-    position: absolute;
-    right: 0;
-    bottom: calc(100% + 6px);
+    position: fixed;
     width: 260px;
+    max-height: min(360px, calc(100dvh - 8rem));
+    overflow: auto;
     background: var(--nil-raised);
     border: 1px solid var(--nil-line-hot);
     border-radius: var(--r-card);
