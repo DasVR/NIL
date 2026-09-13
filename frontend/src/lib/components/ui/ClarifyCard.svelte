@@ -35,6 +35,7 @@
   function choose(i: number) {
     selected = i;
     otherOpen = false;
+    onSelect?.(options[i]?.id ?? 'other');
   }
 
   function submit() {

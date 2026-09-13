@@ -18,8 +18,10 @@
     <span>{backendStatus}</span>
     <span class="div" aria-hidden="true"></span>
     <span class="mono">{sessionLabel}</span>
-    <span class="div" aria-hidden="true"></span>
-    <span>{workspace.workstationMode}</span>
+    {#if sessionLabel !== workspace.workstationMode}
+      <span class="div" aria-hidden="true"></span>
+      <span>{workspace.workstationMode}</span>
+    {/if}
     {#if agentRun.pendingApproval}
       <span class="div" aria-hidden="true"></span>
       <span>awaiting approval</span>
