@@ -162,8 +162,8 @@
                 <span class="prompt">&gt;</span>
               {/if}
               <div class="msg-body">
-                {#if step.role === 'assistant'}
-                  <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}><AshText text={step.text} /></p>
+                {#if step.role === 'assistant' && !step.failed && !step.interrupted}
+                  <p class="msg-text"><AshText text={step.text} /></p>
                 {:else}
                   <p class="msg-text" class:interrupted={step.interrupted} class:failed={step.failed}>{step.text}</p>
                 {/if}

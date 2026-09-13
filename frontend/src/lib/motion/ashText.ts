@@ -55,7 +55,7 @@ export function attachAsh(host: HTMLElement): AshHandle {
       }
       shown = shown.slice(0, cut);
     }
-    if (reduced() || !animate) {
+    if (reduced() || !animate || text.length - shown.length > 40) {
       host.textContent = text;
       shown = text;
       return;

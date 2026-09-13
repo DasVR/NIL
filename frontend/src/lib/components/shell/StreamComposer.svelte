@@ -31,6 +31,7 @@
   let chipLeaving = $state<string | null>(null);
   let pillEl: HTMLSpanElement | undefined = $state();
   let lastMode = $state<WorkstationMode>(workspace.workstationMode);
+  let composerEl: HTMLDivElement | undefined = $state();
 
   $effect(() => {
     if (!modelOpen) return;
@@ -73,6 +74,16 @@
           ? 'Describe the next hunt step'
           : 'Ask NIL to build, edit, or inspect files',
   );
+
+  const mentionAnchor = $derived.by(() => {
+    if (!mentionOpen || !composerEl) return null;
+    const r = composerEl.getBoundingClientRect();
+    return {
+      left: `${Math.round(r.left)}px`,
+      width: `${Math.round(r.width)}px`,
+      bottom: `${Math.round(window.innerHeight - r.top + 6)}px`,
+    };
+  });
 
   const files = $derived.by(() => {
     const q = mentionQuery;
@@ -229,7 +240,7 @@
   });
 </script>
 
-<div class="composer nil-scan" data-state={agentRun.running ? 'working' : undefined}>
+<div class="composer nil-scan" bind:this={composerEl} data-state={agentRun.running ? 'working' : undefined}>
   {#if workspace.attached.length}
     <div class="chips" aria-label="Attached files">
       {#each workspace.attached as file (file.id)}
@@ -296,8 +307,15 @@
     </button>
   </div>
 
-  {#if mentionOpen}
-    <div class="mentions" role="listbox" aria-label="Mention a file">
+  {#if mentionOpen && mentionAnchor}
+    <div
+      class="mentions"
+      role="listbox"
+      aria-label="Mention a file"
+      style:left={mentionAnchor.left}
+      style:width={mentionAnchor.width}
+      style:bottom={mentionAnchor.bottom}
+    >
       {#if files.length === 0}
         <div class="empty">Type a path to pin it</div>
       {:else}
@@ -521,10 +539,7 @@
   .send kbd { font: var(--t-micro)/1 var(--font-machine); color: var(--nil-ink-2); }
 
   .mentions {
-    position: absolute;
-    left: var(--s-3);
-    right: var(--s-3);
-    bottom: calc(100% - 8px);
+    position: fixed;
     background: var(--nil-raised);
     border: 1px solid var(--nil-line-hot);
     border-radius: var(--r-card);
