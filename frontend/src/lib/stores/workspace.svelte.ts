@@ -1,6 +1,7 @@
 import { tabsStore } from '$lib/stores/tabsStore';
 import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
 import { agentRun, toolFilePath } from '$lib/agent/run.svelte.ts';
+import { project } from '$lib/project.svelte.ts';
 
 export type RailId = 'files' | 'terminal' | 'diffs' | 'pentest';
 export type WorkstationMode = 'build' | 'pentest';
@@ -260,12 +261,33 @@ function closeDock() {
 }
 
 function attachFile(file: ContextFile) {
-  if (attached.some((f) => f.id === file.id)) return;
+  if (attached.some((f) => f.id === file.id || f.path === file.path)) return;
   attached = [...attached, file];
 }
 
 function detachFile(id: string) {
   attached = attached.filter((f) => f.id !== id);
+}
+
+function openFile(path: string, content?: string) {
+  const trimmed = path.trim();
+  if (!trimmed) return;
+  const label = trimmed.split('/').pop() || trimmed;
+  tabsStore.addTab({
+    id: `editor:${trimmed}`,
+    type: 'editor',
+    label,
+    dirty: false,
+    data: content !== undefined ? { path: trimmed, content } : { path: trimmed },
+  });
+}
+
+function pinPath(raw: string) {
+  const path = raw.trim().replace(/^@/, '');
+  if (!path) return;
+  const label = path.split('/').pop() || path;
+  attachFile({ id: `pin:${path}`, path, label });
+  openFile(path);
 }
 
 function togglePin() {
@@ -383,29 +405,40 @@ export const workspace = {
   closeDock,
   attachFile,
   detachFile,
+  openFile,
+  pinPath,
 };
 
 export function engagementFiles(): ContextFile[] {
   const list: ContextFile[] = [];
+  const seen = new Set<string>();
+
+  function push(file: ContextFile) {
+    if (seen.has(file.path)) return;
+    seen.add(file.path);
+    list.push(file);
+  }
+
+  for (const f of attached) push(f);
+  for (const f of project.files) push(f);
   for (const eng of appState.engagements) {
-    list.push({ id: `${eng.name}:scope`, path: `${eng.path || eng.name}/scope`, label: 'scope' });
-    list.push({ id: `${eng.name}:notes`, path: `${eng.path || eng.name}/notes`, label: 'notes' });
-    list.push({ id: `${eng.name}:findings`, path: `${eng.path || eng.name}/findings`, label: 'findings' });
-    list.push({ id: `${eng.name}:timeline`, path: `${eng.path || eng.name}/timeline`, label: 'timeline' });
+    const root = eng.path || eng.name;
+    push({ id: `${eng.name}:scope`, path: `${root}/scope`, label: 'scope' });
+    push({ id: `${eng.name}:notes`, path: `${root}/notes`, label: 'notes' });
+    push({ id: `${eng.name}:findings`, path: `${root}/findings`, label: 'findings' });
+    push({ id: `${eng.name}:timeline`, path: `${root}/timeline`, label: 'timeline' });
   }
   for (const tab of tabsStore.tabs) {
-    if (tab.type === 'editor') {
-      list.push({ id: `tab:${tab.id}`, path: tab.label, label: tab.label });
-    }
+    if (tab.type !== 'editor') continue;
+    const path = typeof tab.data?.path === 'string' ? tab.data.path : tab.label;
+    push({ id: `tab:${tab.id}`, path, label: tab.label });
   }
-  const seen = new Set(list.map((f) => f.path));
   for (const step of agentRun.steps) {
     if (step.kind !== 'tool') continue;
     const path = toolFilePath(step);
-    if (!path || seen.has(path)) continue;
-    seen.add(path);
+    if (!path) continue;
     const label = path.split('/').pop() || path;
-    list.push({ id: `tool:${step.id}`, path, label });
+    push({ id: `tool:${step.id}`, path, label });
   }
   return list;
 }

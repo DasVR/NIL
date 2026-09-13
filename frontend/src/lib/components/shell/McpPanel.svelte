@@ -1,20 +1,49 @@
 <script lang="ts">
   import ToggleRow from '$lib/ui/ToggleRow.svelte';
+  import { browser } from '$app/environment';
 
-  let servers = $state([
+  interface Server {
+    id: string;
+    name: string;
+    description: string;
+    on: boolean;
+  }
+
+  const KEY = 'nil.mcp.servers';
+
+  const DEFAULTS: Server[] = [
     { id: 'local', name: 'Local filesystem', description: 'Read workspace files', on: true },
     { id: 'github', name: 'GitHub', description: 'Issues, PRs, and checks', on: false },
-  ]);
+  ];
+
+  function load(): Server[] {
+    if (!browser) return DEFAULTS;
+    try {
+      const raw = localStorage.getItem(KEY);
+      if (!raw) return DEFAULTS;
+      const parsed = JSON.parse(raw) as unknown;
+      if (!Array.isArray(parsed)) return DEFAULTS;
+      return DEFAULTS.map((d) => {
+        const hit = parsed.find((s) => s && typeof s === 'object' && (s as Server).id === d.id) as Server | undefined;
+        return hit ? { ...d, on: Boolean(hit.on) } : d;
+      });
+    } catch {
+      return DEFAULTS;
+    }
+  }
+
+  let servers = $state<Server[]>(load());
 
   function toggle(id: string, on: boolean) {
     servers = servers.map((s) => (s.id === id ? { ...s, on } : s));
+    if (browser) localStorage.setItem(KEY, JSON.stringify(servers));
   }
 </script>
 
 <section class="pane" aria-label="MCP tools">
   <header class="head">
     <span class="eyebrow">MCP tools</span>
-    <p class="lede">Servers the agent can call. Toggle one off without disconnecting the rest.</p>
+    <p class="lede">Servers the agent can call. Toggle one off without disconnecting the rest. These toggles stay on this machine.</p>
   </header>
   {#each servers as s (s.id)}
     <ToggleRow

@@ -1,5 +1,6 @@
 import { appState } from '$lib/stores/appState.svelte.ts';
 import { workspace } from '$lib/stores/workspace.svelte.ts';
+import { refreshProject } from '$lib/project.svelte.ts';
 
 interface PaletteCommand {
   id: string;
@@ -40,6 +41,20 @@ const commands: PaletteCommand[] = [
       workspace.showStream();
       appState.focusComposer();
     },
+  },
+  {
+    id: 'open-files',
+    label: 'Open files rail',
+    section: 'View',
+    icon: 'folder',
+    action: () => workspace.openSide('targets'),
+  },
+  {
+    id: 'refresh-workspace',
+    label: 'Refresh workspace files',
+    section: 'View',
+    icon: 'refresh-cw',
+    action: () => { void refreshProject(); },
   },
   {
     id: 'open-source',

@@ -5,7 +5,6 @@
   import InlineDiff from '$lib/ui/InlineDiff.svelte';
   import NilIcon from '$lib/ui/NilIcon.svelte';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
-  import { tabsStore } from '$lib/stores/tabsStore';
   import { toolFilePath } from '$lib/agent/run.svelte.ts';
 
   interface Props {
@@ -67,14 +66,7 @@
   function openTouched() {
     const path = touchedFile;
     if (!path) return;
-    const name = path.split('/').pop() || path;
-    tabsStore.addTab({
-      id: `editor:${path}`,
-      type: 'editor',
-      label: name,
-      dirty: false,
-      data: { path },
-    });
+    workspace.openFile(path);
   }
 </script>
 

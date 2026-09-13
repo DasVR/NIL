@@ -3,6 +3,7 @@
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { tabsStore } from '$lib/stores/tabsStore';
+  import { project } from '$lib/project.svelte.ts';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
   import { usageStore } from '$lib/usage/store.svelte.ts';
 
@@ -35,6 +36,9 @@
   </div>
 
   <div class="cluster">
+    {#if project.git}
+      <span class="mono">{project.git.branch}</span>
+    {/if}
     {#if activeTab}
       <span class="mono">{activeTab.label}</span>
     {/if}

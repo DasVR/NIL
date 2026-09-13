@@ -23,6 +23,7 @@
   import { browser } from '$app/environment';
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
+  import { refreshProject } from '$lib/project.svelte.ts';
 
   let { children }: { children: Snippet } = $props();
 
@@ -34,6 +35,7 @@
     keymap.init();
     soundStore.init();
     appState.setComposerFocus(() => composerInput?.focus());
+    void refreshProject();
   });
 
   $effect(() => {

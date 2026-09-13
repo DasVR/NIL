@@ -22,6 +22,9 @@ async function apiFetch<T>(path: string, options: FetchOptions = {}): Promise<T>
 
   if (!res.ok) {
     let detail: any = await res.text();
+    if (typeof detail === 'string' && /^\s*</.test(detail)) {
+      throw new Error(`Backend unavailable (HTTP ${res.status}). Start the API, then send again.`);
+    }
     try { detail = JSON.parse(detail); } catch { /* keep string */ }
     throw new Error(typeof detail === 'string' ? detail : detail?.detail || `HTTP ${res.status}`);
   }

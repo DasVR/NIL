@@ -63,13 +63,20 @@
           : 'Ask NIL to build, edit, or inspect files',
   );
 
-  const files = $derived(
-    engagementFiles().filter((f) =>
+  const files = $derived.by(() => {
+    const known = engagementFiles().filter((f) =>
       mentionQuery
         ? f.path.toLowerCase().includes(mentionQuery) || f.label.toLowerCase().includes(mentionQuery)
         : true,
-    ),
-  );
+    );
+    if (!mentionQuery) return known.slice(0, 40);
+    const exact = known.some((f) => f.path.toLowerCase() === mentionQuery);
+    if (exact) return known.slice(0, 40);
+    return [
+      ...known.slice(0, 39),
+      { id: `pin:${mentionQuery}`, path: mentionQuery, label: mentionQuery },
+    ];
+  });
 
   function gateExit(node: HTMLElement) {
     const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -82,15 +89,23 @@
     };
   }
 
+  function composeTurn(text: string): string {
+    const chips = workspace.attached;
+    if (chips.length === 0) return text;
+    const list = chips.map((f) => `@${f.path}`).join(' ');
+    return `${text}\n\n${list}`;
+  }
+
   function send() {
     const text = input.trim();
     if (!text || gated) return;
     const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
     const engagement = appState.activeEngagementId || 'default';
+    const payload = composeTurn(text);
     if (agentRun.running) {
-      agentRun.queueFollowup(text, engagement, mode);
+      agentRun.queueFollowup(payload, engagement, mode);
     } else {
-      agentRun.sendMessage(text, engagement, mode);
+      agentRun.sendMessage(payload, engagement, mode);
     }
     input = '';
     mentionOpen = false;
@@ -270,7 +285,7 @@
   {#if mentionOpen}
     <div class="mentions" role="listbox" aria-label="Mention a file">
       {#if files.length === 0}
-        <div class="empty">No matching files</div>
+        <div class="empty">Type a path to pin it</div>
       {:else}
         {#each files as file, i (file.id)}
           <button

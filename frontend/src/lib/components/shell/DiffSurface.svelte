@@ -2,22 +2,25 @@
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import InlineDiff from '$lib/ui/InlineDiff.svelte';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
+  import { project } from '$lib/project.svelte.ts';
 
-  const branch = 'main';
-  const diff = $derived(workspace.diffText);
+  const branch = $derived(project.git?.branch ?? '');
+  const diff = $derived(workspace.diffText || project.git?.diff || '');
 </script>
 
 <section class="diffs" aria-label="Diffs">
   <header class="head">
-    <div class="branch">
-      <span class="name">{branch}</span>
-      <CopyAffordance value={branch} />
-    </div>
+    {#if branch}
+      <div class="branch">
+        <span class="name">{branch}</span>
+        <CopyAffordance value={branch} />
+      </div>
+    {/if}
   </header>
   {#if diff}
     <InlineDiff {diff} variant="page" />
   {:else}
-    <p class="empty">No diffs yet. Changes the agent makes to files will land here.</p>
+    <p class="empty">No diffs yet. Changes the agent makes to files, or uncommitted git changes, will land here.</p>
   {/if}
 </section>
 
