@@ -74,6 +74,23 @@ export async function readProjectFile(rel: string): Promise<string | null> {
   return data.content;
 }
 
+export async function writeProjectFile(rel: string, content: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${prefix()}/file`, {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+      body: JSON.stringify({ path: rel, content }),
+    });
+    if (!res.ok) return false;
+    const text = await res.text();
+    if (!text || /^\s*</.test(text)) return false;
+    const data = JSON.parse(text) as { ok?: boolean };
+    return Boolean(data.ok);
+  } catch {
+    return false;
+  }
+}
+
 export async function refreshProject(): Promise<void> {
   loading = true;
   const listed = await getJson<{ ok: boolean; files?: string[] }>('/files');

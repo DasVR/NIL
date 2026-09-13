@@ -158,6 +158,53 @@ function handle(root: string, base: string, req: IncomingMessage, res: ServerRes
     return true;
   }
 
+  if (pathname === '/__nil/file' && (req.method === 'PUT' || req.method === 'POST')) {
+    const chunks: Buffer[] = [];
+    req.on('data', (c) => {
+      chunks.push(Buffer.isBuffer(c) ? c : Buffer.from(c));
+    });
+    req.on('end', () => {
+      try {
+        const parsed = JSON.parse(Buffer.concat(chunks).toString('utf8')) as {
+          path?: string;
+          content?: string;
+        };
+        const rel = typeof parsed.path === 'string' ? parsed.path : '';
+        const content = typeof parsed.content === 'string' ? parsed.content : null;
+        if (content == null) {
+          json(res, 400, { ok: false, error: 'Missing content.' });
+          return;
+        }
+        if (content.length > MAX_READ) {
+          json(res, 413, { ok: false, error: 'File is too large to write here.' });
+          return;
+        }
+        const full = safePath(root, rel);
+        if (!full) {
+          json(res, 400, { ok: false, error: 'Path is outside the workspace.' });
+          return;
+        }
+        if (looksSecret(path.basename(full)) || BINARY_EXT.has(extOf(path.basename(full)))) {
+          json(res, 403, { ok: false, error: 'That file is not writable here.' });
+          return;
+        }
+        const parent = path.dirname(full);
+        if (!fs.existsSync(parent) || !fs.statSync(parent).isDirectory()) {
+          json(res, 404, { ok: false, error: 'Parent folder is not in the workspace.' });
+          return;
+        }
+        fs.writeFileSync(full, content, 'utf8');
+        json(res, 200, { ok: true, path: rel });
+      } catch (err) {
+        json(res, 400, { ok: false, error: err instanceof Error ? err.message : 'Write failed.' });
+      }
+    });
+    req.on('error', () => {
+      json(res, 400, { ok: false, error: 'Write failed.' });
+    });
+    return true;
+  }
+
   if (pathname === '/__nil/file') {
     const rel = query.get('path') ?? '';
     const full = safePath(root, rel);

@@ -76,6 +76,12 @@ function handleKeydown(e: KeyboardEvent) {
     return;
   }
 
+  if (mod && key === 's') {
+    e.preventDefault();
+    void workspace.saveActiveFile();
+    return;
+  }
+
   if (mod && key === 'w') {
     e.preventDefault();
     if (workspace.dock) {

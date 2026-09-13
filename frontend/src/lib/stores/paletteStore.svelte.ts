@@ -160,6 +160,14 @@ const commands: PaletteCommand[] = [
     action: () => { void appState.toggleYolo(); },
   },
   {
+    id: 'save-file',
+    label: 'Save file',
+    shortcut: 'Cmd+S',
+    section: 'View',
+    icon: 'save',
+    action: () => { void workspace.saveActiveFile(); },
+  },
+  {
     id: 'open-settings',
     label: 'Open settings',
     shortcut: 'Cmd+,',

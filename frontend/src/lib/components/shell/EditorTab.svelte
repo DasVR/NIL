@@ -12,6 +12,7 @@
   let editor: {
     dispose: () => void;
     setValue: (v: string) => void;
+    getValue: () => string;
     onDidChangeModelContent: (listener: () => void) => { dispose: () => void };
   } | undefined;
   let status = $state('');
@@ -124,6 +125,8 @@
       });
 
       editor.onDidChangeModelContent(() => {
+        const value = editor?.getValue() ?? '';
+        tabsStore.patchData(tab.id, { path, content: value });
         const current = tabsStore.tabs.find((t) => t.id === tab.id);
         if (current && !current.dirty) tabsStore.markDirty(tab.id, true);
       });
@@ -132,6 +135,7 @@
       if (disposed) return;
       if (text != null) {
         editor.setValue(text);
+        tabsStore.patchData(tab.id, { path, content: text });
         tabsStore.markDirty(tab.id, false);
         status = '';
       } else {
@@ -139,8 +143,19 @@
       }
     });
 
+    const onSaved = (e: Event) => {
+      const detail = (e as CustomEvent<{ path?: string; ok?: boolean }>).detail;
+      const current = typeof tab.data?.path === 'string' ? tab.data.path : tab.label;
+      if (detail?.path !== current) return;
+      status = detail.ok
+        ? 'Saved'
+        : 'Could not write this path from the workstation.';
+    };
+    window.addEventListener('nil:file-saved', onSaved);
+
     return () => {
       disposed = true;
+      window.removeEventListener('nil:file-saved', onSaved);
       editor?.dispose();
     };
   });

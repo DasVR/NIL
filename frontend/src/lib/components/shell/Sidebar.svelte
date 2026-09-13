@@ -2,6 +2,7 @@
   import { onMount } from 'svelte';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace, type RailId } from '$lib/stores/workspace.svelte.ts';
+  import { agentRun } from '$lib/agent/run.svelte.ts';
   import TargetTree from '$lib/components/shell/TargetTree.svelte';
   import FileExplorer from '$lib/components/shell/FileExplorer.svelte';
   import SourceControl from '$lib/components/shell/SourceControl.svelte';
@@ -103,7 +104,7 @@
         data-tip={item.label}
         onclick={() => clickRail(item.id)}
       >
-        {#if item.id === 'pentest' && workspace.workstationMode === 'pentest' && !active}
+        {#if item.id === 'pentest' && workspace.workstationMode === 'pentest' && agentRun.findings.length === 0 && agentRun.steps.length === 0}
           <span class="rain-slot" aria-hidden="true">
             <MatrixRain faint />
           </span>

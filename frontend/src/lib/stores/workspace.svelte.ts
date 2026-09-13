@@ -2,7 +2,7 @@ import { browser } from '$app/environment';
 import { tabsStore } from '$lib/stores/tabsStore';
 import { appState, type ComposerMode } from '$lib/stores/appState.svelte.ts';
 import { agentRun, toolFilePath } from '$lib/agent/run.svelte.ts';
-import { project } from '$lib/project.svelte.ts';
+import { project, writeProjectFile, refreshProject } from '$lib/project.svelte.ts';
 import api from '$lib/api';
 
 export type RailId = 'files' | 'terminal' | 'diffs' | 'pentest';
@@ -406,6 +406,26 @@ function pinPath(raw: string) {
   openFile(path);
 }
 
+async function saveActiveFile(): Promise<boolean> {
+  const id = tabsStore.activeTabId;
+  if (!id) return false;
+  const tab = tabsStore.tabs.find((t) => t.id === id);
+  if (!tab || tab.type !== 'editor') return false;
+  const filePath = typeof tab.data?.path === 'string' ? tab.data.path : tab.label;
+  const content = typeof tab.data?.content === 'string' ? tab.data.content : null;
+  if (!filePath || content == null) {
+    if (browser) window.dispatchEvent(new CustomEvent('nil:file-saved', { detail: { path: filePath, ok: false } }));
+    return false;
+  }
+  const ok = await writeProjectFile(filePath, content);
+  if (ok) {
+    tabsStore.markDirty(id, false);
+    void refreshProject();
+  }
+  if (browser) window.dispatchEvent(new CustomEvent('nil:file-saved', { detail: { path: filePath, ok } }));
+  return ok;
+}
+
 function togglePin() {
   railPinned = !railPinned;
   if (railPinned) activeRail = 'files';
@@ -566,6 +586,7 @@ export const workspace = {
   detachFile,
   openFile,
   pinPath,
+  saveActiveFile,
   refreshModels,
   classifyDock,
   exportReport,
