@@ -5,6 +5,7 @@
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import DitherWaterfall from '$lib/ui/DitherWaterfall.svelte';
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import NilMonogram from '$lib/components/ui/NilMonogram.svelte';
   import StreamComposer from '$lib/components/shell/StreamComposer.svelte';
 
   interface RecentRow {
@@ -66,6 +67,7 @@
   </div>
 
   <div class="hero">
+    <div class="mark" aria-hidden="true"><NilMonogram state="idle" size={56} /></div>
     <p class="kicker">nil</p>
     <h1 class="title">{greeting}.</h1>
     <p class="lede">Build software, or hunt a target. Same workstation, two modes.</p>
@@ -136,6 +138,7 @@
     max-width: 36rem;
     width: 100%;
   }
+  .mark { margin-block-end: var(--s-1); }
   .kicker {
     font: 600 var(--t-micro)/1 var(--font-machine);
     letter-spacing: var(--track-tick);
