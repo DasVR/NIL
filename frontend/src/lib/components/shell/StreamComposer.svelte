@@ -450,6 +450,14 @@
   {/if}
 
   <div class="row">
+    <div
+      class="composer-field"
+      role="combobox"
+      aria-label="Agent input"
+      aria-expanded={mentionOpen}
+      aria-haspopup="listbox"
+      aria-controls={mentionOpen ? mentionListId : undefined}
+    >
     <textarea
       id="agent-composer"
       bind:this={inputEl}
@@ -459,13 +467,12 @@
       rows="1"
       aria-label="Agent input"
       aria-autocomplete="list"
-      aria-expanded={mentionOpen}
-      aria-controls={mentionOpen ? mentionListId : undefined}
       aria-activedescendant={mentionOpen && files[mentionIndex] ? mentionOptionId(files[mentionIndex].id) : undefined}
       aria-live={workspace.dictationActive ? 'polite' : undefined}
       placeholder={placeholder}
       disabled={gated}
     ></textarea>
+    </div>
     <button
       class="icon-btn nil-lift nil-halo"
       type="button"
@@ -697,6 +704,11 @@
     display: flex;
     align-items: flex-end;
     gap: var(--s-2);
+  }
+  .composer-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
   }
   textarea {
     flex: 1;
