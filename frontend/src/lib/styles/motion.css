@@ -347,6 +347,48 @@ dialog[open]::backdrop {
   animation: nil-pulse-glow 2.4s var(--ease-mono) infinite;
 }
 
+/* ------------------------------------------------------------
+   20 · SHAKE — a rejected action, not a red border alone. A brief
+   horizontal shudder plus a momentary hot border on whatever surface
+   refused the action (an empty send, an unresolvable @-mention).
+   JS-driven: add/remove the class on the SAME element each time, even
+   on repeat rejections in a row — re-adding the class after a forced
+   reflow (or after the animationend event) is what makes it replay
+   instead of silently no-op the second time.
+   ------------------------------------------------------------ */
+@keyframes nil-shake-x {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(5px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+.nil-shake {
+  animation: nil-shake-x 0.38s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+  border-color: var(--brand-ember-500) !important;
+}
+
+/* ------------------------------------------------------------
+   21 · CHECK-DRAW — a completed action draws its checkmark in,
+   it doesn't pop or fade. Pairs with an SVG polyline carrying
+   pathLength="1" (normalizes dasharray math regardless of the
+   actual path geometry) — stroke-dashoffset transitions 1→0 the
+   moment [data-drawn="true"] lands, driven by a state change, not
+   a replayable class like SHAKE above (a tool call only completes
+   once, so a plain CSS transition on the attribute is enough).
+   ------------------------------------------------------------ */
+.nil-check-draw path, .nil-check-draw polyline {
+  stroke: var(--nil-ink);
+  stroke-width: 2.5;
+  fill: none;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset var(--dur-panel) var(--ease-out);
+}
+.nil-check-draw[data-drawn="true"] path, .nil-check-draw[data-drawn="true"] polyline { stroke-dashoffset: 0; }
+
 /* ============================================================
    REDUCED MOTION — non-negotiable.
    Kill loops and travel. Keep opacity and color so state changes
@@ -372,4 +414,6 @@ dialog[open]::backdrop {
   .nil-droplet { transition-duration: 0.01ms !important; }
   .nil-morph, .nil-morph[data-confirmed="true"] { transform: none; }
   .nil-pulse { animation: none; box-shadow: 0 0 0 1px color-mix(in oklab, var(--brand-ember-500) 40%, transparent); }
+  .nil-shake { animation: none; }
+  .nil-check-draw path, .nil-check-draw polyline { transition-duration: 0.01ms; }
 }
