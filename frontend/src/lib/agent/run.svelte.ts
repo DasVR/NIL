@@ -135,7 +135,15 @@ function appendAssistant(text: string, usage?: TokenUsage, failed = false) {
   }
   if (!t) return;
   const last = steps[steps.length - 1];
-  if (last?.kind === 'message' && last.role === 'assistant' && last.text === t) return;
+  if (last?.kind === 'message' && last.role === 'assistant' && last.text === t) {
+    // The WS chat.message usually finalizes the streamed placeholder before
+    // the HTTP result lands; the HTTP result is the one carrying usage.
+    if (usage && !last.usage) {
+      last.usage = usage;
+      steps = [...steps];
+    }
+    return;
+  }
   steps = [...steps, {
     kind: 'message',
     id: `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,

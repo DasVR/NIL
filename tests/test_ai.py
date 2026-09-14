@@ -15,7 +15,8 @@ from finn_pentest.ai.prompts import (
 from finn_pentest.ai.rag import index_engagement, search
 from finn_pentest.core.bootstrap import bootstrap
 from finn_pentest.core.engagements import create_engagement, write_notes
-from finn_pentest.providers.router import ChatResult
+from finn_pentest.core.events import subscribe, unsubscribe
+from finn_pentest.providers.router import AllProvidersExhausted, ChatResult
 from finn_pentest.tools.logger import log_finding
 
 
@@ -403,3 +404,59 @@ def test_run_turn_without_model_leaves_router_unpinned(finn_home):
     result = asyncio.run(run_turn("acme", "status", "chat", sess["id"], router=FakeRouter()))
     assert seen.get("model") is None
     assert result["requested_model"] is None
+
+
+def test_run_turn_publishes_chat_delta_per_token(finn_home):
+    bootstrap()
+    create_engagement("acme")
+    sess = create_session("acme", mode="chat")
+
+    class StreamingRouter:
+        async def stream_result(self, messages, on_delta, engagement=None, **kwargs):
+            for piece in ["Stay ", "in ", "scope."]:
+                await on_delta(piece)
+            return ChatResult(text="Stay in scope.", provider="fake", model="fake")
+
+        async def send(self, messages, engagement=None, **kwargs):
+            raise AssertionError("send() must not be called when streaming succeeds")
+
+    async def _run():
+        queue = subscribe()
+        try:
+            result = await run_turn("acme", "status", "chat", sess["id"], router=StreamingRouter())
+            events = []
+            while not queue.empty():
+                events.append(queue.get_nowait())
+            return result, events
+        finally:
+            unsubscribe(queue)
+
+    result, events = asyncio.run(_run())
+    deltas = [e for e in events if e["type"] == "chat.delta"]
+    assert [d["content"] for d in deltas] == ["Stay ", "in ", "scope."]
+    assert all(d["engagement"] == "acme" and d["session_id"] == sess["id"] for d in deltas)
+    final = [e for e in events if e["type"] == "chat.message"]
+    assert final and final[-1]["content"] == "Stay in scope."
+    # Deltas arrive before the authoritative full message.
+    assert events.index(deltas[-1]) < events.index(final[-1])
+    assert result["response"] == "Stay in scope."
+
+
+def test_run_turn_falls_back_to_send_when_streaming_is_exhausted(finn_home):
+    bootstrap()
+    create_engagement("acme")
+    sess = create_session("acme", mode="chat")
+    order = []
+
+    class FlakyRouter:
+        async def stream_result(self, messages, on_delta, engagement=None, **kwargs):
+            order.append("stream")
+            raise AllProvidersExhausted("stream_options rejected")
+
+        async def send(self, messages, engagement=None, **kwargs):
+            order.append("send")
+            return ChatResult(text="Stay in scope.", provider="fake", model="fake")
+
+    result = asyncio.run(run_turn("acme", "status", "chat", sess["id"], router=FlakyRouter()))
+    assert order == ["stream", "send"]
+    assert result["response"] == "Stay in scope."
