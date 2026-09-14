@@ -276,3 +276,78 @@ def test_router_pinned_provider_still_fails_over(finn_home, monkeypatch):
     )
     assert calls == ["secondary", "primary"]
     assert result.provider == "primary"
+
+
+def _fake_stream(monkeypatch, script):
+    """script: provider name -> list of deltas, or an exception to raise."""
+    calls = []
+
+    async def fake_stream(provider: ProviderConfig, messages, usage=None):
+        calls.append(provider.name)
+        plan = script[provider.name]
+        if isinstance(plan, Exception):
+            raise plan
+        for delta in plan:
+            yield delta
+        if usage is not None:
+            usage["prompt_tokens"] = 7
+            usage["completion_tokens"] = len(plan)
+
+    monkeypatch.setattr("finn_pentest.providers.router.stream_completion", fake_stream)
+    return calls
+
+
+def test_router_stream_result_delivers_deltas_then_full_text(finn_home, monkeypatch):
+    bootstrap()
+    _two_providers()
+    calls = _fake_stream(monkeypatch, {"primary": ["Hel", "lo", " world"], "secondary": ["x"]})
+    seen = []
+
+    async def on_delta(d):
+        seen.append(d)
+
+    router = AIRouter()
+    result = asyncio.run(
+        router.stream_result([{"role": "user", "content": "hi"}], on_delta, engagement="acme")
+    )
+    assert seen == ["Hel", "lo", " world"]
+    assert result.text == "Hello world"
+    assert result.provider == "primary"
+    assert result.prompt_tokens == 7
+    assert result.completion_tokens == 3
+    assert calls == ["primary"]
+
+
+def test_router_stream_result_fails_over_and_honors_pin(finn_home, monkeypatch):
+    bootstrap()
+    _two_providers()
+    calls = _fake_stream(
+        monkeypatch, {"secondary": RateLimitError("429"), "primary": ["ok"]}
+    )
+    seen = []
+
+    async def on_delta(d):
+        seen.append(d)
+
+    router = AIRouter()
+    result = asyncio.run(
+        router.stream_result(
+            [{"role": "user", "content": "hi"}], on_delta, engagement="acme", model="secondary"
+        )
+    )
+    assert calls == ["secondary", "primary"]
+    assert result.provider == "primary"
+    assert seen == ["ok"]
+
+
+def test_router_stream_result_exhausted(finn_home, monkeypatch):
+    bootstrap()
+    _two_providers()
+    _fake_stream(monkeypatch, {"primary": RateLimitError("429"), "secondary": RateLimitError("429")})
+
+    async def on_delta(d):
+        pass
+
+    router = AIRouter()
+    with pytest.raises(AllProvidersExhausted):
+        asyncio.run(router.stream_result([{"role": "user", "content": "hi"}], on_delta))
