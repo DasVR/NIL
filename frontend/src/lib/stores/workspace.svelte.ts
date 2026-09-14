@@ -60,10 +60,11 @@ export interface ReportCover {
   error?: string;
 }
 
+// Shown only until /v1/providers answers. One honest entry: "default" pins
+// nothing on the backend, so the harness's own priority order runs. The real
+// list (one row per configured provider) replaces this in refreshModels().
 const FALLBACK_MODELS: ModelOption[] = [
-  { id: 'default', name: 'Default', description: 'Whatever the harness is configured to use' },
-  { id: 'fast', name: 'Fast', description: 'Lower latency, lighter reasoning' },
-  { id: 'strong', name: 'Strong', description: 'Deeper reasoning for hard hunts and refactors' },
+  { id: 'default', name: 'Harness default', description: 'Provider priority order · real models load when the backend connects' },
 ];
 
 const RAIL_WIDTH = 48;

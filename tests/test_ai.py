@@ -363,3 +363,43 @@ def test_run_turn_recovers_once_on_refusal(finn_home):
     assert roles == ["hunt", "recover"]
     assert result["commands"] == ["nmap -T4 -F 10.0.0.1"]
     assert result["provider"] == "grok"
+
+
+def test_run_turn_forwards_model_and_reports_requested_model(finn_home):
+    bootstrap()
+    create_engagement("acme")
+    sess = create_session("acme", mode="chat")
+    seen = {}
+
+    class FakeRouter:
+        async def send(self, messages, engagement=None, **kwargs):
+            seen.update(kwargs)
+            return ChatResult(text="Stay in scope.", provider="secondary", model="m2")
+
+    result = asyncio.run(
+        run_turn(
+            "acme", "status", "chat", sess["id"],
+            router=FakeRouter(), model="secondary", effort="high",
+        )
+    )
+    assert seen.get("model") == "secondary"
+    assert result["provider"] == "secondary"
+    assert result["model"] == "m2"
+    assert result["requested_model"] == "secondary"
+    assert result["effort"] == "high"
+
+
+def test_run_turn_without_model_leaves_router_unpinned(finn_home):
+    bootstrap()
+    create_engagement("acme")
+    sess = create_session("acme", mode="chat")
+    seen = {}
+
+    class FakeRouter:
+        async def send(self, messages, engagement=None, **kwargs):
+            seen.update(kwargs)
+            return ChatResult(text="Stay in scope.", provider="fake", model="fake")
+
+    result = asyncio.run(run_turn("acme", "status", "chat", sess["id"], router=FakeRouter()))
+    assert seen.get("model") is None
+    assert result["requested_model"] is None
