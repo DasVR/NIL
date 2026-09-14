@@ -22,6 +22,21 @@
     if (step.state === 'error') open = true;
   });
 
+  // CHECK-DRAW (motion.css #21): a CSS transition can't animate a value it
+  // was already created with — if the SVG is first inserted with
+  // data-drawn="true" the moment step.state flips to 'ok', there's no
+  // "before" for stroke-dashoffset to transition FROM, so it would just
+  // appear fully drawn instantly. Mount at data-drawn="false" and flip it
+  // one frame later so there's an actual paint in between for the
+  // transition to animate across.
+  let checkDrawn = $state(false);
+  $effect(() => {
+    if (step.state !== 'ok') { checkDrawn = false; return; }
+    checkDrawn = false;
+    const raf = requestAnimationFrame(() => { checkDrawn = true; });
+    return () => cancelAnimationFrame(raf);
+  });
+
   const stateLabel = $derived(
     step.state === 'pending' ? 'pending'
       : step.state === 'running' ? 'running'
@@ -32,8 +47,8 @@
   const stateGlyph = $derived(
     step.state === 'pending' ? '·'
       : step.state === 'running' ? '›'
-      : step.state === 'ok' ? 'ok'
-      : 'err'
+      : step.state === 'error' ? 'err'
+      : ''
   );
 
   const resultText = $derived(step.error || step.output || JSON.stringify(step.args, null, 2) || '');
@@ -108,7 +123,13 @@
         {/if}
       </span>
       <span class="state" data-state={step.state}>
-        <span class="glyph">{stateGlyph}</span>
+        {#if step.state === 'ok'}
+          <svg class="glyph nil-check-draw" data-drawn={checkDrawn} width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+            <polyline points="4,13 9,18 20,6" pathLength="1" />
+          </svg>
+        {:else}
+          <span class="glyph">{stateGlyph}</span>
+        {/if}
         <span class="label">{stateLabel}</span>
       </span>
       <span class="dur">{durationLabel}</span>
@@ -220,6 +241,13 @@
      duration and spend columns left of the flex-end. */
   .state .glyph { width: 3ch; text-align: center; }
   .state .label { width: 7ch; }
+  .state svg.glyph {
+    display: inline-block;
+    width: 3ch;
+    height: 12px;
+    vertical-align: middle;
+    flex-shrink: 0;
+  }
 
   /* Duration metric: fixed right-aligned cell, blank but present when the run
      has no timing data — zero horizontal shift on reveal. */

@@ -156,9 +156,29 @@
     return `${text}\n\n${list}`;
   }
 
+  // SHAKE (motion.css #20): a rejected send — empty input, or gated on a
+  // pending approval — gets the shudder + hot-border rejection gesture
+  // instead of doing nothing. Re-triggerable on repeat rejections: remove
+  // the class, force a reflow, then re-add it, so a second empty Enter in a
+  // row still replays the animation rather than silently no-op'ing.
+  function rejectSend() {
+    const el = composerEl;
+    if (!el) return;
+    el.classList.remove('nil-shake');
+    void el.offsetWidth;
+    el.classList.add('nil-shake');
+    // Timeout, not animationend: reduced-motion sets animation:none on
+    // .nil-shake, so the event would never fire and the hot border would
+    // stick forever for those users. 380ms matches the keyframe duration.
+    setTimeout(() => el.classList.remove('nil-shake'), 380);
+  }
+
   function send() {
     const text = input.trim();
-    if (!text || gated) return;
+    if (!text || gated) {
+      rejectSend();
+      return;
+    }
     const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
     const engagement = appState.activeEngagementId || 'default';
     const payload = composeTurn(text);
