@@ -39,6 +39,7 @@
           class="eff nil-halo"
           class:on={workspace.effort === level}
           type="button"
+          aria-pressed={workspace.effort === level}
           onclick={() => (workspace.effort = level)}
         >{level}</button>
       {/each}

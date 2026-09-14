@@ -4,6 +4,7 @@
   import { droplet } from '$lib/motion/droplet';
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
   import { engagementFiles, workspace } from '$lib/stores/workspace.svelte.ts';
+  import { focusTrap } from '$lib/a11y/focusTrap';
 
   interface Props {
     open?: boolean;
@@ -24,6 +25,21 @@
 
   let inputRef: HTMLInputElement | undefined = $state();
   let selectedIndex = $state(0);
+
+  // Created once so the attachment identity is stable; it arms on mount of the
+  // dialog, moves focus to the search field, and hands focus back on close.
+  const trap = focusTrap({ initial: () => inputRef });
+
+  const uid = $props.id();
+  const listboxId = `${uid}-listbox`;
+  const statusId = `${uid}-status`;
+
+  function optionId(row: PaletteRow): string {
+    return `${uid}-opt-${row.id}`;
+  }
+  function sectionId(section: string): string {
+    return `${uid}-sec-${section.toLowerCase().replace(/\W+/g, '-')}`;
+  }
 
   function fileScore(path: string, label: string, q: string): number {
     const p = path.toLowerCase();
@@ -91,20 +107,60 @@
 
   let grouped = $derived(groupRows(rows));
 
+  const activeRow = $derived(rows[selectedIndex]);
+
+  // Screen-reader summary of the result set. Only re-announces when the count
+  // or the query changes, so arrowing through rows stays quiet (the active
+  // option is already spoken via aria-activedescendant).
+  const resultSummary = $derived.by(() => {
+    const n = rows.length;
+    if (n === 0) return 'No results';
+    const noun = n === 1 ? 'result' : 'results';
+    const q = paletteStore.query.trim();
+    return q ? `${n} ${noun} for ${q}` : `${n} ${noun}`;
+  });
+
+  function close() {
+    if (onToggle) onToggle(false);
+    else paletteStore.closePalette();
+  }
+
   function handleKeydown(e: KeyboardEvent) {
-    if (e.key === 'ArrowDown') {
-      e.preventDefault();
-      selectedIndex = Math.min(selectedIndex + 1, Math.max(0, rows.length - 1));
-    } else if (e.key === 'ArrowUp') {
-      e.preventDefault();
-      selectedIndex = Math.max(selectedIndex - 1, 0);
-    } else if (e.key === 'Enter') {
-      e.preventDefault();
-      rows[selectedIndex]?.run();
-    } else if (e.key === 'Escape') {
-      e.preventDefault();
-      paletteStore.closePalette();
+    const last = Math.max(0, rows.length - 1);
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        selectedIndex = Math.min(selectedIndex + 1, last);
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        selectedIndex = Math.max(selectedIndex - 1, 0);
+        break;
+      case 'Home':
+        e.preventDefault();
+        selectedIndex = 0;
+        break;
+      case 'End':
+        e.preventDefault();
+        selectedIndex = last;
+        break;
+      case 'Enter':
+        e.preventDefault();
+        activeRow?.run();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        close();
+        break;
     }
+  }
+
+  // Escape anywhere inside the dialog closes it, not only from the input, so
+  // the behaviour matches the global keymap whichever element has focus.
+  function handleDialogKeydown(e: KeyboardEvent) {
+    if (e.key !== 'Escape' || e.defaultPrevented) return;
+    e.preventDefault();
+    close();
   }
 
   function handleInput(e: Event) {
@@ -116,21 +172,34 @@
   $effect(() => {
     if (!open) return;
     selectedIndex = 0;
-    queueMicrotask(() => inputRef?.focus());
+  });
+
+  // Keep the active option in view while arrowing through a long result list.
+  $effect(() => {
+    const row = activeRow;
+    if (!open || !row) return;
+    document.getElementById(optionId(row))?.scrollIntoView({ block: 'nearest' });
   });
 </script>
 
 {#if open}
+  <!-- Pointer-only light-dismiss. tabindex="-1" keeps this invisible
+       full-viewport button out of the Tab cycle; keyboard users close with Escape. -->
   <button
     type="button"
     class="palette-overlay"
     aria-label="Close command palette"
-    onclick={() => { if (onToggle) onToggle(false); }}
+    tabindex="-1"
+    onclick={close}
   ></button>
   <div
     class="palette-window"
     role="dialog"
-    aria-label="Command Palette"
+    aria-modal="true"
+    aria-label="Command palette"
+    tabindex="-1"
+    onkeydown={handleDialogKeydown}
+    {@attach trap}
   >
     <DitherWipe mode="dissolve" />
     <div class="palette-header">
@@ -139,21 +208,26 @@
         <input
           bind:this={inputRef}
           type="text"
+          role="combobox"
           bind:value={paletteStore.query}
           oninput={handleInput}
           onkeydown={handleKeydown}
           placeholder="Type a command or search files..."
           aria-label="Command palette search"
-          aria-controls="palette-listbox"
-          aria-activedescendant={rows[selectedIndex] ? `cmd-${rows[selectedIndex].id}` : undefined}
+          aria-expanded="true"
+          aria-autocomplete="list"
+          aria-controls={listboxId}
+          aria-activedescendant={activeRow ? optionId(activeRow) : undefined}
           autocomplete="off"
           spellcheck="false"
         />
-        <kbd class="palette-hint">Cmd+K</kbd>
+        <kbd class="palette-hint" aria-hidden="true">Cmd+K</kbd>
       </div>
     </div>
 
-    <div id="palette-listbox" class="palette-results" role="listbox">
+    <div id={statusId} class="visually-hidden" role="status" aria-live="polite">{resultSummary}</div>
+
+    <div class="palette-results">
       {#if rows.length === 0}
         <div class="palette-empty">
           <NilIcon name="search" size={16} />
@@ -161,38 +235,43 @@
           <span>Try a different search</span>
         </div>
       {:else}
-        {#each grouped as group}
-          <div class="palette-section-header">{group.section}</div>
-          {#each group.commands as cmd}
-            {@const globalIdx = rows.indexOf(cmd)}
-            <!-- Focus stays on the search input (aria-activedescendant pattern above);
-                 these rows are never independently focusable, so no tabindex/keydown here. -->
-            <!-- svelte-ignore a11y_click_events_have_key_events -->
-            <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <!-- svelte-ignore a11y_interactive_supports_focus -->
-            <div
-              class="palette-item {globalIdx === selectedIndex ? 'selected' : ''}"
-              role="option"
-              aria-selected={globalIdx === selectedIndex}
-              id={`cmd-${cmd.id}`}
-              {@attach droplet}
-              onclick={() => cmd.run()}
-            >
-              <div class="palette-item-main">
-                <NilIcon name={cmd.icon} size={16} />
-                <span class="palette-item-copy">
-                  <span class="palette-item-label">{cmd.label}</span>
-                  {#if cmd.hint}
-                    <span class="palette-item-hint">{cmd.hint}</span>
+        <div id={listboxId} role="listbox" aria-label="Commands and files">
+          {#each grouped as group (group.section)}
+            <div class="palette-group" role="group" aria-labelledby={sectionId(group.section)}>
+              <div id={sectionId(group.section)} class="palette-section-header" role="presentation">{group.section}</div>
+              {#each group.commands as cmd}
+                {@const globalIdx = rows.indexOf(cmd)}
+                <!-- Focus stays on the search input (aria-activedescendant pattern above);
+                     these rows are never independently focusable, so no tabindex/keydown here. -->
+                <!-- svelte-ignore a11y_click_events_have_key_events -->
+                <!-- svelte-ignore a11y_no_static_element_interactions -->
+                <!-- svelte-ignore a11y_interactive_supports_focus -->
+                <div
+                  class="palette-item"
+                  class:selected={globalIdx === selectedIndex}
+                  role="option"
+                  aria-selected={globalIdx === selectedIndex}
+                  id={optionId(cmd)}
+                  {@attach droplet}
+                  onclick={() => cmd.run()}
+                >
+                  <div class="palette-item-main">
+                    <NilIcon name={cmd.icon} size={16} />
+                    <span class="palette-item-copy">
+                      <span class="palette-item-label">{cmd.label}</span>
+                      {#if cmd.hint}
+                        <span class="palette-item-hint">{cmd.hint}</span>
+                      {/if}
+                    </span>
+                  </div>
+                  {#if cmd.shortcut}
+                    <kbd class="palette-item-shortcut">{cmd.shortcut}</kbd>
                   {/if}
-                </span>
-              </div>
-              {#if cmd.shortcut}
-                <kbd class="palette-item-shortcut">{cmd.shortcut}</kbd>
-              {/if}
+                </div>
+              {/each}
             </div>
           {/each}
-        {/each}
+        </div>
       {/if}
     </div>
   </div>
@@ -347,7 +426,7 @@
     user-select: none;
   }
 
-  .palette-section-header:not(:first-child) {
+  .palette-group + .palette-group > .palette-section-header {
     margin-top: var(--s-2);
     border-top: 1px solid var(--nil-line);
     padding-top: var(--s-3);

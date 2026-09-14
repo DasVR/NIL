@@ -29,6 +29,11 @@
   let mentionIndex = $state(0);
   let modelOpen = $state(false);
   let modelWrap: HTMLDivElement | undefined = $state();
+  let modelBtn: HTMLButtonElement | undefined = $state();
+  let pickerEl: HTMLDivElement | undefined = $state();
+  const uid = $props.id();
+  const pickerId = `${uid}-model-menu`;
+  const effortLabelId = `${pickerId}-effort`;
   let chipLeaving = $state<string | null>(null);
   let pillEl: HTMLSpanElement | undefined = $state();
   let lastMode = $state<WorkstationMode>(workspace.workstationMode);
@@ -55,6 +60,71 @@
     window.addEventListener('pointerdown', close);
     return () => window.removeEventListener('pointerdown', close);
   });
+
+  // Menu-button pattern (WAI-ARIA APG): opening moves focus into the menu, on
+  // the checked model so Enter is a no-op rather than a surprise switch.
+  $effect(() => {
+    if (!modelOpen) return;
+    queueMicrotask(() => {
+      const items = menuItems();
+      (items.find((el) => el.getAttribute('aria-checked') === 'true') ?? items[0])?.focus();
+    });
+  });
+
+  function menuItems(): HTMLElement[] {
+    if (!pickerEl) return [];
+    return Array.from(pickerEl.querySelectorAll<HTMLElement>('[role^="menuitem"]'));
+  }
+
+  function closeModelMenu(returnFocus = true) {
+    modelOpen = false;
+    if (returnFocus) modelBtn?.focus();
+  }
+
+  function onMenuKey(e: KeyboardEvent) {
+    const items = menuItems();
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    const last = items.length - 1;
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        items[i >= last ? 0 : i + 1]?.focus();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        items[i <= 0 ? last : i - 1]?.focus();
+        break;
+      case 'Home':
+        e.preventDefault();
+        items[0]?.focus();
+        break;
+      case 'End':
+        e.preventDefault();
+        items[last]?.focus();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        e.stopPropagation();
+        closeModelMenu();
+        break;
+      case 'Tab':
+        // Menus don't hold Tab; let focus leave naturally and close behind it.
+        closeModelMenu(false);
+        break;
+    }
+  }
+
+  function pickModel(id: string) {
+    workspace.modelId = id;
+    closeModelMenu();
+  }
+
+  function openMoreModels() {
+    // Hand focus back to the trigger first so the settings sheet's focus trap
+    // records it and returns there when the sheet closes.
+    closeModelMenu();
+    appState.openSettings('ai');
+  }
 
   $effect(() => {
     const next = workspace.workstationMode;
@@ -492,8 +562,11 @@
       <button
         class="model nil-halo"
         type="button"
-        aria-haspopup="listbox"
+        bind:this={modelBtn}
+        aria-label={`Model: ${workspace.model.name}`}
+        aria-haspopup="menu"
         aria-expanded={modelOpen}
+        aria-controls={modelOpen ? pickerId : undefined}
         onclick={() => (modelOpen = !modelOpen)}
       >
         {workspace.model.name}
@@ -501,47 +574,54 @@
       </button>
       {#if modelOpen && pickerAnchor}
         <div
+          id={pickerId}
           class="picker"
-          role="listbox"
-          aria-label="Model"
+          role="menu"
+          aria-label="Model and effort"
+          tabindex="-1"
+          bind:this={pickerEl}
           style:right={pickerAnchor.right}
           style:bottom={pickerAnchor.bottom}
+          onkeydown={onMenuKey}
         >
           {#each workspace.models as m (m.id)}
             <button
               class="pick nil-halo"
               type="button"
-              role="option"
-              aria-selected={m.id === workspace.modelId}
+              role="menuitemradio"
+              aria-checked={m.id === workspace.modelId}
+              tabindex="-1"
               {@attach droplet}
-              onclick={() => { workspace.modelId = m.id; modelOpen = false; }}
+              onclick={() => pickModel(m.id)}
             >
               <span class="pick-name">{m.name}</span>
               <span class="pick-desc">{m.description}</span>
               {#if m.id === workspace.modelId}
-                <span class="check"><NilIcon name="check" size={16} /></span>
+                <span class="check" aria-hidden="true"><NilIcon name="check" size={16} /></span>
               {/if}
             </button>
           {/each}
-          <div class="divider"></div>
-          <div class="effort" role="group" aria-label="Effort">
-            <span>Effort</span>
+          <div class="divider" role="separator"></div>
+          <div class="effort" role="group" aria-labelledby={effortLabelId}>
+            <span id={effortLabelId}>Effort</span>
             {#each (['low', 'medium', 'high'] as const) as level}
               <button
-                class="eff"
+                class="eff nil-halo"
                 class:on={workspace.effort === level}
                 type="button"
+                role="menuitemradio"
+                aria-checked={workspace.effort === level}
+                tabindex="-1"
                 onclick={() => (workspace.effort = level)}
               >{level}</button>
             {/each}
           </div>
           <button
-            class="pick more"
+            class="pick more nil-halo"
             type="button"
-            onclick={() => {
-              modelOpen = false;
-              appState.openSettings('ai');
-            }}
+            role="menuitem"
+            tabindex="-1"
+            onclick={openMoreModels}
           >More models</button>
         </div>
       {/if}

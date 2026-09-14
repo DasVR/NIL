@@ -9,24 +9,37 @@
   }
 
   let { checked = false, label, description, onChange }: Props = $props();
+
+  const uid = $props.id();
+  const inputId = `${uid}-switch`;
+  const labelId = `${uid}-label`;
+  const descId = `${uid}-desc`;
 </script>
 
-<div class="row nil-row-host" class:on={checked} {@attach droplet}>
-  <div class="info">
-    <span class="label">{label}</span>
+<!-- The whole row is the <label>, so clicking the copy toggles too. The input
+     is a native checkbox exposed as a switch: its name is the label text only
+     (aria-labelledby), the description rides along as aria-describedby, so a
+     screen reader hears "YOLO mode, switch, off" rather than the whole row. -->
+<label class="row nil-row-host" class:on={checked} for={inputId} {@attach droplet}>
+  <span class="info">
+    <span class="label" id={labelId}>{label}</span>
     {#if description}
-      <span class="desc">{description}</span>
+      <span class="desc" id={descId}>{description}</span>
     {/if}
-  </div>
-  <label class="toggle">
+  </span>
+  <span class="toggle">
     <input
+      id={inputId}
       type="checkbox"
+      role="switch"
       {checked}
+      aria-labelledby={labelId}
+      aria-describedby={description ? descId : undefined}
       onchange={(e) => onChange?.(e.currentTarget.checked)}
     />
-    <span class="knob"></span>
-  </label>
-</div>
+    <span class="knob" aria-hidden="true"></span>
+  </span>
+</label>
 
 <style>
   .row {
@@ -37,6 +50,7 @@
     padding: var(--s-3) 0;
     border-bottom: 1px solid var(--nil-line);
     background: transparent;
+    cursor: pointer;
   }
   .info { display: flex; flex-direction: column; gap: 2px; min-width: 0; }
   .label {
