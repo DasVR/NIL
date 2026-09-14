@@ -155,7 +155,9 @@
   }
 
   .settings-sheet {
-    position: relative;
+    /* Fixed like the palette: as a relative box it sat in the app-shell's flex
+       column and squashed the workbench above it instead of floating over it. */
+    position: fixed;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
