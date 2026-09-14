@@ -605,7 +605,10 @@ export const agentRun = {
   },
 
   reject(id: string) {
-    api.rejectTool(id).catch(console.error);
+    // The denial is reflected in the UI immediately below; the backend call is
+    // best-effort, so a transport failure here is intentionally swallowed
+    // rather than surfaced as a console error.
+    void api.rejectTool(id).catch(() => undefined);
     const step = steps.find((s): s is ToolStep => s.kind === 'tool' && s.id === id);
     if (step) {
       step.state = 'error';

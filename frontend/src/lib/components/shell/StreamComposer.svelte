@@ -12,6 +12,7 @@
   import OnDeviceHint from '$lib/components/ui/OnDeviceHint.svelte';
   import { jelly } from '$lib/motion/jelly.ts';
   import { droplet } from '$lib/motion/droplet';
+  import { readProjectFile } from '$lib/project.svelte.ts';
   import { listenSpeech, playDictation, speechAvailable } from '$lib/motion/dictation.ts';
   import { cubicIn } from 'svelte/easing';
   import { untrack } from 'svelte';
@@ -149,11 +150,35 @@
     };
   }
 
-  function composeTurn(text: string): string {
-    const chips = workspace.attached;
+  // Per-file and total caps so a large attachment can't run away with the turn.
+  const ATTACH_MAX_PER_FILE = 16000;
+  const ATTACH_MAX_TOTAL = 60000;
+
+  function attachTarget(raw: string): string {
+    return raw.replace(/^@/, '').replace(/:\d+(?:-\d+)?$/, '');
+  }
+
+  // Send the real file contents through with the turn — not just a literal
+  // "@path" the backend never resolves. Anything that isn't a readable file
+  // (a pinned pseudo-path, or Tauri with no workspace bridge) falls back to a
+  // plain reference so the affordance never claims to have sent content it didn't.
+  async function composeTurn(text: string, chips: ContextFile[]): Promise<string> {
     if (chips.length === 0) return text;
-    const list = chips.map((f) => `@${f.path}`).join(' ');
-    return `${text}\n\n${list}`;
+    const blocks: string[] = [];
+    let budget = ATTACH_MAX_TOTAL;
+    for (const f of chips) {
+      const content = budget > 0 ? await readProjectFile(attachTarget(f.path)) : null;
+      if (content == null) {
+        blocks.push(`@${f.path}`);
+        continue;
+      }
+      const room = Math.min(ATTACH_MAX_PER_FILE, budget);
+      const truncated = content.length > room;
+      const body = truncated ? `${content.slice(0, room)}\n… (truncated)` : content;
+      budget -= body.length;
+      blocks.push(`Attached file ${f.path}:\n\`\`\`\n${body}\n\`\`\``);
+    }
+    return `${text}\n\n${blocks.join('\n\n')}`;
   }
 
   // SHAKE (motion.css #20): a rejected send — empty input, or gated on a
@@ -173,7 +198,7 @@
     setTimeout(() => el.classList.remove('nil-shake'), 380);
   }
 
-  function send() {
+  async function send() {
     const text = input.trim();
     if (!text || gated) {
       rejectSend();
@@ -181,7 +206,7 @@
     }
     const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
     const engagement = appState.activeEngagementId || 'default';
-    const payload = composeTurn(text);
+    const chips = [...workspace.attached];
     const extras = { model: workspace.modelId, effort: workspace.effort };
     workspace.dismissClarify();
     agentRun.dismissClarify();
@@ -190,6 +215,7 @@
     input = '';
     workspace.composerDraft = '';
     mentionOpen = false;
+    const payload = await composeTurn(text, chips);
     if (!workspace.sessionStarted) workspace.noteSession();
     if (agentRun.running) {
       agentRun.queueFollowup(payload, engagement, mode, extras);
