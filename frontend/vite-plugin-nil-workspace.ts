@@ -89,7 +89,11 @@ function walk(dir: string, rel: string, out: string[]): void {
   }
 }
 
-function safePath(root: string, rel: string): string | null {
+/**
+ * Path-traversal guard for every route that touches the filesystem. Exported
+ * for the unit tests only; nothing else should build workspace paths without it.
+ */
+export function safePath(root: string, rel: string): string | null {
   const decoded = rel.replace(/\\/g, '/').replace(/^\/+/, '');
   if (!decoded || decoded.includes('\0') || decoded.split('/').includes('..')) return null;
   const rootResolved = path.resolve(root);
