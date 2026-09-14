@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="900" viewBox="0 0 1440 900" role="img">
+  <title>NIL Empty State Wireframe</title>
+  <defs>
+    <style>
+      .sans { font-family: Inter, "SF Pro Text", system-ui, sans-serif; }
+      .mono { font-family: "JetBrains Mono", ui-monospace, monospace; }
+      .micro { font-family: Inter, system-ui, sans-serif; font-size: 11px; letter-spacing: 0.08em; text-transform: uppercase; fill: #55554f; }
+    </style>
+  </defs>
+  <rect x="0" y="0" width="1440" height="900" rx="0" fill="#050507" fill-opacity="1" />
+  <rect x="0" y="0" width="1440" height="40" rx="0" fill="#101016" fill-opacity="1" />
+  <rect x="0" y="0" width="1440" height="40" rx="0" fill="#452a84" fill-opacity="0.18" />
+  <circle cx="18" cy="20" r="5" fill="#ff5c5c" fill-opacity="0.7"/>
+  <circle cx="36" cy="20" r="5" fill="#ffb454" fill-opacity="0.7"/>
+  <circle cx="54" cy="20" r="5" fill="#00d992" fill-opacity="0.55"/>
+  <text x="78" y="25" class="sans" font-size="13" font-weight="700" fill="#a9b1f0" text-anchor="start">NIL</text>
+  <rect x="108" y="16" width="10" height="4" rx="2" fill="#fe6f69" fill-opacity="1" />
+  <text x="720" y="280" class="sans" font-size="64" font-weight="700" fill="#a9b1f0" text-anchor="middle">NIL</text>
+  <rect x="780" y="242" width="28" height="10" rx="4" fill="#fe6f69" fill-opacity="1" />
+  <text x="720" y="320" class="sans" font-size="18" font-weight="400" fill="#9a9a94" text-anchor="middle">What should we work on?</text>
+  <rect x="420" y="360" width="600" height="100" rx="10" fill="#101016" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="444" y="400" class="sans" font-size="13" font-weight="400" fill="#55554f" text-anchor="start">Describe a target, paste a scope, or pick a template…</text>
+  <rect x="444" y="420" width="52" height="22" rx="4" fill="#452a84" fill-opacity="1" />
+  <text x="470" y="435" class="mono" font-size="10" font-weight="600" fill="#f5f2ec" text-anchor="middle">HUNT</text>
+  <rect x="504" y="420" width="52" height="22" rx="4" fill="#16161d" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="530" y="435" class="mono" font-size="10" font-weight="400" fill="#9a9a94" text-anchor="middle">CHAT</text>
+  <rect x="564" y="420" width="52" height="22" rx="4" fill="#16161d" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="590" y="435" class="mono" font-size="10" font-weight="400" fill="#9a9a94" text-anchor="middle">CODE</text>
+  <rect x="616" y="420" width="64" height="22" rx="4" fill="#16161d" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="648" y="435" class="mono" font-size="10" font-weight="400" fill="#9a9a94" text-anchor="middle">REPORT</text>
+  <text x="420" y="520" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">TEMPLATES</text>
+  <rect x="420" y="536" width="140" height="64" rx="6" fill="#0a0a0e" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="436" y="564" class="sans" font-size="13" font-weight="600" fill="#e8e8e6" text-anchor="start">Web App</text>
+  <text x="436" y="584" class="sans" font-size="11" font-weight="400" fill="#55554f" text-anchor="start">HTTPS + forms</text>
+  <rect x="572" y="536" width="140" height="64" rx="6" fill="#0a0a0e" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="588" y="564" class="sans" font-size="13" font-weight="600" fill="#e8e8e6" text-anchor="start">API</text>
+  <text x="588" y="584" class="sans" font-size="11" font-weight="400" fill="#55554f" text-anchor="start">OpenAPI / GraphQL</text>
+  <rect x="724" y="536" width="140" height="64" rx="6" fill="#0a0a0e" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="740" y="564" class="sans" font-size="13" font-weight="600" fill="#e8e8e6" text-anchor="start">Mobile</text>
+  <text x="740" y="584" class="sans" font-size="11" font-weight="400" fill="#55554f" text-anchor="start">APK / IPA</text>
+  <rect x="876" y="536" width="140" height="64" rx="6" fill="#0a0a0e" fill-opacity="1" stroke="rgba(255,255,255,0.08)" stroke-width="1"/>
+  <text x="892" y="564" class="sans" font-size="13" font-weight="600" fill="#e8e8e6" text-anchor="start">Custom</text>
+  <text x="892" y="584" class="sans" font-size="11" font-weight="400" fill="#55554f" text-anchor="start">Blank scope</text>
+  <text x="420" y="640" class="sans" font-size="11" font-weight="500" fill="#55554f" text-anchor="start">RECENT</text>
+  <text x="420" y="664" class="mono" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">acme-corp  ·  last hunt 2d ago</text>
+  <text x="420" y="688" class="mono" font-size="12" font-weight="400" fill="#9a9a94" text-anchor="start">lab-sandbox  ·  yesterday</text>
+  <rect x="0" y="874" width="1440" height="26" rx="0" fill="#101016" fill-opacity="1" />
+  <text x="12" y="891" class="mono" font-size="11" font-weight="400" fill="#55554f" text-anchor="start">ready · no active engagement · press ⌘K</text>
+  <text x="12" y="864" class="sans" font-size="11" font-weight="400" fill="#55554f" text-anchor="start">02 Layouts  ·  Empty State (new workspace)</text>
+</svg>
