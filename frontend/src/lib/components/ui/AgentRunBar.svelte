@@ -7,6 +7,9 @@
   let statusOpen = $state(false);
   let now = $state(Date.now());
 
+  // Blocked on a person (pending approval or unanswered clarify), not on work.
+  const needsYou = $derived(Boolean(agentRun.pendingApproval || agentRun.clarify || workspace.clarify));
+
   $effect(() => {
     if (!agentRun.running) return;
     now = Date.now();
@@ -66,7 +69,13 @@
 </script>
 
 {#if agentRun.running}
-  <div class="runbar nil-scan" data-state="working">
+  <div class="runbar nil-scan" data-state={needsYou ? undefined : 'working'}>
+    {#if needsYou}
+      <span class="needs" aria-label="Waiting on you">
+        <span class="nil-ring" aria-hidden="true"></span>
+        <span class="needs-txt">Needs you</span>
+      </span>
+    {/if}
     <AgentStatus
       bind:open={statusOpen}
       summary={runningSummary}
@@ -95,6 +104,19 @@
     flex-shrink: 0;
   }
   .runbar :global(.status) { flex: 1; min-width: 0; }
+
+  .needs {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    flex-shrink: 0;
+  }
+  .needs-txt {
+    font: 600 var(--t-micro)/1 var(--font-ui);
+    letter-spacing: var(--track-tick);
+    text-transform: uppercase;
+    color: var(--nil-ink);
+  }
 
   .stop {
     height: 24px;
