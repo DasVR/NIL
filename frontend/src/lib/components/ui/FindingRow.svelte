@@ -1,6 +1,7 @@
 <script lang="ts">
-  import type { Finding, FindingSeverity } from '$lib/agent/types';
+  import type { Finding } from '$lib/agent/types';
   import { droplet } from '$lib/motion/droplet';
+  import { severityShape, severityToken } from '$lib/findings/display';
 
   interface Props {
     finding: Finding;
@@ -10,37 +11,26 @@
 
   let { finding, active = false, onSelect }: Props = $props();
 
-  function sevToken(s: FindingSeverity): string {
-    switch (s) {
-      case 'critical': return 'var(--sev-critical)';
-      case 'high': return 'var(--sev-high)';
-      case 'medium': return 'var(--sev-medium)';
-      case 'low': return 'var(--sev-low)';
-      case 'info': return 'var(--sev-info)';
-      default: {
-        const _n: never = s;
-        return _n;
-      }
-    }
-  }
-
   const cvssLabel = $derived(finding.cvss != null ? finding.cvss.toFixed(1) : '');
 </script>
 
+<!-- Severity rides on hue, the shape glyph (same set as FindingCard), and the
+     text label — never colour alone. -->
 <button
   type="button"
   class="row"
   class:active
-  style:--sev={sevToken(finding.severity)}
+  aria-current={active ? 'true' : undefined}
+  style:--sev={severityToken(finding.severity)}
   {@attach droplet}
   onclick={() => onSelect?.()}
 >
-  <span class="dot" aria-hidden="true"></span>
+  <span class="shape" aria-hidden="true">{severityShape(finding.severity)}</span>
   <span class="title">{finding.title}</span>
   <span class="meta">
-    <span class="sev">{finding.severity}</span>
+    <span class="sev">{finding.severity}<span class="visually-hidden"> severity</span></span>
     {#if cvssLabel}
-      <span class="cvss">{cvssLabel}</span>
+      <span class="cvss"><span class="visually-hidden">CVSS </span>{cvssLabel}</span>
     {/if}
   </span>
 </button>
@@ -71,12 +61,12 @@
     box-shadow: var(--lift-1);
   }
 
-  .dot {
-    width: 6px;
-    height: 6px;
-    border-radius: 50%;
-    background: var(--sev);
+  .shape {
+    inline-size: 10px;
     flex-shrink: 0;
+    font: var(--t-micro)/1 var(--font-machine);
+    color: var(--sev);
+    text-align: center;
   }
 
   .title {

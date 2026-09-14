@@ -1,6 +1,10 @@
 <script lang="ts">
   import { appState } from '$lib/stores/appState.svelte.ts';
   import ToggleRow from '$lib/ui/ToggleRow.svelte';
+
+  const uid = $props.id();
+  const sidebarId = `${uid}-sidebar-width`;
+  const inspectorId = `${uid}-inspector-width`;
 </script>
 
 <div class="settings-pane">
@@ -24,11 +28,13 @@
     <h4>Density</h4>
     <div class="setting-row">
       <div class="setting-info">
-        <span class="setting-label">Sidebar width</span>
-        <span class="setting-desc">Left rail width in pixels</span>
+        <label class="setting-label" for={sidebarId}>Sidebar width</label>
+        <span class="setting-desc" id={`${sidebarId}-desc`}>Left rail width in pixels</span>
       </div>
       <div class="setting-control">
         <input
+          id={sidebarId}
+          aria-describedby={`${sidebarId}-desc`}
           type="number"
           min="200"
           max="400"
@@ -40,11 +46,13 @@
     </div>
     <div class="setting-row">
       <div class="setting-info">
-        <span class="setting-label">Inspector width</span>
-        <span class="setting-desc">Right inspector width in pixels</span>
+        <label class="setting-label" for={inspectorId}>Inspector width</label>
+        <span class="setting-desc" id={`${inspectorId}-desc`}>Right inspector width in pixels</span>
       </div>
       <div class="setting-control">
         <input
+          id={inspectorId}
+          aria-describedby={`${inspectorId}-desc`}
           type="number"
           min="240"
           max="500"
