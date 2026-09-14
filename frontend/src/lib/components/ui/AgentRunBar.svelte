@@ -1,14 +1,18 @@
 <script lang="ts">
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import AgentStatus from '$lib/components/ui/AgentStatus.svelte';
+  import AgentGlyph from '$lib/components/ui/AgentGlyph.svelte';
+  import { agentPhase } from '$lib/agent/phase';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
 
   let statusOpen = $state(false);
   let now = $state(Date.now());
 
-  // Blocked on a person (pending approval or unanswered clarify), not on work.
-  const needsYou = $derived(Boolean(agentRun.pendingApproval || agentRun.clarify || workspace.clarify));
+  // thinking / editing / running / needs-you while the bar is up. SCANLINE
+  // stays the "working" loop; it yields only to needs-you so there is never
+  // more than one attention object in the bar.
+  const phase = $derived(agentPhase());
 
   $effect(() => {
     if (!agentRun.running) return;
@@ -69,13 +73,8 @@
 </script>
 
 {#if agentRun.running}
-  <div class="runbar nil-scan" data-state={needsYou ? undefined : 'working'}>
-    {#if needsYou}
-      <span class="needs" aria-label="Waiting on you">
-        <span class="nil-ring" aria-hidden="true"></span>
-        <span class="needs-txt">Needs you</span>
-      </span>
-    {/if}
+  <div class="runbar nil-scan" data-state={phase === 'needs-you' ? undefined : 'working'}>
+    <AgentGlyph label />
     <AgentStatus
       bind:open={statusOpen}
       summary={runningSummary}
@@ -104,19 +103,6 @@
     flex-shrink: 0;
   }
   .runbar :global(.status) { flex: 1; min-width: 0; }
-
-  .needs {
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    flex-shrink: 0;
-  }
-  .needs-txt {
-    font: 600 var(--t-micro)/1 var(--font-ui);
-    letter-spacing: var(--track-tick);
-    text-transform: uppercase;
-    color: var(--nil-ink);
-  }
 
   .stop {
     height: 24px;
