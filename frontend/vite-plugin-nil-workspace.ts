@@ -98,6 +98,10 @@ function safePath(root: string, rel: string): string | null {
   return full;
 }
 
+function ghAvailable(root: string): boolean {
+  return run('gh', ['--version'], root) != null;
+}
+
 function run(cmd: string, args: string[], cwd: string): string | null {
   try {
     return execFileSync(cmd, args, {
@@ -256,7 +260,10 @@ function handle(root: string, base: string, req: IncomingMessage, res: ServerRes
       diff = diff.slice(0, MAX_DIFF);
       truncated = true;
     }
-    const ciRaw = run('gh', ['run', 'list', '--limit', '8', '--json', 'name,status,conclusion,headBranch,url,displayTitle'], root);
+    const ghOk = ghAvailable(root);
+    const ciRaw = ghOk
+      ? run('gh', ['run', 'list', '--limit', '8', '--json', 'name,status,conclusion,headBranch,url,displayTitle'], root)
+      : null;
     const { ci, ciLoaded } = parseCi(ciRaw, branch);
     json(res, 200, {
       ok: true,
@@ -270,6 +277,7 @@ function handle(root: string, base: string, req: IncomingMessage, res: ServerRes
       truncated,
       ci,
       ciLoaded,
+      ghAvailable: ghOk,
     });
     return true;
   }
@@ -281,14 +289,16 @@ function handle(root: string, base: string, req: IncomingMessage, res: ServerRes
       json(res, 200, { ok: true, github: false });
       return true;
     }
-    const prRaw = run('gh', ['pr', 'list', '--repo', repo, '--limit', '8', '--json', 'number,title,url,state'], root);
-    const issueRaw = run('gh', ['issue', 'list', '--repo', repo, '--limit', '8', '--json', 'number,title,url,state'], root);
+    const ghOk = ghAvailable(root);
+    const prRaw = ghOk ? run('gh', ['pr', 'list', '--repo', repo, '--limit', '8', '--json', 'number,title,url,state'], root) : null;
+    const issueRaw = ghOk ? run('gh', ['issue', 'list', '--repo', repo, '--limit', '8', '--json', 'number,title,url,state'], root) : null;
     json(res, 200, {
       ok: true,
       github: true,
       repo,
       pullRequests: prRaw ? JSON.parse(prRaw) : null,
       issues: issueRaw ? JSON.parse(issueRaw) : null,
+      ghAvailable: ghOk,
     });
     return true;
   }

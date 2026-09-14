@@ -77,8 +77,10 @@
             </button>
           {:else if git.ciLoaded}
             No workflow runs on this branch yet.
+          {:else if git.ghAvailable}
+            CI status couldn't be loaded from gh.
           {:else}
-            gh is not available, so CI was not loaded.
+            GitHub CLI (gh) not found — install it to see CI status.
           {/if}
         </dd>
       </div>

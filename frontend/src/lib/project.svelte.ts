@@ -29,6 +29,7 @@ export interface GitSnapshot {
   diff: string;
   ci: GitCi | null;
   ciLoaded: boolean;
+  ghAvailable: boolean;
 }
 
 export interface GithubItem {
@@ -42,6 +43,7 @@ export interface GithubSnapshot {
   repo: string;
   pullRequests: GithubItem[] | null;
   issues: GithubItem[] | null;
+  ghAvailable: boolean;
 }
 
 export interface McpServer {
@@ -150,6 +152,7 @@ export async function refreshProject(): Promise<void> {
     diff?: string;
     ci?: GitCi | null;
     ciLoaded?: boolean;
+    ghAvailable?: boolean;
   }>('/git');
   git = gitRaw?.ok && gitRaw.git && gitRaw.branch
     ? {
@@ -161,6 +164,7 @@ export async function refreshProject(): Promise<void> {
         diff: gitRaw.diff ?? '',
         ci: gitRaw.ci ?? null,
         ciLoaded: Boolean(gitRaw.ciLoaded),
+        ghAvailable: gitRaw.ghAvailable !== false,
       }
     : null;
 
@@ -170,12 +174,14 @@ export async function refreshProject(): Promise<void> {
     repo?: string;
     pullRequests?: GithubItem[] | null;
     issues?: GithubItem[] | null;
+    ghAvailable?: boolean;
   }>('/github');
   github = ghRaw?.ok && ghRaw.github && ghRaw.repo
     ? {
         repo: ghRaw.repo,
         pullRequests: ghRaw.pullRequests ?? null,
         issues: ghRaw.issues ?? null,
+        ghAvailable: ghRaw.ghAvailable !== false,
       }
     : null;
 
