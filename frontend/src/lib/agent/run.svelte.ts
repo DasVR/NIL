@@ -235,6 +235,14 @@ function ingestHttpResult(res: ChatResponse, engagement?: string) {
   const assistantText = chatText(res);
   appendAssistant(assistantText, usage ?? undefined);
 
+  // A picked model is a preference with failover, never a hard requirement.
+  // When the harness ran on something else, say so in the stream instead of
+  // letting the picker imply the pick was honored.
+  const requested = res.requested_model;
+  if (requested && res.provider && requested !== res.provider && requested !== res.model) {
+    appendThought(`Requested ${requested} was not available; this turn ran on ${res.provider}${res.model ? ` (${res.model})` : ''}.`);
+  }
+
   for (const raw of res.findings || []) {
     const title = raw.title || 'Finding';
     if (findings.some((f) => f.title === title)) continue;
