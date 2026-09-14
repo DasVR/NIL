@@ -2,7 +2,7 @@
 // Production builds are served by the same FastAPI app they talk to (see
 // shipped_web_dir() in finn_pentest/core/config.py), so a relative path
 // always reaches the right origin. Vite dev/preview proxy /v1 to :8766.
-const API_BASE = import.meta.env.VITE_API_BASE || '/v1';
+export const API_BASE = import.meta.env.VITE_API_BASE || '/v1';
 
 interface FetchOptions extends RequestInit {
   body?: any;
