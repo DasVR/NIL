@@ -14,4 +14,4 @@
   let { name, size = 16, class: className }: Props = $props();
 </script>
 
-<Icon icon={`lucide:${name}`} width={size} height={size} class={className} />
+<Icon icon={`lucide:${name}`} width={size} height={size} class={className} aria-hidden="true" />

@@ -1,6 +1,6 @@
 <script lang="ts">
-  import type { Finding, FindingSeverity, FindingStatus } from '$lib/agent/types';
-  import { formatCvss, findingConfirmed } from '$lib/findings/display';
+  import type { Finding, FindingStatus } from '$lib/agent/types';
+  import { formatCvss, findingConfirmed, severityShape, severityToken } from '$lib/findings/display';
   import { scramble } from '$lib/motion/scramble.svelte.ts';
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
 
@@ -12,33 +12,8 @@
 
   let { finding, onExplain, onDraft }: Props = $props();
 
-  function sevToken(s: FindingSeverity): string {
-    switch (s) {
-      case 'critical': return 'var(--sev-critical)';
-      case 'high': return 'var(--sev-high)';
-      case 'medium': return 'var(--sev-medium)';
-      case 'low': return 'var(--sev-low)';
-      case 'info': return 'var(--sev-info)';
-      default: {
-        const _n: never = s;
-        return _n;
-      }
-    }
-  }
-
-  function sevShape(s: FindingSeverity): string {
-    switch (s) {
-      case 'critical': return '■';
-      case 'high': return '▲';
-      case 'medium': return '●';
-      case 'low': return '◆';
-      case 'info': return '○';
-      default: {
-        const _n: never = s;
-        return _n;
-      }
-    }
-  }
+  const uid = $props.id();
+  const titleId = `${uid}-title`;
 
   function statusLabel(s: FindingStatus): string {
     switch (s) {
@@ -56,19 +31,30 @@
   const confirmed = $derived(findingConfirmed(status));
   const cvssLabel = $derived(formatCvss(finding.cvss));
   const chipText = $derived(confirmed ? finding.severity : statusLabel(status));
-  const tone = $derived(confirmed ? sevToken(finding.severity) : 'var(--nil-ink-3)');
+  const tone = $derived(confirmed ? severityToken(finding.severity) : 'var(--nil-ink-3)');
 </script>
 
-<article class="finding" class:confirmed data-status={status} data-cvss={cvssLabel} style:--sev={tone}>
+<!-- Severity is carried three ways: hue (--sev), shape glyph, and the chip's
+     text label. Unconfirmed leads deliberately drop hue and shape — the chip
+     then reads the status word instead, so nothing is ranked before evidence. -->
+<article
+  class="finding"
+  class:confirmed
+  data-status={status}
+  data-cvss={cvssLabel}
+  style:--sev={tone}
+  aria-labelledby={titleId}
+>
   <header class="lead">
-    <span class="chip" title={chipText}>
+    <span class="chip">
       {#if confirmed}
-        <span class="shape" aria-hidden="true">{sevShape(finding.severity)}</span>
+        <span class="shape" aria-hidden="true">{severityShape(finding.severity)}</span>
       {/if}
       <span class="sev-label">{chipText}</span>
+      {#if confirmed}<span class="visually-hidden"> severity</span>{/if}
     </span>
-    <span class="cvss nil-scramble" {@attach scramble(() => cvssLabel)}>
-      {cvssLabel}
+    <span class="cvss">
+      <span class="visually-hidden">CVSS </span><span class="nil-scramble" {@attach scramble(() => cvssLabel)}>{cvssLabel}</span>
     </span>
     {#if finding.vector}
       <span class="vector">{finding.vector}</span>
@@ -77,7 +63,7 @@
   </header>
 
   <div class="title-row">
-    <h3 class="title">{finding.title}</h3>
+    <h3 class="title" id={titleId}>{finding.title}</h3>
     <CopyAffordance value={finding.title} />
   </div>
 

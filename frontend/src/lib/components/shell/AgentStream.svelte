@@ -80,7 +80,7 @@
   });
 </script>
 
-<section class="stream" aria-label="Agent stream">
+<section id="agent-stream" class="stream" aria-label="Agent stream">
   {#if handoffPlay > 0}
     {#key handoffPlay}
       <div class="handoff" aria-hidden="true">

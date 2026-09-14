@@ -194,6 +194,24 @@ body {
   outline-offset: 2px;
 }
 
+.skip-link {
+  position: fixed;
+  inset-inline-start: var(--s-3);
+  inset-block-start: var(--s-3);
+  z-index: var(--z-cursor);
+  padding: 6px 10px;
+  background: var(--nil-raised);
+  color: var(--nil-ink);
+  border: 1px solid var(--nil-line-hot);
+  border-radius: var(--r-field);
+  font: 500 var(--t-meta)/1 var(--font-ui);
+  text-decoration: none;
+  transform: translateY(-160%);
+}
+.skip-link:focus-visible {
+  transform: none;
+}
+
 .visually-hidden {
   position: absolute;
   width: 1px;

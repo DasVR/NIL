@@ -135,7 +135,15 @@ function appendAssistant(text: string, usage?: TokenUsage, failed = false) {
   }
   if (!t) return;
   const last = steps[steps.length - 1];
-  if (last?.kind === 'message' && last.role === 'assistant' && last.text === t) return;
+  if (last?.kind === 'message' && last.role === 'assistant' && last.text === t) {
+    // The WS chat.message usually finalizes the streamed placeholder before
+    // the HTTP result lands; the HTTP result is the one carrying usage.
+    if (usage && !last.usage) {
+      last.usage = usage;
+      steps = [...steps];
+    }
+    return;
+  }
   steps = [...steps, {
     kind: 'message',
     id: `assistant-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
@@ -234,6 +242,14 @@ function ingestHttpResult(res: ChatResponse, engagement?: string) {
 
   const assistantText = chatText(res);
   appendAssistant(assistantText, usage ?? undefined);
+
+  // A picked model is a preference with failover, never a hard requirement.
+  // When the harness ran on something else, say so in the stream instead of
+  // letting the picker imply the pick was honored.
+  const requested = res.requested_model;
+  if (requested && res.provider && requested !== res.provider && requested !== res.model) {
+    appendThought(`Requested ${requested} was not available; this turn ran on ${res.provider}${res.model ? ` (${res.model})` : ''}.`);
+  }
 
   for (const raw of res.findings || []) {
     const title = raw.title || 'Finding';
@@ -589,7 +605,10 @@ export const agentRun = {
   },
 
   reject(id: string) {
-    api.rejectTool(id).catch(console.error);
+    // The denial is reflected in the UI immediately below; the backend call is
+    // best-effort, so a transport failure here is intentionally swallowed
+    // rather than surfaced as a console error.
+    void api.rejectTool(id).catch(() => undefined);
     const step = steps.find((s): s is ToolStep => s.kind === 'tool' && s.id === id);
     if (step) {
       step.state = 'error';

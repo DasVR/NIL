@@ -9,6 +9,40 @@ export function findingConfirmed(status: string | undefined): boolean {
   return status === 'confirmed';
 }
 
+/** CSS custom property carrying the severity hue (Law 1: colour means risk). */
+export function severityToken(s: FindingSeverity): string {
+  switch (s) {
+    case 'critical': return 'var(--sev-critical)';
+    case 'high': return 'var(--sev-high)';
+    case 'medium': return 'var(--sev-medium)';
+    case 'low': return 'var(--sev-low)';
+    case 'info': return 'var(--sev-info)';
+    default: {
+      const _n: never = s;
+      return _n;
+    }
+  }
+}
+
+/**
+ * Second, non-colour channel for severity. One distinct glyph per level so a
+ * colour-blind reader (or a greyscale print of the report) still ranks rows at
+ * a glance; the text label remains the channel screen readers use.
+ */
+export function severityShape(s: FindingSeverity): string {
+  switch (s) {
+    case 'critical': return '■';
+    case 'high': return '▲';
+    case 'medium': return '●';
+    case 'low': return '◆';
+    case 'info': return '○';
+    default: {
+      const _n: never = s;
+      return _n;
+    }
+  }
+}
+
 export function parseSeverity(value: string | undefined): FindingSeverity {
   const v = (value || '').trim().toLowerCase();
   switch (v) {

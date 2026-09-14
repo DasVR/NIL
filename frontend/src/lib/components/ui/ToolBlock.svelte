@@ -22,6 +22,13 @@
     if (step.state === 'error') open = true;
   });
 
+  // Wireframe callout 06: hovering the header of an already-open row lights up
+  // the changed line in the diff below it. Hover never opens the row — click
+  // does that — so this is purely additive and only meaningful while open.
+  // Keyboard focus inside the header gets the same affordance.
+  let headHot = $state(false);
+  const focusDiffLine = $derived(open && headHot);
+
   // CHECK-DRAW (motion.css #21): a CSS transition can't animate a value it
   // was already created with — if the SVG is first inserted with
   // data-drawn="true" the moment step.state flips to 'ok', there's no
@@ -102,7 +109,18 @@
   </div>
 
   <div class="body">
-    <header class="head">
+    <!-- Hover here is a purely additive highlight of a line that is already
+         visible in the diff below; keyboard users get the identical affordance
+         through focusin/focusout on the buttons inside. Nothing is gated
+         behind the hover, so the header stays a plain header. -->
+    <!-- svelte-ignore a11y_no_static_element_interactions -->
+    <header
+      class="head"
+      onmouseenter={() => (headHot = true)}
+      onmouseleave={() => (headHot = false)}
+      onfocusin={() => (headHot = true)}
+      onfocusout={() => (headHot = false)}
+    >
       <button
         class="toggle nil-halo"
         type="button"
@@ -143,7 +161,7 @@
             <p class="exit">exit {step.exitCode}</p>
           {/if}
           {#if isDiff}
-            <InlineDiff diff={displayText} />
+            <InlineDiff diff={displayText} focused={focusDiffLine} />
           {:else}
             <pre><code>{displayText}</code></pre>
           {/if}
