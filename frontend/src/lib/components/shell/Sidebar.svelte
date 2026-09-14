@@ -22,6 +22,14 @@
 
   let { open = $bindable(false), width = $bindable(280), onToggle, onResize }: SidebarProps = $props();
 
+  const uid = $props.id();
+  function tabId(id: string): string {
+    return `${uid}-tab-${id}`;
+  }
+  function panelId(id: string): string {
+    return `${uid}-panel-${id}`;
+  }
+
   let dragStartX = 0;
   let startWidth = 0;
   let resizing = $state(false);
@@ -118,14 +126,56 @@
     <div class="panel">
       <div class="panel-head">
         <div class="segs" role="tablist" aria-label="Sidebar panel">
-          <button class="seg nil-quiet" class:on={panel === 'targets'} type="button" onclick={() => (workspace.sidePanel = 'targets')}>
+          <button
+            class="seg nil-quiet nil-halo"
+            class:on={panel === 'targets'}
+            id={tabId('targets')}
+            type="button"
+            role="tab"
+            aria-selected={panel === 'targets'}
+            aria-controls={panelId('targets')}
+            onclick={() => (workspace.sidePanel = 'targets')}
+          >
             {workspace.workstationMode === 'pentest' ? 'Targets' : 'Files'}
           </button>
-          <button class="seg nil-quiet" class:on={panel === 'scm'} type="button" onclick={() => (workspace.sidePanel = 'scm')}>Source</button>
-          <button class="seg nil-quiet" class:on={panel === 'github'} type="button" onclick={() => (workspace.sidePanel = 'github')}>GitHub</button>
-          <button class="seg nil-quiet" class:on={panel === 'mcp'} type="button" onclick={() => (workspace.sidePanel = 'mcp')}>MCP</button>
+          <button
+            class="seg nil-quiet nil-halo"
+            class:on={panel === 'scm'}
+            id={tabId('scm')}
+            type="button"
+            role="tab"
+            aria-selected={panel === 'scm'}
+            aria-controls={panelId('scm')}
+            onclick={() => (workspace.sidePanel = 'scm')}
+          >Source</button>
+          <button
+            class="seg nil-quiet nil-halo"
+            class:on={panel === 'github'}
+            id={tabId('github')}
+            type="button"
+            role="tab"
+            aria-selected={panel === 'github'}
+            aria-controls={panelId('github')}
+            onclick={() => (workspace.sidePanel = 'github')}
+          >GitHub</button>
+          <button
+            class="seg nil-quiet nil-halo"
+            class:on={panel === 'mcp'}
+            id={tabId('mcp')}
+            type="button"
+            role="tab"
+            aria-selected={panel === 'mcp'}
+            aria-controls={panelId('mcp')}
+            onclick={() => (workspace.sidePanel = 'mcp')}
+          >MCP</button>
         </div>
       </div>
+      <div
+        class="panel-body"
+        id={panelId(panel)}
+        role="tabpanel"
+        aria-labelledby={tabId(panel)}
+      >
       {#if panel === 'targets'}
         {#if workspace.workstationMode === 'pentest'}
           <TargetTree />
@@ -153,6 +203,7 @@
       {:else if panel === 'mcp'}
         <McpPanel />
       {/if}
+      </div>
     </div>
 
     <!-- svelte-ignore a11y_no_noninteractive_element_interactions -->
@@ -265,6 +316,13 @@
     padding: var(--s-2);
     border-bottom: 1px solid var(--nil-line);
     flex-shrink: 0;
+  }
+  .panel-body {
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
   }
   .segs {
     display: flex;

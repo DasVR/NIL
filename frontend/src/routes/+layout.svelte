@@ -89,6 +89,7 @@
 
 <div class="app-shell" class:streaming={agentRun.running}>
   <GrainOverlay />
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
   <Titlebar />
 
   <div class="workbench">
@@ -99,7 +100,7 @@
       onResize={(w) => appState.sidebarWidth = w}
     />
 
-    <main class="workspace">
+    <main id="workspace" class="workspace" tabindex="-1">
       <MainWorkspace>
         {#snippet emptyState()}
           {@render children()}

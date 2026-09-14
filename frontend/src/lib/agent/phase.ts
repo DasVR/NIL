@@ -13,7 +13,7 @@ import { workspace } from '$lib/stores/workspace.svelte.ts';
 export type AgentPhase = 'idle' | 'thinking' | 'editing' | 'running' | 'needs-you';
 
 // Tool names that mutate files. Read-shaped tools (read/search/grep/glob) fall
-// through to plain `running`; only a mutation earns the ember ±.
+// through to plain `running`; only a mutation earns the ± glyph.
 const EDIT_RE = /(write|edit|patch|apply|replace|create|insert|rename|move|delete|remove)/i;
 
 export function isEditingTool(name: string): boolean {

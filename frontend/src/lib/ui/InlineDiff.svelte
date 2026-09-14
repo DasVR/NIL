@@ -42,7 +42,7 @@
 
 <pre class="diff" class:page={variant === 'page'} aria-label="File diff"><code>
 {#each hunks as h, i}
-<span class={h.type} class:focus={focused && i === focusIndex}>{h.text}</span>
+<span class={h.type} class:focus={focused && i === focusIndex}><span class="gutter" aria-hidden="true">{h.type === 'add' ? '+' : h.type === 'del' ? '-' : ' '}</span>{h.text}</span>
 {/each}
 </code></pre>
 
@@ -59,11 +59,18 @@
     color: var(--nil-ink-2);
   }
   .diff.page { max-block-size: none; flex: 1; }
+  .gutter {
+    display: inline-block;
+    inline-size: 1.5ch;
+    color: var(--nil-ink-4);
+    user-select: none;
+  }
   .add {
     display: block;
-    color: var(--brand-ember-300);
-    background: color-mix(in oklab, var(--brand-ember-500) 12%, transparent);
+    color: var(--nil-ink);
+    background: color-mix(in oklab, var(--nil-ink) 8%, transparent);
   }
+  .add .gutter { color: var(--nil-ink-2); }
   .del {
     display: block;
     color: var(--nil-ink-3);
@@ -72,15 +79,15 @@
   .ctx { display: block; }
 
   /* Focus tint rides on an opacity-only overlay so the reveal stays on the
-     compositor (Law 3) instead of transitioning background-color. The
-     wireframe bumps the add tint from 10% to 16%; the overlay adds the delta. */
+     compositor (Law 3) instead of transitioning background-color. Ink, not
+     ember — diffs are Zone C machine output, not a Zone A identity moment. */
   .add, .del { position: relative; }
   .add::after, .del::after {
     content: "";
     position: absolute;
     inset: 0;
     pointer-events: none;
-    background: color-mix(in oklab, var(--brand-ember-500) 18%, transparent);
+    background: color-mix(in oklab, var(--nil-ink) 12%, transparent);
     opacity: 0;
     transition: opacity var(--dur-flip) var(--ease-out);
   }

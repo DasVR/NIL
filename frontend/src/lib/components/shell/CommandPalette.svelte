@@ -334,12 +334,15 @@
     background: var(--nil-raised);
     color: var(--nil-ink);
     font: var(--t-body)/1 var(--font-ui);
-    outline: none;
     transition: border-color var(--dur-flip) var(--ease-out);
   }
 
   .palette-search input:focus {
     border-color: var(--nil-line-hot);
+  }
+  .palette-search input:focus-visible {
+    outline: 2px solid var(--nil-halo);
+    outline-offset: 2px;
   }
 
   .palette-hint {

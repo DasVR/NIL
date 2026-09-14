@@ -34,6 +34,10 @@
   const uid = $props.id();
   const pickerId = `${uid}-model-menu`;
   const effortLabelId = `${pickerId}-effort`;
+  const mentionListId = `${uid}-mentions`;
+  function mentionOptionId(id: string): string {
+    return `${uid}-mention-${id}`;
+  }
   let chipLeaving = $state<string | null>(null);
   let pillEl: HTMLSpanElement | undefined = $state();
   let lastMode = $state<WorkstationMode>(workspace.workstationMode);
@@ -454,6 +458,10 @@
       oninput={onInput}
       rows="1"
       aria-label="Agent input"
+      aria-autocomplete="list"
+      aria-expanded={mentionOpen}
+      aria-controls={mentionOpen ? mentionListId : undefined}
+      aria-activedescendant={mentionOpen && files[mentionIndex] ? mentionOptionId(files[mentionIndex].id) : undefined}
       aria-live={workspace.dictationActive ? 'polite' : undefined}
       placeholder={placeholder}
       disabled={gated}
@@ -482,6 +490,7 @@
 
   {#if mentionOpen && mentionAnchor}
     <div
+      id={mentionListId}
       class="mentions"
       role="listbox"
       aria-label="Mention a file"
@@ -494,7 +503,8 @@
       {:else}
         {#each files as file, i (file.id)}
           <button
-            class="mention"
+            id={mentionOptionId(file.id)}
+            class="mention nil-halo"
             class:on={i === mentionIndex}
             type="button"
             role="option"
@@ -698,6 +708,8 @@
     color: var(--nil-ink);
     font: var(--t-body)/1.45 var(--font-ui);
     resize: none;
+    /* Focus is the command-deck prism ring on .nil-composer:focus-within
+       (charter Law 1 exception). A second outline here would double-ring. */
     outline: none;
   }
   textarea:disabled { color: var(--nil-ink-3); }

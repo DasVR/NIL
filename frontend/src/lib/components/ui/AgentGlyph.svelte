@@ -65,9 +65,8 @@
     color: var(--nil-ink-2);
   }
   .agent-glyph[data-phase="idle"] .mark { color: var(--nil-ink-3); }
-  /* "Ember, always" — the wireframe's one sanctioned non-severity color in
-     the status set. Everything else in this component stays ink. */
-  .agent-glyph[data-phase="editing"] .mark { color: var(--brand-ember-300); }
+  /* Editing is a machine state, not a Zone A identity moment — ink, not ember. */
+  .agent-glyph[data-phase="editing"] .mark { color: var(--nil-ink); }
 
   .txt {
     font: 600 var(--t-micro)/1 var(--font-ui);

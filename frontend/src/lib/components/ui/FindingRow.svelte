@@ -18,7 +18,7 @@
      text label — never colour alone. -->
 <button
   type="button"
-  class="row"
+  class="row nil-halo"
   class:active
   aria-current={active ? 'true' : undefined}
   style:--sev={severityToken(finding.severity)}

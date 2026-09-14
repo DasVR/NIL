@@ -394,8 +394,8 @@ dialog[open]::backdrop {
   80% { transform: translateX(2px); }
 }
 .nil-shake {
-  animation: nil-shake-x 0.38s cubic-bezier(0.36, 0.07, 0.19, 0.97);
-  border-color: var(--brand-ember-500) !important;
+  animation: nil-shake-x 0.38s var(--ease-out);
+  border-color: var(--nil-line-hot) !important;
 }
 
 /* ------------------------------------------------------------
