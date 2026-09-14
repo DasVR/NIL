@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { playDictation, sharedPrefix } from './dictation';
+import { playDictation, sharedPrefix, type DictationOpts } from './dictation';
 
 // The retraction engine: between two transcripts it backspaces to their common
 // prefix, then types forward. No timers matter for correctness, so every test
 // runs with 0 ms delays and an explicit `reduced: false` (there is no
 // matchMedia in node).
-const FAST = { typeMs: 0, deleteMs: 0, reduced: false };
+const FAST: DictationOpts = { typeMs: 0, deleteMs: 0, reduced: false };
 
-async function record(from: string, to: string, opts = FAST): Promise<string[]> {
+async function record(from: string, to: string, opts: DictationOpts = FAST): Promise<string[]> {
   const frames: string[] = [];
   await playDictation(from, to, (s) => frames.push(s), opts);
   return frames;
