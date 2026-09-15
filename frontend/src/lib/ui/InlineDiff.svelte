@@ -7,11 +7,22 @@
   interface Props {
     diff: string;
     variant?: 'card' | 'page';
+    /** Light up the single most-significant changed line (see focusIndex). */
+    focused?: boolean;
   }
 
-  let { diff, variant = 'card' }: Props = $props();
+  let { diff, variant = 'card', focused = false }: Props = $props();
 
   const hunks = $derived(parseDiff(diff));
+
+  // Unified diffs carry no "this is the line that matters" signal beyond the
+  // hunk itself, so match the wireframe's heuristic: the first added line is
+  // the change; if the hunk only deletes, the first deleted line is.
+  const focusIndex = $derived.by(() => {
+    const add = hunks.findIndex((h) => h.type === 'add');
+    if (add !== -1) return add;
+    return hunks.findIndex((h) => h.type === 'del');
+  });
 
   function parseDiff(raw: string): Hunk[] {
     const lines = raw.replace(/\r\n/g, '\n').split('\n');
@@ -30,8 +41,8 @@
 </script>
 
 <pre class="diff" class:page={variant === 'page'} aria-label="File diff"><code>
-{#each hunks as h}
-<span class={h.type}>{h.text}</span>
+{#each hunks as h, i}
+<span class={h.type} class:focus={focused && i === focusIndex}><span class="gutter" aria-hidden="true">{h.type === 'add' ? '+' : h.type === 'del' ? '-' : ' '}</span>{h.text}</span>
 {/each}
 </code></pre>
 
@@ -48,15 +59,38 @@
     color: var(--nil-ink-2);
   }
   .diff.page { max-block-size: none; flex: 1; }
+  .gutter {
+    display: inline-block;
+    inline-size: 1.5ch;
+    color: var(--nil-ink-4);
+    user-select: none;
+  }
   .add {
     display: block;
-    color: var(--brand-ember-300);
-    background: color-mix(in oklab, var(--brand-ember-500) 12%, transparent);
+    color: var(--nil-ink);
+    background: color-mix(in oklab, var(--nil-ink) 8%, transparent);
   }
+  .add .gutter { color: var(--nil-ink-2); }
   .del {
     display: block;
     color: var(--nil-ink-3);
     text-decoration: line-through;
   }
   .ctx { display: block; }
+
+  /* Focus tint rides on an opacity-only overlay so the reveal stays on the
+     compositor (Law 3) instead of transitioning background-color. Ink, not
+     ember — diffs are Zone C machine output, not a Zone A identity moment. */
+  .add, .del { position: relative; }
+  .add::after, .del::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    background: color-mix(in oklab, var(--nil-ink) 12%, transparent);
+    opacity: 0;
+    transition: opacity var(--dur-flip) var(--ease-out);
+  }
+  .focus::after { opacity: 1; }
+  .del.focus { color: var(--nil-ink-2); }
 </style>

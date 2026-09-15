@@ -5,12 +5,17 @@
   import { tabsStore } from '$lib/stores/tabsStore';
   import { project, gitCiLabel } from '$lib/project.svelte.ts';
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
+  import AgentGlyph from '$lib/components/ui/AgentGlyph.svelte';
+  import { agentPhase } from '$lib/agent/phase';
   import { usageStore } from '$lib/usage/store.svelte.ts';
 
   let tabs = $derived($tabsStore);
   let activeTab = $derived(tabs.tabs.find(t => t.id === tabs.activeTabId));
   let backendStatus = $derived(appState.backendHealthy ? 'connected' : 'offline');
   let sessionLabel = $derived(workspace.sessionLabel);
+  // One glyph for idle / thinking / editing / needs-you (AgentGlyph); the
+  // running state keeps the SCANLINE word below, untouched.
+  let phase = $derived(agentPhase());
 </script>
 
 <footer class="status-bar" role="status" aria-live="polite">
@@ -23,14 +28,14 @@
       <span class="div" aria-hidden="true"></span>
       <span>{workspace.workstationMode}</span>
     {/if}
-    {#if agentRun.pendingApproval}
-      <span class="div" aria-hidden="true"></span>
-      <span>awaiting approval</span>
-      <kbd>⌘↵</kbd>
-    {/if}
-    {#if agentRun.running}
-      <span class="div" aria-hidden="true"></span>
+    <span class="div" aria-hidden="true"></span>
+    {#if phase === 'running'}
       <span class="nil-scan" data-state="working">running</span>
+    {:else}
+      <AgentGlyph label />
+      {#if phase === 'needs-you' && agentRun.pendingApproval}
+        <kbd>⌘↵</kbd>
+      {/if}
     {/if}
     <SpendMeter usage={usageStore.totals} compact />
   </div>

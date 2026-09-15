@@ -115,6 +115,10 @@ function handleKeydown(e: KeyboardEvent) {
   }
 
   if (key === 'Escape') {
+    // A dialog (palette, settings sheet, model menu) that already consumed this
+    // Escape has closed itself synchronously; falling through would yank focus
+    // to the composer instead of letting the dialog hand it back to its opener.
+    if (e.defaultPrevented) return;
     if (paletteStore.open) {
       e.preventDefault();
       paletteStore.closePalette();

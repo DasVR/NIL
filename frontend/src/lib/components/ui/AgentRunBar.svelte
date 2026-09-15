@@ -1,11 +1,18 @@
 <script lang="ts">
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import AgentStatus from '$lib/components/ui/AgentStatus.svelte';
+  import AgentGlyph from '$lib/components/ui/AgentGlyph.svelte';
+  import { agentPhase } from '$lib/agent/phase';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
 
   let statusOpen = $state(false);
   let now = $state(Date.now());
+
+  // thinking / editing / running / needs-you while the bar is up. SCANLINE
+  // stays the "working" loop; it yields only to needs-you so there is never
+  // more than one attention object in the bar.
+  const phase = $derived(agentPhase());
 
   $effect(() => {
     if (!agentRun.running) return;
@@ -66,7 +73,8 @@
 </script>
 
 {#if agentRun.running}
-  <div class="runbar nil-scan" data-state="working">
+  <div class="runbar nil-scan" data-state={phase === 'needs-you' ? undefined : 'working'}>
+    <AgentGlyph label />
     <AgentStatus
       bind:open={statusOpen}
       summary={runningSummary}

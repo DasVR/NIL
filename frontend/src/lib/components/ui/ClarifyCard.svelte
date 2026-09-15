@@ -154,9 +154,12 @@
     color: var(--nil-ink);
     font: var(--t-body)/1.4 var(--font-ui);
     padding: 8px;
-    outline: none;
   }
   .other:focus, .reply:focus { border-color: var(--nil-line-hot); }
+  .other:focus-visible, .reply:focus-visible {
+    outline: 2px solid var(--nil-halo);
+    outline-offset: 2px;
+  }
   .send {
     align-self: flex-end;
     height: 28px;

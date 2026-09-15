@@ -12,6 +12,7 @@
   import OnDeviceHint from '$lib/components/ui/OnDeviceHint.svelte';
   import { jelly } from '$lib/motion/jelly.ts';
   import { droplet } from '$lib/motion/droplet';
+  import { readProjectFile } from '$lib/project.svelte.ts';
   import { listenSpeech, playDictation, speechAvailable } from '$lib/motion/dictation.ts';
   import { cubicIn } from 'svelte/easing';
   import { untrack } from 'svelte';
@@ -28,6 +29,15 @@
   let mentionIndex = $state(0);
   let modelOpen = $state(false);
   let modelWrap: HTMLDivElement | undefined = $state();
+  let modelBtn: HTMLButtonElement | undefined = $state();
+  let pickerEl: HTMLDivElement | undefined = $state();
+  const uid = $props.id();
+  const pickerId = `${uid}-model-menu`;
+  const effortLabelId = `${pickerId}-effort`;
+  const mentionListId = `${uid}-mentions`;
+  function mentionOptionId(id: string): string {
+    return `${uid}-mention-${id}`;
+  }
   let chipLeaving = $state<string | null>(null);
   let pillEl: HTMLSpanElement | undefined = $state();
   let lastMode = $state<WorkstationMode>(workspace.workstationMode);
@@ -54,6 +64,71 @@
     window.addEventListener('pointerdown', close);
     return () => window.removeEventListener('pointerdown', close);
   });
+
+  // Menu-button pattern (WAI-ARIA APG): opening moves focus into the menu, on
+  // the checked model so Enter is a no-op rather than a surprise switch.
+  $effect(() => {
+    if (!modelOpen) return;
+    queueMicrotask(() => {
+      const items = menuItems();
+      (items.find((el) => el.getAttribute('aria-checked') === 'true') ?? items[0])?.focus();
+    });
+  });
+
+  function menuItems(): HTMLElement[] {
+    if (!pickerEl) return [];
+    return Array.from(pickerEl.querySelectorAll<HTMLElement>('[role^="menuitem"]'));
+  }
+
+  function closeModelMenu(returnFocus = true) {
+    modelOpen = false;
+    if (returnFocus) modelBtn?.focus();
+  }
+
+  function onMenuKey(e: KeyboardEvent) {
+    const items = menuItems();
+    const i = items.indexOf(document.activeElement as HTMLElement);
+    const last = items.length - 1;
+    switch (e.key) {
+      case 'ArrowDown':
+        e.preventDefault();
+        items[i >= last ? 0 : i + 1]?.focus();
+        break;
+      case 'ArrowUp':
+        e.preventDefault();
+        items[i <= 0 ? last : i - 1]?.focus();
+        break;
+      case 'Home':
+        e.preventDefault();
+        items[0]?.focus();
+        break;
+      case 'End':
+        e.preventDefault();
+        items[last]?.focus();
+        break;
+      case 'Escape':
+        e.preventDefault();
+        e.stopPropagation();
+        closeModelMenu();
+        break;
+      case 'Tab':
+        // Menus don't hold Tab; let focus leave naturally and close behind it.
+        closeModelMenu(false);
+        break;
+    }
+  }
+
+  function pickModel(id: string) {
+    workspace.modelId = id;
+    closeModelMenu();
+  }
+
+  function openMoreModels() {
+    // Hand focus back to the trigger first so the settings sheet's focus trap
+    // records it and returns there when the sheet closes.
+    closeModelMenu();
+    appState.openSettings('ai');
+  }
 
   $effect(() => {
     const next = workspace.workstationMode;
@@ -149,11 +224,35 @@
     };
   }
 
-  function composeTurn(text: string): string {
-    const chips = workspace.attached;
+  // Per-file and total caps so a large attachment can't run away with the turn.
+  const ATTACH_MAX_PER_FILE = 16000;
+  const ATTACH_MAX_TOTAL = 60000;
+
+  function attachTarget(raw: string): string {
+    return raw.replace(/^@/, '').replace(/:\d+(?:-\d+)?$/, '');
+  }
+
+  // Send the real file contents through with the turn — not just a literal
+  // "@path" the backend never resolves. Anything that isn't a readable file
+  // (a pinned pseudo-path, or Tauri with no workspace bridge) falls back to a
+  // plain reference so the affordance never claims to have sent content it didn't.
+  async function composeTurn(text: string, chips: ContextFile[]): Promise<string> {
     if (chips.length === 0) return text;
-    const list = chips.map((f) => `@${f.path}`).join(' ');
-    return `${text}\n\n${list}`;
+    const blocks: string[] = [];
+    let budget = ATTACH_MAX_TOTAL;
+    for (const f of chips) {
+      const content = budget > 0 ? await readProjectFile(attachTarget(f.path)) : null;
+      if (content == null) {
+        blocks.push(`@${f.path}`);
+        continue;
+      }
+      const room = Math.min(ATTACH_MAX_PER_FILE, budget);
+      const truncated = content.length > room;
+      const body = truncated ? `${content.slice(0, room)}\n… (truncated)` : content;
+      budget -= body.length;
+      blocks.push(`Attached file ${f.path}:\n\`\`\`\n${body}\n\`\`\``);
+    }
+    return `${text}\n\n${blocks.join('\n\n')}`;
   }
 
   // SHAKE (motion.css #20): a rejected send — empty input, or gated on a
@@ -173,7 +272,7 @@
     setTimeout(() => el.classList.remove('nil-shake'), 380);
   }
 
-  function send() {
+  async function send() {
     const text = input.trim();
     if (!text || gated) {
       rejectSend();
@@ -181,7 +280,7 @@
     }
     const mode: ComposerMode = workspace.workstationMode === 'build' ? 'code' : appState.composerMode;
     const engagement = appState.activeEngagementId || 'default';
-    const payload = composeTurn(text);
+    const chips = [...workspace.attached];
     const extras = { model: workspace.modelId, effort: workspace.effort };
     workspace.dismissClarify();
     agentRun.dismissClarify();
@@ -190,6 +289,7 @@
     input = '';
     workspace.composerDraft = '';
     mentionOpen = false;
+    const payload = await composeTurn(text, chips);
     if (!workspace.sessionStarted) workspace.noteSession();
     if (agentRun.running) {
       agentRun.queueFollowup(payload, engagement, mode, extras);
@@ -350,6 +450,14 @@
   {/if}
 
   <div class="row">
+    <div
+      class="composer-field"
+      role="combobox"
+      aria-label="Agent input"
+      aria-expanded={mentionOpen}
+      aria-haspopup="listbox"
+      aria-controls={mentionOpen ? mentionListId : undefined}
+    >
     <textarea
       id="agent-composer"
       bind:this={inputEl}
@@ -358,10 +466,13 @@
       oninput={onInput}
       rows="1"
       aria-label="Agent input"
+      aria-autocomplete="list"
+      aria-activedescendant={mentionOpen && files[mentionIndex] ? mentionOptionId(files[mentionIndex].id) : undefined}
       aria-live={workspace.dictationActive ? 'polite' : undefined}
       placeholder={placeholder}
       disabled={gated}
     ></textarea>
+    </div>
     <button
       class="icon-btn nil-lift nil-halo"
       type="button"
@@ -386,6 +497,7 @@
 
   {#if mentionOpen && mentionAnchor}
     <div
+      id={mentionListId}
       class="mentions"
       role="listbox"
       aria-label="Mention a file"
@@ -398,7 +510,8 @@
       {:else}
         {#each files as file, i (file.id)}
           <button
-            class="mention"
+            id={mentionOptionId(file.id)}
+            class="mention nil-halo"
             class:on={i === mentionIndex}
             type="button"
             role="option"
@@ -466,8 +579,11 @@
       <button
         class="model nil-halo"
         type="button"
-        aria-haspopup="listbox"
+        bind:this={modelBtn}
+        aria-label={`Model: ${workspace.model.name}`}
+        aria-haspopup="menu"
         aria-expanded={modelOpen}
+        aria-controls={modelOpen ? pickerId : undefined}
         onclick={() => (modelOpen = !modelOpen)}
       >
         {workspace.model.name}
@@ -475,47 +591,54 @@
       </button>
       {#if modelOpen && pickerAnchor}
         <div
+          id={pickerId}
           class="picker"
-          role="listbox"
-          aria-label="Model"
+          role="menu"
+          aria-label="Model and effort"
+          tabindex="-1"
+          bind:this={pickerEl}
           style:right={pickerAnchor.right}
           style:bottom={pickerAnchor.bottom}
+          onkeydown={onMenuKey}
         >
           {#each workspace.models as m (m.id)}
             <button
               class="pick nil-halo"
               type="button"
-              role="option"
-              aria-selected={m.id === workspace.modelId}
+              role="menuitemradio"
+              aria-checked={m.id === workspace.modelId}
+              tabindex="-1"
               {@attach droplet}
-              onclick={() => { workspace.modelId = m.id; modelOpen = false; }}
+              onclick={() => pickModel(m.id)}
             >
               <span class="pick-name">{m.name}</span>
               <span class="pick-desc">{m.description}</span>
               {#if m.id === workspace.modelId}
-                <span class="check"><NilIcon name="check" size={16} /></span>
+                <span class="check" aria-hidden="true"><NilIcon name="check" size={16} /></span>
               {/if}
             </button>
           {/each}
-          <div class="divider"></div>
-          <div class="effort" role="group" aria-label="Effort">
-            <span>Effort</span>
+          <div class="divider" role="separator"></div>
+          <div class="effort" role="group" aria-labelledby={effortLabelId}>
+            <span id={effortLabelId}>Effort</span>
             {#each (['low', 'medium', 'high'] as const) as level}
               <button
-                class="eff"
+                class="eff nil-halo"
                 class:on={workspace.effort === level}
                 type="button"
+                role="menuitemradio"
+                aria-checked={workspace.effort === level}
+                tabindex="-1"
                 onclick={() => (workspace.effort = level)}
               >{level}</button>
             {/each}
           </div>
           <button
-            class="pick more"
+            class="pick more nil-halo"
             type="button"
-            onclick={() => {
-              modelOpen = false;
-              appState.openSettings('ai');
-            }}
+            role="menuitem"
+            tabindex="-1"
+            onclick={openMoreModels}
           >More models</button>
         </div>
       {/if}
@@ -582,6 +705,11 @@
     align-items: flex-end;
     gap: var(--s-2);
   }
+  .composer-field {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+  }
   textarea {
     flex: 1;
     min-height: 28px;
@@ -592,6 +720,8 @@
     color: var(--nil-ink);
     font: var(--t-body)/1.45 var(--font-ui);
     resize: none;
+    /* Focus is the command-deck prism ring on .nil-composer:focus-within
+       (charter Law 1 exception). A second outline here would double-ring. */
     outline: none;
   }
   textarea:disabled { color: var(--nil-ink-3); }

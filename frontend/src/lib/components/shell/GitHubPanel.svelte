@@ -40,8 +40,11 @@
           {/each}
         </ul>
       {/if}
+    {:else if gh.ghAvailable}
+      <p class="g-name">Pull requests</p>
+      <p class="empty">Pull requests couldn't be loaded from gh.</p>
     {:else}
-      <p class="empty">gh is not available, so pull requests were not loaded.</p>
+      <p class="empty">GitHub CLI (gh) not found — install it to see pull requests and issues.</p>
     {/if}
 
     {#if gh.issues}
@@ -60,6 +63,9 @@
           {/each}
         </ul>
       {/if}
+    {:else if gh.ghAvailable}
+      <p class="g-name">Issues</p>
+      <p class="empty">Issues couldn't be loaded from gh.</p>
     {/if}
   {/if}
 </section>
