@@ -74,7 +74,7 @@
 
 {#if agentRun.running}
   <div class="runbar nil-scan" data-state={phase === 'needs-you' ? undefined : 'working'}>
-    <AgentGlyph label />
+    <AgentGlyph label thinking />
     <AgentStatus
       bind:open={statusOpen}
       summary={runningSummary}
