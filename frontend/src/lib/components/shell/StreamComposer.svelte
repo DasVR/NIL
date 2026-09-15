@@ -662,12 +662,24 @@
     border-radius: var(--r-panel);
     box-shadow: var(--lift-1);
     flex-shrink: 0;
-    transition: border-color var(--dur-flip) var(--ease-out);
+    /* Focus-in is a liquid settle, not a border snap: the deck rises a hair on
+       the one spring and its elevation deepens, while the prism ring (app.css)
+       fades in. transform + opacity/shadow only — Zone B/C law. */
+    transition: transform var(--dur-panel) var(--ease-spring),
+                border-color var(--dur-flip) var(--ease-out),
+                box-shadow var(--dur-flip) var(--ease-out);
     position: relative;
     isolation: isolate;
     z-index: var(--z-overlay);
   }
-  .composer:focus-within { border-color: var(--nil-line-hot); }
+  .composer:focus-within {
+    border-color: var(--nil-line-hot);
+    transform: translateY(-1px);
+    box-shadow: var(--lift-2);
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .composer:focus-within { transform: none; }
+  }
 
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
