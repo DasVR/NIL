@@ -20,7 +20,8 @@
   import { soundStore } from '$lib/stores/soundStore.svelte.ts';
   import { setupTauriEvents } from '$lib/tauri-events';
   import { keymap } from '$lib/keymap.svelte.ts';
-  import { browser } from '$app/environment';
+  import { browser, dev } from '$app/environment';
+  import { Agentation } from 'sv-agentation';
   import { agentRun, toolFilePath } from '$lib/agent/run.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
   import { refreshProject } from '$lib/project.svelte.ts';
@@ -130,6 +131,19 @@
 
 {#if browser && !booted}
   <ColdOpen onbooted={() => (booted = true)} />
+{/if}
+
+<!-- Svelte Agentation: click an element, annotate it, copy structured
+     markdown (with a source-file jump when VITE_WORKSPACE_ROOT is set) for
+     handing straight to a coding session — this one, Cursor, or anyone else
+     driving the UI rebuild. Dev-only per its own docs; `dev` is a compile-time
+     constant SvelteKit inlines, so this whole branch (and the import) is
+     dead-code-eliminated from the production build, not just hidden at runtime. -->
+{#if browser && dev}
+  <Agentation
+    workspaceRoot={import.meta.env.VITE_WORKSPACE_ROOT ?? null}
+    openSourceOnClick
+  />
 {/if}
 
 <style>

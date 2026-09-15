@@ -20,13 +20,23 @@
       : files;
     const map = new Map<string, ContextFile[]>();
     for (const file of filtered) {
-      const top = file.path.split('/')[0] || file.path;
+      const slash = file.path.indexOf('/');
+      // Root-level files (no directory) share one unnamed bucket — a file
+      // whose path IS its own top segment used to become a one-item group
+      // named after itself, so the same name rendered twice: once as the
+      // group header, once as the only row under it.
+      const top = slash === -1 ? '' : file.path.slice(0, slash);
       const arr = map.get(top) ?? [];
       arr.push(file);
       map.set(top, arr);
     }
     const result: Group[] = [];
+    // Root files first (no header needed), then directories in the order
+    // they were first seen.
+    const rootFiles = map.get('');
+    if (rootFiles) result.push({ name: '', files: rootFiles.slice(0, q ? 200 : 80) });
     for (const [name, list] of map) {
+      if (name === '') continue;
       result.push({ name, files: list.slice(0, q ? 200 : 80) });
     }
     return result;
@@ -86,7 +96,9 @@
   {:else}
     {#each groups as group (group.name)}
       <div class="group">
-        <p class="g-name">{group.name}</p>
+        {#if group.name}
+          <p class="g-name">{group.name}</p>
+        {/if}
         <ul class="list">
           {#each group.files as file (file.id)}
             <li class="item">

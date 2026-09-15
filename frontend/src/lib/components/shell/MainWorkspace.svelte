@@ -7,7 +7,7 @@
   import { tabsStore, type Tab } from '$lib/stores/tabsStore';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { agentRun } from '$lib/agent/run.svelte.ts';
-  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
   import type { Snippet } from 'svelte';
   import { explainFinding, draftFinding } from '$lib/findings/actions';
   import type { Finding } from '$lib/agent/types';
@@ -31,7 +31,7 @@
   const showStream = $derived(workspace.surface !== 'diff' && (sessionLive || !activeFile));
   const split = $derived(showStream && showEditor);
 
-  function tabIcon(tab: Tab): string {
+  function tabIcon(tab: Tab): NilIconName {
     switch (tab.type) {
       case 'editor': return 'file';
       case 'preview': return 'app-window';

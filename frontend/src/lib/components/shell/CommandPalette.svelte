@@ -1,6 +1,6 @@
 <script lang="ts">
   import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
-  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
   import { droplet } from '$lib/motion/droplet';
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
   import { engagementFiles, workspace } from '$lib/stores/workspace.svelte.ts';
@@ -15,7 +15,7 @@
     id: string;
     label: string;
     hint?: string;
-    icon: string;
+    icon: NilIconName;
     section: string;
     shortcut?: string;
     run: () => void;
