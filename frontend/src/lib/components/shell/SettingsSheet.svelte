@@ -94,7 +94,7 @@
           {#each categories as cat}
             <li>
               <button
-                class="settings-category nil-halo {activeCategory === cat.id ? 'active' : ''}"
+                class="settings-category nil-halo nil-row-host {activeCategory === cat.id ? 'active' : ''}"
                 type="button"
                 onclick={() => (appState.settingsCategory = cat.id)}
                 aria-current={activeCategory === cat.id ? 'true' : undefined}

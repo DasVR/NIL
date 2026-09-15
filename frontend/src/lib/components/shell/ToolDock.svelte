@@ -12,10 +12,15 @@
 </script>
 
 {#if job}
+  <!-- job.status is hardcoded to 'running' for the whole lifetime of a PTY
+       dock (an interactive shell has no "done" signal the way a build/lint/
+       test command does), so the SCANLINE working-bar would stay lit the
+       entire time a terminal happened to be open — not "busy," just open.
+       Excluded here; non-PTY docks keep the accurate treatment. -->
   <section
     class="dock nil-scan"
     class:pty={isPty}
-    data-state={job.status === 'running' ? 'working' : undefined}
+    data-state={!isPty && job.status === 'running' ? 'working' : undefined}
     aria-label={job.title}
     in:settle
   >

@@ -86,8 +86,12 @@
     bottom: 3px;
     background: var(--nil-ink-3);
     border-radius: 50%;
-    transition: transform var(--dur-flip) var(--ease-pop),
-                background var(--dur-flip) var(--ease-pop);
+    /* --dur-flip (90ms) is tuned for an instant state flip, not a 16px
+       slide — at that duration the overshoot in --ease-pop has no time to
+       visually resolve, so it reads as a snap instead of a settle.
+       --dur-enter (160ms) gives the same curve room to actually play out. */
+    transition: transform var(--dur-enter) var(--ease-pop),
+                background var(--dur-enter) var(--ease-pop);
   }
   .toggle input:checked + .knob { background: var(--nil-ink-2); }
   .toggle input:checked + .knob::before {

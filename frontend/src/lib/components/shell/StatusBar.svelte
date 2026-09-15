@@ -23,7 +23,12 @@
     <span class="dot" class:ok={appState.backendHealthy}></span>
     <span>{backendStatus}</span>
     <span class="div" aria-hidden="true"></span>
-    <span class="mono">{sessionLabel}</span>
+    <!-- sessionLabel doubles as an engagement id (a technical value — mono
+         is right) and, with no engagement active, a plain fallback word
+         ('hunt'/'build'/'nil' — an English state word, not data, so it
+         should read like the plain workstationMode span beside it, not
+         like a machine value). -->
+    <span class:mono={Boolean(appState.activeEngagementId)}>{sessionLabel}</span>
     {#if sessionLabel !== workspace.workstationMode}
       <span class="div" aria-hidden="true"></span>
       <span>{workspace.workstationMode}</span>
