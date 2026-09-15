@@ -22,7 +22,9 @@ export function jelly(el: HTMLElement, direction: JellyDirection) {
   el.style.setProperty('--jelly-origin', origin);
   el.style.transformOrigin = origin;
   el.animate(KEYFRAMES, {
-    duration: msToken(el, '--dur-jelly', 460),
+    // parseFloat'd token + a resolved cubic-bezier (WAAPI can't parse a raw
+    // var(--ease-pop) string); --ease-pop is that curve.
+    duration: msToken(el, '--dur-jelly', 320),
     easing: 'cubic-bezier(0.34, 1.56, 0.64, 1)',
   });
 }
