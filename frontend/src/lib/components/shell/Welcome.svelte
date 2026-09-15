@@ -108,7 +108,6 @@
     <div class="mark" aria-hidden="true"><NilMonogram state="idle" size={56} /></div>
     <p class="kicker">nil</p>
     <h1 class="title">{greeting}.</h1>
-    <p class="lede">One composer. Review a change, draft what's next, or debug what broke.</p>
 
     <div class="actions">
       {#each starters as starter (starter.id)}
@@ -181,11 +180,6 @@
     font: 500 var(--t-display)/var(--lh-tight) var(--font-ui);
     letter-spacing: var(--track-tight);
     color: var(--nil-ink);
-  }
-  .lede {
-    font: var(--t-body)/var(--lh-body) var(--font-ui);
-    color: var(--nil-ink-2);
-    max-width: 42ch;
   }
   .actions { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-block-start: var(--s-2); }
   .welcome-composer { width: 100%; margin-block-start: var(--s-3); }
