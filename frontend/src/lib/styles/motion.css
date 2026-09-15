@@ -432,6 +432,29 @@ dialog[open]::backdrop {
 }
 .nil-check-draw[data-drawn="true"] path, .nil-check-draw[data-drawn="true"] polyline { stroke-dashoffset: 0; }
 
+/* ------------------------------------------------------------
+   22 · THINK — the model is thinking. A live status label breathes
+   while a run is in flight, then goes dead the instant it ends.
+   Adapted from .claude/skills/transitions-dev/28-thinking-states.md,
+   but that reference sweeps a background-position shimmer across the
+   glyphs; Zone B/C is transform + opacity only (40-nil-gpu.mdc), so
+   the "alive" cue here is an opacity breathe, not a paint-driven
+   sweep. Ink only (--nil-ink-2 resting, toward --nil-ink at the
+   peak) — no hue: this is a machine state, not a Zone A moment.
+   Like WAVE/PULSE/RING it is a state-scoped loop that STOPS at rest,
+   so SCANLINE stays the only loop running in idle chrome. Gate it
+   with [data-thinking="true"]; drop the attribute and it is static
+   --nil-ink-2 with no animation.
+   ------------------------------------------------------------ */
+.nil-think { color: var(--nil-ink-2); }
+.nil-think[data-thinking="true"] {
+  animation: nil-think-breathe 1.6s var(--ease-mono) infinite;
+}
+@keyframes nil-think-breathe {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
 /* ============================================================
    REDUCED MOTION — non-negotiable.
    Kill loops and travel. Keep opacity and color so state changes
@@ -461,4 +484,6 @@ dialog[open]::backdrop {
   .nil-pulse { animation: none; box-shadow: 0 0 0 1px color-mix(in oklab, var(--brand-ember-500) 40%, transparent); }
   .nil-shake { animation: none; }
   .nil-check-draw path, .nil-check-draw polyline { transition-duration: 0.01ms; }
+  /* Keep the thinking label legible but stop the breathe. */
+  .nil-think[data-thinking="true"] { animation: none; opacity: 1; }
 }
