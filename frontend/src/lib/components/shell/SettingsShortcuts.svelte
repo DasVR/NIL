@@ -1,58 +1,59 @@
 <script lang="ts">
+  import { shortcutLabel } from '$lib/shortcuts';
+
+  interface ShortcutRow {
+    label: string;
+    chord: string;
+  }
+
+  interface ShortcutGroup {
+    heading: string;
+    rows: ShortcutRow[];
+  }
+
+  const groups: ShortcutGroup[] = [
+    {
+      heading: 'General',
+      rows: [
+        { label: 'Command palette', chord: 'Mod+K' },
+        { label: 'Focus composer', chord: 'Mod+J' },
+        { label: 'Settings', chord: 'Mod+,' },
+        { label: 'Toggle sidebar', chord: 'Mod+B' },
+        { label: 'Toggle inspector', chord: 'Mod+\\' },
+      ],
+    },
+    {
+      heading: 'Agent',
+      rows: [
+        { label: 'Approve pending tool', chord: 'Mod+Enter' },
+        { label: 'Reject pending tool', chord: 'Mod+Shift+Enter' },
+        { label: 'Toggle YOLO', chord: 'Mod+Y' },
+      ],
+    },
+    {
+      heading: 'Terminal',
+      rows: [
+        { label: 'Toggle terminal dock', chord: 'Mod+T' },
+        { label: 'Hide dock / close file', chord: 'Mod+W' },
+      ],
+    },
+  ];
 </script>
 
 <div class="settings-pane">
   <h3>Keyboard shortcuts</h3>
-  <p class="settings-description">Workstation bindings. Cmd is Ctrl on Windows and Linux.</p>
-  <div class="settings-group">
-    <h4>General</h4>
-    <div class="settings-row">
-      <span>Command palette</span>
-      <kbd>Cmd+K</kbd>
+  <p class="settings-description">Workstation bindings for this machine.</p>
+  {#each groups as group (group.heading)}
+    <div class="settings-group">
+      <h4>{group.heading}</h4>
+      {#each group.rows as row (row.chord)}
+        <div class="settings-row">
+          <span>{row.label}</span>
+          <kbd>{shortcutLabel(row.chord)}</kbd>
+        </div>
+      {/each}
     </div>
-    <div class="settings-row">
-      <span>Focus composer</span>
-      <kbd>Cmd+J</kbd>
-    </div>
-    <div class="settings-row">
-      <span>Settings</span>
-      <kbd>Cmd+,</kbd>
-    </div>
-    <div class="settings-row">
-      <span>Toggle sidebar</span>
-      <kbd>Cmd+B</kbd>
-    </div>
-    <div class="settings-row">
-      <span>Toggle inspector</span>
-      <kbd>Cmd+\</kbd>
-    </div>
-  </div>
-  <div class="settings-group">
-    <h4>Agent</h4>
-    <div class="settings-row">
-      <span>Approve pending tool</span>
-      <kbd>Cmd+Enter</kbd>
-    </div>
-    <div class="settings-row">
-      <span>Reject pending tool</span>
-      <kbd>Cmd+Shift+Enter</kbd>
-    </div>
-    <div class="settings-row">
-      <span>Toggle YOLO</span>
-      <kbd>Cmd+Y</kbd>
-    </div>
-  </div>
-  <div class="settings-group">
-    <h4>Terminal</h4>
-    <div class="settings-row">
-      <span>Toggle terminal dock</span>
-      <kbd>Cmd+T</kbd>
-    </div>
-    <div class="settings-row">
-      <span>Hide dock / close file</span>
-      <kbd>Cmd+W</kbd>
-    </div>
-  </div>
+  {/each}
 </div>
 
 <style>

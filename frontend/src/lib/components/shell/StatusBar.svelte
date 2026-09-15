@@ -8,6 +8,7 @@
   import AgentGlyph from '$lib/components/ui/AgentGlyph.svelte';
   import { agentPhase } from '$lib/agent/phase';
   import { usageStore } from '$lib/usage/store.svelte.ts';
+  import { shortcutGlyphs } from '$lib/shortcuts';
 
   let tabs = $derived($tabsStore);
   let activeTab = $derived(tabs.tabs.find(t => t.id === tabs.activeTabId));
@@ -39,7 +40,7 @@
     {:else}
       <AgentGlyph label />
       {#if phase === 'needs-you' && agentRun.pendingApproval}
-        <kbd>⌘↵</kbd>
+        <kbd>{shortcutGlyphs('Mod+Enter')}</kbd>
       {/if}
     {/if}
     <SpendMeter usage={usageStore.totals} compact />

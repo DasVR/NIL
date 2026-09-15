@@ -114,7 +114,7 @@ const commands: PaletteCommand[] = [
   {
     id: 'new-engagement',
     label: 'New engagement',
-    shortcut: 'Cmd+N',
+    shortcut: 'Mod+N',
     section: 'Engagement',
     icon: 'plus',
     action: () => {
@@ -141,7 +141,7 @@ const commands: PaletteCommand[] = [
   {
     id: 'new-terminal',
     label: 'Open terminal',
-    shortcut: 'Cmd+T',
+    shortcut: 'Mod+T',
     section: 'View',
     icon: 'terminal',
     action: () => workspace.selectRail('terminal'),
@@ -149,7 +149,7 @@ const commands: PaletteCommand[] = [
   {
     id: 'focus-composer',
     label: 'Focus composer',
-    shortcut: 'Cmd+J',
+    shortcut: 'Mod+J',
     section: 'View',
     icon: 'type',
     action: () => appState.focusComposer(),
@@ -157,7 +157,7 @@ const commands: PaletteCommand[] = [
   {
     id: 'toggle-sidebar',
     label: 'Toggle sidebar',
-    shortcut: 'Cmd+B',
+    shortcut: 'Mod+B',
     section: 'View',
     icon: 'panel-left',
     action: () => workspace.togglePin(),
@@ -165,7 +165,7 @@ const commands: PaletteCommand[] = [
   {
     id: 'toggle-inspector',
     label: 'Toggle inspector',
-    shortcut: 'Cmd+\\',
+    shortcut: 'Mod+\\',
     section: 'View',
     icon: 'panel-right',
     action: () => appState.toggleRightSidebar(),
@@ -173,7 +173,7 @@ const commands: PaletteCommand[] = [
   {
     id: 'toggle-yolo',
     label: 'Toggle YOLO mode',
-    shortcut: 'Cmd+Y',
+    shortcut: 'Mod+Y',
     section: 'Agent',
     icon: 'fast-forward',
     action: () => { void appState.toggleYolo(); },
@@ -181,7 +181,7 @@ const commands: PaletteCommand[] = [
   {
     id: 'save-file',
     label: 'Save file',
-    shortcut: 'Cmd+S',
+    shortcut: 'Mod+S',
     section: 'View',
     icon: 'save',
     action: () => { void workspace.saveActiveFile(); },
@@ -189,7 +189,7 @@ const commands: PaletteCommand[] = [
   {
     id: 'open-settings',
     label: 'Open settings',
-    shortcut: 'Cmd+,',
+    shortcut: 'Mod+,',
     section: 'Settings',
     icon: 'settings',
     action: () => appState.toggleSettings(),

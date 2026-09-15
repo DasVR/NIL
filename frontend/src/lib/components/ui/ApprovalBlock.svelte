@@ -5,6 +5,7 @@
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import { magnetic } from '$lib/motion/magnetic.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
+  import { shortcutGlyphs } from '$lib/shortcuts';
 
   interface Props {
     step: ToolStep;
@@ -136,7 +137,7 @@
       onclick={() => void allow('once')}
     >
       {busy ? 'Running' : 'Allow once'}
-      <kbd>⌘↵</kbd>
+      <kbd>{shortcutGlyphs('Mod+Enter')}</kbd>
     </button>
     <button
       class="nil-lift nil-halo act ghost"
@@ -157,7 +158,7 @@
       onclick={deny}
     >
       Deny
-      <kbd>⌘⇧↵</kbd>
+      <kbd>{shortcutGlyphs('Mod+Shift+Enter')}</kbd>
     </button>
     <button
       class="nil-lift nil-halo act ghost"

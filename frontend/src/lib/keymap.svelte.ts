@@ -3,6 +3,7 @@ import { paletteStore } from '$lib/stores/paletteStore.svelte.ts';
 import { agentStore } from '$lib/stores/agentStore';
 import { tabsStore } from '$lib/stores/tabsStore';
 import { workspace } from '$lib/stores/workspace.svelte.ts';
+import { isMac } from '$lib/shortcuts';
 
 let shortcutsEnabled = $state(true);
 
@@ -18,7 +19,6 @@ function handleKeydown(e: KeyboardEvent) {
   // Bare keys stay with the field so typing is never stolen.
   if (inField && !(e.metaKey || e.ctrlKey)) return;
 
-  const isMac = navigator.platform.includes('Mac');
   const mod = isMac ? e.metaKey : e.ctrlKey;
   const shift = e.shiftKey;
   const key = e.key.length === 1 ? e.key.toLowerCase() : e.key;

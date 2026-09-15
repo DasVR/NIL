@@ -5,6 +5,7 @@
   import DitherWipe from '$lib/ui/DitherWipe.svelte';
   import { engagementFiles, workspace } from '$lib/stores/workspace.svelte.ts';
   import { focusTrap } from '$lib/a11y/focusTrap';
+  import { shortcutLabel } from '$lib/shortcuts';
 
   interface Props {
     open?: boolean;
@@ -221,7 +222,7 @@
           autocomplete="off"
           spellcheck="false"
         />
-        <kbd class="palette-hint" aria-hidden="true">Cmd+K</kbd>
+        <kbd class="palette-hint" aria-hidden="true">{shortcutLabel('Mod+K')}</kbd>
       </div>
     </div>
 
@@ -265,7 +266,7 @@
                     </span>
                   </div>
                   {#if cmd.shortcut}
-                    <kbd class="palette-item-shortcut">{cmd.shortcut}</kbd>
+                    <kbd class="palette-item-shortcut">{shortcutLabel(cmd.shortcut)}</kbd>
                   {/if}
                 </div>
               {/each}
