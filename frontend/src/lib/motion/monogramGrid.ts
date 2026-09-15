@@ -77,20 +77,16 @@ export function paintMonogram(
   fraction: number = 0.72,
 ) {
   ctx.clearRect(0, 0, w, h);
-  const cell = (Math.min(w, h) * fraction) / grid;
-  const originX = (w - cell * grid) / 2;
-  const originY = (h - cell * grid) / 2;
+  // The cold-open canvas is sized in physical pixels. Keep every cell and the
+  // grid origin on that pixel lattice so adjacent fills share an exact edge;
+  // fractional rounded cells leave transparent seams in the uploaded texture.
+  const cell = Math.max(1, Math.floor((Math.min(w, h) * fraction) / grid));
+  const originX = Math.floor((w - cell * grid) / 2);
+  const originY = Math.floor((h - cell * grid) / 2);
   ctx.fillStyle = color;
-  const radius = cell * 0.14;
   for (const { x, y } of monogramCells(grid)) {
     const px = originX + x * cell;
     const py = originY + y * cell;
-    if (typeof ctx.roundRect === 'function') {
-      ctx.beginPath();
-      ctx.roundRect(px, py, cell, cell, radius);
-      ctx.fill();
-    } else {
-      ctx.fillRect(px, py, cell, cell);
-    }
+    ctx.fillRect(px, py, cell, cell);
   }
 }
