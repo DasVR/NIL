@@ -2,9 +2,7 @@
   import { droplet } from '$lib/motion/droplet';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
-  import DitherWaterfall from '$lib/ui/DitherWaterfall.svelte';
   import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
-  import NilMonogram from '$lib/components/ui/NilMonogram.svelte';
   import StreamComposer from '$lib/components/shell/StreamComposer.svelte';
 
   interface RecentRow {
@@ -47,9 +45,6 @@
       prompt: 'Debug this failure and trace it to the cause: ',
     },
   ];
-
-  const hour = new Date().getHours();
-  const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
 
   const recent = $derived.by(() => {
     const seen = new Set<string>();
@@ -97,17 +92,8 @@
   }
 </script>
 
-<section class="welcome">
-  <div class="wash" aria-hidden="true">
-    <DitherWaterfall />
-    <div class="scrim"></div>
-  </div>
-
+<section class="welcome" aria-label="Start a session">
   <div class="hero">
-    <div class="mark" aria-hidden="true"><NilMonogram state="idle" size={56} /></div>
-    <p class="kicker">nil</p>
-    <h1 class="title">{greeting}.</h1>
-
     <div class="actions">
       {#each starters as starter (starter.id)}
         <button class="nil-lift nil-halo row" type="button" onclick={() => startWith(starter)}>
@@ -140,26 +126,14 @@
 
 <style>
   .welcome {
-    position: relative;
     width: 100%;
     height: 100%;
     display: flex;
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    overflow: hidden;
-  }
-  .wash { position: absolute; inset: 0; pointer-events: none; }
-  .scrim {
-    position: absolute;
-    inset: 0;
-    background: linear-gradient(to bottom,
-      color-mix(in oklab, var(--nil-void) 55%, transparent) 0%,
-      color-mix(in oklab, var(--nil-void) 88%, transparent) 42%,
-      var(--nil-void) 100%);
   }
   .hero {
-    position: relative;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -169,18 +143,7 @@
     max-width: 36rem;
     width: 100%;
   }
-  .mark { margin-block-end: var(--s-1); }
-  .kicker {
-    font: 600 var(--t-micro)/1 var(--font-machine);
-    letter-spacing: var(--track-tick);
-    color: var(--brand-ember-300);
-  }
-  .title {
-    font: 500 var(--t-display)/var(--lh-tight) var(--font-ui);
-    letter-spacing: var(--track-tight);
-    color: var(--nil-ink);
-  }
-  .actions { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-block-start: var(--s-2); }
+  .actions { display: flex; flex-direction: column; gap: 6px; width: 100%; }
   .welcome-composer { width: 100%; margin-block-start: var(--s-3); }
   .row {
     display: flex;
