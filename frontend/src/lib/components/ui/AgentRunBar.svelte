@@ -58,7 +58,7 @@
   });
 
   const runHint = $derived.by(() => {
-    if (agentRun.huntLoop) return 'Hunt running';
+    if (agentRun.huntLoop) return 'Assessment running';
     const tool = agentRun.steps.find((s) => s.kind === 'tool' && s.state === 'running');
     if (tool && tool.kind === 'tool') return tool.name;
     if (agentRun.queued.length) return 'Follow-up queued';

@@ -174,7 +174,7 @@
           <div class="empty-state">
             <NilIcon name="flag" size={20} />
             <p>No findings yet.</p>
-            <span>Run a hunt to start collecting evidence.</span>
+            <span>Describe what to review to start collecting evidence.</span>
           </div>
         {/if}
       </div>

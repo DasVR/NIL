@@ -25,7 +25,7 @@
     <span class="div" aria-hidden="true"></span>
     <!-- sessionLabel doubles as an engagement id (a technical value — mono
          is right) and, with no engagement active, a plain fallback word
-         ('hunt'/'build'/'nil' — an English state word, not data, so it
+         ('pentest'/'build'/'nil' — an English state word, not data, so it
          should read like the plain workstationMode span beside it, not
          like a machine value). -->
     <span class:mono={Boolean(appState.activeEngagementId)}>{sessionLabel}</span>

@@ -74,7 +74,7 @@
     <div class="empty-state">
       <NilIcon name="clock" size={20} />
       <p>No timeline events</p>
-      <span>Hunt activity lands here as the agent works.</span>
+      <span>Activity lands here as the agent works.</span>
     </div>
   {:else}
     <ol class="list">

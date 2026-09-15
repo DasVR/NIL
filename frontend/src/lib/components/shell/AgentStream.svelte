@@ -109,7 +109,7 @@
           <BuildEmpty />
         {:else if agentRun.findings.length === 0}
           <p class="idle-title">/Stream(01)</p>
-          <p class="idle-copy">No findings yet. Run a hunt to start collecting evidence.</p>
+          <p class="idle-copy">No findings yet. Describe what to review to start collecting evidence.</p>
         {/if}
       </div>
     {/if}

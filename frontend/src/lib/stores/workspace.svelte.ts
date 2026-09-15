@@ -181,7 +181,7 @@ function loadPrefs() {
 loadPrefs();
 
 function rememberSession(mode: WorkstationMode, label?: string) {
-  const name = label || (mode === 'pentest' ? 'hunt' : 'build');
+  const name = label || mode;
   const entry: RecentSession = {
     id: `${mode}:${name}`,
     label: name,
@@ -588,7 +588,7 @@ export const workspace = {
   set workstationMode(v: WorkstationMode) { applyMode(v); },
   get sessionLabel() {
     if (appState.activeEngagementId) return appState.activeEngagementId;
-    if (sessionStarted) return workstationMode === 'pentest' ? 'hunt' : 'build';
+    if (sessionStarted) return workstationMode;
     return 'nil';
   },
   get sessionStarted() { return sessionStarted; },
