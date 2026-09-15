@@ -199,8 +199,9 @@
      apart, so the pull toward the cursor that MAGNETIC adds made them ride
      over each other; instead the hover stays in place and gets its energy
      from a deeper lift, a hotter surface, and the glyph waking up. The scale
-     is small enough (≈0.4px of height) never to close the gap. */
-  .row:hover:not(:active) {
+     is small enough (≈0.4px of height) never to close the gap. Anchored under
+     .actions so it outranks the .app-shell button:hover rule in motion.css. */
+  .actions .row:hover:not(:active) {
     transform: translateY(-1px) scale(1.008);
     background: color-mix(in oklab, var(--nil-raised) 94%, var(--nil-ink));
     box-shadow: var(--lift-2);
@@ -223,7 +224,7 @@
   }
   .row:hover .desc { color: var(--nil-ink-2); }
   @media (prefers-reduced-motion: reduce) {
-    .row:hover:not(:active), .row:hover .glyph { transform: none; }
+    .actions .row:hover:not(:active), .row:hover .glyph { transform: none; }
   }
   .recent { width: 100%; display: flex; flex-direction: column; gap: 4px; margin-block-start: var(--s-4); }
   .eyebrow {
