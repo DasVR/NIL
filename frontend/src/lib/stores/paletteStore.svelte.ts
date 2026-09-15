@@ -35,8 +35,8 @@ const commands: PaletteCommand[] = [
     },
   },
   {
-    id: 'start-hunt',
-    label: 'Start a hunt',
+    id: 'start-assessment',
+    label: 'Start an assessment',
     section: 'Session',
     icon: 'shield',
     action: () => {

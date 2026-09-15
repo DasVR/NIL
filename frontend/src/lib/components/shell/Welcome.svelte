@@ -4,7 +4,7 @@
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import DitherWaterfall from '$lib/ui/DitherWaterfall.svelte';
-  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
   import NilMonogram from '$lib/components/ui/NilMonogram.svelte';
   import StreamComposer from '$lib/components/shell/StreamComposer.svelte';
 
@@ -14,6 +14,40 @@
     mode: 'build' | 'pentest';
     meta: string;
   }
+
+  interface Starter {
+    id: 'review' | 'draft' | 'debug';
+    icon: NilIconName;
+    label: string;
+    desc: string;
+    prompt: string;
+  }
+
+  // Design lock (v2.1): empty-state starters are invitations — review /
+  // draft / debug. Each seeds the composer; the user finishes the sentence.
+  const starters: Starter[] = [
+    {
+      id: 'review',
+      icon: 'search',
+      label: 'Review',
+      desc: 'Read a change or a file and say what matters.',
+      prompt: 'Review this and tell me what would block shipping it: ',
+    },
+    {
+      id: 'draft',
+      icon: 'file-text',
+      label: 'Draft',
+      desc: 'Write a first version to react to.',
+      prompt: 'Draft a first version of: ',
+    },
+    {
+      id: 'debug',
+      icon: 'terminal',
+      label: 'Debug',
+      desc: 'Trace a failure back to its cause.',
+      prompt: 'Debug this failure and trace it to the cause: ',
+    },
+  ];
 
   const hour = new Date().getHours();
   const greeting = hour < 12 ? 'Good morning' : hour < 18 ? 'Good afternoon' : 'Good evening';
@@ -37,14 +71,18 @@
         id: r.id,
         label: r.label,
         mode: r.mode,
-        meta: r.mode === 'pentest' ? 'Hunt' : 'Build',
+        meta: r.mode === 'pentest' ? 'Session' : 'Build',
       });
     }
     return out;
   });
 
-  function start(mode: 'build' | 'pentest') {
-    workspace.beginSession(mode);
+  // The session composer mounts fresh once the session starts and reads its
+  // initial value from composerDraft, so seeding the draft first is enough
+  // to land the starter prompt in the field. Mode follows the segment below.
+  function startWith(starter: Starter) {
+    workspace.composerDraft = starter.prompt;
+    workspace.beginSession(workspace.workstationMode);
     workspace.showStream();
     appState.focusComposer();
   }
@@ -70,23 +108,18 @@
     <div class="mark" aria-hidden="true"><NilMonogram state="idle" size={56} /></div>
     <p class="kicker">nil</p>
     <h1 class="title">{greeting}.</h1>
-    <p class="lede">Build software, or hunt a target. Same workstation, two modes.</p>
+    <p class="lede">One composer. Review a change, draft what's next, or debug what broke.</p>
 
     <div class="actions">
-      <button class="nil-lift nil-halo nil-magnetic row" type="button" {@attach magnetic} onclick={() => start('build')}>
-        <NilIcon name="hammer" size={16} />
-        <span class="copy">
-          <span class="label">Start building</span>
-          <span class="desc">Code, diffs, and the agent at the composer.</span>
-        </span>
-      </button>
-      <button class="nil-lift nil-halo nil-magnetic row" type="button" {@attach magnetic} onclick={() => start('pentest')}>
-        <NilIcon name="shield" size={16} />
-        <span class="copy">
-          <span class="label">Start a hunt</span>
-          <span class="desc">Load a target and collect evidence.</span>
-        </span>
-      </button>
+      {#each starters as starter (starter.id)}
+        <button class="nil-lift nil-halo nil-magnetic row" type="button" {@attach magnetic} onclick={() => startWith(starter)}>
+          <NilIcon name={starter.icon} size={16} />
+          <span class="copy">
+            <span class="label">{starter.label}</span>
+            <span class="desc">{starter.desc}</span>
+          </span>
+        </button>
+      {/each}
     </div>
 
     <div class="welcome-composer">

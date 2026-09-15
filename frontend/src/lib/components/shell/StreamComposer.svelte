@@ -165,7 +165,7 @@
       : agentRun.running
         ? 'Queue a follow-up'
         : workspace.workstationMode === 'pentest'
-          ? 'Describe the next hunt step'
+          ? 'Describe the next step'
           : 'Ask NIL to build, edit, or inspect files',
   );
 
