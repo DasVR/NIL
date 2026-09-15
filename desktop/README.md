@@ -16,12 +16,18 @@ desktop/
   scripts/
     macos-launch-smoke.sh  # CI sanity: bundle well-formed, signed, boots
     macos-zip-app.sh       # assembles Finn-Setup .pkg/.dmg/kit from the .app
+    windows-smoke.ps1      # CI: launch + NSIS/MSI silent install round-trips
   src-tauri/
     tauri.conf.json        # window chrome, bundle + macOS signing config
-    Cargo.toml, build.rs
+    tauri.windows.conf.json  # Windows-only overlay: frameless dark window, NSIS/MSI
+    Cargo.toml, build.rs   # build.rs also embeds the Windows DPI manifest
+    windows-app-manifest.xml # Common Controls v6 + PerMonitorV2 (Windows only)
     src/main.rs            # native menu + event bridge to the UI
+    src/windows.rs         # Windows: creates the frameless window, injects the bridge
+    src/chrome_bridge.js   # Windows: maps the chrome's window globals onto Tauri 2
     Entitlements.plist     # Hardened Runtime exceptions (NOT App Sandbox)
     capabilities/default.json
+    capabilities/windows-chrome.json  # Windows-only window-control permissions
     icons/                 # generated from frontend/static/nil-icon.png
 ```
 
@@ -127,6 +133,115 @@ empty-state flows below work without it.
 Also verify the shell itself: native traffic lights close/minimize/zoom; ⌘C/⌘V
 work in the terminal and editor; the menu bar shows App/Edit/Actions/Window; the
 Actions items open the palette, focus the composer, and toggle YOLO.
+
+## Windows
+
+Everything Windows-specific is layered on this same tree; nothing above changes
+for macOS or Linux.
+
+### Build
+
+```bash
+npm ci --prefix ../frontend
+npm ci
+npm run tauri -- build --bundles nsis,msi   # Windows host only
+# -> src-tauri/target/release/bundle/nsis/NIL_x.y.z_x64-setup.exe
+# -> src-tauri/target/release/bundle/msi/NIL_x.y.z_x64_en-US.msi
+```
+
+Prerequisites: Rust stable (MSVC toolchain), Visual Studio Build Tools with the
+Desktop C++ workload, WebView2 Runtime (preinstalled on Windows 11 / Windows 10
+20H2+). WiX and NSIS are downloaded by the Tauri CLI on first `tauri build`.
+
+### What the shell does on Windows, and why
+
+Tauri merges `tauri.windows.conf.json` over `tauri.conf.json` only when the target
+is Windows (arrays such as `app.windows` are replaced, so the main window is
+restated there in full).
+
+| Concern | Where | Grounding |
+|---|---|---|
+| Frameless window | overlay → `decorations: false`, `shadow: true` | `titleBarStyle: Overlay` is macOS-only; on Windows `decorations: true` would stack a native title bar on top of `Titlebar.svelte`. Frameless keeps the in-app titlebar as the single chrome (FRAMEWORK.md §3). `shadow: true` gives the Windows 11 rounded corners. |
+| Dark theme | overlay → `theme: "Dark"` | `frontend/src/app.html` declares `color-scheme: dark`; `tokens.css` has no light set. Forcing Dark makes WebView2's `prefers-color-scheme`, native scrollbars and form controls agree with the UI regardless of the OS setting. |
+| No white flash | overlay → `backgroundColor: "#0a0908"` | `--nil-void` from `tokens.css`. WebView2 paints white until the first frame otherwise. |
+| DPI | `windows-app-manifest.xml` via `build.rs` | Declares PerMonitorV2 before any HWND or WebView2 init; tao's runtime `SetProcessDpiAwarenessContext` remains as the fallback. |
+| Window controls / drag | `src/windows.rs` + `src/chrome_bridge.js` + `capabilities/windows-chrome.json` | With no native frame, `Titlebar.svelte` / `WindowControls.svelte` are the only controls. They call `__TAURI__.appWindow.*` and `__TAURI__.window.current().dragMove()`, which Tauri 2 does not expose; the bridge maps both onto `getCurrentWindow()`. The overlay sets `create: false` so `windows.rs` can create the window with the bridge as an initialization script. |
+| No native menu | `main.rs` (`cfg(not(windows))` around `.menu`) | A Win32 menu bar renders as a light classic strip above a frameless window. The three Actions stay reachable through the in-webview keymap (⌘/Ctrl K, J, Y). |
+| No console window | `main.rs` `windows_subsystem = "windows"` (release) | Standard Tauri. |
+| WebView2 install | overlay → `webviewInstallMode: embedBootstrapper` | Installer bootstraps the runtime if missing (`docs/WELCOME.md`: "WebView2 is installed if missing"). |
+
+Nothing here adds color, type, or motion; every value traces to `tokens.css`,
+`app.html`, or `FRAMEWORK.md`.
+
+### Installers
+
+- **NSIS** (`Finn-Setup.exe` in CI artifacts, per `install/catalog.json`) —
+  `installMode: currentUser`: installs to `%LOCALAPPDATA%\NIL`, HKCU registry, no
+  UAC. This is the "normal user, not Administrator" path from `docs/WELCOME.md`.
+- **MSI** (`Finn-Setup.msi`) — WiX, per-machine to `%ProgramFiles%\NIL`. The upgrade
+  code is pinned to the value Tauri derives from the product name
+  (`npm run tauri -- inspect wix-upgrade-code`), so a later product rename cannot
+  orphan installs.
+- **Publisher / Manufacturer** is derived by Tauri from the identifier
+  (`dev.nil.workstation` → `nil`) because `bundle.publisher` is unset. It shows in
+  Apps & Features and names the `HKCU\Software\nil\NIL` key. Setting
+  `bundle.publisher` is a product-naming decision for the base tree.
+- **Cross-installer note (Tauri behaviour, observed in CI):** both installers record
+  their install dir under `HKCU\Software\<publisher>\NIL`, and the MSI seeds
+  `INSTALLDIR` from that key. If the NSIS build was installed first on the same
+  account (even if since uninstalled — the key survives), the MSI silently installs
+  into `%LOCALAPPDATA%\NIL` instead of Program Files. Delete that key between the two
+  when testing both on one machine; the CI smoke does.
+- **MSIX** — not produced. Tauri 2 has no MSIX bundler; Store/MSIX packaging would be
+  a separate `makeappx` step over the NSIS payload.
+- Both installers are unsigned. SmartScreen shows "Windows protected your PC" on
+  first run of a downloaded build; `More info → Run anyway` is expected until a
+  code-signing certificate is wired into `bundle.windows.certificateThumbprint` /
+  `signCommand`.
+
+### CI: `.github/workflows/windows-desktop.yml`
+
+On `windows-latest`: `detect` → `npm ci` (frontend + desktop) → `tauri build
+--bundles nsis,msi` → upload `Finn-Setup.exe` / `Finn-Setup.msi` as
+`NIL-Windows-<sha>` (uploaded **before** the smoke so QA gets binaries even when a
+phase fails) → `scripts/windows-smoke.ps1`, one phase per step with its own timeout:
+
+- `launch`: logs the WebView2 runtime version, launches the unpackaged `NIL.exe`,
+  requires it to stay alive and own a top-level window for 12 s;
+- `nsis`: asserts the installer exists and is > 1 MB, silent install (`/S`),
+  launches the installed exe, silent uninstall, asserts removal;
+- `msi`: same round-trip via `msiexec /i … /qn` and `/x`, after clearing the HKCU
+  install-dir key. Every external wait has a hard timeout; failures print a process
+  snapshot and the verbose MSI log.
+
+That proves the shell links, WebView2 initializes, the frameless window is created,
+and both installers lay down and remove files. It proves nothing visual.
+
+### Still needs a person on a real Windows session
+
+Run against the `NIL-Windows-<sha>` artifact, ideally on both a 100 % and a
+150 %/200 % display:
+
+1. **Launch and first paint.** No white flash before the well (`--nil-void`)
+   appears; window opens centered at 1400×900 (or clamped to the work area) with
+   rounded corners and a shadow on Windows 11, square on Windows 10; no native title
+   bar, no menu strip, no console window.
+2. **Window chrome.** Dragging the titlebar moves the window; the three
+   `WindowControls` buttons minimize / toggle-maximize / close; the maximize glyph
+   flips when the window is maximized by other means (Win+Up). Double-click on the
+   titlebar is *not* expected to maximize (the chrome does not call `toggleMaximize`
+   on dblclick).
+3. **DPI and theme.** Move the window between monitors with different scale
+   factors: text stays crisp, the window resizes proportionally, no blurry frame.
+   With Windows in Light mode the app still renders dark and native scrollbars in
+   the stream/terminal are dark.
+
+Windows-specific gaps beyond the shared list below: the `chrome_bridge.js` layer
+should be retired once `WindowControls.svelte` / `Titlebar.svelte` import
+`getCurrentWindow` from `@tauri-apps/api/window` (and `frontend/src/types/tauri.d.ts`
+stops declaring ambient `@tauri-apps/api/*` modules); `install/windows/launch.cmd`
+still looks for `Finn Pentest Harness.exe` rather than `NIL.exe`; the PTY gap below
+means ConPTY on Windows.
 
 ## Known gaps / follow-ups for the platform + frontend teams
 
