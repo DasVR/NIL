@@ -5,6 +5,11 @@
   import { tabsStore } from '$lib/stores/tabsStore';
   import type { Terminal as XtermTerminal } from '@xterm/xterm';
   import type { FitAddon as XtermFitAddon } from '@xterm/addon-fit';
+  // xterm's own stylesheet is what parks .xterm-helper-textarea off-screen at
+  // opacity 0 and gives .xterm the positioning context that keeps it there.
+  // Without it the keyboard-capture textarea renders as a bare visible
+  // <textarea> in the flow.
+  import '@xterm/xterm/css/xterm.css';
 
   interface Props {
     tab: { id: string; type: string; label: string; dirty: boolean };
