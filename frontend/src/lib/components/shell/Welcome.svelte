@@ -132,8 +132,30 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    position: relative;
+    isolation: isolate;
+  }
+  /* Zone A stage: a soft ink ambient lifts the empty cluster off the void so
+     it reads as a staged moment, not a flat panel. Contained and faded — an
+     ambient, not a wall wash, and no B/C glass. Ink only (this is not one of
+     the four ember identity moments). */
+  .welcome::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 68% at 50% 40%,
+      color-mix(in oklab, var(--nil-ink) 5%, transparent) 0%,
+      color-mix(in oklab, var(--nil-ink) 2%, transparent) 34%,
+      transparent 66%);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .welcome::before { display: none; }
   }
   .hero {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -157,6 +179,9 @@
     cursor: pointer;
     color: var(--nil-ink-2);
     width: 100%;
+    /* Resting elevation so the starter blocks read as lifted cards on the
+       stage, not flat bars. Hover deepens to --lift-2 below. */
+    box-shadow: var(--lift-1);
   }
   /* LIFT + PRESS from motion.css carry the base feel. The starter rows sit 6px
      apart, so the pull toward the cursor that MAGNETIC adds made them ride
