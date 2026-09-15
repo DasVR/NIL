@@ -795,15 +795,19 @@
     gap: var(--s-3);
   }
 
+  /* Segment and model chip are both 24px layout boxes so .bar centers them at the
+     same integer offset — a half-pixel here smears every hairline in the bar over
+     two rows at 1x DPI. The hairline is a 1px ring outside the box, not a border
+     inside it; the inner track stays 81×20 per side. */
   .segment {
     position: relative;
     display: grid;
     grid-template-columns: 1fr 1fr;
-    width: 168px;
-    height: 26px;
+    width: 166px;
+    height: 24px;
     padding: 2px;
     background: var(--nil-void);
-    border: 1px solid var(--nil-line);
+    box-shadow: 0 0 0 1px var(--nil-line);
     border-radius: 999px;
   }
   .goo-defs {
@@ -844,7 +848,9 @@
     border: 0;
     background: transparent;
     color: var(--nil-ink-3);
-    font: 500 var(--t-micro)/1 var(--font-ui);
+    /* An 11px line box centered in the 20px track lands at y=4.5 and the label
+       renders a pixel low; a 16px line box lands at y=2 and reads centered. */
+    font: 500 var(--t-micro)/16px var(--font-ui);
     cursor: pointer;
     border-radius: 999px;
   }
@@ -864,7 +870,10 @@
     border-radius: 999px;
     background: transparent;
     color: var(--nil-ink-2);
-    font: 500 var(--t-micro)/1 var(--font-ui);
+    /* Line box matches the 16px chevron so label and icon share one integer
+       offset (3px) inside the 22px content box instead of the label's 11px box
+       landing at 5.5px and rounding low. */
+    font: 500 var(--t-micro)/16px var(--font-ui);
     cursor: pointer;
   }
   .picker {
