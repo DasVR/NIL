@@ -71,18 +71,27 @@ jobs:
         working-directory: desktop
         env:
           CI: true
+        # Host target on windows-latest is x86_64-pc-windows-msvc; leaving --target off
+        # keeps outputs under target/release, which the smoke script expects.
         run: npm run tauri -- build --bundles nsis,msi
         shell: bash
 
-      - name: Name the NSIS file Finn-Setup.exe
+      # Installer file names follow install/catalog.json (Finn-Setup.*), same as the
+      # macOS lane. Missing installers fail here rather than producing an empty artifact.
+      - name: Name the installers Finn-Setup.exe / Finn-Setup.msi
         shell: bash
         run: |
+          bundle=desktop/src-tauri/target/release/bundle
           mkdir -p dist-installers
-          exe="$(ls desktop/src-tauri/target/release/bundle/nsis/*.exe | head -1)"
+          exe="$(ls "$bundle"/nsis/*.exe | head -1)"
+          msi="$(ls "$bundle"/msi/*.msi | head -1)"
+          test -s "$exe" || { echo "NSIS installer missing"; exit 1; }
+          test -s "$msi" || { echo "MSI installer missing"; exit 1; }
           cp "$exe" dist-installers/Finn-Setup.exe
-          msi="$(ls desktop/src-tauri/target/release/bundle/msi/*.msi | head -1 || true)"
-          if [[ -n "$msi" ]]; then cp "$msi" dist-installers/Finn-Setup.msi; fi
+          cp "$msi" dist-installers/Finn-Setup.msi
+          ls -la dist-installers
 
+      # Uploaded before the smoke so QA still gets installers when a smoke phase fails.
       - name: Upload Windows packages
         uses: actions/upload-artifact@v4
         with:
@@ -90,7 +99,22 @@ jobs:
           path: |
             dist-installers/Finn-Setup.exe
             dist-installers/Finn-Setup.msi
-            desktop/src-tauri/target/release/bundle/nsis/*.exe
-            desktop/src-tauri/target/release/bundle/msi/*.msi
-          if-no-files-found: warn
+          if-no-files-found: error
           retention-days: 14
+
+      # Each smoke phase is its own step with a hard timeout so a stuck installer
+      # fails fast with a process snapshot instead of hanging the job.
+      - name: Smoke - launch NIL.exe
+        shell: pwsh
+        timeout-minutes: 5
+        run: ./desktop/scripts/windows-smoke.ps1 -Phase launch -Root (Get-Location).Path
+
+      - name: Smoke - NSIS install round-trip
+        shell: pwsh
+        timeout-minutes: 10
+        run: ./desktop/scripts/windows-smoke.ps1 -Phase nsis -Root (Get-Location).Path -InstallTimeoutSeconds 180
+
+      - name: Smoke - MSI install round-trip
+        shell: pwsh
+        timeout-minutes: 10
+        run: ./desktop/scripts/windows-smoke.ps1 -Phase msi -Root (Get-Location).Path -InstallTimeoutSeconds 180
