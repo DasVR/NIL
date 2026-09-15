@@ -156,6 +156,19 @@
    handoff, build complete). Driven by src/lib/motion/dither.ts.
    A second variant dissolves a single flat overlay (darker tint
    of the panel, no per-frame flicker) to reveal an arriving sheet.
+   Both are one-shot 2D-canvas transitions over --dur-dither that
+   clear themselves when done (lib/ui/DitherWipe.svelte).
+
+   NOT the titlebar. The strip behind the titlebar is a different
+   thing on purpose: the Zone B "title bar material" from
+   .cursor/rules/40-nil-gpu.mdc — a persistent WebGL2 brushed-steel
+   surface (lib/components/ui/LiquidMetal.svelte, gl/liquidmetal.frag)
+   lit by a pointer-following light, metered at ≤30fps and paused
+   while a run streams. Its only Bayer is the sub-LSB noise-floor
+   dither every NIL shader adds to kill 8-bit banding; the fine
+   horizontal grain you see is the anisotropic brush, not a matrix.
+   It never wipes, never dissolves, and does not use this class or
+   these tokens. Do not "fix" one to look like the other.
    ------------------------------------------------------------ */
 .nil-dither {
   position: absolute;

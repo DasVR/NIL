@@ -8,6 +8,9 @@
 // no glass pass, no Zone A ember accent — this stays neutral steel,
 // per "color means risk" (see .cursor/rules/40-nil-gpu.mdc, Zone A
 // vs B). uPending nudges tempo only, never hue.
+// Not motion.css primitive 15 DITHER (the one-shot Bayer wipe /
+// dissolve in lib/motion/dither.ts) — this is a persistent material,
+// and the divergence is deliberate. See the DITHER comment there.
 // ============================================================
 precision highp float;
 
