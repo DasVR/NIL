@@ -36,15 +36,22 @@ find "$DIR" -maxdepth 4 -name '*.app' -print0 2>/dev/null \
       sign_app "$app"
     done
 
+sign_app "/Applications/NIL.app"
+sign_app "${HOME}/Applications/NIL.app"
 sign_app "/Applications/Finn Pentest Harness.app"
 sign_app "${HOME}/Applications/Finn Pentest Harness.app"
 sign_app "${DIR}/Finn Setup.app"
+sign_app "${DIR}/NIL.app"
 sign_app "${DIR}/Finn Pentest Harness.app"
 
 if [[ -d "${DIR}/Finn Setup.app" ]]; then
   open "${DIR}/Finn Setup.app"
 elif [[ -f "${DIR}/Finn-Setup.pkg" ]]; then
   open "${DIR}/Finn-Setup.pkg"
+elif [[ -d "${DIR}/NIL.app" ]]; then
+  open "${DIR}/NIL.app"
+elif [[ -d "/Applications/NIL.app" ]]; then
+  open "/Applications/NIL.app"
 elif [[ -d "${DIR}/Finn Pentest Harness.app" ]]; then
   open "${DIR}/Finn Pentest Harness.app"
 elif [[ -d "/Applications/Finn Pentest Harness.app" ]]; then
