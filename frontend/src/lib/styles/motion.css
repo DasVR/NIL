@@ -25,7 +25,7 @@
   --dur-panel:  260ms;  /* a region resizing, a rail sliding */
   --dur-stage:  420ms;  /* orchestrated view change — one per interaction, max */
   --dur-decode: 520ms;  /* scramble settle */
-  --dur-jelly:  460ms;  /* a pill/segment landing against a wall */
+  --dur-jelly:  320ms;  /* a pill/segment landing against a wall */
   --dur-hold:   850ms;  /* press-and-hold to confirm */
   --dur-dither: 720ms;  /* Bayer wipe / overlay dissolve — identity beats only */
 
@@ -54,7 +54,11 @@
    ------------------------------------------------------------ */
 .nil-lift,
 .app-shell button:not(.nil-quiet):not(.nil-row-host) {
-  transition: transform var(--dur-panel) var(--ease-spring),
+  /* The 1px hover rise is below the spring threshold — a spring on a <8px move
+     reads as lag, not weight — so it decelerates on --ease-out, not --ease-spring.
+     Overshoot is reserved for the moves big enough to feel it: JELLY, MAGNETIC,
+     MORPH. */
+  transition: transform var(--dur-flip) var(--ease-out),
               border-color var(--dur-flip) var(--ease-out),
               background-color var(--dur-flip) var(--ease-out),
               box-shadow var(--dur-flip) var(--ease-out);
@@ -66,6 +70,9 @@
   border-color: var(--nil-line-hot);
   box-shadow: var(--lift-1);
 }
+/* Tier 2 — prominent cards / empty-cluster CTAs hover to a deeper elevation.
+   Pair with .nil-lift; the only difference is shadow depth, same crisp curve. */
+.nil-lift-2:hover { box-shadow: var(--lift-2); }
 
 /* ------------------------------------------------------------
    02 · PRESS — always paired with LIFT, never used alone.
@@ -118,7 +125,7 @@
   position: absolute; top: 0; left: 0; border-radius: 50%;
   background: var(--nil-raised);
   transform: scale(0); pointer-events: none; z-index: -1;
-  transition: transform var(--dur-panel) var(--ease-out);
+  transition: transform var(--dur-enter) var(--ease-out);
 }
 
 /* ------------------------------------------------------------
@@ -130,7 +137,9 @@
 .nil-hold { position: relative; overflow: hidden; }
 .nil-hold-fill {
   position: absolute; inset: 0; width: 0%; z-index: 0;
-  background: color-mix(in oklab, var(--brand-ember-500) 55%, var(--nil-raised));
+  /* B/C chrome motion is ink, never ember — color means risk, and a hold-to-
+     confirm is a machine state, not a Zone A identity moment. */
+  background: color-mix(in oklab, var(--nil-ink) 22%, var(--nil-raised));
   /* component JS drives width 0% -> 100% over --dur-hold; on release
      before completion, transition width back to 0% over --dur-enter */
 }
@@ -252,7 +261,9 @@
 .nil-magnetic {
   --mx: 0px; --my: 0px;
   transform: translate3d(var(--mx), var(--my), 0);
-  transition: transform var(--dur-panel) var(--ease-spring);
+  /* Release springs home over --dur-enter (was --dur-panel — the longer settle
+     read as lag on release). Engaged still tracks the pointer with no easing. */
+  transition: transform var(--dur-enter) var(--ease-spring);
 }
 .nil-magnetic[data-engaged="true"] { transition-duration: 0ms; }
 
@@ -352,9 +363,9 @@ dialog[open]::backdrop {
    A hairline glow, not a colored spinner, not a second loop in chrome.
    ------------------------------------------------------------ */
 @keyframes nil-pulse-glow {
-  from { box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand-ember-500) 0%, transparent); }
-  50%  { box-shadow: 0 0 0 4px color-mix(in oklab, var(--brand-ember-500) 28%, transparent); }
-  to   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--brand-ember-500) 0%, transparent); }
+  from { box-shadow: 0 0 0 0 color-mix(in oklab, var(--nil-ink) 0%, transparent); }
+  50%  { box-shadow: 0 0 0 4px color-mix(in oklab, var(--nil-ink) 28%, transparent); }
+  to   { box-shadow: 0 0 0 0 color-mix(in oklab, var(--nil-ink) 0%, transparent); }
 }
 .nil-pulse {
   animation: nil-pulse-glow 2.4s var(--ease-mono) infinite;
@@ -432,29 +443,6 @@ dialog[open]::backdrop {
 }
 .nil-check-draw[data-drawn="true"] path, .nil-check-draw[data-drawn="true"] polyline { stroke-dashoffset: 0; }
 
-/* ------------------------------------------------------------
-   22 · THINK — the model is thinking. A live status label breathes
-   while a run is in flight, then goes dead the instant it ends.
-   Adapted from .claude/skills/transitions-dev/28-thinking-states.md,
-   but that reference sweeps a background-position shimmer across the
-   glyphs; Zone B/C is transform + opacity only (40-nil-gpu.mdc), so
-   the "alive" cue here is an opacity breathe, not a paint-driven
-   sweep. Ink only (--nil-ink-2 resting, toward --nil-ink at the
-   peak) — no hue: this is a machine state, not a Zone A moment.
-   Like WAVE/PULSE/RING it is a state-scoped loop that STOPS at rest,
-   so SCANLINE stays the only loop running in idle chrome. Gate it
-   with [data-thinking="true"]; drop the attribute and it is static
-   --nil-ink-2 with no animation.
-   ------------------------------------------------------------ */
-.nil-think { color: var(--nil-ink-2); }
-.nil-think[data-thinking="true"] {
-  animation: nil-think-breathe 1.6s var(--ease-mono) infinite;
-}
-@keyframes nil-think-breathe {
-  0%, 100% { opacity: 0.5; }
-  50% { opacity: 1; }
-}
-
 /* ============================================================
    REDUCED MOTION — non-negotiable.
    Kill loops and travel. Keep opacity and color so state changes
@@ -481,9 +469,7 @@ dialog[open]::backdrop {
   .nil-jelly { transition: none !important; }
   .nil-droplet { transition-duration: 0.01ms !important; }
   .nil-morph, .nil-morph[data-confirmed="true"] { transform: none; }
-  .nil-pulse { animation: none; box-shadow: 0 0 0 1px color-mix(in oklab, var(--brand-ember-500) 40%, transparent); }
+  .nil-pulse { animation: none; box-shadow: 0 0 0 1px color-mix(in oklab, var(--nil-ink) 40%, transparent); }
   .nil-shake { animation: none; }
   .nil-check-draw path, .nil-check-draw polyline { transition-duration: 0.01ms; }
-  /* Keep the thinking label legible but stop the breathe. */
-  .nil-think[data-thinking="true"] { animation: none; opacity: 1; }
 }

@@ -148,7 +148,7 @@
               {/if}
               <div class="msg-body">
                 {#if step.role === 'assistant' && step.streaming && !step.text}
-                  <p class="thought nil-think" data-thinking="true">Waiting on the model</p>
+                  <p class="thought" data-state="working">Waiting on the model</p>
                 {:else if step.role === 'assistant' && !step.failed && !step.interrupted}
                   <p class="msg-text"><AshText text={step.text} /></p>
                 {:else}

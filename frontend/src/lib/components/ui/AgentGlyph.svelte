@@ -4,12 +4,9 @@
   interface Props {
     /** Render the phase name beside the glyph. Off = icon-only with an aria-label. */
     label?: boolean;
-    /** Breathe (THINK, motion.css #22) while the model is in flight. Off in the
-        status bar, which stays a snap surface. */
-    thinking?: boolean;
   }
 
-  let { label = false, thinking = false }: Props = $props();
+  let { label = false }: Props = $props();
 
   const phase = $derived(agentPhase());
   const text = $derived(phaseLabel(phase));
@@ -35,9 +32,8 @@
 
 {#if phase !== 'running'}
   <span
-    class="agent-glyph nil-think"
+    class="agent-glyph"
     data-phase={phase}
-    data-thinking={thinking && (phase === 'thinking' || phase === 'editing') ? 'true' : undefined}
     role={label ? undefined : 'img'}
     aria-label={label ? undefined : text}
   >
