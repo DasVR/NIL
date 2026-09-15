@@ -549,15 +549,20 @@
           </filter>
         </defs>
       </svg>
-      <span
-        class="pill-track"
-        style:transform={workspace.workstationMode === 'pentest' ? 'translateX(100%)' : 'translateX(0)'}
-      >
+      <!-- .pill-lane clips the JELLY overshoot (ease-pop translate + scaleX)
+           to the pill's travel lane. Kept separate from .segment so the
+           .seg buttons' focus halo is never clipped. -->
+      <span class="pill-lane" aria-hidden="true">
         <span
-          class="pill chip-bg nil-jelly"
-          bind:this={pillEl}
-          style:--jelly-origin={lastMode === 'pentest' ? 'right center' : 'left center'}
-        ></span>
+          class="pill-track"
+          style:transform={workspace.workstationMode === 'pentest' ? 'translateX(100%)' : 'translateX(0)'}
+        >
+          <span
+            class="pill chip-bg nil-jelly"
+            bind:this={pillEl}
+            style:--jelly-origin={lastMode === 'pentest' ? 'right center' : 'left center'}
+          ></span>
+        </span>
       </span>
       <button
         class="seg nil-quiet nil-halo"
@@ -807,13 +812,19 @@
     height: 0;
     overflow: hidden;
   }
+  .pill-lane {
+    position: absolute;
+    inset: 2px;
+    overflow: hidden;
+    border-radius: 999px;
+    pointer-events: none;
+  }
   .pill-track {
     position: absolute;
-    top: 2px;
-    left: 2px;
-    width: calc(50% - 2px);
-    height: calc(100% - 4px);
-    pointer-events: none;
+    top: 0;
+    left: 0;
+    width: 50%;
+    height: 100%;
     transition: transform var(--dur-jelly) var(--ease-pop);
   }
   .pill {
