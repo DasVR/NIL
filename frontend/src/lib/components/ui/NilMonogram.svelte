@@ -60,7 +60,9 @@
   >
     <g class="n-shape">
       {#each cells as c (`${c.x}:${c.y}`)}
-        <rect x={c.x} y={c.y} width="0.92" height="0.92" rx="0.14" />
+        <!-- Full grid cells share exact integer edges. Shrinking/rounding each
+             tile exposed the background as seams through the identity mark. -->
+        <rect x={c.x} y={c.y} width="1" height="1" />
       {/each}
     </g>
   </svg>
