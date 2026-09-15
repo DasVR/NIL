@@ -1,5 +1,4 @@
 <script lang="ts">
-  import { magnetic } from '$lib/motion/magnetic.svelte.ts';
   import { droplet } from '$lib/motion/droplet';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
@@ -111,8 +110,8 @@
 
     <div class="actions">
       {#each starters as starter (starter.id)}
-        <button class="nil-lift nil-halo nil-magnetic row" type="button" {@attach magnetic} onclick={() => startWith(starter)}>
-          <NilIcon name={starter.icon} size={16} />
+        <button class="nil-lift nil-halo row" type="button" onclick={() => startWith(starter)}>
+          <span class="glyph"><NilIcon name={starter.icon} size={16} /></span>
           <span class="copy">
             <span class="label">{starter.label}</span>
             <span class="desc">{starter.desc}</span>
@@ -196,9 +195,36 @@
     color: var(--nil-ink-2);
     width: 100%;
   }
+  /* LIFT + PRESS from motion.css carry the base feel. The starter rows sit 6px
+     apart, so the pull toward the cursor that MAGNETIC adds made them ride
+     over each other; instead the hover stays in place and gets its energy
+     from a deeper lift, a hotter surface, and the glyph waking up. The scale
+     is small enough (≈0.4px of height) never to close the gap. */
+  .row:hover:not(:active) {
+    transform: translateY(-1px) scale(1.008);
+    background: color-mix(in oklab, var(--nil-raised) 94%, var(--nil-ink));
+    box-shadow: var(--lift-2);
+    color: var(--nil-ink);
+  }
+  .glyph {
+    display: inline-flex;
+    flex: none;
+    color: var(--nil-ink-3);
+    transition: color var(--dur-flip) var(--ease-out),
+                transform var(--dur-panel) var(--ease-spring);
+  }
+  .row:hover .glyph { color: var(--nil-ink); transform: scale(1.12); }
   .copy { display: flex; flex-direction: column; gap: 2px; }
   .label { font: 500 var(--t-body)/1.3 var(--font-ui); color: var(--nil-ink); }
-  .desc { font: var(--t-meta)/1.3 var(--font-ui); color: var(--nil-ink-3); }
+  .desc {
+    font: var(--t-meta)/1.3 var(--font-ui);
+    color: var(--nil-ink-3);
+    transition: color var(--dur-flip) var(--ease-out);
+  }
+  .row:hover .desc { color: var(--nil-ink-2); }
+  @media (prefers-reduced-motion: reduce) {
+    .row:hover:not(:active), .row:hover .glyph { transform: none; }
+  }
   .recent { width: 100%; display: flex; flex-direction: column; gap: 4px; margin-block-start: var(--s-4); }
   .eyebrow {
     font: 600 var(--t-micro)/1 var(--font-ui);
