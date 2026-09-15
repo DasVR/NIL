@@ -3,9 +3,12 @@
 set -euo pipefail
 
 TARGET="${2:-/}"
-APP="${TARGET%/}/Applications/Finn Pentest Harness.app"
+# The Tauri workstation bundle is NIL.app; older builds shipped it as
+# "Finn Pentest Harness.app". Resolve either, but stay product-specific so we
+# never re-sign an unrelated app that happens to be in /Applications.
+APP="${TARGET%/}/Applications/NIL.app"
 if [[ ! -d "$APP" ]]; then
-  APP="$(find "${TARGET%/}/Applications" -maxdepth 1 -name 'Finn*.app' ! -name '*Setup*' | head -1 || true)"
+  APP="$(find "${TARGET%/}/Applications" -maxdepth 1 \( -name 'NIL*.app' -o -name 'Finn*.app' \) ! -name '*Setup*' | head -1 || true)"
 fi
 
 CONSOLE="$(stat -f %Su /dev/console 2>/dev/null || true)"

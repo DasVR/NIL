@@ -1,0 +1,7 @@
+node_modules/
+dist/
+dist-installers/
+
+# Rust / Tauri build output
+src-tauri/target/
+src-tauri/gen/schemas/
