@@ -70,7 +70,6 @@
     <div class="mark" aria-hidden="true"><NilMonogram state="idle" size={56} /></div>
     <p class="kicker">nil</p>
     <h1 class="title">{greeting}.</h1>
-    <p class="lede">Build software, or hunt a target. Same workstation, two modes.</p>
 
     <div class="actions">
       <button class="nil-lift nil-halo nil-magnetic row" type="button" {@attach magnetic} onclick={() => start('build')}>
@@ -148,11 +147,6 @@
     font: 500 var(--t-display)/var(--lh-tight) var(--font-ui);
     letter-spacing: var(--track-tight);
     color: var(--nil-ink);
-  }
-  .lede {
-    font: var(--t-body)/var(--lh-body) var(--font-ui);
-    color: var(--nil-ink-2);
-    max-width: 42ch;
   }
   .actions { display: flex; flex-direction: column; gap: 6px; width: 100%; margin-block-start: var(--s-2); }
   .welcome-composer { width: 100%; margin-block-start: var(--s-3); }
