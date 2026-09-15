@@ -10,7 +10,7 @@
   import McpPanel from '$lib/components/shell/McpPanel.svelte';
   import HoldConfirm from '$lib/ui/HoldConfirm.svelte';
   import api from '$lib/api';
-  import NilIcon from '$lib/ui/NilIcon.svelte';
+  import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
   import MatrixRain from '$lib/ui/MatrixRain.svelte';
 
   interface SidebarProps {
@@ -39,7 +39,7 @@
   const pinned = $derived(open || workspace.railPinned);
   const totalWidth = $derived(pinned ? RAIL + width : RAIL);
 
-  const items: { id: RailId; icon: string; label: string }[] = [
+  const items: { id: RailId; icon: NilIconName; label: string }[] = [
     { id: 'files', icon: 'folder', label: 'Files' },
     { id: 'terminal', icon: 'terminal', label: 'Terminal' },
     { id: 'diffs', icon: 'git-compare', label: 'Diffs' },

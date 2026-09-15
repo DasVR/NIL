@@ -27,6 +27,7 @@
   },
   "dependencies": {
     "@iconify/svelte": "^4.2.0",
+    "@lucide/svelte": "^1.46.0",
     "@monaco-editor/loader": "^1.5.4",
     "@tauri-apps/api": "^2.11.1",
     "@tauri-apps/plugin-store": "^2.4.4",
@@ -36,6 +37,7 @@
     "bits-ui": "^2.19.0",
     "cuelume": "^0.2.2",
     "monaco-editor": "^0.52.2",
+    "sv-agentation": "^0.4.0",
     "svelte-motion": "^0.12.2"
   }
 }

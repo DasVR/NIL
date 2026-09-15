@@ -3,6 +3,7 @@ import { workspace } from '$lib/stores/workspace.svelte.ts';
 import { refreshProject } from '$lib/project.svelte.ts';
 import { agentRun } from '$lib/agent/run.svelte.ts';
 import { tabsStore } from '$lib/stores/tabsStore';
+import type { NilIconName } from '$lib/ui/NilIcon.svelte';
 
 interface PaletteCommand {
   id: string;
@@ -10,7 +11,7 @@ interface PaletteCommand {
   shortcut?: string;
   action: () => void;
   section?: string;
-  icon?: string;
+  icon?: NilIconName;
 }
 
 let open = $state(false);
@@ -83,7 +84,7 @@ const commands: PaletteCommand[] = [
     id: 'open-github',
     label: 'Open GitHub',
     section: 'View',
-    icon: 'github',
+    icon: 'git-pull-request',
     action: () => workspace.openSide('github'),
   },
   {
