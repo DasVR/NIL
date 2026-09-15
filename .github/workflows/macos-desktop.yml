@@ -11,9 +11,31 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  # A job-level `if: hashFiles(...)` is evaluated BEFORE checkout, so it always
+  # sees an empty workspace and the packaging job is silently skipped forever
+  # (a green run that never built anything). This cheap job checks out first and
+  # reports honestly whether the Tauri desktop tree exists.
+  detect:
+    name: Detect desktop tree
+    runs-on: ubuntu-latest
+    outputs:
+      present: ${{ steps.check.outputs.present }}
+    steps:
+      - uses: actions/checkout@v4
+      - id: check
+        run: |
+          if [ -f desktop/src-tauri/tauri.conf.json ]; then
+            echo "present=true" >> "$GITHUB_OUTPUT"
+            echo "Desktop Tauri tree present; macOS packaging will run."
+          else
+            echo "present=false" >> "$GITHUB_OUTPUT"
+            echo "No desktop/src-tauri/tauri.conf.json; skipping macOS packaging."
+          fi
+
   package-and-launch:
     name: Package .app and launch
-    if: hashFiles('desktop/src-tauri/tauri.conf.json') != ''
+    needs: detect
+    if: needs.detect.outputs.present == 'true'
     runs-on: macos-latest
     timeout-minutes: 50
     permissions:
@@ -22,62 +44,44 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Detect Tauri packaging tree
-        id: tauri
-        run: |
-          if [ -d desktop ] && [ -d web ]; then
-            echo "present=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "present=false" >> "$GITHUB_OUTPUT"
-            echo "No web/desktop trees in this repo; skipping Tauri packaging."
-          fi
-
       - name: Install Node.js
-        if: steps.tauri.outputs.present == 'true'
         uses: actions/setup-node@v4
         with:
           node-version: 22
           cache: npm
           cache-dependency-path: |
-            web/package-lock.json
+            frontend/package-lock.json
             desktop/package-lock.json
 
       - name: Install Rust
-        if: steps.tauri.outputs.present == 'true'
         uses: dtolnay/rust-toolchain@stable
 
       - name: Cache Rust
-        if: steps.tauri.outputs.present == 'true'
         uses: swatinem/rust-cache@v2
         with:
           workspaces: desktop/src-tauri
 
       - name: Install JS dependencies
-        if: steps.tauri.outputs.present == 'true'
         run: |
-          npm ci --prefix web
+          npm ci --prefix frontend
           npm ci --prefix desktop
 
       - name: Package macOS app and DMG
-        if: steps.tauri.outputs.present == 'true'
         working-directory: desktop
         env:
           CI: true
         run: npm run tauri -- build --bundles app,dmg
 
       - name: Launch smoke test
-        if: steps.tauri.outputs.present == 'true'
         run: bash desktop/scripts/macos-launch-smoke.sh
 
       - name: Build installers (Setup.app, .pkg, Setup DMG, kit zip)
-        if: steps.tauri.outputs.present == 'true'
         run: bash desktop/scripts/macos-zip-app.sh
 
       - name: Upload macOS installers
-        if: steps.tauri.outputs.present == 'true'
         uses: actions/upload-artifact@v4
         with:
-          name: Finn-Setup-macOS-${{ github.sha }}
+          name: NIL-macOS-${{ github.sha }}
           path: |
             desktop/src-tauri/target/release/bundle/macos/Finn-Setup.pkg
             desktop/src-tauri/target/release/bundle/macos/Finn-Setup.dmg
