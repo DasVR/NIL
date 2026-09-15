@@ -209,16 +209,32 @@
   }
   .session {
     display: flex;
+    align-items: center;
     justify-content: space-between;
     gap: var(--s-3);
     width: 100%;
-    height: var(--row-h);
+    min-height: var(--row-h);
     padding: 0 var(--s-2);
     border: 0;
     background: transparent;
     cursor: pointer;
     border-radius: var(--r-field);
+    text-align: left;
+    line-height: var(--lh-tight);
   }
-  .s-name { font: 500 var(--t-meta)/1 var(--font-machine); color: var(--nil-ink-2); }
-  .s-meta { font: var(--t-micro)/1 var(--font-ui); color: var(--nil-ink-3); }
+  .s-name {
+    flex: 1 1 auto;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    font: 500 var(--t-meta)/var(--lh-tight) var(--font-machine);
+    color: var(--nil-ink-2);
+  }
+  .s-meta {
+    flex: 0 0 auto;
+    white-space: nowrap;
+    font: var(--t-micro)/var(--lh-tight) var(--font-ui);
+    color: var(--nil-ink-3);
+  }
 </style>
