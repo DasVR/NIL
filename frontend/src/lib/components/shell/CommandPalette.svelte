@@ -247,7 +247,7 @@
                 <!-- svelte-ignore a11y_no_static_element_interactions -->
                 <!-- svelte-ignore a11y_interactive_supports_focus -->
                 <div
-                  class="palette-item"
+                  class="palette-item nil-row-host"
                   class:selected={globalIdx === selectedIndex}
                   role="option"
                   aria-selected={globalIdx === selectedIndex}
