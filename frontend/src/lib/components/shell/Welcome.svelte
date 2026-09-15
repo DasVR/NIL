@@ -1,5 +1,6 @@
 <script lang="ts">
   import { droplet } from '$lib/motion/droplet';
+  import { cubicOut } from 'svelte/easing';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
@@ -81,6 +82,21 @@
     appState.focusComposer();
   }
 
+  // Empty cluster entrance: a single, one-time stagger of the starter blocks on
+  // mount. `in:` only, so it never re-staggers on later renders. Opacity + an
+  // 8px lift on --ease-out (no spring), and it collapses to nothing under
+  // reduced motion.
+  function starterIn(_node: Element, { index = 0 }: { index?: number } = {}) {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return {
+      delay: reduced ? 0 : index * 60,
+      duration: reduced ? 0 : 260,
+      easing: cubicOut,
+      css: (t: number) =>
+        `opacity: ${t};${reduced ? '' : ` transform: translateY(${(1 - t) * 8}px);`}`,
+    };
+  }
+
   function openRecent(item: RecentRow) {
     if (item.id.startsWith('eng:')) {
       appState.activeEngagementId = item.label;
@@ -95,8 +111,8 @@
 <section class="welcome" aria-label="Start a session">
   <div class="hero">
     <div class="actions">
-      {#each starters as starter (starter.id)}
-        <button class="nil-lift nil-halo row" type="button" onclick={() => startWith(starter)}>
+      {#each starters as starter, i (starter.id)}
+        <button class="nil-lift nil-lift-2 nil-halo row" type="button" in:starterIn={{ index: i }} onclick={() => startWith(starter)}>
           <span class="glyph"><NilIcon name={starter.icon} size={16} /></span>
           <span class="copy">
             <span class="label">{starter.label}</span>
@@ -192,7 +208,6 @@
   .actions .row:hover:not(:active) {
     transform: translateY(-1px) scale(1.008);
     background: color-mix(in oklab, var(--nil-raised) 94%, var(--nil-ink));
-    box-shadow: var(--lift-2);
     color: var(--nil-ink);
   }
   .glyph {
