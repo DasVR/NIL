@@ -41,6 +41,11 @@ if (-not $Publisher) { $Publisher = ($TauriConf.identifier -split '\.')[1] }
 # Both installers record their install dir here; the WiX template seeds INSTALLDIR from it.
 $InstallDirKey = "HKCU:\Software\$Publisher\$ProductName"
 $Release = Join-Path $Desktop 'src-tauri\target\release'
+# The unpackaged binary carries the Cargo package name; installers rename it to <productName>.exe.
+$CargoToml = Get-Content (Join-Path $Desktop 'src-tauri\Cargo.toml') -Raw
+$CrateName = [regex]::Match($CargoToml, '(?ms)^\[package\].*?^name\s*=\s*"([^"]+)"').Groups[1].Value
+if (-not $CrateName) { throw 'Could not read [package].name from desktop/src-tauri/Cargo.toml' }
+$ExeName = "$CrateName.exe"
 $Bundle = Join-Path $Release 'bundle'
 
 function Log([string]$Message) { Write-Host ("[{0:HH:mm:ss}] {1}" -f (Get-Date), $Message) }
@@ -49,7 +54,7 @@ function Step([string]$Message) { Write-Host ''; Log "== $Message" }
 function Dump-Processes {
   Log 'process snapshot (NIL / WebView2 / installers):'
   Get-Process -ErrorAction SilentlyContinue |
-    Where-Object { $_.ProcessName -match '^(NIL|msedgewebview2|msiexec|NIL-Setup|.*Setup.*|uninstall|MicrosoftEdgeWebview2Setup)$' } |
+    Where-Object { $_.ProcessName -in @($ProductName, $CrateName, 'msedgewebview2', 'msiexec', 'uninstall', 'MicrosoftEdgeWebview2Setup') -or $_.ProcessName -like '*Setup*' } |
     Select-Object Id, ProcessName, MainWindowTitle, StartTime |
     Format-Table -AutoSize | Out-String | Write-Host
 }
@@ -61,7 +66,7 @@ function Fail([string]$Message) {
 }
 
 function Stop-AppProcesses {
-  Get-Process -Name $ProductName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
+  Get-Process -Name $ProductName, $CrateName -ErrorAction SilentlyContinue | Stop-Process -Force -ErrorAction SilentlyContinue
 }
 
 function Get-WebView2Version {
@@ -132,7 +137,7 @@ function Phase-Launch {
   Log "OS $([System.Environment]::OSVersion.VersionString)"
 
   Step 'Unpackaged binary launches and stays up'
-  Assert-Launches -ExePath (Join-Path $Release "$ProductName.exe") -Label 'release exe'
+  Assert-Launches -ExePath (Join-Path $Release $ExeName) -Label 'release exe'
 }
 
 function Phase-Nsis {
@@ -145,14 +150,14 @@ function Phase-Nsis {
   $code = Invoke-WithTimeout -FilePath $nsis -Arguments @('/S') -Seconds $InstallTimeoutSeconds -Label 'NSIS install'
   if ($code -ne 0) { Fail "NSIS installer exited with $code" }
   Log "WebView2 runtime after install: $(Get-WebView2Version)"
-  Assert-Launches -ExePath (Join-Path $nsisDir "$ProductName.exe") -Label 'NSIS-installed exe'
+  Assert-Launches -ExePath (Join-Path $nsisDir $ExeName) -Label 'NSIS-installed exe'
 
   $uninstaller = Join-Path $nsisDir 'uninstall.exe'
   if (-not (Test-Path $uninstaller)) { Fail "NSIS uninstaller missing at $uninstaller" }
   # NSIS uninstallers copy themselves to %TEMP% and return immediately; _?= keeps it in place so the wait is real.
   $code = Invoke-WithTimeout -FilePath $uninstaller -Arguments @('/S', "_?=$nsisDir") -Seconds $InstallTimeoutSeconds -Label 'NSIS uninstall'
   if ($code -ne 0) { Fail "NSIS uninstaller exited with $code" }
-  if (Test-Path (Join-Path $nsisDir "$ProductName.exe")) { Fail 'NSIS uninstall left the exe behind' }
+  if (Test-Path (Join-Path $nsisDir $ExeName)) { Fail 'NSIS uninstall left the exe behind' }
   Log 'NSIS install/uninstall round-trip ok'
 }
 
@@ -179,7 +184,7 @@ function Find-MsiInstallDir {
   if ($fromRegistry -and (Test-Path $fromRegistry)) { return $fromRegistry }
   foreach ($root in @($env:ProgramFiles, ${env:ProgramFiles(x86)})) {
     $candidate = Join-Path $root $ProductName
-    if (Test-Path (Join-Path $candidate "$ProductName.exe")) { return $candidate }
+    if (Test-Path (Join-Path $candidate $ExeName)) { return $candidate }
   }
   return $null
 }
@@ -208,7 +213,7 @@ function Phase-Msi {
     Fail "msiexec /i exited 0 but no $ProductName install directory was found"
   }
   Log "MSI install dir: $installDir"
-  $msiExe = Join-Path $installDir "$ProductName.exe"
+  $msiExe = Join-Path $installDir $ExeName
   Assert-Launches -ExePath $msiExe -Label 'MSI-installed exe'
 
   $code = Invoke-WithTimeout -FilePath 'msiexec.exe' -Arguments @('/x', "`"$msi`"", '/qn', '/norestart') -Seconds $InstallTimeoutSeconds -Label 'msiexec /x'

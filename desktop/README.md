@@ -178,6 +178,9 @@ Nothing here adds color, type, or motion; every value traces to `tokens.css`,
 - **NSIS** (`Finn-Setup.exe` in CI artifacts, per `install/catalog.json`) —
   `installMode: currentUser`: installs to `%LOCALAPPDATA%\NIL`, HKCU registry, no
   UAC. This is the "normal user, not Administrator" path from `docs/WELCOME.md`.
+- The installed executable is `nil-desktop.exe` (Tauri ships the main binary under
+  its Cargo crate name); the Start Menu / desktop shortcut and Apps & Features
+  entry are named `NIL`.
 - **MSI** (`Finn-Setup.msi`) — WiX, per-machine to `%ProgramFiles%\NIL`. The upgrade
   code is pinned to the value Tauri derives from the product name
   (`npm run tauri -- inspect wix-upgrade-code`), so a later product rename cannot
@@ -206,7 +209,8 @@ On `windows-latest`: `detect` → `npm ci` (frontend + desktop) → `tauri build
 `NIL-Windows-<sha>` (uploaded **before** the smoke so QA gets binaries even when a
 phase fails) → `scripts/windows-smoke.ps1`, one phase per step with its own timeout:
 
-- `launch`: logs the WebView2 runtime version, launches the unpackaged `NIL.exe`,
+- `launch`: logs the WebView2 runtime version, launches the unpackaged
+  `nil-desktop.exe` (installers ship the binary under its crate name too),
   requires it to stay alive and own a top-level window for 12 s;
 - `nsis`: asserts the installer exists and is > 1 MB, silent install (`/S`),
   launches the installed exe, silent uninstall, asserts removal;
@@ -240,7 +244,7 @@ Windows-specific gaps beyond the shared list below: the `chrome_bridge.js` layer
 should be retired once `WindowControls.svelte` / `Titlebar.svelte` import
 `getCurrentWindow` from `@tauri-apps/api/window` (and `frontend/src/types/tauri.d.ts`
 stops declaring ambient `@tauri-apps/api/*` modules); `install/windows/launch.cmd`
-still looks for `Finn Pentest Harness.exe` rather than `NIL.exe`; the PTY gap below
+still looks for `Finn Pentest Harness.exe` rather than `nil-desktop.exe`; the PTY gap below
 means ConPTY on Windows.
 
 ## Known gaps / follow-ups for the platform + frontend teams
