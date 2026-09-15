@@ -42,6 +42,11 @@ jobs:
           # A post-build sed on index.html alone doesn't reach those inline imports and
           # silently 404s every JS module (blank page, nothing in the DOM to inspect).
           BASE_PATH: /${{ github.event.repository.name }}
+          # This deploy exists for UI review, not as a real release (that's
+          # frontend-release.yml, which does not set this) — so the
+          # sv-agentation inspector ships here. See +layout.svelte for the
+          # dead-code-elimination note.
+          VITE_ENABLE_AGENTATION: 'true'
         run: |
           npm run check
           npm run build

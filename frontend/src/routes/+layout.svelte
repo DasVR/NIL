@@ -136,10 +136,15 @@
 <!-- Svelte Agentation: click an element, annotate it, copy structured
      markdown (with a source-file jump when VITE_WORKSPACE_ROOT is set) for
      handing straight to a coding session — this one, Cursor, or anyone else
-     driving the UI rebuild. Dev-only per its own docs; `dev` is a compile-time
-     constant SvelteKit inlines, so this whole branch (and the import) is
-     dead-code-eliminated from the production build, not just hidden at runtime. -->
-{#if browser && dev}
+     driving the UI rebuild. On by default in dev. Also on in a production
+     build ONLY when VITE_ENABLE_AGENTATION=true was set at build time — the
+     GitHub Pages workflow sets it (that deploy exists purely for UI review),
+     the actual downloadable-release workflow (frontend-release.yml) does
+     not, so a real release never ships the inspector. Both `dev` and
+     import.meta.env reads are compile-time constants Vite inlines, so when
+     neither condition holds this whole branch (and the import) is
+     dead-code-eliminated from that build, not just hidden at runtime. -->
+{#if browser && (dev || import.meta.env.VITE_ENABLE_AGENTATION === 'true')}
   <Agentation
     workspaceRoot={import.meta.env.VITE_WORKSPACE_ROOT ?? null}
     openSourceOnClick
