@@ -49,22 +49,25 @@
 {/if}
 
 <style>
+  /* The mark-to-label gap must stay tighter than the gap around the whole
+     glyph (the status bar clusters at --s-2), or the `·` sits equidistant
+     between the hairline divider and its own word and reads as a separator. */
   .agent-glyph {
     display: inline-flex;
     align-items: center;
-    gap: 6px;
+    gap: var(--s-1);
     flex-shrink: 0;
   }
 
-  /* Fixed-width slot so ·/⋯/± swap without nudging neighbours. Mono here is
+  /* Fixed-width slot so ·/⋯/± swap without nudging neighbours. Sized to the
+     needs-you ring (12px) so that swap doesn't nudge either. Mono here is
      for the tabular cell, the same reason ToolBlock's state glyph uses it. */
   .mark {
-    inline-size: 1.4em;
+    inline-size: 12px;
     text-align: center;
     font: var(--t-body)/1 var(--font-machine);
     color: var(--nil-ink-2);
   }
-  .agent-glyph[data-phase="idle"] .mark { color: var(--nil-ink-3); }
   /* Editing is a machine state, not a Zone A identity moment — ink, not ember. */
   .agent-glyph[data-phase="editing"] .mark { color: var(--nil-ink); }
 
