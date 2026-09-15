@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <!--
+    NIL is a Developer-ID / ad-hoc distributed desktop tool, NOT a Mac App Store
+    app. It deliberately does NOT enable com.apple.security.app-sandbox: the
+    workstation spawns arbitrary security tooling (nmap, nuclei, ffuf, a PTY
+    shell, ...) and binds local sockets, which the App Sandbox forbids. Instead
+    we run under the Hardened Runtime with the minimal exceptions below so the
+    bundle can still be notarized.
+  -->
+
+  <!-- WebKit / WebGL JIT and the JS engine's executable memory. -->
+  <key>com.apple.security.cs.allow-jit</key>
+  <true/>
+  <key>com.apple.security.cs.allow-unsigned-executable-memory</key>
+  <true/>
+
+  <!-- Bundled sidecars / helper binaries are ad-hoc signed, not team-signed. -->
+  <key>com.apple.security.cs.disable-library-validation</key>
+  <true/>
+
+  <!-- API calls, PTY WebSocket, and the local tool servers. -->
+  <key>com.apple.security.network.client</key>
+  <true/>
+  <key>com.apple.security.network.server</key>
+  <true/>
+</dict>
+</plist>
