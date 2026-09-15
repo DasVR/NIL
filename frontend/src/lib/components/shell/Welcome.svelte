@@ -1,5 +1,6 @@
 <script lang="ts">
   import { droplet } from '$lib/motion/droplet';
+  import { cubicOut } from 'svelte/easing';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
@@ -81,6 +82,21 @@
     appState.focusComposer();
   }
 
+  // Empty cluster entrance: a single, one-time stagger of the starter blocks on
+  // mount. `in:` only, so it never re-staggers on later renders. Opacity + an
+  // 8px lift on --ease-out (no spring), and it collapses to nothing under
+  // reduced motion.
+  function starterIn(_node: Element, { index = 0 }: { index?: number } = {}) {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    return {
+      delay: reduced ? 0 : index * 60,
+      duration: reduced ? 0 : 260,
+      easing: cubicOut,
+      css: (t: number) =>
+        `opacity: ${t};${reduced ? '' : ` transform: translateY(${(1 - t) * 8}px);`}`,
+    };
+  }
+
   function openRecent(item: RecentRow) {
     if (item.id.startsWith('eng:')) {
       appState.activeEngagementId = item.label;
@@ -95,8 +111,8 @@
 <section class="welcome" aria-label="Start a session">
   <div class="hero">
     <div class="actions">
-      {#each starters as starter (starter.id)}
-        <button class="nil-lift nil-halo row" type="button" onclick={() => startWith(starter)}>
+      {#each starters as starter, i (starter.id)}
+        <button class="nil-lift nil-lift-2 nil-halo row" type="button" in:starterIn={{ index: i }} onclick={() => startWith(starter)}>
           <span class="glyph"><NilIcon name={starter.icon} size={16} /></span>
           <span class="copy">
             <span class="label">{starter.label}</span>
@@ -132,8 +148,30 @@
     flex-direction: column;
     justify-content: center;
     align-items: center;
+    position: relative;
+    isolation: isolate;
+  }
+  /* Zone A stage: a soft ink ambient lifts the empty cluster off the void so
+     it reads as a staged moment, not a flat panel. Contained and faded — an
+     ambient, not a wall wash, and no B/C glass. Ink only (this is not one of
+     the four ember identity moments). */
+  .welcome::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: radial-gradient(120% 68% at 50% 40%,
+      color-mix(in oklab, var(--nil-ink) 5%, transparent) 0%,
+      color-mix(in oklab, var(--nil-ink) 2%, transparent) 34%,
+      transparent 66%);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .welcome::before { display: none; }
   }
   .hero {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     align-items: flex-start;
@@ -157,6 +195,9 @@
     cursor: pointer;
     color: var(--nil-ink-2);
     width: 100%;
+    /* Resting elevation so the starter blocks read as lifted cards on the
+       stage, not flat bars. Hover deepens to --lift-2 below. */
+    box-shadow: var(--lift-1);
   }
   /* LIFT + PRESS from motion.css carry the base feel. The starter rows sit 6px
      apart, so the pull toward the cursor that MAGNETIC adds made them ride
@@ -167,7 +208,6 @@
   .actions .row:hover:not(:active) {
     transform: translateY(-1px) scale(1.008);
     background: color-mix(in oklab, var(--nil-raised) 94%, var(--nil-ink));
-    box-shadow: var(--lift-2);
     color: var(--nil-ink);
   }
   .glyph {

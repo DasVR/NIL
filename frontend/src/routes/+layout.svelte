@@ -3,6 +3,7 @@
   import '$lib/styles/motion.css';
   import '../app.css';
   import { onMount, untrack, type Snippet } from 'svelte';
+  import { cubicOut } from 'svelte/easing';
   import Titlebar from '$lib/components/shell/Titlebar.svelte';
   import Sidebar from '$lib/components/shell/Sidebar.svelte';
   import MainWorkspace from '$lib/components/shell/MainWorkspace.svelte';
@@ -33,6 +34,23 @@
 
   let booted = $state(false);
   let composerInput: HTMLTextAreaElement | undefined = $state();
+
+  // Empty -> stream handoff: the command deck settles into place as the empty
+  // cluster gives way, so the transition reads as one orchestrated move rather
+  // than a hard cut. One --dur-stage beat, opacity + transform only, and it
+  // collapses to a plain appear under reduced motion.
+  function deckSettle(node: HTMLElement) {
+    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const dur = parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue('--dur-stage'),
+    ) || 420;
+    return {
+      duration: reduced ? 0 : dur,
+      easing: cubicOut,
+      css: (t: number) =>
+        `opacity: ${t};${reduced ? '' : ` transform: translateY(${(1 - t) * 8}px);`}`,
+    };
+  }
 
   onMount(() => {
     setupTauriEvents();
@@ -110,7 +128,9 @@
       <ToolDock />
       <AgentRunBar />
       {#if workspace.sessionStarted}
-        <StreamComposer bind:inputEl={composerInput} />
+        <div class="composer-mount" in:deckSettle>
+          <StreamComposer bind:inputEl={composerInput} />
+        </div>
       {/if}
     </main>
 
@@ -184,5 +204,11 @@
     min-width: 0;
     min-height: 0;
     gap: var(--s-2);
+  }
+
+  /* Wrapper exists only to carry the handoff settle; it must not change the
+     deck's layout, so it never shrinks and passes width straight through. */
+  .composer-mount {
+    flex-shrink: 0;
   }
 </style>

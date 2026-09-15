@@ -33,6 +33,33 @@ export function agentPhase(): AgentPhase {
   return 'thinking';
 }
 
+/**
+ * The attention arbiter: the ONE thing allowed to hold an attention loop at a
+ * time. Thinking presence is this state plus TRACE (the gutter spine that draws
+ * as steps commit) — not a decorative orb or shimmer. `needs-you` (blocked on a
+ * person) always wins over `working`; at rest it is `none`, so nothing loops.
+ * Consumers key their single loop off this, never off ad-hoc per-surface flags.
+ */
+export type Attention = 'needs-you' | 'working' | 'none';
+
+export function attention(): Attention {
+  const phase = agentPhase();
+  switch (phase) {
+    case 'needs-you':
+      return 'needs-you';
+    case 'idle':
+      return 'none';
+    case 'thinking':
+    case 'editing':
+    case 'running':
+      return 'working';
+    default: {
+      const never: never = phase;
+      return never;
+    }
+  }
+}
+
 export function phaseLabel(phase: AgentPhase): string {
   switch (phase) {
     case 'idle':

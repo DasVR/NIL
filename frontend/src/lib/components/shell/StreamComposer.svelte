@@ -416,7 +416,7 @@
   });
 </script>
 
-<div class="composer nil-scan nil-composer" bind:this={composerEl} data-state={agentRun.running ? 'working' : undefined}>
+<div class="composer nil-composer" bind:this={composerEl}>
   {#if workspace.attached.length}
     <div class="chips" aria-label="Attached files">
       {#each workspace.attached as file (file.id)}
@@ -662,12 +662,20 @@
     border-radius: var(--r-panel);
     box-shadow: var(--lift-1);
     flex-shrink: 0;
-    transition: border-color var(--dur-flip) var(--ease-out);
+    /* Focus affordance is the Zone A prism ring (app.css .nil-composer): the one
+       sanctioned glass-on-focus, fading in on :focus-within and dead at rest.
+       No transform spring — a <8px deck nudge is below the spring threshold —
+       and no B/C glass at rest; the border hots and the elevation deepens. */
+    transition: border-color var(--dur-flip) var(--ease-out),
+                box-shadow var(--dur-flip) var(--ease-out);
     position: relative;
     isolation: isolate;
     z-index: var(--z-overlay);
   }
-  .composer:focus-within { border-color: var(--nil-line-hot); }
+  .composer:focus-within {
+    border-color: var(--nil-line-hot);
+    box-shadow: var(--lift-2);
+  }
 
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
