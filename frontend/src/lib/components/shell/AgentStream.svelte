@@ -280,30 +280,32 @@
     flex-direction: column;
     min-height: 0;
     flex: 1;
-    background: var(--nil-panel);
+    background-color: var(--nil-panel);
+    background-image: var(--panel-depth);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-panel);
     box-shadow: var(--lift-2);
     overflow: hidden;
-    isolation: isolate;
   }
-  /* Stage light: the center panel is the one surface lit from above, which is
-     what separates the stage from the two side panels at the same elevation.
-     A 3% ink fall-off across the top quarter — static, greyscale, contained —
-     not a wash and not glass. Sits between the panel fill and its content. */
-  .stream::before {
+
+  /* Scroll-edge fades: rows dissolve under the panel edge rather than hard-
+     clipping mid-glyph. Static overlays, pointer-transparent, below the
+     handoff cover (z 4) and the jump pill. */
+  .stream::before,
+  .stream::after {
     content: "";
     position: absolute;
-    inset: 0;
-    z-index: -1;
+    inset-inline: 0;
+    block-size: 28px;
+    z-index: 2;
     pointer-events: none;
-    background: radial-gradient(90% 38% at 50% 0%,
-      color-mix(in oklab, var(--nil-ink) 3%, transparent) 0%,
-      transparent 100%);
   }
-  @media (prefers-contrast: more) {
-    .stream::before { display: none; }
+  /* The top fade re-layers the panel sheen so it doesn't mask its own light. */
+  .stream::before {
+    inset-block-start: 0;
+    background: var(--panel-depth), var(--fade-panel-top);
   }
+  .stream::after  { inset-block-end: 0;   background: var(--fade-panel-bottom); }
 
   .handoff {
     position: absolute;
@@ -487,6 +489,7 @@
        instead of replacing it — with `transform: translateX(-50%)` here the
        badge lurched half its width sideways on hover. */
     translate: -50% 0;
+    z-index: 3;
     display: inline-flex;
     align-items: center;
     gap: 6px;

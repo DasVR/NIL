@@ -154,17 +154,14 @@
   /* Zone A stage: a soft ink ambient lifts the empty cluster off the void so
      it reads as a staged moment, not a flat panel. Contained and faded — an
      ambient, not a wall wash, and no B/C glass. Ink only (this is not one of
-     the four ember identity moments). */
+     the four ember identity moments). The eased stops live in tokens.css. */
   .welcome::before {
     content: "";
     position: absolute;
     inset: 0;
     z-index: 0;
     pointer-events: none;
-    background: radial-gradient(120% 68% at 50% 40%,
-      color-mix(in oklab, var(--nil-ink) 5%, transparent) 0%,
-      color-mix(in oklab, var(--nil-ink) 2%, transparent) 34%,
-      transparent 66%);
+    background: var(--wash-stage);
   }
   @media (prefers-reduced-transparency: reduce) {
     .welcome::before { display: none; }

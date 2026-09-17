@@ -177,10 +177,17 @@
     display: flex;
     flex-direction: column;
     overflow: hidden;
-    background: var(--nil-void);
+    /* The well is lit from above (--well-depth), so panels read as floating in
+       a space rather than sitting on a flat fill. Static; the color stays the
+       token. */
+    background-color: var(--nil-void);
+    background-image: var(--well-depth);
     color: var(--nil-ink);
     font-family: var(--font-ui);
     border-radius: var(--r-window);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .app-shell { background-image: none; }
   }
 
   .workbench {

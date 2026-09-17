@@ -45,11 +45,21 @@
     place-items: center;
   }
   .wash, .scrim { position: absolute; inset: 0; pointer-events: none; }
+  /* Zone A: the ember ambient sits up-stage of the hero over the dither wash,
+     and the void fade underneath is eased so the cover settles into the well
+     instead of banding at a midpoint. Same sigmoid as tokens.css. */
   .scrim {
-    background: linear-gradient(to bottom,
-      color-mix(in oklab, var(--nil-void) 40%, transparent) 0%,
-      color-mix(in oklab, var(--nil-void) 82%, transparent) 48%,
-      var(--nil-void) 100%);
+    background:
+      var(--wash-ember),
+      linear-gradient(180deg,
+        color-mix(in oklab, var(--nil-void) 56%,   transparent) 0%,
+        color-mix(in oklab, var(--nil-void) 58.2%, transparent) 14%,
+        color-mix(in oklab, var(--nil-void) 63.9%, transparent) 28%,
+        color-mix(in oklab, var(--nil-void) 72.7%, transparent) 42%,
+        color-mix(in oklab, var(--nil-void) 83.3%, transparent) 57%,
+        color-mix(in oklab, var(--nil-void) 92.1%, transparent) 71%,
+        color-mix(in oklab, var(--nil-void) 97.8%, transparent) 86%,
+        var(--nil-void) 100%);
   }
   .hero {
     position: relative;

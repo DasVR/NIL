@@ -249,7 +249,8 @@
     align-items: center;
     gap: 4px;
     padding: var(--s-2) 0;
-    background: var(--nil-panel);
+    background-color: var(--nil-panel);
+    background-image: var(--panel-depth);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-panel);
     box-shadow: var(--lift-2);
@@ -316,7 +317,8 @@
     flex: 0 0 calc(var(--panel-w) - var(--s-2));
     min-width: 0;
     margin-left: var(--s-2);
-    background: var(--nil-panel);
+    background-color: var(--nil-panel);
+    background-image: var(--panel-depth);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-panel);
     box-shadow: var(--lift-2);

@@ -247,7 +247,8 @@
   .right-sidebar {
     position: relative;
     height: 100%;
-    background: var(--nil-panel);
+    background-color: var(--nil-panel);
+    background-image: var(--panel-depth);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-panel);
     box-shadow: var(--lift-2);

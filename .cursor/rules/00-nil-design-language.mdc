@@ -40,6 +40,12 @@ apply one radius to everything.
 
 Grain is applied **once** on the app shell at `--grain-opacity`. Never per panel.
 
+Gradients are tonal and named, never decorative. The only gradients in the workstation
+are the eased washes in `tokens.css` (`--wash-stage`, `--well-depth`, `--panel-depth`,
+`--scrim-overlay`, `--fade-panel-*`, `--mask-vignette`; `--wash-ember` is Zone A only):
+one tone stepping toward transparent on a sigmoid, so light falls off instead of banding.
+No two-stop gradients in components, no hue ramps, no mesh/aurora.
+
 ## Structure is information
 
 Borrowed from dasdev.net, but each device must earn its place:
