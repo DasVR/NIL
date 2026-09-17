@@ -4,7 +4,7 @@
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import InlineDiff from '$lib/ui/InlineDiff.svelte';
   import TerminalTab from '$lib/components/shell/TerminalTab.svelte';
-  import { settle } from '$lib/motion/settle';
+  import { reveal } from '$lib/motion/reveal';
 
   const job = $derived(workspace.dock);
   const isPty = $derived(job?.kind === 'terminal');
@@ -16,13 +16,17 @@
        dock (an interactive shell has no "done" signal the way a build/lint/
        test command does), so the SCANLINE working-bar would stay lit the
        entire time a terminal happened to be open — not "busy," just open.
-       Excluded here; non-PTY docks keep the accurate treatment. -->
+       Excluded here; non-PTY docks keep the accurate treatment.
+
+       The dock is an in-flow region, not a top layer: it unfolds on REVEAL
+       (height + opacity) so the stream above shrinks with it, and folds back
+       on close instead of leaving a 180px hole in one frame. -->
   <section
     class="dock nil-scan"
     class:pty={isPty}
     data-state={!isPty && job.status === 'running' ? 'working' : undefined}
     aria-label={job.title}
-    in:settle
+    transition:reveal
   >
     <header class="head">
       <span class="title">{job.title}</span>

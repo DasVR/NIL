@@ -9,6 +9,7 @@
   import GitHubPanel from '$lib/components/shell/GitHubPanel.svelte';
   import McpPanel from '$lib/components/shell/McpPanel.svelte';
   import HoldConfirm from '$lib/ui/HoldConfirm.svelte';
+  import { dissolve } from '$lib/motion/settle';
   import api from '$lib/api';
   import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
   import MatrixRain from '$lib/ui/MatrixRain.svelte';
@@ -98,6 +99,7 @@
 <aside
   class="sidebar {pinned ? 'pinned' : 'collapsed'} {resizing ? 'resizing' : ''}"
   style:width={`${totalWidth}px`}
+  style:--panel-w={`${width}px`}
   aria-label="Workspace rail"
 >
   <nav class="rail" aria-label="Primary">
@@ -123,7 +125,10 @@
   </nav>
 
   {#if pinned}
-    <div class="panel">
+    <!-- The rail's width slide (--dur-panel) does the moving; the panel only
+         fades under it on the way out so it is not yanked from the DOM the
+         frame the slide starts. -->
+    <div class="panel" out:dissolve>
       <div class="panel-head">
         <div class="segs" role="tablist" aria-label="Sidebar panel">
           <button
@@ -263,8 +268,13 @@
     color: var(--nil-ink-3);
     cursor: pointer;
     overflow: hidden;
+    /* LIFT applies here (the class is on the button), so its transform leg
+       has to be in this list too — without it the 1px rise snapped while the
+       color eased. */
     transition: color var(--dur-flip) var(--ease-out),
-                background var(--dur-flip) var(--ease-out);
+                background var(--dur-flip) var(--ease-out),
+                transform var(--dur-flip) var(--ease-out),
+                box-shadow var(--dur-flip) var(--ease-out);
   }
   .rail-btn:hover { color: var(--nil-ink); background: var(--nil-raised); }
   .rail-btn.active {
@@ -300,7 +310,10 @@
   }
 
   .panel {
-    flex: 1;
+    /* Fixed to the pinned width rather than flex: 1, so while the rail's
+       width animates the panel is clipped by the slide instead of being
+       squeezed — text no longer reflows and re-truncates every frame. */
+    flex: 0 0 calc(var(--panel-w) - var(--s-2));
     min-width: 0;
     margin-left: var(--s-2);
     background: var(--nil-panel);
