@@ -150,7 +150,7 @@
     border: none;
     padding: 0;
     cursor: default;
-    background: color-mix(in oklab, var(--nil-void) 72%, transparent);
+    background: var(--scrim-overlay);
     z-index: var(--z-modal);
   }
 

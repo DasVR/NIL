@@ -96,6 +96,111 @@
   --lift-3: 0 2px 4px rgb(0 0 0 / 0.5), 0 24px 64px -16px rgb(0 0 0 / 0.75),
             0 1px 0 color-mix(in oklab, #fff 8%, transparent) inset;
 
+  /* -- depth & wash: the gradient vocabulary.
+        FRAMEWORK bans gradients as DECORATION — a hue ramp, a colored fill, an
+        aurora. These are the opposite: one tone (ink, void, or the panel
+        itself) stepping toward transparent along an eased curve, so a wash reads
+        as light falling on a surface rather than a band with a hard midpoint.
+        Every stop list is the same sigmoid — 0 · .05 · .18 · .38 · .62 · .82 ·
+        .95 · 1 — scaled to the peak. Do not write a two-stop gradient in a
+        component; add a named one here. Ember is Zone A only, as everywhere. -- */
+
+  /* Stage ambient behind an empty cluster (Welcome, Build/Pentest idle). Lifts
+     the copy off the well without a panel. Ink, not ember: an idle field is not
+     one of the four identity moments. */
+  --wash-stage: radial-gradient(120% 68% at 50% 40%,
+    color-mix(in oklab, var(--nil-ink) 5%,    transparent) 0%,
+    color-mix(in oklab, var(--nil-ink) 4.75%, transparent) 10%,
+    color-mix(in oklab, var(--nil-ink) 4.1%,  transparent) 20%,
+    color-mix(in oklab, var(--nil-ink) 3.1%,  transparent) 30%,
+    color-mix(in oklab, var(--nil-ink) 1.9%,  transparent) 40%,
+    color-mix(in oklab, var(--nil-ink) 0.9%,  transparent) 50%,
+    color-mix(in oklab, var(--nil-ink) 0.25%, transparent) 60%,
+    transparent 70%);
+
+  /* Zone A identity wash — report cover, lock, handoff. The one ember gradient.
+     A warm ambient up-stage of the hero, never a full-bleed fill. */
+  --wash-ember: radial-gradient(90% 60% at 50% 30%,
+    color-mix(in oklab, var(--brand-ember-700) 24%,   transparent) 0%,
+    color-mix(in oklab, var(--brand-ember-700) 22.8%, transparent) 10%,
+    color-mix(in oklab, var(--brand-ember-700) 19.7%, transparent) 21%,
+    color-mix(in oklab, var(--brand-ember-700) 14.9%, transparent) 32%,
+    color-mix(in oklab, var(--brand-ember-900) 9.1%,  transparent) 43%,
+    color-mix(in oklab, var(--brand-ember-900) 4.3%,  transparent) 53%,
+    color-mix(in oklab, var(--brand-ember-900) 1.2%,  transparent) 64%,
+    transparent 75%);
+
+  /* The well itself: a faint top light so the app background is a space, not
+     a fill. Static, Zone B, layered under everything. */
+  --well-depth: radial-gradient(90% 55% at 50% 0%,
+    color-mix(in oklab, var(--nil-ink) 3%,    transparent) 0%,
+    color-mix(in oklab, var(--nil-ink) 2.85%, transparent) 14%,
+    color-mix(in oklab, var(--nil-ink) 2.46%, transparent) 28%,
+    color-mix(in oklab, var(--nil-ink) 1.86%, transparent) 42%,
+    color-mix(in oklab, var(--nil-ink) 1.14%, transparent) 57%,
+    color-mix(in oklab, var(--nil-ink) 0.54%, transparent) 71%,
+    color-mix(in oklab, var(--nil-ink) 0.15%, transparent) 86%,
+    transparent 100%);
+
+  /* Panel sheen: extends the 1px --lift inset highlight into a short tonal
+     fall-off, so a floating panel is lit from above like the well is. Layered
+     as background-image over --nil-panel; the panel color stays the token. */
+  --panel-depth: linear-gradient(180deg,
+    color-mix(in oklab, var(--nil-ink) 2.4%,  transparent) 0,
+    color-mix(in oklab, var(--nil-ink) 2.3%,  transparent) 8px,
+    color-mix(in oklab, var(--nil-ink) 2%,    transparent) 16px,
+    color-mix(in oklab, var(--nil-ink) 1.5%,  transparent) 24px,
+    color-mix(in oklab, var(--nil-ink) 0.9%,  transparent) 32px,
+    color-mix(in oklab, var(--nil-ink) 0.45%, transparent) 40px,
+    color-mix(in oklab, var(--nil-ink) 0.1%,  transparent) 48px,
+    transparent 56px);
+
+  /* Top-layer scrim (palette, settings). Lighter where the window sits, denser
+     toward the edges — hierarchy by tone, no extra blur on B/C. */
+  --scrim-overlay: radial-gradient(120% 100% at 50% 35%,
+    color-mix(in oklab, var(--nil-void) 58%,   transparent) 0%,
+    color-mix(in oklab, var(--nil-void) 59.3%, transparent) 14%,
+    color-mix(in oklab, var(--nil-void) 62.7%, transparent) 28%,
+    color-mix(in oklab, var(--nil-void) 67.9%, transparent) 42%,
+    color-mix(in oklab, var(--nil-void) 74.1%, transparent) 57%,
+    color-mix(in oklab, var(--nil-void) 79.3%, transparent) 71%,
+    color-mix(in oklab, var(--nil-void) 82.7%, transparent) 86%,
+    color-mix(in oklab, var(--nil-void) 84%,   transparent) 100%);
+
+  /* Scroll-edge fades for dense surfaces: rows dissolve under the panel edge
+     instead of hard-clipping. Panel tone, sized by the pseudo-element. */
+  --fade-panel-top: linear-gradient(180deg,
+    var(--nil-panel) 0%,
+    color-mix(in oklab, var(--nil-panel) 95%, transparent) 14%,
+    color-mix(in oklab, var(--nil-panel) 82%, transparent) 28%,
+    color-mix(in oklab, var(--nil-panel) 62%, transparent) 42%,
+    color-mix(in oklab, var(--nil-panel) 38%, transparent) 57%,
+    color-mix(in oklab, var(--nil-panel) 18%, transparent) 71%,
+    color-mix(in oklab, var(--nil-panel) 5%,  transparent) 86%,
+    transparent 100%);
+  --fade-panel-bottom: linear-gradient(0deg,
+    var(--nil-panel) 0%,
+    color-mix(in oklab, var(--nil-panel) 95%, transparent) 14%,
+    color-mix(in oklab, var(--nil-panel) 82%, transparent) 28%,
+    color-mix(in oklab, var(--nil-panel) 62%, transparent) 42%,
+    color-mix(in oklab, var(--nil-panel) 38%, transparent) 57%,
+    color-mix(in oklab, var(--nil-panel) 18%, transparent) 71%,
+    color-mix(in oklab, var(--nil-panel) 5%,  transparent) 86%,
+    transparent 100%);
+
+  /* Vignette mask for a full-bleed wash (the idle rain): the field softens
+     toward the panel edges instead of clipping against the radius. Mask
+     colors are alpha only, never a hue. */
+  --mask-vignette: radial-gradient(100% 90% at 50% 50%,
+    #000 0%,
+    rgb(0 0 0 / 0.95) 14%,
+    rgb(0 0 0 / 0.82) 28%,
+    rgb(0 0 0 / 0.62) 42%,
+    rgb(0 0 0 / 0.38) 57%,
+    rgb(0 0 0 / 0.18) 71%,
+    rgb(0 0 0 / 0.05) 86%,
+    transparent 100%);
+
   /* -- grain: the A24 atmosphere from the lab, dialed down for long sessions.
         Applied once on the shell, never per-panel. -- */
   --grain-opacity: 0.022;

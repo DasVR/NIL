@@ -18,12 +18,28 @@
 
 <style>
   .empty {
+    position: relative;
+    isolation: isolate;
     width: 100%;
     height: 100%;
     display: grid;
     place-items: center;
   }
+  /* Same stage ambient as Welcome: the idle field is lit, not flat. Ink only. */
+  .empty::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+    pointer-events: none;
+    background: var(--wash-stage);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .empty::before { display: none; }
+  }
   .copy {
+    position: relative;
+    z-index: 1;
     display: flex;
     flex-direction: column;
     gap: var(--s-3);

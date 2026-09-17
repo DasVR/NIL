@@ -73,7 +73,7 @@
   --surface-input: var(--nil-raised);
   --surface-0: var(--nil-void);
   --surface-1: var(--nil-panel);
-  --surface-overlay: color-mix(in oklab, var(--nil-void) 72%, transparent);
+  --surface-overlay: var(--scrim-overlay);
   --border-subtle: var(--nil-line);
 
   --text-primary: var(--nil-ink);

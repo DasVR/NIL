@@ -278,12 +278,32 @@
     flex-direction: column;
     min-height: 0;
     flex: 1;
-    background: var(--nil-panel);
+    background-color: var(--nil-panel);
+    background-image: var(--panel-depth);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-panel);
     box-shadow: var(--lift-2);
     overflow: hidden;
   }
+
+  /* Scroll-edge fades: rows dissolve under the panel edge rather than hard-
+     clipping mid-glyph. Static overlays, pointer-transparent, below the
+     handoff cover (z 4) and the jump pill. */
+  .stream::before,
+  .stream::after {
+    content: "";
+    position: absolute;
+    inset-inline: 0;
+    block-size: 28px;
+    z-index: 2;
+    pointer-events: none;
+  }
+  /* The top fade re-layers the panel sheen so it doesn't mask its own light. */
+  .stream::before {
+    inset-block-start: 0;
+    background: var(--panel-depth), var(--fade-panel-top);
+  }
+  .stream::after  { inset-block-end: 0;   background: var(--fade-panel-bottom); }
 
   .handoff {
     position: absolute;
@@ -463,6 +483,7 @@
     inset-block-end: var(--s-5);
     inset-inline-start: 50%;
     transform: translateX(-50%);
+    z-index: 3;
     display: inline-flex;
     align-items: center;
     gap: 6px;
