@@ -287,8 +287,15 @@
     border: none;
     padding: 0;
     cursor: default;
-    background: var(--scrim-overlay);
+    /* Top-layer transient scrim: the one sanctioned glass in Zone C. Static
+       while open (the DitherWipe on the window carries the entrance), so the
+       blur costs one composite, not a loop. */
+    background: var(--glass-scrim);
+    backdrop-filter: blur(var(--glass-blur));
     z-index: var(--z-modal);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .palette-overlay { background: var(--glass-scrim-solid); backdrop-filter: none; }
   }
 
   .palette-window {

@@ -19,15 +19,27 @@ needed, add it to `motion.css` with a number and a name, then use it.
 | # | Primitive | Trigger | Token |
 |---|-----------|---------|-------|
 | 01 | LIFT | hover on any interactive surface | `--dur-flip` |
-| 02 | PRESS | active; always paired with LIFT | 40ms |
-| 03 | HALO | `:focus-visible` only | `--dur-flip` |
-| 04 | MAGNETIC | pointer near a primary CTA | `--dur-panel` / `--ease-spring` |
+| 02 | PRESS | active; always paired with LIFT | 70ms |
+| 03 | HALO | `:focus-visible` only | `--dur-flip` / `--dur-enter` |
+| 04 | MAGNETIC | pointer near a primary CTA | `--dur-enter` / `--ease-spring` |
 | 05 | SCANLINE | agent or scan is working | 1.4s loop |
 | 06 | TICK | scan phase completes | `--dur-enter` |
 | 07 | REVEAL | expanding tool result / evidence | `--dur-panel` |
 | 08 | SETTLE | popover, dialog, command palette | `--dur-enter` |
 | 09 | TRACE | agent step commits to the stream | scroll-driven |
 | 10 | SCRAMBLE | a machine-resolved value arrives | `--dur-decode` |
+
+Primitives 11–21 (JELLY, DROPLET, HOLD, MORPH, DITHER, PULSE, ASH, WAVE, RING, SHAKE,
+CHECK-DRAW) are documented inline in `motion.css`.
+
+## JS drivers read the same numbers
+
+Anything that animates from JS — Svelte `css` transitions, `element.animate()` — goes
+through `$lib/motion/tokens.ts`: `durToken('--dur-*')` for durations, `easeOut`/`easeIn`
+(exactly `--ease-out`/`--ease-in`; both are the expo curves) for easing, `reducedMotion()`
+for the media query. `settle.ts` mirrors SETTLE and `reveal.ts` mirrors REVEAL for
+`{#if}`-mounted nodes that CSS can't reach. Do not hand-roll `cubicOut`, a literal
+`160`, or a fresh `matchMedia` call in a component.
 
 ## Budgets
 

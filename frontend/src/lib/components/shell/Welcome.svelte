@@ -1,6 +1,6 @@
 <script lang="ts">
   import { droplet } from '$lib/motion/droplet';
-  import { cubicOut } from 'svelte/easing';
+  import { durToken, easeOut, reducedMotion } from '$lib/motion/tokens';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
@@ -87,11 +87,11 @@
   // 8px lift on --ease-out (no spring), and it collapses to nothing under
   // reduced motion.
   function starterIn(_node: Element, { index = 0 }: { index?: number } = {}) {
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const reduced = reducedMotion();
     return {
       delay: reduced ? 0 : index * 60,
-      duration: reduced ? 0 : 260,
-      easing: cubicOut,
+      duration: reduced ? 0 : durToken('--dur-panel', 260),
+      easing: easeOut,
       css: (t: number) =>
         `opacity: ${t};${reduced ? '' : ` transform: translateY(${(1 - t) * 8}px);`}`,
     };

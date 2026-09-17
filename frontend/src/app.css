@@ -132,8 +132,6 @@
   --dur-fast: var(--dur-flip);
   --dur-base: var(--dur-enter);
   --dur-slow: var(--dur-panel);
-
-  --glass-2-blur: 24px;
 }
 
 * {
@@ -268,10 +266,15 @@ body {
   font-size: var(--t-meta);
   font-weight: 500;
   cursor: pointer;
-  transition: transform var(--dur-panel) var(--ease-spring),
+  /* Same numbers as LIFT (motion.css #01): the 1px rise is below the spring
+     threshold, so it decelerates on --ease-out instead of lagging on a spring;
+     the shadow trails the rise on --dur-enter. */
+  transition: transform var(--dur-flip) var(--ease-out),
     border-color var(--dur-flip) var(--ease-out),
     background-color var(--dur-flip) var(--ease-out),
-    box-shadow var(--dur-flip) var(--ease-out);
+    color var(--dur-flip) var(--ease-out),
+    box-shadow var(--dur-enter) var(--ease-out),
+    opacity var(--dur-enter) var(--ease-out);
 }
 .btn-primary:hover {
   transform: translateY(-1px);
@@ -301,11 +304,12 @@ body {
   font-size: var(--t-meta);
   font-weight: 500;
   cursor: pointer;
-  transition: transform var(--dur-panel) var(--ease-spring),
+  transition: transform var(--dur-flip) var(--ease-out),
     border-color var(--dur-flip) var(--ease-out),
     background-color var(--dur-flip) var(--ease-out),
     color var(--dur-flip) var(--ease-out),
-    box-shadow var(--dur-flip) var(--ease-out);
+    box-shadow var(--dur-enter) var(--ease-out),
+    opacity var(--dur-enter) var(--ease-out);
 }
 .btn-ghost:hover {
   transform: translateY(-1px);
@@ -342,7 +346,9 @@ body {
   mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
   mask-composite: exclude;
   opacity: 0;
-  transition: opacity var(--dur-flip) var(--ease-out);
+  /* Rides in with the deck's elevation (--dur-enter), not a 90ms flick — the
+     focus settle is one liquid move: border hots, shadow deepens, ring blooms. */
+  transition: opacity var(--dur-enter) var(--ease-out);
   animation: nil-prism-spin 6s linear infinite;
   animation-play-state: paused;
   pointer-events: none;

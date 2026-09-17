@@ -1,5 +1,7 @@
 <script lang="ts">
   import NilIcon from '$lib/ui/NilIcon.svelte';
+  import { reveal } from '$lib/motion/reveal';
+  import { durToken } from '$lib/motion/tokens';
 
   interface Props {
     summary: string;
@@ -20,7 +22,7 @@
   </button>
   <p class="meta">{duration} · {tokens} tokens{#if hint} · {hint}{/if}</p>
   {#if open && items.length}
-    <ul class="items">
+    <ul class="items" transition:reveal={{ duration: durToken('--dur-enter', 160) }}>
       {#each items as item, i (`${i}:${item}`)}
         <li>{item}</li>
       {/each}
@@ -44,7 +46,9 @@
     padding: 0;
   }
   .sum { flex: 1; }
-  .chev { color: var(--nil-ink-3); display: grid; place-items: center; transition: transform var(--dur-flip) var(--ease-out); }
+  /* A quarter turn is a real move, so it gets the one spring; at --dur-flip it
+     would read as a snap. */
+  .chev { color: var(--nil-ink-3); display: grid; place-items: center; transition: transform var(--dur-enter) var(--ease-spring); }
   .chev.open { transform: rotate(90deg); }
   .meta { margin: 0; font: var(--t-micro)/1.4 var(--font-machine); color: var(--nil-ink-3); }
   .items {

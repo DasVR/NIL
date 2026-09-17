@@ -89,8 +89,17 @@
   --s-5: 24px; --s-6: 32px; --s-7: 48px; --s-8: 64px;
 
   /* -- depth: macOS does elevation with LIGHT (border) + a long soft shadow,
-        not a grey box-shadow under everything -- */
-  --lift-1: 0 1px 0 color-mix(in oklab, #fff 6%, transparent) inset;
+        not a grey box-shadow under everything.
+        The ramp reads as a physical stack:
+          lift-1  a card resting ON a panel — lit top edge + a 1px contact
+                  shadow so it sits rather than being painted on. Also the
+                  LIFT hover state, where the contact line sells the 1px rise.
+          lift-2  a panel floating in the well.
+          lift-3  the top layer (palette, sheet, popover).
+        On the near-black well the long shadows are mostly felt, not seen; the
+        contact line and the inset highlight are what actually carry depth. -- */
+  --lift-1: 0 1px 2px rgb(0 0 0 / 0.4),
+            0 1px 0 color-mix(in oklab, #fff 6%, transparent) inset;
   --lift-2: 0 1px 2px rgb(0 0 0 / 0.5), 0 8px 24px -8px rgb(0 0 0 / 0.6),
             0 1px 0 color-mix(in oklab, #fff 6%, transparent) inset;
   --lift-3: 0 2px 4px rgb(0 0 0 / 0.5), 0 24px 64px -16px rgb(0 0 0 / 0.75),
@@ -201,6 +210,15 @@
     rgb(0 0 0 / 0.18) 71%,
     rgb(0 0 0 / 0.05) 86%,
     transparent 100%);
+
+  /* -- glass: DOM backdrop-filter is allowed on TOP-LAYER TRANSIENT scrims
+        only — the palette, the settings sheet, dialog::backdrop. It never goes
+        on a panel, a card, a popover over the stream, or anything that persists
+        while someone is reading (40-nil-gpu.mdc, Zone C). Light blur, one at a
+        time; a frosted card grid is the cliché this system rejects. -- */
+  --glass-scrim: color-mix(in oklab, var(--nil-void) 62%, transparent);
+  --glass-scrim-solid: color-mix(in oklab, var(--nil-void) 84%, transparent);
+  --glass-blur: 6px;
 
   /* -- grain: the A24 atmosphere from the lab, dialed down for long sessions.
         Applied once on the shell, never per-panel. -- */

@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { durToken } from '$lib/motion/tokens';
+
   interface Props {
     label: string;
     confirmLabel?: string;
@@ -12,29 +14,30 @@
   let start = 0;
   let fillEl: HTMLSpanElement | undefined = $state();
 
-  function ms(): number {
-    const raw = getComputedStyle(document.documentElement).getPropertyValue('--dur-hold').trim();
-    const n = parseFloat(raw);
-    return Number.isFinite(n) ? n : 850;
+  // HOLD (motion.css #13): the fill is a full-width box scaled from its
+  // leading edge, so every frame is a compositor transform rather than a
+  // relayout of the button.
+  function setFill(t: number) {
+    if (fillEl) fillEl.style.transform = `scaleX(${t})`;
   }
 
   function cancel() {
     filling = false;
     cancelAnimationFrame(raf);
     if (fillEl) {
-      fillEl.style.transition = 'width var(--dur-enter) var(--ease-out)';
-      fillEl.style.width = '0%';
+      fillEl.style.transition = 'transform var(--dur-enter) var(--ease-out)';
+      setFill(0);
     }
   }
 
   function tick(now: number) {
-    const t = Math.min(1, (now - start) / ms());
-    if (fillEl) fillEl.style.width = `${t * 100}%`;
+    const t = Math.min(1, (now - start) / durToken('--dur-hold', 850));
+    setFill(t);
     if (!filling) return;
     if (t >= 1) {
       filling = false;
       onConfirm();
-      if (fillEl) fillEl.style.width = '0%';
+      setFill(0);
       return;
     }
     raf = requestAnimationFrame(tick);
@@ -47,7 +50,7 @@
     start = performance.now();
     if (fillEl) {
       fillEl.style.transition = 'none';
-      fillEl.style.width = '0%';
+      setFill(0);
     }
     raf = requestAnimationFrame(tick);
   }

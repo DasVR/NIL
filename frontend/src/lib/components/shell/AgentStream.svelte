@@ -1,6 +1,7 @@
 <script lang="ts">
   import { agentRun } from '$lib/agent/run.svelte.ts';
   import { pinned } from '$lib/motion/pinned.svelte.ts';
+  import { settle } from '$lib/motion/settle';
   import ToolBlock from '$lib/components/ui/ToolBlock.svelte';
   import FindingCard from '$lib/components/ui/FindingCard.svelte';
   import ClarifyCard from '$lib/components/ui/ClarifyCard.svelte';
@@ -198,7 +199,7 @@
     {#if agentRun.clarify || (workspace.clarify && agentRun.steps.length === 0)}
       {@const card = agentRun.clarify ?? workspace.clarify}
       {#if card}
-      <div class="prompt-card">
+      <div class="prompt-card" in:settle>
         <ClarifyCard
           title={card.title}
           index={card.index}
@@ -231,7 +232,7 @@
     {/if}
 
     {#if workspace.pendingMode}
-      <div class="prompt-card">
+      <div class="prompt-card" in:settle>
         <ConfirmCard
           title="Leave this run?"
           body="The agent is still working. Switching modes stops the current task."
@@ -244,7 +245,7 @@
         />
       </div>
     {:else if agentRun.interrupted && !agentRun.running}
-      <div class="prompt-card">
+      <div class="prompt-card" in:settle>
         <ConfirmCard
           title="Continue this run?"
           body="The last turn was interrupted. Send another message to pick up from here."
@@ -262,8 +263,9 @@
 
   {#if !isPinned}
     <button
-      class="jump nil-lift nil-halo"
+      class="jump nil-lift nil-lift-2 nil-halo"
       type="button"
+      transition:settle
       onclick={() => { if (scroller) jumpToLatest(scroller); }}
     >
       Jump to latest <kbd aria-hidden="true">G</kbd>
@@ -482,7 +484,11 @@
     position: absolute;
     inset-block-end: var(--s-5);
     inset-inline-start: 50%;
-    transform: translateX(-50%);
+    /* Centering lives on the individual `translate` property, not `transform`,
+       so LIFT/PRESS (which set `transform` on hover/active) compose with it
+       instead of replacing it — with `transform: translateX(-50%)` here the
+       badge lurched half its width sideways on hover. */
+    translate: -50% 0;
     z-index: 3;
     display: inline-flex;
     align-items: center;
@@ -495,6 +501,8 @@
     color: var(--nil-ink);
     font: 500 var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
+    /* Floats over the log, so it rests at panel elevation, not flat on it. */
+    box-shadow: var(--lift-2);
   }
 
   .jump kbd {

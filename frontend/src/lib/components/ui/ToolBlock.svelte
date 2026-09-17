@@ -253,6 +253,9 @@
     letter-spacing: var(--track-tick);
     text-transform: uppercase;
     color: var(--nil-ink-3);
+    /* pending -> running -> ok is a state change; the ink steps, it doesn't
+       flicker. Color only, so it survives reduced motion. */
+    transition: color var(--dur-enter) var(--ease-out);
   }
 
   /* Fixed event-type pill: pending/running/ok/error swap without nudging the
@@ -300,7 +303,9 @@
     display: grid;
     place-items: center;
     color: var(--nil-ink-3);
-    transition: transform var(--dur-flip) var(--ease-out);
+    /* A quarter turn is a real move — the one spring, at --dur-enter, so it
+       lands with the REVEAL below instead of snapping ahead of it. */
+    transition: transform var(--dur-enter) var(--ease-spring);
     flex-shrink: 0;
   }
   .chev.open { transform: rotate(90deg); }
@@ -363,5 +368,7 @@
     border: 1px solid var(--nil-line-hot);
     border-radius: var(--r-card);
     padding: var(--s-2) var(--s-3);
+    background: var(--nil-raised);
+    box-shadow: var(--lift-1);
   }
 </style>
