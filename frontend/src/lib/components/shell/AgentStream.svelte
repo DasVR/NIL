@@ -301,10 +301,6 @@
       color-mix(in oklab, var(--nil-ink) 3%, transparent) 0%,
       transparent 100%);
   }
-  /* One stage light at a time. On the cold open the Zone A Welcome renders
-     inside this panel and brings its own ink ambient (.welcome::before); the
-     panel's top light yields to it rather than stacking a second gradient. */
-  .stream:has(:global(.welcome))::before { display: none; }
   @media (prefers-contrast: more) {
     .stream::before { display: none; }
   }
