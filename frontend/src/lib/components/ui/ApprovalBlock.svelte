@@ -4,8 +4,10 @@
   import SpendMeter from '$lib/components/ui/SpendMeter.svelte';
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
   import { magnetic } from '$lib/motion/magnetic.svelte.ts';
+  import HoldConfirm from '$lib/ui/HoldConfirm.svelte';
   import { usageStore } from '$lib/usage/store.svelte.ts';
   import { shortcutGlyphs } from '$lib/shortcuts';
+  import { tick } from 'svelte';
 
   interface Props {
     step: ToolStep;
@@ -13,6 +15,18 @@
 
   let { step }: Props = $props();
   let sending = $state(false);
+  // CHECK-DRAW (motion.css #21) on the allow that was chosen. The check mounts
+  // undrawn, gets one painted frame, then flips to drawn — the same two-step
+  // ToolBlock needs, because a transition can't animate from a value the node
+  // was created with. Both flips are flushed to the DOM *before* approve() runs:
+  // approve clears the pending step, which starts this card's exit, and Svelte
+  // won't apply attribute updates to a branch that is already leaving.
+  let granted = $state<ApprovalGrant | null>(null);
+  let checkDrawn = $state(false);
+
+  function nextFrame(): Promise<void> {
+    return new Promise((resolve) => requestAnimationFrame(() => resolve()));
+  }
 
   const WRAPPERS = new Set([
     'sudo', 'doas', 'env', 'nice', 'timeout',
@@ -77,6 +91,11 @@
   async function allow(grant: ApprovalGrant) {
     if (busy) return;
     sending = true;
+    granted = grant;
+    await tick();
+    await nextFrame();
+    checkDrawn = true;
+    await tick();
     try {
       await agentRun.approve(step.id, grant);
     } finally {
@@ -95,6 +114,12 @@
     agentRun.stop();
   }
 </script>
+
+{#snippet check()}
+  <svg class="check nil-check-draw" data-drawn={checkDrawn} width="12" height="12" viewBox="0 0 24 24" aria-hidden="true">
+    <polyline points="4,13 9,18 20,6" pathLength="1" />
+  </svg>
+{/snippet}
 
 <!-- SCANLINE means "working". A gate that is waiting on the person is the
      arbiter's `needs-you` state, which the run bar's ring already carries, so
@@ -135,12 +160,14 @@
       type="button"
       bind:this={primaryBtn}
       disabled={busy}
+      data-gate-allow
       {@attach magnetic}
       data-cuelume-press
       data-cuelume-release="success"
       onclick={() => void allow('once')}
     >
-      {busy ? 'Running' : 'Allow once'}
+      {#if granted === 'once'}{@render check()}{/if}
+      {granted === 'once' ? 'Allowed' : 'Allow once'}
       <kbd>{shortcutGlyphs('Mod+Enter')}</kbd>
     </button>
     <button
@@ -151,7 +178,8 @@
       data-cuelume-release="success"
       onclick={() => void allow('engagement_prefix')}
     >
-      Allow this engagement
+      {#if granted === 'engagement_prefix'}{@render check()}{/if}
+      {granted === 'engagement_prefix' ? 'Allowed' : 'Allow this engagement'}
     </button>
     <button
       class="nil-lift nil-halo act ghost"
@@ -164,16 +192,16 @@
       Deny
       <kbd>{shortcutGlyphs('Mod+Shift+Enter')}</kbd>
     </button>
-    <button
-      class="nil-lift nil-halo act ghost"
-      type="button"
+    <!-- Deny is recoverable (the agent adapts); Stop kills the run. The
+         destructive one is HOLD (motion.css #13), not a click. -->
+    <HoldConfirm
+      label="Stop"
+      confirmLabel="Hold to stop"
+      ariaLabel="Hold to deny and stop the run"
+      ghost
       disabled={busy}
-      data-cuelume-press
-      data-cuelume-release="error"
-      onclick={stop}
-    >
-      Stop
-    </button>
+      onConfirm={stop}
+    />
   </div>
 </div>
 
@@ -268,6 +296,11 @@
   .act:disabled {
     opacity: 0.45;
     cursor: not-allowed;
+  }
+
+  .check {
+    display: block;
+    flex: none;
   }
 
   kbd {
