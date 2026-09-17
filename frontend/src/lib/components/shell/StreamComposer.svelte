@@ -12,9 +12,11 @@
   import OnDeviceHint from '$lib/components/ui/OnDeviceHint.svelte';
   import { jelly } from '$lib/motion/jelly.ts';
   import { droplet } from '$lib/motion/droplet';
+  import { pop } from '$lib/motion/pop';
+  import { settle } from '$lib/motion/settle';
+  import { durToken, easeIn, reducedMotion } from '$lib/motion/tokens';
   import { readProjectFile } from '$lib/project.svelte.ts';
   import { listenSpeech, playDictation, speechAvailable } from '$lib/motion/dictation.ts';
-  import { cubicIn } from 'svelte/easing';
   import { untrack } from 'svelte';
 
   interface Props {
@@ -42,6 +44,7 @@
   let pillEl: HTMLSpanElement | undefined = $state();
   let lastMode = $state<WorkstationMode>(workspace.workstationMode);
   let composerEl: HTMLDivElement | undefined = $state();
+  let sendBtn: HTMLButtonElement | undefined = $state();
 
   $effect(() => {
     const next = input;
@@ -213,12 +216,13 @@
     }));
   });
 
-  function gateExit(node: HTMLElement) {
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const t0 = reduced ? 80 : 160;
+  // The gate arrives on SETTLE (in:settle) and leaves on --ease-in — exits
+  // accelerate away, entrances decelerate in, per motion.css.
+  function gateExit(_node: HTMLElement) {
+    const reduced = reducedMotion();
     return {
-      duration: t0,
-      easing: cubicIn,
+      duration: reduced ? 80 : durToken('--dur-enter', 160),
+      easing: easeIn,
       css: (t: number) =>
         `opacity: ${t};${reduced ? '' : ` transform: translateY(${(1 - t) * 4}px);`}`,
     };
@@ -282,6 +286,10 @@
     const engagement = appState.activeEngagementId || 'default';
     const chips = [...workspace.attached];
     const extras = { model: workspace.modelId, effort: workspace.effort };
+    // MORPH pop (#14): the send lands with weight as the field clears, then
+    // fades to its disabled weight on LIFT's opacity leg. The control confirms
+    // the send itself; nothing else on screen has to.
+    pop(sendBtn);
     workspace.dismissClarify();
     agentRun.dismissClarify();
     workspace.dictationActive = false;
@@ -368,11 +376,10 @@
 
   function dismissChip(id: string) {
     chipLeaving = id;
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
     setTimeout(() => {
       workspace.detachFile(id);
       chipLeaving = null;
-    }, reduced ? 80 : 180);
+    }, reducedMotion() ? 80 : durToken('--dur-enter', 160));
   }
 
   function toggleDictation() {
@@ -444,7 +451,7 @@
   {/if}
 
   {#if pending}
-    <div class="gate-host" out:gateExit>
+    <div class="gate-host" in:settle out:gateExit>
       <ApprovalBlock step={pending} />
     </div>
   {/if}
@@ -485,6 +492,7 @@
     <button
       class="nil-lift nil-halo send"
       type="button"
+      bind:this={sendBtn}
       onclick={send}
       disabled={!input.trim() || gated}
       aria-label={agentRun.running ? 'Queue follow-up' : 'Send'}
@@ -504,6 +512,7 @@
       style:left={mentionAnchor.left}
       style:width={mentionAnchor.width}
       style:bottom={mentionAnchor.bottom}
+      in:settle
     >
       {#if files.length === 0}
         <div class="empty">Type a path to pin it</div>
@@ -604,6 +613,7 @@
           bind:this={pickerEl}
           style:right={pickerAnchor.right}
           style:bottom={pickerAnchor.bottom}
+          in:settle
           onkeydown={onMenuKey}
         >
           {#each workspace.models as m (m.id)}
@@ -665,9 +675,13 @@
     /* Focus affordance is the Zone A prism ring (app.css .nil-composer): the one
        sanctioned glass-on-focus, fading in on :focus-within and dead at rest.
        No transform spring — a <8px deck nudge is below the spring threshold —
-       and no B/C glass at rest; the border hots and the elevation deepens. */
-    transition: border-color var(--dur-flip) var(--ease-out),
-                box-shadow var(--dur-flip) var(--ease-out);
+       and no B/C glass at rest. What makes the settle read as liquid is that
+       the layers land on different clocks: border hots at --dur-enter, the
+       elevation deepens over --dur-panel, and the deck's controls wake up
+       (below) at --dur-flip — one decisive move that keeps resolving for a
+       beat after the first paint, instead of a single 90ms flick. */
+    transition: border-color var(--dur-enter) var(--ease-out),
+                box-shadow var(--dur-panel) var(--ease-out);
     position: relative;
     isolation: isolate;
     z-index: var(--z-overlay);
@@ -676,6 +690,15 @@
     border-color: var(--nil-line-hot);
     box-shadow: var(--lift-2);
   }
+  /* Deck wake: the placeholder and the bar's controls step up one ink level
+     while the deck has focus, then fall back on blur. Color only. */
+  textarea::placeholder {
+    color: var(--nil-ink-4);
+    transition: color var(--dur-enter) var(--ease-out);
+  }
+  .composer:focus-within textarea::placeholder { color: var(--nil-ink-3); }
+  .composer:focus-within .segment { box-shadow: 0 0 0 1px var(--nil-line-hot); }
+  .composer:focus-within .model { border-color: var(--nil-line-hot); color: var(--nil-ink); }
 
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chip {
@@ -691,6 +714,10 @@
     opacity: 1;
     transition: transform var(--dur-enter) var(--ease-out),
                 opacity var(--dur-enter) var(--ease-out);
+    /* A chip arriving from an @-mention grows in the same way it leaves;
+       @starting-style gives the {#each}-inserted node a "before" to
+       transition from without a JS transition. */
+    @starting-style { transform: scale(0.86); opacity: 0; }
   }
   .chip.leaving { transform: scale(0.86); opacity: 0; }
   .chip-path {
@@ -817,6 +844,7 @@
     background: var(--nil-void);
     box-shadow: 0 0 0 1px var(--nil-line);
     border-radius: 999px;
+    transition: box-shadow var(--dur-enter) var(--ease-out);
   }
   .goo-defs {
     position: absolute;
@@ -861,6 +889,9 @@
     font: 500 var(--t-micro)/16px var(--font-ui);
     cursor: pointer;
     border-radius: 999px;
+    /* The label hands over as the pill lands under it — same clock as the
+       pill's travel, so ink and surface arrive together. */
+    transition: color var(--dur-jelly) var(--ease-out);
   }
   .seg.on { color: var(--nil-ink); }
   @media (prefers-reduced-motion: reduce) {
@@ -883,6 +914,8 @@
        landing at 5.5px and rounding low. */
     font: 500 var(--t-micro)/16px var(--font-ui);
     cursor: pointer;
+    transition: border-color var(--dur-enter) var(--ease-out),
+                color var(--dur-enter) var(--ease-out);
   }
   .picker {
     position: fixed;
