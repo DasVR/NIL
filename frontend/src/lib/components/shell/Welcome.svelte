@@ -1,5 +1,6 @@
 <script lang="ts">
   import { droplet } from '$lib/motion/droplet';
+  import { leave } from '$lib/motion/settle';
   import { durToken, easeOut, reducedMotion } from '$lib/motion/tokens';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
@@ -82,10 +83,14 @@
     appState.focusComposer();
   }
 
-  // Empty cluster entrance: a single, one-time stagger of the starter blocks on
-  // mount. `in:` only, so it never re-staggers on later renders. Opacity + an
-  // 8px lift on --ease-out (no spring), and it collapses to nothing under
-  // reduced motion.
+  // Empty cluster entrance: a single stagger of the starter blocks on the
+  // list's first populate. `in:` only, so it never re-staggers on later
+  // renders, and `|global` because the rows are born with their own {#each} —
+  // a local intro on a node created together with its block never plays, so
+  // without the modifier this stagger was silently a no-op. Opacity + an 8px
+  // lift on --ease-out (no spring), collapsing to nothing under reduced motion.
+  // The exit is `leave` from settle.ts: --dur-enter, opacity + 4px, no stagger,
+  // so leaving the empty state fits inside the deck's one --dur-stage handoff.
   function starterIn(_node: Element, { index = 0 }: { index?: number } = {}) {
     const reduced = reducedMotion();
     return {
@@ -112,7 +117,13 @@
   <div class="hero">
     <div class="actions">
       {#each starters as starter, i (starter.id)}
-        <button class="nil-lift nil-lift-2 nil-halo row" type="button" in:starterIn={{ index: i }} onclick={() => startWith(starter)}>
+        <button
+          class="nil-lift nil-lift-2 nil-halo row"
+          type="button"
+          in:starterIn|global={{ index: i }}
+          out:leave|global
+          onclick={() => startWith(starter)}
+        >
           <span class="glyph"><NilIcon name={starter.icon} size={16} /></span>
           <span class="copy">
             <span class="label">{starter.label}</span>
