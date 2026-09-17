@@ -52,13 +52,13 @@
     background:
       var(--wash-ember),
       linear-gradient(180deg,
-        color-mix(in oklab, var(--nil-void) 40%, transparent) 0%,
-        color-mix(in oklab, var(--nil-void) 43%, transparent) 14%,
-        color-mix(in oklab, var(--nil-void) 51%, transparent) 28%,
-        color-mix(in oklab, var(--nil-void) 63%, transparent) 42%,
-        color-mix(in oklab, var(--nil-void) 77%, transparent) 57%,
-        color-mix(in oklab, var(--nil-void) 89%, transparent) 71%,
-        color-mix(in oklab, var(--nil-void) 97%, transparent) 86%,
+        color-mix(in oklab, var(--nil-void) 56%,   transparent) 0%,
+        color-mix(in oklab, var(--nil-void) 58.2%, transparent) 14%,
+        color-mix(in oklab, var(--nil-void) 63.9%, transparent) 28%,
+        color-mix(in oklab, var(--nil-void) 72.7%, transparent) 42%,
+        color-mix(in oklab, var(--nil-void) 83.3%, transparent) 57%,
+        color-mix(in oklab, var(--nil-void) 92.1%, transparent) 71%,
+        color-mix(in oklab, var(--nil-void) 97.8%, transparent) 86%,
         var(--nil-void) 100%);
   }
   .hero {

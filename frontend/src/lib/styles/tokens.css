@@ -119,16 +119,17 @@
     transparent 70%);
 
   /* Zone A identity wash — report cover, lock, handoff. The one ember gradient.
-     A warm ambient up-stage of the hero, never a full-bleed fill. */
-  --wash-ember: radial-gradient(90% 60% at 50% 30%,
-    color-mix(in oklab, var(--brand-ember-700) 24%,   transparent) 0%,
-    color-mix(in oklab, var(--brand-ember-700) 22.8%, transparent) 10%,
-    color-mix(in oklab, var(--brand-ember-700) 19.7%, transparent) 21%,
-    color-mix(in oklab, var(--brand-ember-700) 14.9%, transparent) 32%,
-    color-mix(in oklab, var(--brand-ember-900) 9.1%,  transparent) 43%,
-    color-mix(in oklab, var(--brand-ember-900) 4.3%,  transparent) 53%,
-    color-mix(in oklab, var(--brand-ember-900) 1.2%,  transparent) 64%,
-    transparent 75%);
+     A warm ambient up-stage of the hero — a highlight, per Law 1, so the peak
+     stays low and the ellipse tight. Never a full-bleed fill. */
+  --wash-ember: radial-gradient(70% 48% at 50% 28%,
+    color-mix(in oklab, var(--brand-ember-700) 14%,   transparent) 0%,
+    color-mix(in oklab, var(--brand-ember-700) 13.3%, transparent) 9%,
+    color-mix(in oklab, var(--brand-ember-700) 11.5%, transparent) 18%,
+    color-mix(in oklab, var(--brand-ember-700) 8.7%,  transparent) 27%,
+    color-mix(in oklab, var(--brand-ember-900) 5.3%,  transparent) 37%,
+    color-mix(in oklab, var(--brand-ember-900) 2.5%,  transparent) 46%,
+    color-mix(in oklab, var(--brand-ember-900) 0.7%,  transparent) 56%,
+    transparent 65%);
 
   /* The well itself: a faint top light so the app background is a space, not
      a fill. Static, Zone B, layered under everything. */
