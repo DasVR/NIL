@@ -1,9 +1,11 @@
+import { reducedMotion } from './tokens';
+
 type Opts = { radius?: number; pull?: number };
 
 export function magnetic(node: HTMLElement, opts: Opts = {}) {
   const { radius = 90, pull = 0.28 } = opts;
   if (typeof matchMedia === 'undefined') return;
-  if (matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (reducedMotion()) return;
 
   let frame = 0;
 

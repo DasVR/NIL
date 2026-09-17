@@ -1,3 +1,5 @@
+import { reducedMotion } from './tokens';
+
 /** DROPLET — water-fill row hover. See motion.css primitive 12. */
 
 function farthestDiameter(x: number, y: number, width: number, height: number): number {
@@ -31,7 +33,7 @@ export function droplet(node: HTMLElement) {
   fill.setAttribute('aria-hidden', 'true');
   node.insertBefore(fill, node.firstChild);
 
-  const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const reduced = reducedMotion();
 
   function place(e: PointerEvent) {
     const { x, y, w, h } = localPoint(node, e);
