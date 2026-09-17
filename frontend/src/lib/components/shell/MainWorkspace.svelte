@@ -271,6 +271,8 @@
     color: var(--nil-ink-2);
     font: var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
+    transition: color var(--dur-flip) var(--ease-out),
+                background-color var(--dur-flip) var(--ease-out);
   }
 
   .workspace-tab:hover,

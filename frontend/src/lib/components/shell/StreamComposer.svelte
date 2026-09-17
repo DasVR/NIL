@@ -670,7 +670,9 @@
     background: var(--nil-panel);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-panel);
-    box-shadow: var(--lift-1);
+    /* The command deck is a floating panel in the well like the stream above
+       it, so it rests at panel elevation — not a card's contact shadow. */
+    box-shadow: var(--lift-2);
     flex-shrink: 0;
     /* Focus affordance is the Zone A prism ring (app.css .nil-composer): the one
        sanctioned glass-on-focus, fading in on :focus-within and dead at rest.
@@ -688,7 +690,7 @@
   }
   .composer:focus-within {
     border-color: var(--nil-line-hot);
-    box-shadow: var(--lift-2);
+    box-shadow: var(--lift-3);
   }
   /* Deck wake: the placeholder and the bar's controls step up one ink level
      while the deck has focus, then fall back on blur. Color only. */
@@ -893,6 +895,7 @@
        pill's travel, so ink and surface arrive together. */
     transition: color var(--dur-jelly) var(--ease-out);
   }
+  .seg:hover { color: var(--nil-ink-2); }
   .seg.on { color: var(--nil-ink); }
   @media (prefers-reduced-motion: reduce) {
     .pill { filter: none; }
@@ -917,6 +920,7 @@
     transition: border-color var(--dur-enter) var(--ease-out),
                 color var(--dur-enter) var(--ease-out);
   }
+  .model:hover, .model[aria-expanded="true"] { color: var(--nil-ink); }
   .picker {
     position: fixed;
     width: 260px;

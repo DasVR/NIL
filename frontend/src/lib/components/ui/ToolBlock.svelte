@@ -368,5 +368,7 @@
     border: 1px solid var(--nil-line-hot);
     border-radius: var(--r-card);
     padding: var(--s-2) var(--s-3);
+    background: var(--nil-raised);
+    box-shadow: var(--lift-1);
   }
 </style>

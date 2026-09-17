@@ -108,6 +108,8 @@
     background: var(--nil-raised);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-card);
+    /* Same resting lift as the other stream cards (approval, clarify, confirm). */
+    box-shadow: var(--lift-1);
   }
 
   .lead {

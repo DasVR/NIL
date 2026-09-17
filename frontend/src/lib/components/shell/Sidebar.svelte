@@ -350,7 +350,10 @@
     color: var(--nil-ink-3);
     font: 500 var(--t-micro)/1 var(--font-ui);
     cursor: pointer;
+    transition: color var(--dur-flip) var(--ease-out),
+                background-color var(--dur-flip) var(--ease-out);
   }
+  .seg:hover { color: var(--nil-ink-2); }
   .seg.on { color: var(--nil-ink); background: var(--nil-raised); }
   .danger { padding: var(--s-2); border-top: 1px solid var(--nil-line); }
 

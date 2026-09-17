@@ -57,12 +57,14 @@
   /* The 1px hover rise is below the spring threshold — a spring on a <8px move
      reads as lag, not weight — so it decelerates on --ease-out, not --ease-spring.
      Overshoot is reserved for the moves big enough to feel it: JELLY, MAGNETIC,
-     MORPH. */
+     MORPH. The elevation (box-shadow) trails the rise on --dur-enter: the
+     surface snaps up, its shadow catches up a beat later. That lag is where the
+     "settle" lives without a sub-threshold spring. */
   transition: transform var(--dur-flip) var(--ease-out),
               border-color var(--dur-flip) var(--ease-out),
               background-color var(--dur-flip) var(--ease-out),
               color var(--dur-flip) var(--ease-out),
-              box-shadow var(--dur-flip) var(--ease-out),
+              box-shadow var(--dur-enter) var(--ease-out),
               /* enabled <-> disabled is a state change too; a control that
                  wakes up as you type should fade in, not pop. */
               opacity var(--dur-enter) var(--ease-out);
@@ -75,8 +77,12 @@
   box-shadow: var(--lift-1);
 }
 /* Tier 2 — prominent cards / empty-cluster CTAs hover to a deeper elevation.
-   Pair with .nil-lift; the only difference is shadow depth, same crisp curve. */
-.nil-lift-2:hover { box-shadow: var(--lift-2); }
+   Pair with .nil-lift; the only difference is shadow depth, same crisp curve.
+   The second selector repeats LIFT's guards on purpose: it has to outweigh
+   `.app-shell button:not():not():hover` above, or every button in the shell
+   silently falls back to lift-1 and the tier never renders. */
+.nil-lift-2:hover,
+.app-shell button.nil-lift-2:not(.nil-quiet):not(.nil-row-host):hover { box-shadow: var(--lift-2); }
 
 /* ------------------------------------------------------------
    02 · PRESS — always paired with LIFT, never used alone.
@@ -359,7 +365,7 @@
   @starting-style { opacity: 0; transform: scale(0.97) translateY(4px); }
 }
 dialog::backdrop {
-  background: rgb(4 5 6 / 0);
+  background: transparent;
   backdrop-filter: blur(0px);
   transition: display var(--dur-enter) allow-discrete,
               overlay var(--dur-enter) allow-discrete,
@@ -367,8 +373,11 @@ dialog::backdrop {
               backdrop-filter var(--dur-enter) var(--ease-out);
 }
 dialog[open]::backdrop {
-  background: rgb(4 5 6 / 0.55); backdrop-filter: blur(6px);
-  @starting-style { background: rgb(4 5 6 / 0); backdrop-filter: blur(0px); }
+  background: var(--glass-scrim); backdrop-filter: blur(var(--glass-blur));
+  @starting-style { background: transparent; backdrop-filter: blur(0px); }
+}
+@media (prefers-reduced-transparency: reduce) {
+  dialog[open]::backdrop { background: var(--glass-scrim-solid); backdrop-filter: none; }
 }
 
 /* ------------------------------------------------------------
