@@ -660,21 +660,24 @@
     background: var(--nil-panel);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-panel);
-    box-shadow: var(--lift-1);
+    /* The command deck is a floating panel in the well like the stream above
+       it, so it rests at panel elevation — not a card's contact shadow. */
+    box-shadow: var(--lift-2);
     flex-shrink: 0;
     /* Focus affordance is the Zone A prism ring (app.css .nil-composer): the one
        sanctioned glass-on-focus, fading in on :focus-within and dead at rest.
        No transform spring — a <8px deck nudge is below the spring threshold —
-       and no B/C glass at rest; the border hots and the elevation deepens. */
+       and no B/C glass at rest; the border hots at once and the elevation
+       deepens a beat behind it (same trailing-shadow contract as LIFT). */
     transition: border-color var(--dur-flip) var(--ease-out),
-                box-shadow var(--dur-flip) var(--ease-out);
+                box-shadow var(--dur-enter) var(--ease-out);
     position: relative;
     isolation: isolate;
     z-index: var(--z-overlay);
   }
   .composer:focus-within {
     border-color: var(--nil-line-hot);
-    box-shadow: var(--lift-2);
+    box-shadow: var(--lift-3);
   }
 
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -861,7 +864,10 @@
     font: 500 var(--t-micro)/16px var(--font-ui);
     cursor: pointer;
     border-radius: 999px;
+    /* Label ink settles a beat after the JELLY pill lands under it. */
+    transition: color var(--dur-enter) var(--ease-out);
   }
+  .seg:hover { color: var(--nil-ink-2); }
   .seg.on { color: var(--nil-ink); }
   @media (prefers-reduced-motion: reduce) {
     .pill { filter: none; }
@@ -883,7 +889,9 @@
        landing at 5.5px and rounding low. */
     font: 500 var(--t-micro)/16px var(--font-ui);
     cursor: pointer;
+    transition: color var(--dur-flip) var(--ease-out);
   }
+  .model:hover, .model[aria-expanded="true"] { color: var(--nil-ink); }
   .picker {
     position: fixed;
     width: 260px;

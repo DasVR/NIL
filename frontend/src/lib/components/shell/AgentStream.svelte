@@ -262,7 +262,7 @@
 
   {#if !isPinned}
     <button
-      class="jump nil-lift nil-halo"
+      class="jump nil-lift nil-lift-2 nil-halo"
       type="button"
       onclick={() => { if (scroller) jumpToLatest(scroller); }}
     >
@@ -283,6 +283,24 @@
     border-radius: var(--r-panel);
     box-shadow: var(--lift-2);
     overflow: hidden;
+    isolation: isolate;
+  }
+  /* Stage light: the center panel is the one surface lit from above, which is
+     what separates the stage from the two side panels at the same elevation.
+     A 3% ink fall-off across the top quarter — static, greyscale, contained —
+     not a wash and not glass. Sits between the panel fill and its content. */
+  .stream::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    background: radial-gradient(90% 38% at 50% 0%,
+      color-mix(in oklab, var(--nil-ink) 3%, transparent) 0%,
+      transparent 100%);
+  }
+  @media (prefers-contrast: more) {
+    .stream::before { display: none; }
   }
 
   .handoff {
@@ -462,7 +480,10 @@
     position: absolute;
     inset-block-end: var(--s-5);
     inset-inline-start: 50%;
-    transform: translateX(-50%);
+    /* Centered via `translate`, not `transform`, so LIFT's hover/press
+       transform (motion.css #01/#02) composes with it instead of replacing it
+       and kicking the pill half a panel to the right. */
+    translate: -50% 0;
     display: inline-flex;
     align-items: center;
     gap: 6px;
@@ -474,6 +495,8 @@
     color: var(--nil-ink);
     font: 500 var(--t-meta)/1 var(--font-ui);
     cursor: pointer;
+    /* Floats over the log, so it rests at panel elevation, not flat on it. */
+    box-shadow: var(--lift-2);
   }
 
   .jump kbd {
