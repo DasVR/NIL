@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { expoIn, expoOut } from 'svelte/easing';
 import { durToken, easeIn, easeOut, reducedMotion } from './tokens';
-import { dissolve, settle } from './settle';
+import { dissolve, leave, settle } from './settle';
 import { reveal } from './reveal';
 
 // Node has no document/matchMedia: the drivers must fall back cleanly rather
@@ -41,6 +41,15 @@ describe('settle', () => {
   it('keeps a positioning base transform through the animation', () => {
     const t = settle(node, { base: 'translateX(-50%)' });
     expect(t.css(1, 0)).toContain('translateX(-50%) scale(1)');
+  });
+
+  it('leave is the exit half: --ease-in, 4px back down, rests clean', () => {
+    const t = leave(node);
+    expect(t.duration).toBe(160);
+    expect(t.easing).toBe(easeIn);
+    expect(t.css(1, 0)).toBe('opacity: 1; transform: translateY(0px);');
+    expect(t.css(0, 1)).toBe('opacity: 0; transform: translateY(4px);');
+    expect(leave(node, { duration: 260 }).duration).toBe(260);
   });
 
   it('dissolve is opacity only', () => {
