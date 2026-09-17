@@ -3,6 +3,7 @@
   import AgentStatus from '$lib/components/ui/AgentStatus.svelte';
   import AgentGlyph from '$lib/components/ui/AgentGlyph.svelte';
   import { attention } from '$lib/agent/phase';
+  import { reveal } from '$lib/motion/reveal';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import { usageStore } from '$lib/usage/store.svelte.ts';
 
@@ -75,21 +76,30 @@
 </script>
 
 {#if agentRun.running}
-  <div class="runbar nil-scan" data-attention={att} data-state={att === 'working' ? 'working' : undefined}>
-    <AgentGlyph label />
-    <AgentStatus
-      bind:open={statusOpen}
-      summary={runningSummary}
-      duration={runDuration}
-      tokens={runTokens}
-      hint={runHint}
-      items={statusItems}
-    />
-    <button class="nil-lift nil-halo stop" type="button" onclick={() => agentRun.stop()}>Stop</button>
+  <!-- Presence arrives and leaves on REVEAL (motion/reveal.ts): the bar
+       unfolds into the flow at run start and folds away at run end, so the
+       stream above it grows and shrinks instead of jumping 48px. The wrapper
+       carries the transition because the bar's own min-height would pin a
+       max-block-size animation open. -->
+  <div class="mount" transition:reveal>
+    <div class="runbar nil-scan" data-attention={att} data-state={att === 'working' ? 'working' : undefined}>
+      <AgentGlyph label />
+      <AgentStatus
+        bind:open={statusOpen}
+        summary={runningSummary}
+        duration={runDuration}
+        tokens={runTokens}
+        hint={runHint}
+        items={statusItems}
+      />
+      <button class="nil-lift nil-halo stop" type="button" onclick={() => agentRun.stop()}>Stop</button>
+    </div>
   </div>
 {/if}
 
 <style>
+  .mount { flex-shrink: 0; }
+
   .runbar {
     display: flex;
     align-items: center;
