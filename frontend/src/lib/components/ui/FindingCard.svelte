@@ -2,6 +2,7 @@
   import type { Finding, FindingStatus } from '$lib/agent/types';
   import { formatCvss, findingConfirmed, severityShape, severityToken } from '$lib/findings/display';
   import { scramble } from '$lib/motion/scramble.svelte.ts';
+  import { settle } from '$lib/motion/settle';
   import CopyAffordance from '$lib/ui/CopyAffordance.svelte';
 
   interface Props {
@@ -37,6 +38,9 @@
 <!-- Severity is carried three ways: hue (--sev), shape glyph, and the chip's
      text label. Unconfirmed leads deliberately drop hue and shape — the chip
      then reads the status word instead, so nothing is ranked before evidence. -->
+<!-- SETTLE once on entry. `|global` because the card arrives inside a freshly
+     created stream row ({#each} item + {#if} chain); a local intro on a node
+     born with its own block never plays. `in:` only — it never re-runs. -->
 <article
   class="finding"
   class:confirmed
@@ -44,6 +48,7 @@
   data-cvss={cvssLabel}
   style:--sev={tone}
   aria-labelledby={titleId}
+  in:settle|global
 >
   <header class="lead">
     <span class="chip">

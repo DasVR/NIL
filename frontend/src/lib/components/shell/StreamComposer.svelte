@@ -13,8 +13,8 @@
   import { jelly } from '$lib/motion/jelly.ts';
   import { droplet } from '$lib/motion/droplet';
   import { pop } from '$lib/motion/pop';
-  import { settle } from '$lib/motion/settle';
-  import { durToken, easeIn, reducedMotion } from '$lib/motion/tokens';
+  import { leave, settle } from '$lib/motion/settle';
+  import { durToken, reducedMotion } from '$lib/motion/tokens';
   import { readProjectFile } from '$lib/project.svelte.ts';
   import { listenSpeech, playDictation, speechAvailable } from '$lib/motion/dictation.ts';
   import { untrack } from 'svelte';
@@ -215,18 +215,6 @@
       label: `${f.label}:${parsed.line}`,
     }));
   });
-
-  // The gate arrives on SETTLE (in:settle) and leaves on --ease-in — exits
-  // accelerate away, entrances decelerate in, per motion.css.
-  function gateExit(_node: HTMLElement) {
-    const reduced = reducedMotion();
-    return {
-      duration: reduced ? 80 : durToken('--dur-enter', 160),
-      easing: easeIn,
-      css: (t: number) =>
-        `opacity: ${t};${reduced ? '' : ` transform: translateY(${(1 - t) * 4}px);`}`,
-    };
-  }
 
   // Per-file and total caps so a large attachment can't run away with the turn.
   const ATTACH_MAX_PER_FILE = 16000;
@@ -450,8 +438,11 @@
     </div>
   {/if}
 
+  <!-- Dense → engaged: the gate arrives on SETTLE and leaves on `leave` at
+       --dur-panel — it is a region the composer closes over as the tool block
+       in the stream takes the step, not a single element blinking out. -->
   {#if pending}
-    <div class="gate-host" in:settle out:gateExit>
+    <div class="gate-host" in:settle out:leave={{ duration: durToken('--dur-panel', 260) }}>
       <ApprovalBlock step={pending} />
     </div>
   {/if}

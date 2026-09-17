@@ -16,6 +16,14 @@
    everywhere something "settles," beats a different bounce per
    component. If you need a primitive that isn't here, it goes in
    this file with a name — it does not get inlined in a component.
+
+   REV 3 — the spring has a floor. --ease-spring / --ease-pop only
+   where the move is big enough to carry the overshoot: travel ≥ 8px
+   OR scale ≥ 4%. Below that (1px hover rise, 2px focus tighten, a
+   4px settle) it is --ease-out — a spring on a move you can't see
+   overshoot reads as lag, not weight. Above the floor today:
+   MAGNETIC (pull up to ~25px), JELLY (the pill's half-track), MORPH
+   (16% pop), the toggle knob (16px), the chevron flip (90°).
    ============================================================ */
 
 :root {
@@ -273,14 +281,15 @@
    The ring is parked transparent and 2px wide of its resting
    offset, so on focus it tightens onto the control as it colors
    in — a settle, not a pop-on. Both legs are short (--dur-flip /
-   --dur-enter) and the offset rides the one overshoot curve so
-   the vocabulary stays a single spring.
+   --dur-enter). The 2px tighten is under the spring floor (REV 3),
+   so it decelerates on --ease-out; the overshoot curve is for
+   moves that can show it (MAGNETIC, JELLY, MORPH, the toggle knob).
    ------------------------------------------------------------ */
 .nil-halo {
   outline: 2px solid transparent;
   outline-offset: 4px;
   transition: outline-color var(--dur-flip) var(--ease-out),
-              outline-offset var(--dur-enter) var(--ease-spring);
+              outline-offset var(--dur-enter) var(--ease-out);
 }
 .nil-halo:focus-visible {
   outline-color: var(--nil-halo);

@@ -38,7 +38,12 @@ function handleKeydown(e: KeyboardEvent) {
   if (mod && key === 'Enter' && !shift) {
     if (agentStore.pendingApproval) {
       e.preventDefault();
-      agentStore.approve(agentStore.pendingApproval.id);
+      // Route through the gate's own button when it is on screen so the
+      // keyboard allow gets the same CHECK-DRAW as a click; approve directly
+      // only when no gate card is mounted.
+      const gateAllow = document.querySelector<HTMLButtonElement>('[data-gate-allow]');
+      if (gateAllow && !gateAllow.disabled) gateAllow.click();
+      else agentStore.approve(agentStore.pendingApproval.id);
       return;
     }
   }
