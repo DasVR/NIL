@@ -61,6 +61,7 @@
   });
 
   const runHint = $derived.by(() => {
+    if (agentRun.pendingApproval) return 'Waiting on your approval';
     if (agentRun.huntLoop) return 'Assessment running';
     const tool = agentRun.steps.find((s) => s.kind === 'tool' && s.state === 'running');
     if (tool && tool.kind === 'tool') return tool.name;
@@ -75,7 +76,12 @@
   });
 </script>
 
-{#if agentRun.running}
+<!-- Stays up while a tool approval is pending, not only while `running`: in the
+     non-hunt path the turn's HTTP call has already returned by the time the
+     proposal lands, so `running` is false and the bar would otherwise fold away
+     exactly when it has something to say. needs-you → RING + label (AgentGlyph),
+     SCANLINE off; working → SCANLINE, ring off. Never both. -->
+{#if agentRun.running || agentRun.pendingApproval}
   <!-- Presence arrives and leaves on REVEAL (motion/reveal.ts): the bar
        unfolds into the flow at run start and folds away at run end, so the
        stream above it grows and shrinks instead of jumping 48px. The wrapper
