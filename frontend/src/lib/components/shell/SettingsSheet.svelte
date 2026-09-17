@@ -150,8 +150,13 @@
     border: none;
     padding: 0;
     cursor: default;
-    background: color-mix(in oklab, var(--nil-void) 72%, transparent);
+    /* Top-layer transient scrim — same sanctioned glass as the palette. */
+    background: var(--glass-scrim);
+    backdrop-filter: blur(var(--glass-blur));
     z-index: var(--z-modal);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .settings-overlay { background: var(--glass-scrim-solid); backdrop-filter: none; }
   }
 
   .settings-sheet {
