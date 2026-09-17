@@ -298,6 +298,8 @@
     font: var(--t-micro)/1 var(--font-ui);
     cursor: pointer;
     white-space: nowrap;
+    transition: color var(--dur-flip) var(--ease-out),
+                background-color var(--dur-flip) var(--ease-out);
   }
 
   .right-sidebar-tab:hover,
