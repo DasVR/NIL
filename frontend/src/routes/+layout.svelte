@@ -3,7 +3,7 @@
   import '$lib/styles/motion.css';
   import '../app.css';
   import { onMount, untrack, type Snippet } from 'svelte';
-  import { cubicOut } from 'svelte/easing';
+  import { durToken, easeOut, reducedMotion } from '$lib/motion/tokens';
   import Titlebar from '$lib/components/shell/Titlebar.svelte';
   import Sidebar from '$lib/components/shell/Sidebar.svelte';
   import MainWorkspace from '$lib/components/shell/MainWorkspace.svelte';
@@ -39,14 +39,11 @@
   // cluster gives way, so the transition reads as one orchestrated move rather
   // than a hard cut. One --dur-stage beat, opacity + transform only, and it
   // collapses to a plain appear under reduced motion.
-  function deckSettle(node: HTMLElement) {
-    const reduced = matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const dur = parseFloat(
-      getComputedStyle(document.documentElement).getPropertyValue('--dur-stage'),
-    ) || 420;
+  function deckSettle(_node: HTMLElement) {
+    const reduced = reducedMotion();
     return {
-      duration: reduced ? 0 : dur,
-      easing: cubicOut,
+      duration: reduced ? 0 : durToken('--dur-stage', 420),
+      easing: easeOut,
       css: (t: number) =>
         `opacity: ${t};${reduced ? '' : ` transform: translateY(${(1 - t) * 8}px);`}`,
     };

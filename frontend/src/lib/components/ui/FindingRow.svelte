@@ -49,7 +49,10 @@
     color: var(--nil-ink);
     cursor: pointer;
     text-align: left;
-    transition: background var(--dur-flip) var(--ease-out);
+    /* The active row rests on --lift-1; the lift eases in with the surface
+       rather than snapping on while the background fades. */
+    transition: background var(--dur-flip) var(--ease-out),
+                box-shadow var(--dur-flip) var(--ease-out);
   }
 
   .row:hover {

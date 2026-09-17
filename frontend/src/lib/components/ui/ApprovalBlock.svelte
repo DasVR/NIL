@@ -96,10 +96,14 @@
   }
 </script>
 
+<!-- SCANLINE means "working". A gate that is waiting on the person is the
+     arbiter's `needs-you` state, which the run bar's ring already carries, so
+     the hairline only sweeps once an allow has been committed and the tool is
+     actually running — not the whole time the question is open. -->
 <div
   class="gate nil-scan"
   class:busy
-  data-state="working"
+  data-state={busy ? 'working' : undefined}
   role="alertdialog"
   aria-label="Pending tool approval"
   aria-live="assertive"

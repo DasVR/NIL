@@ -101,6 +101,7 @@
 <aside
   class="right-sidebar {open ? '' : 'collapsed'} {resizing ? 'resizing' : ''}"
   style:width={open ? `${width}px` : '0px'}
+  style:--rs-w={`${width}px`}
   aria-label="Inspector"
   aria-hidden={!open}
   inert={!open}
@@ -265,6 +266,14 @@
   }
 
   .right-sidebar.resizing { transition: none; }
+
+  /* Header and content hold the open width while the aside's width animates
+     (open/close), so the collapse clips them instead of squeezing every row
+     through a reflow on each frame. -2px for the aside's own hairlines. */
+  .right-sidebar-header,
+  .right-sidebar-content {
+    inline-size: calc(var(--rs-w) - 2px);
+  }
 
   .right-sidebar-header {
     display: flex;

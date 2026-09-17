@@ -63,7 +63,11 @@
   transition: transform var(--dur-flip) var(--ease-out),
               border-color var(--dur-flip) var(--ease-out),
               background-color var(--dur-flip) var(--ease-out),
-              box-shadow var(--dur-enter) var(--ease-out);
+              color var(--dur-flip) var(--ease-out),
+              box-shadow var(--dur-enter) var(--ease-out),
+              /* enabled <-> disabled is a state change too; a control that
+                 wakes up as you type should fade in, not pop. */
+              opacity var(--dur-enter) var(--ease-out);
   will-change: transform;
 }
 .nil-lift:hover,
@@ -82,10 +86,11 @@
 
 /* ------------------------------------------------------------
    02 · PRESS — always paired with LIFT, never used alone.
-   Down is quick and flat (no overshoot — that would read as lag,
-   and overrides LIFT's spring duration for just this state).
-   Release falls back to LIFT's own transition, which is where the
-   spring lives — it settles with a little weight, not a hard snap.
+   Down is quick and flat (70ms, no overshoot — that would read as
+   lag). Release falls back to LIFT's own transition: --dur-flip on
+   --ease-out, crisp. The 4.5% press is below the spring threshold,
+   so it does not bounce home; a control that should land with
+   weight after committing uses the MORPH pop (#14) on top.
    ------------------------------------------------------------ */
 .nil-lift:active,
 .app-shell button:not(.nil-quiet):not(.nil-row-host):active {
@@ -109,8 +114,8 @@
    ------------------------------------------------------------ */
 .nil-jelly {
   transform-origin: var(--jelly-origin, center);
-  /* component JS: el.animate([...], { duration: getComputedStyle(el)
-     .getPropertyValue('--dur-jelly') , easing: 'var(--ease-pop)' }) */
+  /* driver: motion/jelly.ts — reads --dur-jelly through motion/tokens.ts
+     and the resolved --ease-pop bezier (WAAPI can't parse a raw var()). */
 }
 
 /* ------------------------------------------------------------
@@ -142,23 +147,40 @@
    ------------------------------------------------------------ */
 .nil-hold { position: relative; overflow: hidden; }
 .nil-hold-fill {
-  position: absolute; inset: 0; width: 0%; z-index: 0;
+  position: absolute; inset: 0; z-index: 0;
   /* B/C chrome motion is ink, never ember — color means risk, and a hold-to-
      confirm is a machine state, not a Zone A identity moment. */
   background: color-mix(in oklab, var(--nil-ink) 22%, var(--nil-raised));
-  /* component JS drives width 0% -> 100% over --dur-hold; on release
-     before completion, transition width back to 0% over --dur-enter */
+  /* Full-width box scaled from the leading edge, so the fill stays on the
+     compositor (Law 3) instead of relayouting the button every frame.
+     Component JS drives scaleX 0 -> 1 over --dur-hold; on release before
+     completion, it transitions back to 0 over --dur-enter. */
+  transform: scaleX(0);
+  transform-origin: left center;
 }
 .nil-hold > :not(.nil-hold-fill) { position: relative; z-index: 1; }
 
 /* ------------------------------------------------------------
    14 · MORPH — a confirming action (copy, in particular) pops,
-   swaps its icon for a checkmark, and flashes a small label next
-   to it before both revert. Not a toast — the control itself
-   confirms.
+   swaps its icon for a checkmark (drawn in with CHECK-DRAW #21),
+   and flashes a small label next to it before both revert. Not a
+   toast — the control itself confirms.
+
+   The pop is a one-shot keyframe, not a held scale: the control
+   dips and lands back at 1 on --ease-pop, so the overshoot past 1
+   is the "settle" and the resting geometry never changes. Two
+   entry points share it: [data-confirmed] for stateful confirms
+   (copy) and .nil-pop for fire-and-forget (send), driven by
+   motion/pop.ts with the SHAKE replay pattern.
    ------------------------------------------------------------ */
-.nil-morph { transform: scale(1); transition: transform var(--dur-panel) var(--ease-spring); }
-.nil-morph[data-confirmed="true"] { transform: scale(1.12); }
+@keyframes nil-morph-pop {
+  from { transform: scale(0.84); }
+  to   { transform: scale(1); }
+}
+.nil-morph[data-confirmed="true"],
+.nil-pop {
+  animation: nil-morph-pop var(--dur-panel) var(--ease-pop);
+}
 .nil-morph-label {
   max-width: 0; overflow: hidden; white-space: nowrap; opacity: 0;
   color: var(--nil-ink);
@@ -248,14 +270,22 @@
 
 /* ------------------------------------------------------------
    03 · HALO — keyboard focus. :focus-visible only, never :focus.
-   Toggles / segmented controls / focus rings all share --ease-pop
-   so the vocabulary stays one curve, not a different bounce each.
+   The ring is parked transparent and 2px wide of its resting
+   offset, so on focus it tightens onto the control as it colors
+   in — a settle, not a pop-on. Both legs are short (--dur-flip /
+   --dur-enter) and the offset rides the one overshoot curve so
+   the vocabulary stays a single spring.
    ------------------------------------------------------------ */
+.nil-halo {
+  outline: 2px solid transparent;
+  outline-offset: 4px;
+  transition: outline-color var(--dur-flip) var(--ease-out),
+              outline-offset var(--dur-enter) var(--ease-spring);
+}
 .nil-halo:focus-visible {
-  outline: 2px solid var(--nil-halo);
+  outline-color: var(--nil-halo);
   outline-offset: 2px;
   border-radius: inherit;
-  transition: outline-offset var(--dur-flip) var(--ease-pop);
 }
 
 /* ------------------------------------------------------------
@@ -300,6 +330,9 @@
 /* ------------------------------------------------------------
    07 · REVEAL — expand to intrinsic height. Tool results,
    evidence blocks, stack traces. Uses calc-size(), not max-height.
+   For regions that mount/unmount with {#if} (run bar, tool dock),
+   the same shape is driven by motion/reveal.ts as a Svelte
+   transition, since this class can't reach a node that isn't there.
    ------------------------------------------------------------ */
 .nil-reveal {
   block-size: 0; overflow: hidden;
@@ -316,7 +349,9 @@
 /* ------------------------------------------------------------
    08 · SETTLE — top-layer entry for command palette, inspector
    popovers, confirm dialogs. `overlay` and `allow-discrete` are
-   MANDATORY or the exit animation is clipped.
+   MANDATORY or the exit animation is clipped. Non-native top layer
+   ({#if}-mounted menus, prompt cards) uses motion/settle.ts, which
+   mirrors these numbers.
    ------------------------------------------------------------ */
 [popover], dialog {
   opacity: 0; transform: scale(0.97) translateY(4px);
@@ -477,7 +512,8 @@ dialog[open]::backdrop {
   .nil-ring { animation: none; transform: none; }
   .nil-jelly { transition: none !important; }
   .nil-droplet { transition-duration: 0.01ms !important; }
-  .nil-morph, .nil-morph[data-confirmed="true"] { transform: none; }
+  .nil-halo { outline-offset: 2px; }
+  .nil-morph[data-confirmed="true"], .nil-pop { animation: none; }
   .nil-pulse { animation: none; box-shadow: 0 0 0 1px color-mix(in oklab, var(--nil-ink) 40%, transparent); }
   .nil-shake { animation: none; }
   .nil-check-draw path, .nil-check-draw polyline { transition-duration: 0.01ms; }
