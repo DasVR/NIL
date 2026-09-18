@@ -47,6 +47,9 @@ jobs:
           # sv-agentation inspector ships here. See +layout.svelte for the
           # dead-code-elimination note.
           VITE_ENABLE_AGENTATION: 'true'
+          # Pages has no same-origin backend, so point the client at the live
+          # Homelab API instead of the default /v1 (see frontend/src/lib/api.ts).
+          VITE_API_BASE: https://nil-api.dasdev.net/v1
         run: |
           npm run check
           npm run build
