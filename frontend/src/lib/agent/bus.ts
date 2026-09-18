@@ -1,14 +1,9 @@
 import { browser } from '$app/environment';
 import { agentRun } from '$lib/agent/run.svelte.ts';
+import { wsUrl } from '$lib/agent/busUrl';
 
 let socket: WebSocket | null = null;
 let current = '';
-
-function wsUrl(engagement: string): string {
-  const proto = location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const q = engagement ? `?engagement=${encodeURIComponent(engagement)}` : '';
-  return `${proto}//${location.host}/v1/ws${q}`;
-}
 
 export function connectBus(engagement: string) {
   if (!browser) return;
