@@ -116,15 +116,19 @@
 
   /* Stage ambient behind an empty cluster (Welcome, Build/Pentest idle). Lifts
      the copy off the well without a panel. Ink, not ember: an idle field is not
-     one of the four identity moments. */
+     one of the four identity moments.
+     Peak 7.5% (was 5%): the field reads as lit and recessed — a pool of light
+     the cluster sits in — instead of a faint lift off a flat panel. Same
+     sigmoid, same ellipse; only the amplitude changed, so the starters' slabs
+     (Welcome .row) have real ambient to pick up. */
   --wash-stage: radial-gradient(120% 68% at 50% 40%,
-    color-mix(in oklab, var(--nil-ink) 5%,    transparent) 0%,
-    color-mix(in oklab, var(--nil-ink) 4.75%, transparent) 10%,
-    color-mix(in oklab, var(--nil-ink) 4.1%,  transparent) 20%,
-    color-mix(in oklab, var(--nil-ink) 3.1%,  transparent) 30%,
-    color-mix(in oklab, var(--nil-ink) 1.9%,  transparent) 40%,
-    color-mix(in oklab, var(--nil-ink) 0.9%,  transparent) 50%,
-    color-mix(in oklab, var(--nil-ink) 0.25%, transparent) 60%,
+    color-mix(in oklab, var(--nil-ink) 7.5%,  transparent) 0%,
+    color-mix(in oklab, var(--nil-ink) 7.1%,  transparent) 10%,
+    color-mix(in oklab, var(--nil-ink) 6.15%, transparent) 20%,
+    color-mix(in oklab, var(--nil-ink) 4.65%, transparent) 30%,
+    color-mix(in oklab, var(--nil-ink) 2.85%, transparent) 40%,
+    color-mix(in oklab, var(--nil-ink) 1.35%, transparent) 50%,
+    color-mix(in oklab, var(--nil-ink) 0.4%,  transparent) 60%,
     transparent 70%);
 
   /* Zone A identity wash — report cover, lock, handoff. The one ember gradient.
