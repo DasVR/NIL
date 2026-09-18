@@ -32,7 +32,6 @@
 
   let { children }: { children: Snippet } = $props();
 
-  let booted = $state(false);
   let composerInput: HTMLTextAreaElement | undefined = $state();
 
   // Empty -> stream handoff: the command deck settles into place as the empty
@@ -146,8 +145,8 @@
   <ReportCover />
 </div>
 
-{#if browser && !booted}
-  <ColdOpen onbooted={() => (booted = true)} />
+{#if browser && !appState.booted}
+  <ColdOpen onbooted={() => (appState.booted = true)} />
 {/if}
 
 <!-- Svelte Agentation: click an element, annotate it, copy structured

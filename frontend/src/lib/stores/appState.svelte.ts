@@ -55,6 +55,11 @@ let yoloMode = $state(false);
 let composerMode = $state<ComposerMode>('code');
 let composerFocus: () => void = () => {};
 
+// Flips once when the cold open hands the DOM over. Empty-cluster entrances
+// key off this, not mount — the shell mounts under an opaque canvas for the
+// first ~4s, so a mount-time intro would play unseen.
+let booted = $state(false);
+
 let engagements = $state<Engagement[]>([]);
 let backendHealthy = $state(false);
 let backendVersion = $state('');
@@ -115,6 +120,8 @@ export const appState = {
   set rightSidebarWidth(v: number) { rightSidebarWidth = v; },
   get settingsOpen() { return settingsOpen; },
   set settingsOpen(v: boolean) { settingsOpen = v; },
+  get booted() { return booted; },
+  set booted(v: boolean) { booted = v; },
   get settingsCategory() { return settingsCategory; },
   set settingsCategory(v: SettingsCategory) { settingsCategory = v; },
   get theme() { return theme; },
