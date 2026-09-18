@@ -197,25 +197,35 @@
     gap: var(--s-3);
     padding: 10px var(--s-3);
     text-align: left;
-    background: var(--nil-raised);
+    /* Liquid block, not a matte bar: a slab of --nil-raised left slightly
+       translucent so the stage ambient behind it shows through the body, lit
+       from the top edge by the same --panel-depth sheen the floating panels
+       wear, and seated with --lift-1 (its 1px inset highlight is the slab's
+       lit rim). All existing vocabulary — no backdrop-filter (that stays on
+       top-layer scrims), no new gradient. The deck's mode pills stay matte. */
+    background-color: color-mix(in oklab, var(--nil-raised) 76%, transparent);
+    background-image: var(--panel-depth);
     border: 1px solid var(--nil-line);
     border-radius: var(--r-field);
     cursor: pointer;
     color: var(--nil-ink-2);
     width: 100%;
-    /* Resting elevation so the starter blocks read as lifted cards on the
-       stage, not flat bars. Hover deepens to --lift-2 below. */
     box-shadow: var(--lift-1);
+  }
+  @media (prefers-reduced-transparency: reduce) {
+    .row { background-color: var(--nil-raised); }
   }
   /* LIFT + PRESS from motion.css carry the base feel. The starter rows sit 6px
      apart, so the pull toward the cursor that MAGNETIC adds made them ride
      over each other; instead the hover stays in place and gets its energy
      from a deeper lift, a hotter surface, and the glyph waking up. The scale
      is small enough (≈0.4px of height) never to close the gap. Anchored under
-     .actions so it outranks the .app-shell button:hover rule in motion.css. */
+     .actions so it outranks the .app-shell button:hover rule in motion.css.
+     The slab firms up under the cursor: opaque and one step hotter, while the
+     sheen stays (background-color, not the shorthand). */
   .actions .row:hover:not(:active) {
     transform: translateY(-1px) scale(1.008);
-    background: color-mix(in oklab, var(--nil-raised) 94%, var(--nil-ink));
+    background-color: color-mix(in oklab, var(--nil-raised) 94%, var(--nil-ink));
     color: var(--nil-ink);
   }
   .glyph {
