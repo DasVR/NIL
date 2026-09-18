@@ -1,7 +1,7 @@
 <script lang="ts">
   import { droplet } from '$lib/motion/droplet';
-  import { leave, settle } from '$lib/motion/settle';
-  import { durToken } from '$lib/motion/tokens';
+  import { leave } from '$lib/motion/settle';
+  import { durToken, easeOut, reducedMotion } from '$lib/motion/tokens';
   import { appState } from '$lib/stores/appState.svelte.ts';
   import { workspace } from '$lib/stores/workspace.svelte.ts';
   import NilIcon, { type NilIconName } from '$lib/ui/NilIcon.svelte';
@@ -83,18 +83,24 @@
     appState.focusComposer();
   }
 
-  // Empty cluster entrance: ONE settle of the whole cluster, on first visible
-  // paint, never again. The hero is gated on appState.booted because the shell
-  // mounts under the cold open's opaque canvas — a mount-time intro (the old
-  // per-row stagger) played ~4s before anyone could see it. The `in:` is
-  // deliberately LOCAL, not |global: a local intro only runs when its own
-  // {#if} flips, so it plays once when boot hands the DOM over and is skipped
-  // when Welcome remounts on a later revisit (booted is already true, and the
-  // block is then created with its parent). No re-stagger, no once-flag.
-  // SETTLE's numbers (0.97 + 4px, --ease-out) over --dur-panel — a region
-  // arriving, not a single element. The exit stays `leave|global` so the
-  // cluster gives way inside the deck's one --dur-stage handoff.
-  const clusterIn = (node: Element) => settle(node, { duration: durToken('--dur-panel', 260) });
+  // Empty cluster entrance: a single stagger of the starter blocks on the
+  // list's first populate. `in:` only, so it never re-staggers on later
+  // renders, and `|global` because the rows are born with their own {#each} —
+  // a local intro on a node created together with its block never plays, so
+  // without the modifier this stagger was silently a no-op. Opacity + an 8px
+  // lift on --ease-out (no spring), collapsing to nothing under reduced motion.
+  // The exit is `leave` from settle.ts: --dur-enter, opacity + 4px, no stagger,
+  // so leaving the empty state fits inside the deck's one --dur-stage handoff.
+  function starterIn(_node: Element, { index = 0 }: { index?: number } = {}) {
+    const reduced = reducedMotion();
+    return {
+      delay: reduced ? 0 : index * 60,
+      duration: reduced ? 0 : durToken('--dur-panel', 260),
+      easing: easeOut,
+      css: (t: number) =>
+        `opacity: ${t};${reduced ? '' : ` transform: translateY(${(1 - t) * 8}px);`}`,
+    };
+  }
 
   function openRecent(item: RecentRow) {
     if (item.id.startsWith('eng:')) {
@@ -108,41 +114,41 @@
 </script>
 
 <section class="welcome" aria-label="Start a session">
-  {#if appState.booted}
-    <div class="hero" in:clusterIn out:leave|global>
-      <div class="actions">
-        {#each starters as starter (starter.id)}
-          <button
-            class="nil-lift nil-lift-2 nil-halo row"
-            type="button"
-            onclick={() => startWith(starter)}
-          >
-            <span class="glyph"><NilIcon name={starter.icon} size={16} /></span>
-            <span class="copy">
-              <span class="label">{starter.label}</span>
-              <span class="desc">{starter.desc}</span>
-            </span>
+  <div class="hero">
+    <div class="actions">
+      {#each starters as starter, i (starter.id)}
+        <button
+          class="nil-lift nil-lift-2 nil-halo row"
+          type="button"
+          in:starterIn|global={{ index: i }}
+          out:leave|global
+          onclick={() => startWith(starter)}
+        >
+          <span class="glyph"><NilIcon name={starter.icon} size={16} /></span>
+          <span class="copy">
+            <span class="label">{starter.label}</span>
+            <span class="desc">{starter.desc}</span>
+          </span>
+        </button>
+      {/each}
+    </div>
+
+    <div class="welcome-composer">
+      <StreamComposer />
+    </div>
+
+    {#if recent.length > 0}
+      <div class="recent">
+        <p class="eyebrow">Recent sessions</p>
+        {#each recent as item (item.id)}
+          <button class="session nil-halo" type="button" {@attach droplet} onclick={() => openRecent(item)}>
+            <span class="s-name">{item.label}</span>
+            <span class="s-meta">{item.meta}</span>
           </button>
         {/each}
       </div>
-
-      <div class="welcome-composer">
-        <StreamComposer />
-      </div>
-
-      {#if recent.length > 0}
-        <div class="recent">
-          <p class="eyebrow">Recent sessions</p>
-          {#each recent as item (item.id)}
-            <button class="session nil-halo" type="button" {@attach droplet} onclick={() => openRecent(item)}>
-              <span class="s-name">{item.label}</span>
-              <span class="s-meta">{item.meta}</span>
-            </button>
-          {/each}
-        </div>
-      {/if}
-    </div>
-  {/if}
+    {/if}
+  </div>
 </section>
 
 <style>
